@@ -1,7 +1,6 @@
 /** Setup screen: paper settings before generation. */
-import { View } from '../react-web';
 import { EXAM_DIFFICULTIES, type ExamDraft, type ExamDraftPatch } from '@socrates/core';
-import { dataSet } from '../learn/parts';
+import { dataAttributes } from '../domProps';
 import { S } from '../look';
 import { UiText } from '../primitives/UiText';
 import {
@@ -38,8 +37,20 @@ export function ExamSetup({
   const typeCards = (['mc', 'fb', 'sa'] as const).map((id) => ({ id, ...t.typeCards[id] }));
 
   return (
-    <View style={{ width: '100%', maxWidth: 720, alignSelf: 'center', gap: S[300] }}>
-      <View {...dataSet({ examHero: 1 })} style={{ gap: S[75] }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        width: '100%',
+        maxWidth: 720,
+        alignSelf: 'center',
+        gap: S[300],
+      }}
+    >
+      <div
+        {...dataAttributes({ examHero: 1 })}
+        style={{ display: 'flex', flexDirection: 'column', gap: S[75] }}
+      >
         <UiText variant="eyebrow" tone="tertiary">
           {t.eyebrow}
         </UiText>
@@ -47,7 +58,7 @@ export function ExamSetup({
         <UiText variant="body" tone="secondary">
           {t.heroDescription}
         </UiText>
-      </View>
+      </div>
 
       <ExamSection index="01" title={t.topic} help={t.topicHelp}>
         <ExamTextField
@@ -61,7 +72,7 @@ export function ExamSetup({
       </ExamSection>
 
       <ExamSection index="02" title={t.settings} help={t.settingsHelp}>
-        <View style={{ gap: S[200] }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: S[200] }}>
           <ExamSelect
             id={ids?.modelTrigger}
             label={t.model}
@@ -71,18 +82,24 @@ export function ExamSetup({
             emptyLabel={t.noModels}
             onChange={(model) => onDraftChange({ model })}
           />
-          <View
-            style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-end', gap: S[200] }}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+              alignItems: 'flex-end',
+              gap: S[200],
+            }}
           >
-            <View style={{ flexGrow: 1, minWidth: 220 }}>
+            <div style={{ flexGrow: 1, minWidth: 220 }}>
               <ExamSegmented
                 label={t.difficulty}
                 value={draft.difficulty}
                 options={difficulties}
                 onChange={(difficulty) => onDraftChange({ difficulty })}
               />
-            </View>
-            <View style={{ gap: S[50] }}>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: S[50] }}>
               <ExamLabel>{t.count}</ExamLabel>
               <ExamStepper
                 valueId={ids?.count}
@@ -93,9 +110,9 @@ export function ExamSetup({
                 moreLabel={t.more}
                 onChange={(count) => onDraftChange({ count })}
               />
-            </View>
-          </View>
-        </View>
+            </div>
+          </div>
+        </div>
       </ExamSection>
 
       <ExamSection index="03" title={t.types} help={t.typesHelp}>
@@ -116,6 +133,6 @@ export function ExamSetup({
           onChange={(instructions) => onDraftChange({ instructions })}
         />
       </ExamSection>
-    </View>
+    </div>
   );
 }

@@ -1,5 +1,4 @@
 /** Loading / empty / error states. Copy is already baked by the host. */
-import { View } from '../react-web';
 import { R, S, insetRing } from '../look';
 import { UiText } from '../primitives/UiText';
 import { useUiTheme } from '../primitives/theme';
@@ -13,10 +12,12 @@ export function ExamStatus({ screen }: { screen: StatusScreen }) {
   if (screen.kind === 'loading') {
     const percent = Math.max(0, Math.min(100, screen.percent));
     return (
-      <View
+      <div
         role="status"
         aria-live="polite"
         style={{
+          display: 'flex',
+          flexDirection: 'column',
           flex: 1,
           width: '100%',
           maxWidth: 560,
@@ -24,11 +25,12 @@ export function ExamStatus({ screen }: { screen: StatusScreen }) {
           justifyContent: 'center',
           alignItems: 'center',
           gap: S[100],
-          paddingVertical: S[500],
+          paddingTop: S[500],
+          paddingBottom: S[500],
         }}
       >
         <UiText variant="titleSm">{screen.message}</UiText>
-        <View
+        <div
           style={{
             width: '100%',
             height: 3,
@@ -37,23 +39,25 @@ export function ExamStatus({ screen }: { screen: StatusScreen }) {
             overflow: 'hidden',
           }}
         >
-          <View style={{ width: `${percent}%`, height: '100%', backgroundColor: colors.ink }} />
-        </View>
+          <div style={{ width: `${percent}%`, height: '100%', backgroundColor: colors.ink }} />
+        </div>
         <UiText variant="bodySm" tone="secondary">
           {screen.step}
         </UiText>
         <UiText variant="bodySm" tone="tertiary">
           {screen.subtitle}
         </UiText>
-      </View>
+      </div>
     );
   }
 
   const isError = screen.kind === 'error';
   return (
-    <View
+    <div
       role={isError ? 'alert' : 'status'}
       style={{
+        display: 'flex',
+        flexDirection: 'column',
         width: '100%',
         maxWidth: 560,
         alignSelf: 'center',
@@ -70,6 +74,6 @@ export function ExamStatus({ screen }: { screen: StatusScreen }) {
           {screen.detail}
         </UiText>
       ) : null}
-    </View>
+    </div>
   );
 }

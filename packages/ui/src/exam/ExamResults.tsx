@@ -1,7 +1,7 @@
 /** Graded results: score card plus one row per question. */
-import { View } from '../react-web';
 import type { ExamResults as ExamResultsData } from '@socrates/core';
-import { VerdictGlyph, dataSet } from '../learn/parts';
+import { dataAttributes } from '../domProps';
+import { VerdictGlyph } from '../learn/parts';
 import { R, S, insetRing } from '../look';
 import { UiText } from '../primitives/UiText';
 import { useUiTheme } from '../primitives/theme';
@@ -17,6 +17,8 @@ export function ExamResults({
 }) {
   const { colors } = useUiTheme();
   const card = {
+    display: 'flex',
+    flexDirection: 'column' as const,
     gap: S[100],
     padding: S[200],
     borderRadius: R.card,
@@ -25,13 +27,21 @@ export function ExamResults({
   };
 
   return (
-    <View
-      {...dataSet({ examResults: 1 })}
-      style={{ width: '100%', maxWidth: 720, alignSelf: 'center', gap: S[200] }}
+    <div
+      {...dataAttributes({ examResults: 1 })}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        width: '100%',
+        maxWidth: 720,
+        alignSelf: 'center',
+        gap: S[200],
+      }}
     >
-      <View
-        {...dataSet({ examScore: 1 })}
+      <div
+        {...dataAttributes({ examScore: 1 })}
         style={{
+          display: 'flex',
           flexDirection: 'row',
           alignItems: 'baseline',
           gap: S[75],
@@ -44,37 +54,45 @@ export function ExamResults({
         <UiText variant="titleSm" tone="tertiary">
           / {results.total}
         </UiText>
-        <View style={{ flex: 1 }} />
+        <div style={{ flex: 1 }} />
         <UiText variant="bodySm" tone="secondary">
           {results.percent}% {results.correctLabel}
         </UiText>
-      </View>
+      </div>
 
       {results.questions.map((question, index) => (
-        <View
+        <div
           key={`${index}-${question.type}`}
-          {...dataSet({ examResultCard: index })}
+          {...dataAttributes({ examResultCard: index })}
           style={card}
         >
-          <View
-            style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: S[75] }}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: S[75],
+            }}
           >
-            <UiText variant="labelSm" tone="secondary" {...dataSet({ examQNum: 1 })}>
+            <UiText variant="labelSm" tone="secondary" {...dataAttributes({ examQNum: 1 })}>
               {question.questionLabel} {index + 1}
             </UiText>
             <VerdictGlyph verdict={question.isCorrect ? 'correct' : 'incorrect'} size={16} />
             <UiText variant="labelSm" tone="secondary">
               {question.statusLabel}
             </UiText>
-            <UiText variant="labelSm" tone="tertiary" {...dataSet({ examQType: 1 })}>
+            <UiText variant="labelSm" tone="tertiary" {...dataAttributes({ examQType: 1 })}>
               {question.typeLabel}
             </UiText>
-          </View>
+          </div>
 
-          <View {...dataSet({ examQText: 1 })}>{renderText(question.questionText, 'exam-q')}</View>
+          <div {...dataAttributes({ examQText: 1 })}>
+            {renderText(question.questionText, 'exam-q')}
+          </div>
 
           {question.options.length ? (
-            <View role="group" style={{ gap: S[50] }}>
+            <div role="group" style={{ display: 'flex', flexDirection: 'column', gap: S[50] }}>
               {question.options.map((option, optionIndex) => (
                 <ExamChoiceRow
                   key={`${option.letter}-${optionIndex}`}
@@ -86,7 +104,7 @@ export function ExamResults({
                   {renderText(option.text, 'exam-option')}
                 </ExamChoiceRow>
               ))}
-            </View>
+            </div>
           ) : null}
 
           {question.type !== 'multiple-choice' ? (
@@ -94,24 +112,24 @@ export function ExamResults({
           ) : null}
 
           {!question.isCorrect && question.expectedAnswer && question.type !== 'multiple-choice' ? (
-            <View style={{ gap: 2 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <UiText variant="labelSm" tone="tertiary">
                 {question.expectedLabel}
               </UiText>
-              <View>{renderText(question.expectedAnswer, 'exam-expected')}</View>
-            </View>
+              <div>{renderText(question.expectedAnswer, 'exam-expected')}</div>
+            </div>
           ) : null}
 
           {question.explanationText ? (
-            <View style={{ gap: 2 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <UiText variant="labelSm" tone="tertiary">
                 {question.explanationLabel}
               </UiText>
-              <View>{renderText(question.explanationText, 'exam-explain')}</View>
-            </View>
+              <div>{renderText(question.explanationText, 'exam-explain')}</div>
+            </div>
           ) : null}
-        </View>
+        </div>
       ))}
-    </View>
+    </div>
   );
 }

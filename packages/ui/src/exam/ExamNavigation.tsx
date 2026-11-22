@@ -1,6 +1,5 @@
 /** Question navigation: step buttons, counter and the numbered pill row. */
-import { Pressable, View } from '../react-web';
-import { dataSet } from '../learn/parts';
+import { dataAttributes } from '../domProps';
 import { R, S, insetRing } from '../look';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';
@@ -22,16 +21,27 @@ function StepButton({
   const { colors } = useUiTheme();
   const { hovered, handlers } = usePressFeedback();
   return (
-    <Pressable
-      role="button"
+    <button
+      type="button"
       aria-label={label}
       aria-disabled={disabled || undefined}
       disabled={disabled}
-      onPress={onPress}
+      onClick={onPress}
       {...handlers}
+      style={{
+        appearance: 'none',
+        margin: 0,
+        padding: 0,
+        border: 0,
+        background: 'transparent',
+        color: 'inherit',
+        font: 'inherit',
+        cursor: disabled ? 'default' : 'pointer',
+      }}
     >
-      <View
+      <span
         style={{
+          display: 'flex',
           width: 32,
           height: 32,
           alignItems: 'center',
@@ -45,8 +55,8 @@ function StepButton({
         <UiText variant="body" tone="secondary">
           {glyph}
         </UiText>
-      </View>
-    </Pressable>
+      </span>
+    </button>
   );
 }
 
@@ -67,23 +77,35 @@ function NavPill({
   const { hovered, handlers } = usePressFeedback();
   const ring = current ? colors.ink : answered ? colors.inkSecondary : colors.hairlineStrong;
   return (
-    <Pressable
-      role="button"
+    <button
+      type="button"
       aria-label={label}
-      {...({ 'aria-current': current ? 'step' : undefined } as object)}
-      onPress={onPress}
+      aria-current={current ? 'step' : undefined}
+      onClick={onPress}
       {...handlers}
-      {...dataSet({
+      {...dataAttributes({
         examNavPill: 1,
         answered: answered ? 'true' : 'false',
         current: current ? 'true' : 'false',
       })}
+      style={{
+        appearance: 'none',
+        margin: 0,
+        padding: 0,
+        border: 0,
+        background: 'transparent',
+        color: 'inherit',
+        font: 'inherit',
+        cursor: 'pointer',
+      }}
     >
-      <View
+      <span
         style={{
+          display: 'flex',
           minWidth: 32,
           height: 32,
-          paddingHorizontal: S[50],
+          paddingLeft: S[50],
+          paddingRight: S[50],
           alignItems: 'center',
           justifyContent: 'center',
           borderRadius: R.pill,
@@ -94,15 +116,15 @@ function NavPill({
         <UiText variant="labelSm" tone={current ? 'ink' : 'secondary'}>
           {String(index + 1)}
         </UiText>
-      </View>
-    </Pressable>
+      </span>
+    </button>
   );
 }
 
 function CounterDivider() {
   const { colors } = useUiTheme();
   return (
-    <View
+    <div
       style={{ width: 1, height: 10, alignSelf: 'center', backgroundColor: colors.hairlineStrong }}
     />
   );
@@ -128,16 +150,26 @@ export function ExamNavigation({
   const labels = strings.nav;
 
   return (
-    <View style={{ width: '100%', maxWidth: 720, alignSelf: 'center', gap: S[75] }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: S[100] }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        width: '100%',
+        maxWidth: 720,
+        alignSelf: 'center',
+        gap: S[75],
+      }}
+    >
+      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: S[100] }}>
         <StepButton
           label={labels.previous}
           glyph="‹"
           disabled={safeCurrent <= 0}
           onPress={() => onCommand('previous')}
         />
-        <View
+        <div
           style={{
+            display: 'flex',
             flex: 1,
             flexDirection: 'row',
             alignItems: 'baseline',
@@ -145,7 +177,7 @@ export function ExamNavigation({
             gap: S[50],
           }}
         >
-          <UiText variant="body" {...dataSet({ examNavCurrent: 1 })}>
+          <UiText variant="body" {...dataAttributes({ examNavCurrent: 1 })}>
             {String(safeCurrent + 1)}
           </UiText>
           <UiText variant="bodySm" tone="tertiary">
@@ -154,23 +186,23 @@ export function ExamNavigation({
           {isSubmitted ? null : (
             <>
               <CounterDivider />
-              <UiText variant="bodySm" tone="tertiary" {...dataSet({ examNavProgress: 1 })}>
+              <UiText variant="bodySm" tone="tertiary" {...dataAttributes({ examNavProgress: 1 })}>
                 {answeredSet.size} {labels.answered}
               </UiText>
             </>
           )}
-        </View>
+        </div>
         <StepButton
           label={labels.next}
           glyph="›"
           disabled={safeCurrent >= total - 1}
           onPress={() => onCommand('next')}
         />
-      </View>
-      <View
+      </div>
+      <div
         role="group"
         aria-label={labels.previous}
-        style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S[50] }}
+        style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: S[50] }}
       >
         {Array.from({ length: total }, (_, index) => (
           <NavPill
@@ -182,7 +214,7 @@ export function ExamNavigation({
             onPress={() => onCommand('jump', index)}
           />
         ))}
-      </View>
-    </View>
+      </div>
+    </div>
   );
 }

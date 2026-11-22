@@ -8,15 +8,26 @@
  * `look.ts` tokens only. Selection is a deeper ink ring plus the subtle fill;
  * no hue, no dots.
  */
-import { useState, type ReactNode } from 'react';
-import { Pressable, TextInput, View } from '../react-web';
+import { useState, type CSSProperties, type ReactNode } from 'react';
 import { uiType } from '@socrates/theme';
+import { dataAttributes } from '../domProps';
+import { domStyle } from '../domStyle';
 import { UiIcon, type UiGlyphName } from '../primitives';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';
 import { usePressFeedback } from '../primitives/UiButton';
-import { dataSet } from '../learn/parts';
 import { H, R, S, insetRing, transition } from '../look';
+
+const BUTTON_RESET: CSSProperties = {
+  appearance: 'none',
+  margin: 0,
+  padding: 0,
+  border: 0,
+  background: 'transparent',
+  color: 'inherit',
+  font: 'inherit',
+  cursor: 'pointer',
+};
 
 export function ExamLabel({ children }: { children: string }) {
   return (
@@ -53,28 +64,33 @@ export function ExamTextField({
   const [focused, setFocused] = useState(false);
   const step = uiType.body;
   return (
-    <View style={{ gap: S[50] }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: S[50] }}>
       <ExamLabel>{label}</ExamLabel>
-      <TextInput
-        nativeID={id}
+      <input
+        id={id}
+        type="text"
         aria-label={label}
         autoComplete={autoComplete}
         value={value}
         placeholder={placeholder}
-        placeholderTextColor={colors.inkTertiary}
-        onChangeText={onChange}
+        onChange={(event) => onChange(event.currentTarget.value)}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        style={{
+        style={domStyle({
           ...fieldBox(colors, focused),
+          boxSizing: 'border-box',
+          width: '100%',
           height: H.row,
-          paddingHorizontal: S[100],
+          borderWidth: 0,
+          outline: 'none',
+          paddingLeft: S[100],
+          paddingRight: S[100],
           color: colors.ink,
           fontFamily,
           fontSize: Math.round(step.size * typeScale * 10) / 10,
-        }}
+        })}
       />
-    </View>
+    </div>
   );
 }
 
@@ -95,31 +111,35 @@ export function ExamTextArea({
   const [focused, setFocused] = useState(false);
   const step = uiType.body;
   return (
-    <View style={{ gap: S[50] }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: S[50] }}>
       <ExamLabel>{label}</ExamLabel>
-      <TextInput
-        nativeID={id}
+      <textarea
+        id={id}
+        rows={3}
         aria-label={label}
-        multiline
-        numberOfLines={3}
         value={value}
         placeholder={placeholder}
-        placeholderTextColor={colors.inkTertiary}
-        onChangeText={onChange}
+        onChange={(event) => onChange(event.currentTarget.value)}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        style={{
+        style={domStyle({
           ...fieldBox(colors, focused),
+          boxSizing: 'border-box',
+          width: '100%',
           minHeight: 88,
-          paddingHorizontal: S[100],
-          paddingVertical: S[75],
+          borderWidth: 0,
+          outline: 'none',
+          resize: 'vertical',
+          paddingLeft: S[100],
+          paddingRight: S[100],
+          paddingTop: S[75],
+          paddingBottom: S[75],
           color: colors.ink,
           fontFamily,
           fontSize: Math.round(step.size * typeScale * 10) / 10,
-          textAlignVertical: 'top',
-        }}
+        })}
       />
-    </View>
+    </div>
   );
 }
 
@@ -139,11 +159,21 @@ function ChoiceButton({
   const { colors } = useUiTheme();
   const { hovered, handlers } = usePressFeedback();
   return (
-    <Pressable role={role} aria-checked={checked} onPress={onPress} {...handlers}>
-      <View
+    <button
+      type="button"
+      role={role}
+      aria-checked={checked}
+      onClick={onPress}
+      {...handlers}
+      style={BUTTON_RESET}
+    >
+      <span
         style={{
+          display: 'flex',
           height: H.row,
-          paddingHorizontal: S[200],
+          paddingLeft: S[200],
+          paddingRight: S[200],
+          alignItems: 'center',
           justifyContent: 'center',
           borderRadius: R.row,
           backgroundColor: selected ? colors.subtle : hovered ? colors.fill : colors.card,
@@ -154,8 +184,8 @@ function ChoiceButton({
         <UiText variant="labelSm" tone={selected ? 'ink' : 'secondary'}>
           {children}
         </UiText>
-      </View>
-    </Pressable>
+      </span>
+    </button>
   );
 }
 
@@ -173,13 +203,13 @@ export function ExamSegmented<T extends string>({
   onChange(value: T): void;
 }) {
   return (
-    <View style={{ gap: S[50] }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: S[50] }}>
       <ExamLabel>{label}</ExamLabel>
-      <View
-        nativeID={id}
+      <div
+        id={id}
         role="radiogroup"
         aria-label={label}
-        style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S[50] }}
+        style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: S[50] }}
       >
         {options.map((option) => (
           <ChoiceButton
@@ -192,8 +222,8 @@ export function ExamSegmented<T extends string>({
             {option.label}
           </ChoiceButton>
         ))}
-      </View>
-    </View>
+      </div>
+    </div>
   );
 }
 
@@ -212,29 +242,39 @@ export function ExamTypeCards({
 }) {
   const { colors } = useUiTheme();
   return (
-    <View style={{ gap: S[50] }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: S[50] }}>
       <ExamLabel>{label}</ExamLabel>
-      <View nativeID={id} role="group" aria-label={label} style={{ gap: S[50] }}>
+      <div
+        id={id}
+        role="group"
+        aria-label={label}
+        style={{ display: 'flex', flexDirection: 'column', gap: S[50] }}
+      >
         {options.map((option) => {
           const selected = selection[option.id];
           return (
-            <Pressable
+            <button
               key={option.id}
+              type="button"
               role="checkbox"
               aria-checked={selected}
-              onPress={() => {
+              onClick={() => {
                 const next = { ...selection, [option.id]: !selected };
                 if (!next.mc && !next.fb && !next.sa) return;
                 onChange(next);
               }}
+              style={BUTTON_RESET}
             >
-              <View
+              <span
                 style={{
+                  display: 'flex',
                   flexDirection: 'row',
                   alignItems: 'center',
                   gap: S[100],
-                  paddingHorizontal: S[100],
-                  paddingVertical: S[75],
+                  paddingLeft: S[100],
+                  paddingRight: S[100],
+                  paddingTop: S[75],
+                  paddingBottom: S[75],
                   borderRadius: R.row,
                   backgroundColor: selected ? colors.subtle : colors.card,
                   boxShadow: insetRing(
@@ -243,10 +283,12 @@ export function ExamTypeCards({
                   ),
                 }}
               >
-                <View
+                <span
                   style={{
+                    display: 'flex',
                     width: 18,
                     height: 18,
+                    flexShrink: 0,
                     borderRadius: 5,
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -259,19 +301,21 @@ export function ExamTypeCards({
                       ✓
                     </UiText>
                   ) : null}
-                </View>
-                <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+                </span>
+                <span
+                  style={{ display: 'flex', flex: 1, minWidth: 0, flexDirection: 'column', gap: 2 }}
+                >
                   <UiText variant="labelSm">{option.title}</UiText>
                   <UiText variant="bodySm" tone="tertiary">
                     {option.hint}
                   </UiText>
-                </View>
-              </View>
-            </Pressable>
+                </span>
+              </span>
+            </button>
           );
         })}
-      </View>
-    </View>
+      </div>
+    </div>
   );
 }
 
@@ -289,16 +333,18 @@ export function ExamIconButton({
   const { colors } = useUiTheme();
   const { hovered, handlers } = usePressFeedback();
   return (
-    <Pressable
-      role="button"
+    <button
+      type="button"
       aria-label={label}
       aria-disabled={disabled || undefined}
       disabled={disabled}
-      onPress={onPress}
+      onClick={onPress}
       {...handlers}
+      style={{ ...BUTTON_RESET, cursor: disabled ? 'default' : 'pointer' }}
     >
-      <View
+      <span
         style={{
+          display: 'flex',
           width: 32,
           height: 32,
           alignItems: 'center',
@@ -310,8 +356,8 @@ export function ExamIconButton({
         }}
       >
         <UiIcon name={icon} size={16} color={colors.inkSecondary} />
-      </View>
-    </Pressable>
+      </span>
+    </button>
   );
 }
 
@@ -335,7 +381,7 @@ export function ExamStepper({
   const { colors } = useUiTheme();
   const clamp = (next: number) => Math.max(min, Math.min(max, next));
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: S[75] }}>
+    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: S[75] }}>
       <ExamIconButton
         label={fewerLabel}
         icon="minus"
@@ -355,7 +401,7 @@ export function ExamStepper({
         disabled={value >= max}
         onPress={() => onChange(clamp(value + 1))}
       />
-    </View>
+    </div>
   );
 }
 
@@ -381,25 +427,29 @@ export function ExamSelect({
   const { hovered, handlers } = usePressFeedback();
   const selected = options.find((option) => option.id === value);
   return (
-    <View style={{ gap: S[50] }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: S[50] }}>
       <ExamLabel>{label}</ExamLabel>
-      <Pressable
-        nativeID={id}
+      <button
+        type="button"
+        id={id}
         role="combobox"
         aria-label={label}
         aria-expanded={open}
-        onPress={() => setOpen((current) => !current)}
+        onClick={() => setOpen((current) => !current)}
         {...handlers}
-        {...dataSet({ examModelTrigger: 1 })}
+        {...dataAttributes({ examModelTrigger: 1 })}
+        style={{ ...BUTTON_RESET, width: '100%' }}
       >
-        <View
+        <span
           style={{
+            display: 'flex',
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: S[75],
             height: H.row,
-            paddingHorizontal: S[100],
+            paddingLeft: S[100],
+            paddingRight: S[100],
             borderRadius: R.row,
             backgroundColor: hovered ? colors.fill : colors.card,
             boxShadow: insetRing(
@@ -412,12 +462,14 @@ export function ExamSelect({
             {selected ? selected.label : placeholder}
           </UiText>
           <UiIcon name="chevron-down" size={16} color={colors.inkSecondary} />
-        </View>
-      </Pressable>
+        </span>
+      </button>
       {open ? (
-        <View
+        <div
           role="list"
           style={{
+            display: 'flex',
+            flexDirection: 'column',
             borderRadius: R.row,
             backgroundColor: colors.card,
             boxShadow: insetRing(colors.hairlineStrong),
@@ -429,24 +481,29 @@ export function ExamSelect({
             options.map((option) => {
               const active = option.id === value;
               return (
-                <Pressable
+                <button
                   key={option.id}
+                  type="button"
                   role="option"
                   aria-selected={active}
-                  onPress={() => {
+                  onClick={() => {
                     setOpen(false);
                     onChange(option.id);
                   }}
-                  {...dataSet({ examModelOption: option.id })}
+                  {...dataAttributes({ examModelOption: option.id })}
+                  style={BUTTON_RESET}
                 >
-                  <View
+                  <span
                     style={{
+                      display: 'flex',
                       flexDirection: 'row',
                       alignItems: 'center',
                       justifyContent: 'space-between',
                       gap: S[75],
-                      paddingHorizontal: S[75],
-                      paddingVertical: S[50],
+                      paddingLeft: S[75],
+                      paddingRight: S[75],
+                      paddingTop: S[50],
+                      paddingBottom: S[50],
                       borderRadius: R.row - 4,
                       backgroundColor: active ? colors.subtle : 'transparent',
                     }}
@@ -459,20 +516,29 @@ export function ExamSelect({
                         ✓
                       </UiText>
                     ) : null}
-                  </View>
-                </Pressable>
+                  </span>
+                </button>
               );
             })
           ) : (
-            <View style={{ paddingHorizontal: S[75], paddingVertical: S[50] }}>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                paddingLeft: S[75],
+                paddingRight: S[75],
+                paddingTop: S[50],
+                paddingBottom: S[50],
+              }}
+            >
               <UiText variant="bodySm" tone="tertiary">
                 {emptyLabel}
               </UiText>
-            </View>
+            </div>
           )}
-        </View>
+        </div>
       ) : null}
-    </View>
+    </div>
   );
 }
 
@@ -502,22 +568,27 @@ export function ExamChoiceRow({
           ? colors.ink
           : colors.hairlineStrong;
   return (
-    <Pressable
+    <button
+      type="button"
       role={disabled ? undefined : 'radio'}
       aria-checked={disabled ? undefined : selected}
       aria-disabled={disabled || undefined}
       disabled={disabled}
-      onPress={onPress}
+      onClick={onPress}
       {...handlers}
+      style={{ ...BUTTON_RESET, cursor: disabled ? 'default' : 'pointer' }}
     >
-      <View
+      <span
         style={{
+          display: 'flex',
           flexDirection: 'row',
           alignItems: 'center',
           gap: S[75],
           minHeight: H.option,
-          paddingHorizontal: S[100],
-          paddingVertical: S[75],
+          paddingLeft: S[100],
+          paddingRight: S[100],
+          paddingTop: S[75],
+          paddingBottom: S[75],
           borderRadius: R.row,
           backgroundColor:
             selected || verdict === 'correct'
@@ -531,7 +602,9 @@ export function ExamChoiceRow({
         <UiText variant="labelSm" tone="secondary" style={{ width: 20 }}>
           {letter}
         </UiText>
-        <View style={{ flex: 1, minWidth: 0 }}>{children}</View>
+        <span style={{ display: 'flex', flex: 1, minWidth: 0, flexDirection: 'column' }}>
+          {children}
+        </span>
         {verdict === 'correct' ? (
           <UiText variant="labelSm" tone="secondary">
             ✓
@@ -542,8 +615,8 @@ export function ExamChoiceRow({
             ✕
           </UiText>
         ) : null}
-      </View>
-    </Pressable>
+      </span>
+    </button>
   );
 }
 
@@ -560,8 +633,10 @@ export function ExamSection({
 }) {
   const { colors } = useUiTheme();
   return (
-    <View
+    <div
       style={{
+        display: 'flex',
+        flexDirection: 'column',
         gap: S[200],
         padding: S[200],
         borderRadius: R.card,
@@ -569,9 +644,10 @@ export function ExamSection({
         boxShadow: insetRing(colors.hairlineStrong),
       }}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: S[100] }}>
-        <View
+      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', gap: S[100] }}>
+        <div
           style={{
+            display: 'flex',
             minWidth: 28,
             height: 22,
             alignItems: 'center',
@@ -583,16 +659,16 @@ export function ExamSection({
           <UiText variant="labelSm" tone="tertiary">
             {index}
           </UiText>
-        </View>
-        <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+        </div>
+        <div style={{ display: 'flex', flex: 1, minWidth: 0, flexDirection: 'column', gap: 2 }}>
           <UiText variant="titleSm">{title}</UiText>
           <UiText variant="bodySm" tone="tertiary">
             {help}
           </UiText>
-        </View>
-      </View>
+        </div>
+      </div>
       {children}
-    </View>
+    </div>
   );
 }
 
@@ -615,30 +691,33 @@ export function ExamAnswerField({
   const { colors, fontFamily, typeScale } = useUiTheme();
   const [focused, setFocused] = useState(false);
   const step = uiType.body;
-  return (
-    <TextInput
-      aria-label={label}
-      multiline={multiline}
-      numberOfLines={multiline ? 3 : 1}
-      value={value}
-      placeholder={placeholder}
-      placeholderTextColor={colors.inkTertiary}
-      onChangeText={onChange}
-      onFocus={() => setFocused(true)}
-      onBlur={() => setFocused(false)}
-      {...dataSet(data ?? {})}
-      style={{
-        ...fieldBox(colors, focused),
-        minHeight: multiline ? 88 : H.row,
-        paddingHorizontal: S[100],
-        paddingVertical: multiline ? S[75] : 0,
-        color: colors.ink,
-        fontFamily,
-        fontSize: Math.round(step.size * typeScale * 10) / 10,
-        textAlignVertical: multiline ? 'top' : 'center',
-      }}
-    />
-  );
+  const style: CSSProperties = domStyle({
+    ...fieldBox(colors, focused),
+    boxSizing: 'border-box',
+    width: '100%',
+    minHeight: multiline ? 88 : H.row,
+    borderWidth: 0,
+    outline: 'none',
+    resize: multiline ? 'vertical' : 'none',
+    paddingLeft: S[100],
+    paddingRight: S[100],
+    paddingTop: multiline ? S[75] : 0,
+    paddingBottom: multiline ? S[75] : 0,
+    color: colors.ink,
+    fontFamily,
+    fontSize: Math.round(step.size * typeScale * 10) / 10,
+  });
+  const shared = {
+    'aria-label': label,
+    value,
+    placeholder,
+    onChange: (event: { currentTarget: { value: string } }) => onChange(event.currentTarget.value),
+    onFocus: () => setFocused(true),
+    onBlur: () => setFocused(false),
+    ...dataAttributes(data ?? {}),
+    style,
+  };
+  return multiline ? <textarea rows={3} {...shared} /> : <input type="text" {...shared} />;
 }
 
 /** Read-only answer (results page and the share view). */
@@ -651,19 +730,23 @@ export function ExamAnswerDisplay({
 }) {
   const { colors } = useUiTheme();
   return (
-    <View
-      {...dataSet(data ?? {})}
+    <div
+      {...dataAttributes(data ?? {})}
       style={{
+        display: 'flex',
+        flexDirection: 'column',
         minHeight: H.row,
         justifyContent: 'center',
-        paddingHorizontal: S[100],
-        paddingVertical: S[75],
+        paddingLeft: S[100],
+        paddingRight: S[100],
+        paddingTop: S[75],
+        paddingBottom: S[75],
         borderRadius: R.row,
         backgroundColor: colors.subtle,
         boxShadow: insetRing(colors.hairlineStrong),
       }}
     >
       <UiText variant="body">{value}</UiText>
-    </View>
+    </div>
   );
 }

@@ -1,5 +1,4 @@
 /** Footer actions: the host decides which commands exist for the current mode. */
-import { View } from '../react-web';
 import { S } from '../look';
 import { UiButton } from '../primitives/UiButton';
 import type { ExamAction, ExamCommandHandler } from './model';
@@ -12,8 +11,14 @@ export function ExamFooter({
   onCommand: ExamCommandHandler;
 }) {
   return (
-    <View
-      style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', gap: S[75] }}
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'flex-end',
+        gap: S[75],
+      }}
     >
       {actions.map((action) => (
         <UiButton
@@ -23,6 +28,6 @@ export function ExamFooter({
           onPress={() => onCommand(action.command)}
         />
       ))}
-    </View>
+    </div>
   );
 }

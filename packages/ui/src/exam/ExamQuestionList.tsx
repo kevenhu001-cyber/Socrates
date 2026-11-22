@@ -1,8 +1,7 @@
 /** Question list: one card per question, answered in place. */
 import { memo } from 'react';
-import { View } from '../react-web';
 import { examAnswerValue, type ExamAnswers, type ExamQuestion } from '@socrates/core';
-import { dataSet } from '../learn/parts';
+import { dataAttributes } from '../domProps';
 import { R, S, insetRing } from '../look';
 import { UiText } from '../primitives/UiText';
 import { useUiTheme } from '../primitives/theme';
@@ -39,10 +38,12 @@ const QuestionCard = memo(function QuestionCard({
   const answerLabel = strings.questions.answerLabel(order + 1);
 
   return (
-    <View
-      nativeID={`${idPrefix}${question.index}`}
-      {...dataSet({ examQ: question.index })}
+    <div
+      id={`${idPrefix}${question.index}`}
+      {...dataAttributes({ examQ: question.index })}
       style={{
+        display: 'flex',
+        flexDirection: 'column',
         gap: S[100],
         padding: S[200],
         borderRadius: R.card,
@@ -50,19 +51,31 @@ const QuestionCard = memo(function QuestionCard({
         boxShadow: insetRing(colors.hairlineStrong),
       }}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: S[75] }}>
-        <UiText variant="labelSm" tone="secondary" {...dataSet({ examQNum: 1 })}>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: S[75],
+        }}
+      >
+        <UiText variant="labelSm" tone="secondary" {...dataAttributes({ examQNum: 1 })}>
           {strings.questions.number(order + 1, total)}
         </UiText>
-        <UiText variant="labelSm" tone="tertiary" {...dataSet({ examQType: 1 })}>
+        <UiText variant="labelSm" tone="tertiary" {...dataAttributes({ examQType: 1 })}>
           {strings.questions.type[question.type]}
         </UiText>
-      </View>
+      </div>
 
-      <View {...dataSet({ examQText: 1 })}>{renderText(question.prompt, 'exam-q')}</View>
+      <div {...dataAttributes({ examQText: 1 })}>{renderText(question.prompt, 'exam-q')}</div>
 
       {question.type === 'multiple-choice' ? (
-        <View role="radiogroup" aria-label={answerLabel} style={{ gap: S[50] }}>
+        <div
+          role="radiogroup"
+          aria-label={answerLabel}
+          style={{ display: 'flex', flexDirection: 'column', gap: S[50] }}
+        >
           {question.options.map((option, optionIndex) => {
             const isSelected = selectedIndex === optionIndex;
             const isCorrect = option.letter === question.answer;
@@ -81,7 +94,7 @@ const QuestionCard = memo(function QuestionCard({
               </ExamChoiceRow>
             );
           })}
-        </View>
+        </div>
       ) : readOnly ? (
         <ExamAnswerDisplay value={answerText} data={{ examAnswerDisplay: question.index }} />
       ) : (
@@ -94,7 +107,7 @@ const QuestionCard = memo(function QuestionCard({
           onChange={(text) => onAnswer?.(question.index, text)}
         />
       )}
-    </View>
+    </div>
   );
 });
 
@@ -117,9 +130,16 @@ export function ExamQuestionList({
 }) {
   const idPrefix = ids?.questionCardPrefix ?? 'examQ';
   return (
-    <View
-      nativeID={ids?.questionsContainer}
-      style={{ width: '100%', maxWidth: 720, alignSelf: 'center', gap: S[200] }}
+    <div
+      id={ids?.questionsContainer}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        width: '100%',
+        maxWidth: 720,
+        alignSelf: 'center',
+        gap: S[200],
+      }}
     >
       {questions.map((question, order) => (
         <QuestionCard
@@ -135,6 +155,6 @@ export function ExamQuestionList({
           idPrefix={idPrefix}
         />
       ))}
-    </View>
+    </div>
   );
 }
