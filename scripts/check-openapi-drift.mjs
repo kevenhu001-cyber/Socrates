@@ -18,6 +18,12 @@
 //   app.ts:  import xRouter from './routes/x.js'   → name → file map
 //            app.use('/prefix', ..., xRouter)      → mount prefix
 //            app.METHOD('/path', ...)              → direct route
+//
+//   The 2026-11-21 modularization moved the domain mounts out of app.ts into
+//   server/src/routes/mountApiRoutes.ts (commit 123d6f43). A scanner that only
+//   read app.ts saw 31 routes and declared its own extraction broken, so the
+//   gate failed on a healthy tree. Both mount sources are scanned now, and a
+//   router import is resolved relative to the file that imports it.
 //   router:  const r = Router(...)                 → var name
 //            r.METHOD('/sub', ...)                 → METHOD prefix+sub
 //   spec:    paths: block → '  /path:' + '    method:'
@@ -35,6 +41,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const APP_TS = join(ROOT, 'server/src/app.ts');
 const ROUTES_DIR = join(ROOT, 'server/src/routes');
+const MOUNT_API_ROUTES = join(ROUTES_DIR, 'mountApiRoutes.ts');
 const SPEC = join(ROOT, 'docs/api/openapi.yaml');
 const BASELINE = join(ROOT, 'scripts/openapi.baseline.json');
 const UPDATE = process.argv.includes('--update');
@@ -58,15 +65,63 @@ function normPath(p) {
 }
 
 /* ── 1. implemented routes ───────────────────────────────────────── */
-const appSrc = readFileSync(APP_TS, 'utf8');
 
-// name → routes/<file> for every router import (default import name only;
-// named siblings like `, { githubWebhookHandler }` are handlers, not routers)
+/* Every file that mounts domain routers. app.ts holds the few mounts that
+ * stay at the app level; mountApiRoutes.ts holds the domain mounts the
+ * modularization moved out. */
+const MOUNT_SOURCES = [APP_TS, MOUNT_API_ROUTES].filter((f) => existsSync(f));
+
+/* name → routes/<file> per mount source (default import name only; named
+ * siblings like `, { githubWebhookHandler }` are handlers, not routers).
+ * The import path is resolved relative to the importing file, because the two
+ * sources sit at different depths (app.ts imports './routes/x.js',
+ * mountApiRoutes.ts imports './x.js'). */
+function routerImports(src, srcDir) {
+  const map = new Map();
+  for (const m of src.matchAll(
+    /import\s+(\w+)\s*(?:,\s*\{[^}]*\})?\s*from\s+'(\.[^']+)\.js'/g,
+  )) {
+    const base = resolve(srcDir, m[2]);
+    // Only routers under server/src/routes are route files; anything else
+    // imported here (middleware, lib helpers) is not a router.
+    if (!base.startsWith(ROUTES_DIR + '/')) continue;
+    map.set(m[1], base);
+  }
+  return map;
+}
+
+const implemented = new Set(); // 'METHOD /path'
+const mounts = [];
+
+for (const sourceFile of MOUNT_SOURCES) {
+  const src = readFileSync(sourceFile, 'utf8');
+  const srcDir = dirname(sourceFile);
+  const importToFile = routerImports(src, srcDir);
+
+  // app.use('/prefix', ..., xRouter) → mount prefix
+  for (const m of src.matchAll(/app\.use\(\s*'([^']+)'([^;]*?)\)\s*;?/gs)) {
+    const prefix = m[1];
+    const args = m[2];
+    for (const ident of args.matchAll(/\b([A-Za-z_]\w*)\b/g)) {
+      if (importToFile.has(ident[1])) mounts.push({ prefix, router: ident[1] });
+    }
+  }
+
+  // direct app.METHOD('/api/...') routes
+  for (const m of src.matchAll(new RegExp(`app\\.(${METHOD_RE})\\(\\s*'([^']+)'`, 'g'))) {
+    implemented.add(`${m[1].toUpperCase()} ${normPath(m[2])}`);
+  }
+}
+
+/* Router name → file, across all mount sources. A name is unique in this
+ * codebase (every mount source imports its own routers), so one flat map is
+ * enough to resolve a mount to the file that defines it. */
 const importToFile = new Map();
-for (const m of appSrc.matchAll(
-  /import\s+(\w+)\s*(?:,\s*\{[^}]*\})?\s*from\s+'\.\/routes\/([^']+)\.js'/g,
-)) {
-  importToFile.set(m[1], join(ROUTES_DIR, m[2]));
+for (const sourceFile of MOUNT_SOURCES) {
+  const src = readFileSync(sourceFile, 'utf8');
+  for (const [name, base] of routerImports(src, dirname(sourceFile))) {
+    importToFile.set(name, base);
+  }
 }
 
 function resolveRouterFile(name) {
@@ -76,23 +131,6 @@ function resolveRouterFile(name) {
     if (existsSync(base + ext)) return base + ext;
   }
   return null;
-}
-
-// prefix -> [routerName, ...]
-const mounts = [];
-for (const m of appSrc.matchAll(/app\.use\(\s*'([^']+)'([^;]*?)\)\s*;?/gs)) {
-  const prefix = m[1];
-  const args = m[2];
-  for (const ident of args.matchAll(/\b([A-Za-z_]\w*)\b/g)) {
-    if (importToFile.has(ident[1])) mounts.push({ prefix, router: ident[1] });
-  }
-}
-
-const implemented = new Set(); // 'METHOD /path'
-
-// direct app.METHOD('/api/...') routes
-for (const m of appSrc.matchAll(new RegExp(`app\\.(${METHOD_RE})\\(\\s*'([^']+)'`, 'g'))) {
-  implemented.add(`${m[1].toUpperCase()} ${normPath(m[2])}`);
 }
 
 const routerRouteCache = new Map();
