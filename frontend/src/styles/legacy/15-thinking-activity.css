@@ -220,10 +220,6 @@
     font-size: 13px;
   }
   .socrates-cookie-consent-message {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
-    overflow: hidden;
     font-size: 13px;
     line-height: 1.45;
   }
