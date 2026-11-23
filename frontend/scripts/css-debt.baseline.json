@@ -12,10 +12,10 @@
     "frozen": {
       "important": 256,
       "hexColor": 28,
-      "literalRadius": 120,
+      "literalRadius": 119,
       "stackedId": 27,
-      "literalFontSize": 215,
-      "legacyChannel": 506,
+      "literalFontSize": 214,
+      "legacyChannel": 501,
       "shadcnVarReads": 100
     }
   },

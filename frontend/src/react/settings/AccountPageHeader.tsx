@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import { ArrowLeftIcon } from 'lucide-react';
-import { AccountPageTitle } from '@socrates/ui/settings';
 import { Button } from '../ui/shadcn/button';
 
 export function AccountPageHeader({
@@ -24,7 +23,9 @@ export function AccountPageHeader({
         <ArrowLeftIcon aria-hidden />
       </Button>
       <div className="account-page-title">
-        <AccountPageTitle id={titleId} title={title} />
+        <h1 id={titleId} data-page-title tabIndex={-1}>
+          {title}
+        </h1>
       </div>
       {children}
     </header>

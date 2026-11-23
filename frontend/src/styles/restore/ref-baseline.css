@@ -291,8 +291,8 @@ body.workspace-active #appShell .main-page {
   /* The previous `.home-suggestions-*` overrides were removed together
      with the corresponding DOM container; see the section-7 comment above. */
 
-  /* Workspace pages share the same centered 768px column. */
-  body.workspace-active #appShell .main-page:not(#sitesPanel) {
+  /* Workspace pages share the same centered column. */
+  body.workspace-active #appShell .main-page {
     position: relative;
     left: 0;
   }

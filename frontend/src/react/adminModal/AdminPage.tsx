@@ -1,4 +1,6 @@
 import { Button as UiButton } from '../ui/shadcn/button';
+import { PageFrame } from '../ui/page/PageFrame';
+import { PageHeader } from '../ui/page/PageHeader';
 /** The standalone /admin operator console page. */
 
 import { createRootSlot } from '../lib/boot/ownedRoot';
@@ -20,18 +22,21 @@ export function AdminPage() {
   }
 
   return (
-    <div className="admin-console">
-      <div className="admin-console-head">
-        <h2>Admin console</h2>
-        <UiButton
-          variant="destructive"
-          type="button"
-          className="admin-remove"
-          onClick={admin.signOut}
-        >
-          Sign out
-        </UiButton>
-      </div>
+    <PageFrame className="admin-console">
+      <PageHeader
+        titleId="admin-console-title"
+        title="Admin console"
+        actions={
+          <UiButton
+            variant="destructive"
+            type="button"
+            className="admin-remove"
+            onClick={admin.signOut}
+          >
+            Sign out
+          </UiButton>
+        }
+      />
       {admin.snapshot.loading && <div className="admin-loading">Loading…</div>}
       {admin.snapshot.error && (
         <div className="admin-error" role="alert">
@@ -57,7 +62,7 @@ export function AdminPage() {
           onRemove={admin.removeEmbedding}
         />
       </div>
-    </div>
+    </PageFrame>
   );
 }
 

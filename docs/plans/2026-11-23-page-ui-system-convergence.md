@@ -282,7 +282,7 @@ PageFrame
   `lint:frozen-liveness` 基线只降不升。
 - 相关 e2e：library、projects、plugins、scheduled、creation、mobile directories。
 
-### Phase 3 — 账号与管理页（Settings / Profile / Admin）
+### Phase 3 — 账号与管理页（Settings / Profile / Admin）· 已完成（2026-11-23）
 
 先做一个产品决定：Settings 和 Profile 是否都采用 FocusedPage。
 
