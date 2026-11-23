@@ -16,6 +16,12 @@
 html[data-mode] {
   --ui-action: var(--ui-accent-action);
   --ui-connector-tile: var(--ui-bg-surface);
+  --ui-account-canvas: var(--ui-bg-page);
+  --ui-account-panel: var(--ui-bg-surface);
+  --ui-account-rail: var(--ui-bg-sidebar);
+  --ui-account-field: var(--ui-bg-sunken);
+  --ui-account-border: var(--ui-border-strong);
+  --ui-account-selection: var(--ui-bg-selected);
 }
 
 html[data-theme='socrates'][data-mode],
@@ -614,6 +620,13 @@ html[data-theme='socrates'][data-mode='light'] {
 }
 
 html[data-theme='socrates'][data-mode='dark'] {
+  /* Account screens use a gray canvas and an inset field on a raised panel. */
+  --ui-account-canvas: var(--geist-gray-100);
+  --ui-account-panel: var(--geist-gray-400);
+  --ui-account-rail: var(--geist-gray-200);
+  --ui-account-field: var(--geist-background-100);
+  --ui-account-border: var(--geist-gray-500);
+  --ui-account-selection: var(--geist-gray-500);
   /* Modern monochrome bubble: neutral surface aligned with Geist gray scale, matching ChatGPT / Grok style. */
   --conversation-user: var(--ui-bg-bubble);
   --conversation-user-text: var(--foreground);
@@ -655,6 +668,10 @@ html[data-theme='socrates'][data-mode='dark'] {
 }
 
 html[data-theme='socrates'][data-mode='light'] {
+  --ui-account-canvas: var(--geist-gray-200);
+  --ui-account-rail: var(--geist-gray-100);
+  --ui-account-field: var(--geist-background-200);
+  --ui-account-selection: var(--geist-gray-300);
   /* Light twin of the blue user bubble: a pale action tint on the paper, the
      primary ink on top. */
   --conversation-user: color-mix(in srgb, var(--ui-accent-action) 12%, var(--ui-bg-page));

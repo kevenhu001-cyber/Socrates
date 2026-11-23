@@ -37,7 +37,7 @@ for (const style of ['socrates', 'philosophy']) {
         'data-slot',
         'input-group-control',
       );
-      await expect(settings.getByRole('button', { name: 'Back', exact: true })).toHaveAttribute(
+      await expect(settings.getByRole('button', { name: 'Close settings' })).toHaveAttribute(
         'data-slot',
         'button',
       );

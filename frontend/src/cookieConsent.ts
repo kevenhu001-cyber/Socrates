@@ -27,7 +27,6 @@ let _cookieGuardInstalled = false;
 let _cookieGuardDocument: Document | null = null;
 let _cookieConsentInitialized = false;
 let _cookieConsentPrivacyUrl = '/privacy';
-let _cookieConsentAuthPlacement = false;
 
 function normalizePreference(raw: unknown) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
@@ -226,37 +225,8 @@ export function installCookieGuard() {
   }
 }
 
-/* Keep the first-visit banner visible without covering the auth form.  The
- * auth gate is a scroll container, so placing the banner in its flow lets a
- * visitor finish the sign-in form and then review consent below it.  Once the
- * app shell is active, move the React root back to body so the banner returns
- * to the compact fixed bottom treatment used by the product shell. */
-export function syncCookieConsentPlacement(authVisible: boolean) {
-  if (typeof document === 'undefined' || !document.body) return;
-  const root = document.getElementById('cookieConsentReactRoot');
-  const banner = document.getElementById('socratesCookieConsent');
-  if (!banner) {
-    _cookieConsentAuthPlacement = !!authVisible;
-    return;
-  }
-  if (!root) return;
-  const gate = document.getElementById('authGate');
-  if (authVisible && gate) {
-    gate.appendChild(root);
-    banner.classList.add('socrates-cookie-consent--auth');
-  } else {
-    document.body.appendChild(root);
-    banner.classList.remove('socrates-cookie-consent--auth');
-  }
-  _cookieConsentAuthPlacement = !!authVisible;
-}
-
 export function getCookieConsentPrivacyUrl() {
   return _cookieConsentPrivacyUrl;
-}
-
-export function getCookieConsentAuthPlacement() {
-  return _cookieConsentAuthPlacement;
 }
 
 export function initCookieConsent(options: { _queued?: boolean; privacyUrl?: string } = {}) {
@@ -279,16 +249,7 @@ export function initCookieConsent(options: { _queued?: boolean; privacyUrl?: str
     return { shown: false };
   _cookieConsentInitialized = true;
   _cookieConsentPrivacyUrl = options.privacyUrl || '/privacy';
-  if (getConsentPreference()) return { shown: false };
-  const gate = document.getElementById('authGate');
-  syncCookieConsentPlacement(
-    !!(
-      gate &&
-      !gate.classList.contains('hidden') &&
-      document.documentElement.dataset.bootState === 'auth'
-    ),
-  );
-  return { shown: true };
+  return { shown: !getConsentPreference() };
 }
 
 /* Install the guard as soon as the module loads so any client-side

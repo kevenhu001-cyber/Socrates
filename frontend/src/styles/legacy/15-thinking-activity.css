@@ -125,16 +125,18 @@
 }
 /* ─────────────────────────────────────────────────────────────────────
    COOKIE CONSENT BANNER
-   Fixed bottom-center card shown until the visitor makes a choice.
-   Non-essential cookies are gated in src/cookieConsent.js.
+   Fixed popover shown until the visitor makes a choice.
    ───────────────────────────────────────────────────────────────────── */
 .socrates-cookie-consent {
   position: fixed;
-  left: 50%;
-  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
-  transform: translateX(-50%);
+  inset: auto max(20px, env(safe-area-inset-right, 0px))
+    calc(20px + env(safe-area-inset-bottom, 0px)) auto;
+  margin: 0;
   z-index: 2147483000;
-  width: min(560px, calc(100vw - 24px));
+  box-sizing: border-box;
+  width: min(25rem, calc(100vw - 40px));
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -203,17 +205,12 @@
 .socrates-cookie-consent-link:hover {
   color: hsl(var(--accent-100));
 }
-/* Phone treatment: the banner is a fixed strip at the bottom edge, so the
-   shell reserves exactly its measured height (--cookie-consent-space, set by
-   CookieConsent.tsx) and the composer can never end up underneath it. The
-   copy is clamped so a long translation cannot turn the strip into a sheet. */
 @media (max-width: 768px) {
-  html.has-cookie-consent .app {
-    padding-bottom: var(--cookie-consent-space, 0px);
-  }
   .socrates-cookie-consent {
     bottom: calc(10px + env(safe-area-inset-bottom, 0px));
-    width: calc(100vw - 16px);
+    inset-inline: 0;
+    margin-inline: auto;
+    width: min(25rem, calc(100vw - 16px));
     gap: 8px;
     padding: 12px 14px;
     border-radius: var(--radius-lg);
@@ -241,11 +238,7 @@
     padding: 0 12px;
     text-align: center;
   }
-  /* The policy link moves up beside the title so the two buttons keep the
-     thumb-reachable bottom row and the message can use a third line. Only the
-     fixed (post-auth) banner anchors it: the auth copy is in flow, where an
-     absolute link would resolve against the gate instead. */
-  .socrates-cookie-consent:not(.socrates-cookie-consent--auth) .socrates-cookie-consent-link {
+  .socrates-cookie-consent-link {
     position: absolute;
     top: 14px;
     right: 14px;

@@ -100,78 +100,81 @@ export function AuthGate() {
 
   const activeTab = useAuthUi((state) => state.activeTab);
   return (
-    <>
-      <div className="auth-card">
-        <div className="auth-brand">
-          <img src="/logo.png" width={22} height={22} alt="" className="logo-img" />
-          <span>Socrates</span>
-        </div>
-        <h1 className="auth-screen-title" data-i18n-key="auth.welcomeTitle">
-          Your next question starts here.
-        </h1>
-        <p className="auth-intro" data-i18n-key="auth.intro">
-          Learn through guided questions, practice, and review at your own pace.
-        </p>
-
-        <div
-          className="auth-tabs"
-          id="authTabs"
-          role="tablist"
-          aria-label="Account access"
-          data-i18n-aria="chrome.accountAccess"
-        >
-          <Button
-            variant="ghost"
-            type="button"
-            className={`auth-tab${activeTab === 'signin' ? ' active' : ''}`}
-            id="authSigninTab"
-            role="tab"
-            aria-controls="authSigninView"
-            aria-selected={activeTab === 'signin'}
-            tabIndex={activeTab === 'signin' ? 0 : -1}
-            data-tab="signin"
-            data-i18n-key="auth.signIn"
-            onClick={() => showAuthSignin()}
-            onKeyDown={(event: KeyboardEvent<HTMLButtonElement>) =>
-              focusAuthTab(event.currentTarget, event.nativeEvent)
-            }
-          >
-            Sign in
-          </Button>
-          <Button
-            variant="ghost"
-            type="button"
-            className={`auth-tab${activeTab === 'register' ? ' active' : ''}`}
-            id="authRegisterTab"
-            role="tab"
-            aria-controls="authRegisterView"
-            aria-selected={activeTab === 'register'}
-            tabIndex={activeTab === 'register' ? 0 : -1}
-            data-tab="register"
-            data-i18n-key="auth.createAccount"
-            onClick={() => showAuthRegister()}
-            onKeyDown={(event: KeyboardEvent<HTMLButtonElement>) =>
-              focusAuthTab(event.currentTarget, event.nativeEvent)
-            }
-          >
-            Create account
-          </Button>
-        </div>
-
-        <div className="auth-views">
-          <SigninView />
-          <RegisterView />
-          <VerifySentView />
-          <VerifyFailedView />
-          <VerifiedView />
-          <ForgotPasswordView />
-          <ForgotSentView />
-          <ResetPasswordView />
-          <ResetSuccessView />
-          <CodeLoginView />
-        </div>
+    <div className="auth-card">
+      <div className="auth-brand">
+        <img src="/logo.png" width={32} height={32} alt="" className="logo-img" />
+        <span>Socrates</span>
       </div>
-    </>
+
+      <h1 className="auth-title" hidden={activeTab !== 'signin'} data-i18n-key="auth.signInTitle">
+        Sign in to Socrates
+      </h1>
+      <h1
+        className="auth-title"
+        hidden={activeTab !== 'register'}
+        data-i18n-key="auth.createAccount"
+      >
+        Create account
+      </h1>
+      <div
+        className="auth-tabs"
+        id="authTabs"
+        hidden={activeTab === null}
+        role="tablist"
+        aria-label="Account access"
+        data-i18n-aria="chrome.accountAccess"
+      >
+        <Button
+          variant="ghost"
+          type="button"
+          className={`auth-tab${activeTab === 'signin' ? ' active' : ''}`}
+          id="authSigninTab"
+          role="tab"
+          aria-controls="authSigninView"
+          aria-selected={activeTab === 'signin'}
+          tabIndex={activeTab === 'signin' ? 0 : -1}
+          data-tab="signin"
+          data-i18n-key="auth.signIn"
+          onClick={() => showAuthSignin()}
+          onKeyDown={(event: KeyboardEvent<HTMLButtonElement>) =>
+            focusAuthTab(event.currentTarget, event.nativeEvent)
+          }
+        >
+          Sign in
+        </Button>
+        <Button
+          variant="ghost"
+          type="button"
+          className={`auth-tab${activeTab === 'register' ? ' active' : ''}`}
+          id="authRegisterTab"
+          role="tab"
+          aria-controls="authRegisterView"
+          aria-selected={activeTab === 'register'}
+          tabIndex={activeTab === 'register' ? 0 : -1}
+          data-tab="register"
+          data-i18n-key="auth.createAccount"
+          onClick={() => showAuthRegister()}
+          onKeyDown={(event: KeyboardEvent<HTMLButtonElement>) =>
+            focusAuthTab(event.currentTarget, event.nativeEvent)
+          }
+        >
+          Create account
+        </Button>
+      </div>
+
+      <div className="auth-views">
+        <SigninView />
+        <RegisterView />
+        <VerifySentView />
+        <VerifyFailedView />
+        <VerifiedView />
+        <ForgotPasswordView />
+        <ForgotSentView />
+        <ResetPasswordView />
+        <ResetSuccessView />
+        <CodeLoginView />
+      </div>
+    </div>
   );
 }
 
@@ -217,7 +220,6 @@ function SigninView() {
         type="password"
         autoComplete="current-password"
         required
-        placeholder="••••••••"
       />
       <a
         className="auth-inline-link auth-inline-link-right"
@@ -342,9 +344,9 @@ function VerifySentView() {
       <div className="auth-icon">
         <MailIcon />
       </div>
-      <h2 className="auth-title" data-i18n-key="auth.checkInbox">
+      <h1 className="auth-title" data-i18n-key="auth.checkInbox">
         Check your inbox
-      </h2>
+      </h1>
       <p className="auth-lede">
         <span data-i18n-key="auth.verifySentPre">We sent a verification link to </span>
         <strong id="authVerifyEmail">
@@ -398,9 +400,9 @@ function VerifyFailedView() {
           <line x1="12" y1="16" x2="12.01" y2="16" />
         </svg>
       </div>
-      <h2 className="auth-title" id="authVerifyFailedTitle">
+      <h1 className="auth-title" id="authVerifyFailedTitle">
         <AuthText id="authVerifyFailedTitle" />
-      </h2>
+      </h1>
       <p className="auth-lede" id="authVerifyFailedMsg">
         <AuthText id="authVerifyFailedMsg" />
       </p>
@@ -446,9 +448,9 @@ function VerifiedView() {
           <polyline points="20 6 9 17 4 12" />
         </svg>
       </div>
-      <h2 className="auth-title" data-i18n-key="auth.verifiedTitle">
+      <h1 className="auth-title" data-i18n-key="auth.verifiedTitle">
         Email verified
-      </h2>
+      </h1>
       <p className="auth-lede" data-i18n-key="auth.verifiedMsg">
         You&apos;re signed in. Taking you to your dashboard…
       </p>
@@ -505,9 +507,9 @@ function ForgotPasswordView() {
           <path d="M7 11V7a5 5 0 0 1 10 0v4" />
         </svg>
       </div>
-      <h2 className="auth-title" data-i18n-key="auth.resetTitle">
+      <h1 className="auth-title" data-i18n-key="auth.resetTitle">
         Reset your password
-      </h2>
+      </h1>
       <p className="auth-lede" data-i18n-key="auth.resetLede">
         Enter your email and we&apos;ll send a reset link.
       </p>
@@ -541,9 +543,9 @@ function ForgotSentView() {
       <div className="auth-icon">
         <MailIcon />
       </div>
-      <h2 className="auth-title" data-i18n-key="auth.checkInbox">
+      <h1 className="auth-title" data-i18n-key="auth.checkInbox">
         Check your inbox
-      </h2>
+      </h1>
       <p className="auth-lede">
         <span data-i18n-key="auth.forgotSentPre">If an account exists for </span>
         <strong id="authForgotSentEmail">
@@ -589,9 +591,9 @@ function ResetPasswordView() {
           <path d="M7 11V7a5 5 0 0 1 10 0v4" />
         </svg>
       </div>
-      <h2 className="auth-title" data-i18n-key="auth.setNewPassword">
+      <h1 className="auth-title" data-i18n-key="auth.setNewPassword">
         Set new password
-      </h2>
+      </h1>
       <p className="auth-lede" data-i18n-key="auth.setNewPasswordLede">
         Choose a new password for your account.
       </p>
@@ -669,9 +671,9 @@ function ResetSuccessView() {
           <polyline points="20 6 9 17 4 12" />
         </svg>
       </div>
-      <h2 className="auth-title" data-i18n-key="auth.passwordUpdated">
+      <h1 className="auth-title" data-i18n-key="auth.passwordUpdated">
         Password updated
-      </h2>
+      </h1>
       <p className="auth-lede" data-i18n-key="auth.passwordUpdatedLede">
         Your password has been reset successfully. Sign in with your new password.
       </p>
@@ -713,9 +715,9 @@ function CodeLoginView() {
           <circle cx="12" cy="8" r=".5" fill="currentColor" />
         </svg>
       </div>
-      <h2 className="auth-title" data-i18n-key="auth.codeLoginTitle">
+      <h1 className="auth-title" data-i18n-key="auth.codeLoginTitle">
         Email code login
-      </h2>
+      </h1>
       <p className="auth-lede" data-i18n-key="auth.codeLoginLede">
         Enter your email to receive an 8-character login code.
       </p>

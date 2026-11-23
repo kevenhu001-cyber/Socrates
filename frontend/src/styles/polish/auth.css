@@ -1,129 +1,87 @@
-/*
- * polish/auth.css — auth gate card refinement.
- * restore/chatgpt-ui.css owns the base skin via --cg-*; we refine shape,
- * label type, and control radii on top of it.
- */
-
 .auth-gate {
-  /* Same page color as the app shell so the transition into the app is
-     seamless; the card floats on it via border + shadow. */
-  padding: 24px 16px;
-}
-
-/* The gate follows shadcn's card/form grammar: `rounded-xl` card on
-   `--card`, `text-sm` medium labels, 36px `rounded-md` inputs with a
-   `ring`-based focus, and the primary/secondary button rungs. Legacy
-   `09-viz-markdown.css` still owns the layout; these rules only repaint. */
-.auth-gate .auth-card {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
-  background: var(--card);
-  color: var(--card-foreground);
-  box-shadow: var(--shadow-sm, 0 1px 2px rgb(0 0 0 / 6%));
-}
-
-.auth-brand {
-  letter-spacing: -0.01em;
-}
-.auth-gate .auth-brand {
-  margin-bottom: var(--ui-space-sm);
-}
-.auth-screen-title {
-  margin: 0 0 var(--ui-space-xs);
-  color: var(--foreground);
-  font-size: var(--ui-font-size-xl);
-  font-weight: var(--ui-font-weight-semibold);
-  line-height: 1.25;
-  text-align: center;
-}
-.auth-intro {
-  margin: 0 0 var(--ui-space-lg);
-  color: var(--muted-foreground);
-  font-size: var(--ui-font-size-sm);
-  line-height: 1.5;
-  text-align: center;
-}
-
-/* Consent stays in the auth page's reading and scroll order until the visitor
-   chooses. On wide screens it sits alongside the form. */
-.auth-gate:has(.socrates-cookie-consent--auth) {
+  --auth-panel-width: 27rem;
   justify-content: flex-start;
-  gap: 16px;
-}
-.socrates-cookie-consent--auth {
-  position: static;
-  left: auto;
-  bottom: auto;
-  transform: none;
-  z-index: auto;
-  width: min(420px, calc(100vw - 24px));
-  margin: 0 auto;
-  flex: 0 0 auto;
-}
-@media (min-width: 1000px) {
-  .auth-gate:has(.socrates-cookie-consent--auth) {
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;
-    gap: 24px;
-  }
-  .auth-gate:has(.socrates-cookie-consent--auth) > .auth-card {
-    width: min(420px, 100%);
-    flex: 0 1 420px;
-  }
-  .auth-gate:has(.socrates-cookie-consent--auth) > #cookieConsentReactRoot {
-    width: 360px;
-    flex: 0 1 360px;
-  }
-  .socrates-cookie-consent--auth {
-    width: min(360px, 100%);
-  }
-}
-@media (max-width: 520px) {
-  .auth-gate:has(.socrates-cookie-consent--auth) {
-    padding-top: 24px;
-    padding-bottom: 24px;
-  }
-  .socrates-cookie-consent--auth {
-    width: calc(100vw - 24px);
-    padding: 12px 14px;
-    gap: 8px;
-  }
+  gap: var(--ui-space-md);
+  padding: max(var(--ui-space-lg), env(safe-area-inset-top, 0px)) var(--ui-space-lg)
+    max(var(--ui-space-lg), env(safe-area-inset-bottom, 0px));
+  background: var(--ui-account-canvas);
+  color: var(--foreground);
+  font-family: var(--font-sans);
 }
 
-/* Tabs: shadcn's segmented control — muted track, raised active pill. */
-.auth-gate .auth-tabs {
-  display: flex;
-  gap: 2px;
-  padding: 4px;
-  border: 0;
-  border-radius: var(--radius-lg);
-  background: var(--muted);
-  margin-bottom: 20px;
+.auth-gate .auth-card {
+  box-sizing: border-box;
+  max-width: var(--auth-panel-width);
+  flex: none;
+  margin-block: auto;
+  padding: var(--ui-space-lg) clamp(var(--ui-space-md), 4vw, var(--ui-space-xl));
+  border: 1px solid var(--ui-account-border);
+  border-radius: var(--ui-radius-dialog);
+  background: var(--ui-account-panel);
 }
+
+.auth-gate .auth-brand {
+  justify-content: flex-start;
+  margin-bottom: var(--ui-space-xl);
+  font-size: var(--ui-font-size-lg);
+  letter-spacing: -0.02em;
+}
+
+.auth-gate .auth-title {
+  margin: 0 0 var(--ui-space-md);
+  font-size: calc(var(--ui-foundation-font-size-heading-2) * var(--app-type-scale));
+  font-weight: var(--ui-font-weight-semibold);
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+  text-align: start;
+  overflow-wrap: anywhere;
+}
+
+.auth-gate .auth-tabs {
+  gap: var(--ui-space-xxs);
+  padding: var(--ui-space-xxs);
+  margin-bottom: var(--ui-space-lg);
+  border: 0;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-account-rail);
+}
+
+.auth-gate .auth-tabs[hidden] {
+  display: none;
+}
+
 .auth-gate .auth-tab {
   flex: 1;
-  height: var(--ui-control-sm);
-  padding: 0;
+  height: var(--ui-control-touch);
+  padding-inline: var(--ui-space-xs);
   border: 0;
-  border-radius: var(--radius-md);
+  border-radius: var(--ui-radius-pill);
   background: transparent;
-  color: var(--muted-foreground);
+  color: var(--ui-text-secondary);
   font-size: var(--ui-font-size-sm);
-  font-weight: var(--ui-font-weight-medium);
 }
+
 .auth-gate .auth-tab:hover {
+  background: var(--ui-fill-hover);
   color: var(--foreground);
 }
+
 .auth-gate .auth-tab.active {
-  background: var(--background);
+  background: var(--ui-account-selection);
   color: var(--foreground);
-  border-bottom-color: transparent;
-  box-shadow: var(--shadow-sm, 0 1px 2px rgb(0 0 0 / 6%));
+  box-shadow: 0 1px 2px var(--ui-border-subtle);
+}
+
+.auth-gate .auth-tab.active:focus-visible {
+  box-shadow: var(--ui-focus-shadow);
+}
+
+.auth-gate .auth-view {
+  gap: var(--ui-space-xs);
 }
 
 .auth-gate .auth-label {
-  margin: 4px 0 6px;
+  margin: var(--ui-space-xxs) 0 0;
   color: var(--foreground);
   font-size: var(--ui-font-size-sm);
   font-weight: var(--ui-font-weight-medium);
@@ -133,123 +91,129 @@
 
 .auth-gate .auth-input {
   width: 100%;
-  height: 36px;
-  margin-bottom: 4px;
-  padding: 0 12px;
-  border: 1px solid var(--input);
-  border-radius: var(--radius-md);
-  background: transparent;
+  height: var(--ui-control-touch);
+  margin-bottom: var(--ui-space-xxs);
+  padding: 0 var(--ui-space-md);
+  border: 1px solid var(--ui-account-border);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-account-field);
   color: var(--foreground);
-  font-size: var(--ui-font-size-sm);
-  box-shadow: var(--shadow-sm, 0 1px 2px rgb(0 0 0 / 4%));
-  outline: none;
-  transition:
-    border-color var(--ui-duration-fast) ease,
-    box-shadow var(--ui-duration-fast) ease;
+  font-size: max(1rem, var(--ui-font-size-md));
+  box-shadow: none;
 }
+
 .auth-gate .auth-input:focus {
   border-color: var(--ring);
   box-shadow: var(--ui-focus-shadow);
 }
+
 .auth-gate .auth-input::placeholder {
   color: var(--muted-foreground);
 }
 
+.auth-gate .auth-code-input {
+  font-size: var(--ui-font-size-xl);
+}
+
 .auth-gate .auth-btn {
-  height: 36px;
-  margin-top: 10px;
-  padding: 0 16px;
-  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: var(--ui-control-touch);
+  height: auto;
+  margin: var(--ui-space-xs) 0 0;
+  padding: var(--ui-space-xs) var(--ui-space-md);
+  border-radius: var(--ui-radius-pill);
+  box-shadow: none;
   font-size: var(--ui-font-size-sm);
-  font-weight: var(--ui-font-weight-medium);
-  transition:
-    background-color var(--ui-duration-fast) ease,
-    color var(--ui-duration-fast) ease;
+  line-height: var(--ui-text-ui-line);
+  white-space: normal;
+  text-align: center;
 }
+
+.auth-gate .auth-btn:focus-visible {
+  box-shadow: var(--ui-focus-shadow);
+}
+
 .auth-gate .auth-btn.primary {
-  background: var(--primary);
-  color: var(--primary-foreground);
+  background: var(--ui-ink);
+  color: var(--ui-on-ink);
 }
-.auth-gate .auth-btn.primary:hover {
-  filter: brightness(0.94);
+
+.auth-gate .auth-btn.primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ui-ink) 88%, var(--ui-account-panel));
 }
+
 .auth-gate .auth-btn.secondary {
-  border: 1px solid var(--border);
-  background: var(--background);
+  border: 1px solid var(--ui-account-border);
+  background: var(--ui-account-rail);
   color: var(--foreground);
 }
+
 .auth-gate .auth-btn.secondary:hover {
-  background: var(--accent);
-  color: var(--accent-foreground);
+  background: var(--ui-account-selection);
 }
 
-.auth-gate .auth-lede,
-.auth-gate .auth-view-separator,
-.auth-gate .auth-foot,
-.auth-gate .auth-footnote {
-  color: var(--ui-text-secondary);
+.auth-gate .auth-icon {
+  width: var(--ui-control-touch);
+  height: var(--ui-control-touch);
+  margin: 0;
 }
+
+.auth-gate .auth-icon svg {
+  width: var(--ui-space-xl);
+  height: var(--ui-space-xl);
+}
+
+.auth-gate .auth-lede {
+  margin-bottom: var(--ui-space-sm);
+  text-align: start;
+  overflow-wrap: anywhere;
+}
+
+.auth-gate :is(.auth-lede, .auth-view-separator, .auth-foot, .auth-inline-link, .auth-back-link) {
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-xs);
+}
+
+.auth-gate .auth-view-separator {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-md);
+  margin: var(--ui-space-xs) 0 0;
+}
+
+.auth-gate .auth-view-separator::before,
+.auth-gate .auth-view-separator::after {
+  position: static;
+  flex: 1;
+  height: 1px;
+  background: var(--ui-account-border);
+}
+
 .auth-gate .auth-foot a,
-.auth-gate .auth-inline-link {
-  color: var(--ui-text-secondary);
-}
-.auth-foot a:hover,
-.auth-inline-link:hover {
+.auth-gate .auth-inline-link:hover,
+.auth-gate .auth-back-link:hover {
   color: var(--foreground);
 }
 
-.auth-error {
-  border-radius: var(--ui-radius-control);
+.auth-gate .auth-inline-link-right {
+  align-self: flex-end;
 }
 
-/* Phones: iOS Safari zooms the whole page when a focused field is under 16px,
-   which leaves the card half off-screen on a 390px viewport. Match the text
-   size to the platform floor and give every control a 44px touch target. */
-@media (max-width: 768px) {
-  .auth-gate {
-    padding: 20px 16px;
-  }
-  .auth-gate .auth-card {
-    padding: 24px 20px;
-  }
-  .auth-gate .auth-tab {
-    height: 40px;
-  }
-  .auth-gate .auth-input {
-    height: 44px;
-    font-size: var(--ui-font-size-md);
-  }
-  .auth-gate .auth-btn {
-    height: 44px;
-    font-size: var(--ui-font-size-md);
-  }
+.auth-gate .auth-back-link {
+  align-self: flex-start;
 }
 
-/* Short phones (320×568 and landscape keyboards) lose the last row of the
-   sign-in form to the fold; tighten the vertical rhythm instead of clipping. */
-@media (max-width: 768px) and (max-height: 700px) {
-  .auth-gate {
-    padding: 12px 12px 20px;
-  }
-  .auth-gate .auth-card {
-    padding: 18px 16px;
-  }
-  .auth-gate .auth-tabs {
-    margin-bottom: 12px;
-  }
-  .auth-gate .auth-input {
-    margin-bottom: 0;
-  }
-  .auth-gate .auth-btn {
-    margin-top: 6px;
-  }
-  .auth-gate .auth-foot {
-    margin-top: 8px;
-  }
-  .auth-footnote {
-    margin-top: 10px;
-    font-size: var(--ui-font-size-xxs);
-  }
+.auth-gate .auth-error {
+  color: var(--destructive);
+}
+
+.auth-gate .auth-error:empty {
+  min-height: 0;
+  padding: 0;
+  margin-top: calc(-1 * var(--ui-space-xs));
 }
 
 /* Scoped top-layer browser-to-Android account confirmation. */

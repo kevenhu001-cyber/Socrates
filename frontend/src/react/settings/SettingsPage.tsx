@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { XIcon } from 'lucide-react';
 import { mountOwnedRoot } from '../lib/boot/ownedRoot';
 import { useNavigationStore } from '../../sidebar/navigation.store';
 import { WebUiTheme } from '../rn/WebUiTheme';
@@ -100,8 +101,13 @@ function SettingsPage() {
         <AccountPageHeader
           titleId="settingsTitle"
           title={preferences.label('设置', 'Settings')}
-          backLabel={preferences.label('返回', 'Back')}
+          backLabel={
+            mobile
+              ? preferences.label('返回', 'Back')
+              : preferences.label('关闭设置', 'Close settings')
+          }
           backId="settingsCloseBtn"
+          backIcon={mobile ? undefined : XIcon}
           onBack={closeSettings}
         >
           {mobileIndex ? (

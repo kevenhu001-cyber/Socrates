@@ -78,6 +78,9 @@ test('auth gate default views localize', async ({ page }) => {
   await expect(page.locator('#authGate')).toBeVisible();
   await setLang(page, 'zh');
 
+  await expect(
+    page.locator('#authGate').getByRole('heading', { name: '登录 Socrates' }),
+  ).toBeVisible();
   await expect(page.locator('#authSigninTab')).toHaveText('登录');
   await expect(page.locator('#authRegisterTab')).toHaveText('创建账户');
   await expect(page.locator('label[for="authSigninEmail"]')).toHaveText('邮箱');
@@ -89,6 +92,7 @@ test('auth gate default views localize', async ({ page }) => {
   await expect(page.locator('.auth-code-login-link')).toHaveText('使用验证码登录');
 
   await page.locator('#authRegisterTab').click();
+  await expect(page.locator('#authGate').getByRole('heading', { name: '创建账户' })).toBeVisible();
   await expect(page.locator('#authRegisterView .auth-lede')).toHaveText(
     '使用邮箱注册。我们会发送验证链接——无需记验证码。',
   );

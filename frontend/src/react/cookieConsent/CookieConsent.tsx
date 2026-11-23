@@ -6,10 +6,8 @@ import {
   CONSENT_ACCEPT,
   CONSENT_ESSENTIAL,
   getConsentPreference,
-  getCookieConsentAuthPlacement,
   getCookieConsentPrivacyUrl,
   setConsentPreference,
-  syncCookieConsentPlacement,
 } from '../../cookieConsent.ts';
 
 const ZH_FALLBACKS: Record<string, string> = {
@@ -32,7 +30,6 @@ export function CookieConsent() {
   const [hasChoice, setHasChoice] = useState(() => getConsentPreference() !== null);
   const [, setLangTick] = useState(0);
   const privacyUrl = getCookieConsentPrivacyUrl();
-  const authPlacement = getCookieConsentAuthPlacement();
   const bannerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -42,37 +39,8 @@ export function CookieConsent() {
   }, []);
 
   useLayoutEffect(() => {
-    if (!hasChoice) syncCookieConsentPlacement(authPlacement);
-  }, [authPlacement, hasChoice]);
-
-  /* The phone banner is a fixed strip at the bottom edge, so the shell has to
-     give that strip its own space instead of letting it cover the composer.
-     Measuring the rendered banner keeps the reservation exact when the copy
-     wraps to a different number of lines per locale. */
-  useLayoutEffect(() => {
-    const root = document.documentElement;
-    if (hasChoice) {
-      root.classList.remove('has-cookie-consent');
-      root.style.removeProperty('--cookie-consent-space');
-      return;
-    }
-    root.classList.add('has-cookie-consent');
-    const banner = bannerRef.current;
-    if (!banner) return;
-    const measure = () => {
-      const height = banner.getBoundingClientRect().height;
-      if (height > 0)
-        root.style.setProperty('--cookie-consent-space', `${Math.ceil(height + 12)}px`);
-    };
-    measure();
-    const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(measure) : null;
-    observer?.observe(banner);
-    window.addEventListener('resize', measure);
-    return () => {
-      observer?.disconnect();
-      window.removeEventListener('resize', measure);
-    };
-  }, [hasChoice, authPlacement]);
+    bannerRef.current?.showPopover?.();
+  }, [hasChoice]);
 
   if (hasChoice) return null;
 
@@ -85,7 +53,8 @@ export function CookieConsent() {
     <div
       ref={bannerRef}
       id="socratesCookieConsent"
-      className={`socrates-cookie-consent${authPlacement ? ' socrates-cookie-consent--auth' : ''}`}
+      className="socrates-cookie-consent"
+      popover="manual"
       role="region"
       aria-label={t('consent.title', 'We respect your privacy')}
       data-testid="cookie-consent-banner"

@@ -577,11 +577,6 @@ body.workspace-active #appShell .workspace-row:hover {
 
 /* Dialogs, auth and form surfaces */
 
-.auth-gate {
-  background: var(--cg-page) !important;
-  color: var(--cg-text);
-}
-
 .workspace-dialog-card {
   border: 1px solid var(--cg-border-strong) !important;
   border-radius: 20px !important;

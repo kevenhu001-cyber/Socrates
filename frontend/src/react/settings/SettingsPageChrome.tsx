@@ -191,7 +191,8 @@ export function SettingsNavigation({
     return (
       <Button
         type="button"
-        variant={current ? 'secondary' : 'ghost'}
+        variant="ghost"
+        size="surface"
         key={key}
         data-section={key}
         className={cn('settings-nav-item', 'justify-start', current && 'active')}

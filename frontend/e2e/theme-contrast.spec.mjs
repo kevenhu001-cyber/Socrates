@@ -400,6 +400,16 @@ for (const mode of ['dark', 'light']) {
       return { background, text: style.color };
     });
     expect(contrast(rgb(colors.text), rgb(colors.background))).toBeGreaterThanOrEqual(4.5);
+    const surfaces = await page
+      .locator('#settingsPage')
+      .evaluate((settings) =>
+        [
+          settings,
+          ...settings.querySelectorAll('.settings-page, .settings-nav, .settings-search'),
+        ].map((element) => getComputedStyle(element).backgroundColor),
+      );
+    expect(surfaces).toHaveLength(4);
+    expect(new Set(surfaces).size).toBe(surfaces.length);
   });
 }
 

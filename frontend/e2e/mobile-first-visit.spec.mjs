@@ -1,8 +1,7 @@
 // e2e/mobile-first-visit.spec.mjs — phone first-visit and drawer contract.
 //
 // Three regressions this pins:
-//   1. The consent banner is a fixed strip on phones; the shell reserves its
-//      measured height so the composer can never sit underneath it.
+//   1. The consent banner floats over the phone composer at its usual position.
 //   2. The auth gate no longer offers the "Guest mode" checkbox, which only
 //      wrote a localStorage flag nothing ever read.
 //   3. Picking a session from the phone drawer reveals the conversation
@@ -38,33 +37,28 @@ async function seedOneSession(page) {
   return session;
 }
 
-test('first-visit consent never covers the phone composer', async ({ page }) => {
+test('first-visit consent overlays the phone composer without shifting it', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await mockAuthedApp(page, { consent: false });
   await page.goto('/');
   await waitForAppShell(page);
 
-  const banner = page.locator('#socratesCookieConsent');
+  const banner = page.locator('#socratesCookieConsent:popover-open');
+  const composer = page.locator('#composerInputWrap');
   await expect(banner).toBeVisible();
-  await expect(page.locator('html')).toHaveClass(/has-cookie-consent/);
 
   const [bannerBox, composerBox] = await Promise.all([
     banner.boundingBox(),
-    page.locator('#composerInputWrap').boundingBox(),
+    composer.boundingBox(),
   ]);
   expect(bannerBox).not.toBeNull();
   expect(composerBox).not.toBeNull();
-  /* The composer's bottom edge must stay above the banner's top edge — the
-     original bug was a full-width overlap that hid the send button. */
-  expect(composerBox.y + composerBox.height).toBeLessThanOrEqual(bannerBox.y);
+  expect(composerBox.y + composerBox.height).toBeGreaterThan(bannerBox.y);
+  expect(bannerBox.y + bannerBox.height).toBeGreaterThan(composerBox.y);
 
   await banner.getByRole('button', { name: /全部接受|Accept all/ }).click();
-  await expect(banner).toHaveCount(0);
-  await expect(page.locator('html')).not.toHaveClass(/has-cookie-consent/);
-  const reserved = await page.evaluate(() =>
-    document.documentElement.style.getPropertyValue('--cookie-consent-space'),
-  );
-  expect(reserved).toBe('');
+  await expect(page.locator('#socratesCookieConsent')).toHaveCount(0);
+  expect(await composer.boundingBox()).toEqual(composerBox);
 });
 
 test('auth gate offers no inert guest-mode toggle', async ({ page }) => {

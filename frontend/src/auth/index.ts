@@ -12,7 +12,6 @@
 
 import { notifyEmbeddedAuthExpired } from '../native/mobileWebSessionBridge.ts';
 import { offerBrowserLoginHandoff } from '../native/browserLoginHandoff.ts';
-import { syncCookieConsentPlacement } from '../cookieConsent.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { afterAuthEnter } from './postAuth/index.ts';
 import { createAuthFormHandlers } from './forms/index.ts';
@@ -64,7 +63,6 @@ export function hideGate(root?: AuthRoot): void {
   } catch (e) {
     reportSwallow(e, 'auth/index.hideGate.bootState');
   }
-  syncCookieConsentPlacement(false);
 }
 
 export function showGate(root?: AuthRoot): void {
@@ -77,7 +75,6 @@ export function showGate(root?: AuthRoot): void {
     reportSwallow(e, 'auth/index.showGate.bootState');
   }
   setGateVisible(r, false);
-  syncCookieConsentPlacement(true);
   /* A normal browser reaches the auth gate during first paint and during
    * local login flows.  Only tell the native shell that its cookie expired
    * when this is actually a WebView hand-off; otherwise a regular desktop

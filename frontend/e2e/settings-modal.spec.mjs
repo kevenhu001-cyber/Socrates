@@ -712,11 +712,14 @@ test('settings owns the whole viewport without the chat shell', async ({ page })
   expect(box.height).toBeGreaterThanOrEqual(899);
   await expect(page.locator('#sidebar')).toBeHidden();
   await expect(page.locator('#topBar')).toBeHidden();
-  await expect(settings.locator('.account-page-header')).toBeVisible();
+  const header = settings.locator('.account-page-header');
+  await expect(header.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible();
+  const title = await header.getByRole('heading').boundingBox();
+  const close = await header.getByRole('button', { name: 'Close settings' }).boundingBox();
+  expect(close.x).toBeGreaterThan(title.x);
   await expect(settings.locator('.settings-shell')).toBeVisible();
 
-  /* A settings row is a label/value pair; past ~900px the eye has to cross
-     too much empty space to pair them. 740px is the reviewed ceiling. */
+  /* Keep label/value pairs within a readable column on wide screens. */
   const paneWidth = await settings
     .locator('.settings-pane')
     .evaluate((el) => Math.round(el.getBoundingClientRect().width));

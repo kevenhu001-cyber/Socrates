@@ -1,27 +1,45 @@
 import { test, expect } from '@playwright/test';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
-test('desktop sign-in presents consent beside the form', async ({ page }) => {
+test('sign-in centers the form with consent above it on desktop and phones', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
+  await page.addInitScript(() => localStorage.setItem('socrates-theme', 'dark'));
   await mockAuthedApp(page, { consent: false, lang: 'zh' });
   await page.goto('/?lang=en');
   await waitForAppShell(page);
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await expect(page).toHaveURL(/\/$/);
+  const consent = page.locator('#socratesCookieConsent:popover-open');
+  await expect(consent).toBeVisible();
+  const appConsentBox = await consent.boundingBox();
   await page.evaluate(() => window.__socratesLegacy.auth.showGate());
   const card = page.locator('.auth-card');
-  const consent = page.locator('#socratesCookieConsent');
-  await expect(
-    card.getByRole('heading', { name: /your next question starts here/i }),
-  ).toBeVisible();
-  await expect(card.locator('.auth-intro')).toBeVisible();
+  const gate = page.locator('#authGate');
+  await expect(card.getByRole('heading', { name: 'Sign in to Socrates' })).toBeVisible();
+  await expect(card.locator('#authSigninEmail')).toHaveCSS(
+    'font-family',
+    /^"Geist Sans", "Noto Sans SC",/,
+  );
+  await expect(gate).toHaveCSS('background-color', 'rgb(26, 26, 26)');
+  await expect(card).toHaveCSS('background-color', 'rgb(46, 46, 46)');
+  await expect(card.locator('#authSigninEmail')).toHaveCSS('background-color', 'rgb(10, 10, 10)');
+  await expect(card.locator('#authGithubBtn')).toHaveCSS('background-color', 'rgb(31, 31, 31)');
+  await expect(card.locator('#authSigninBtn')).toHaveCSS('background-color', 'rgb(237, 237, 237)');
   await expect(consent).toBeVisible();
   const cardBox = await card.boundingBox();
   const consentBox = await consent.boundingBox();
-  expect(consentBox.x).toBeGreaterThan(cardBox.x + cardBox.width);
-  expect(consentBox.x - (cardBox.x + cardBox.width)).toBeLessThan(60);
-  expect(consentBox.y + consentBox.height).toBeLessThanOrEqual(800);
+  expect(cardBox.x + cardBox.width / 2).toBeCloseTo(640, 0);
+  expect(consentBox).toEqual(appConsentBox);
+  expect(1280 - consentBox.x - consentBox.width).toBeCloseTo(20, 0);
+  expect(800 - consentBox.y - consentBox.height).toBeCloseTo(20, 0);
   await page.screenshot({ path: 'test-results/first-visit/sign-in-desktop.png' });
+  await page.setViewportSize({ width: 320, height: 568 });
+  expect(await gate.evaluate((element) => element.scrollWidth)).toBe(320);
+  await expect(card.getByRole('heading', { name: 'Sign in to Socrates' })).toBeInViewport();
+  const mobileConsentBox = await consent.boundingBox();
+  expect(mobileConsentBox.x + mobileConsentBox.width / 2).toBeCloseTo(160, 0);
+  expect(568 - mobileConsentBox.y - mobileConsentBox.height).toBeCloseTo(10, 0);
+  await page.screenshot({ path: 'test-results/first-visit/sign-in-mobile.png' });
   await consent.locator('[data-consent-choice="essential"]').click();
   await expect(consent).toBeHidden();
 });
