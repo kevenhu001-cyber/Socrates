@@ -43,7 +43,7 @@ function isCommandShortcut(event: KeyboardEvent, key: string, shiftKey = false) 
 
 function isVisible(id: string) {
   const overlay = document.getElementById(id);
-  return Boolean(overlay && !overlay.classList.contains('hidden'));
+  return Boolean(overlay && !overlay.hidden && !overlay.classList.contains('hidden'));
 }
 
 function closeVisibleOverlay(event: KeyboardEvent, id: string, close: () => void) {

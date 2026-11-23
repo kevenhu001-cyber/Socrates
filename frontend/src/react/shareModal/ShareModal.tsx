@@ -1,16 +1,11 @@
-import { Button as UiButton } from '../ui/Button';
+import { DialogFrame } from '../dialog/DialogFrame';
 import { createRootSlot } from '../lib/boot/ownedRoot';
 import { ensureBodyContainer } from '../lib/boot/mountContainer';
-import { useEffect } from 'react';
-import { cn } from 'cn';
-
 import { useShareDispatch, useShareSnapshot } from './shareModal.store';
-import { Icon } from '../../legacy/Icon';
 import { ShareLinkPanel } from './ShareLinkPanel';
 import { ShareVisibilityOptions } from './ShareVisibilityOptions';
 import { shareText } from './shareText';
 import { i18n } from '../../ui/legacyI18n.ts';
-import { installModalA11y } from '../../legacy/modalA11y.ts';
 
 const OVERLAY_ID = 'shareOverlay';
 
@@ -24,46 +19,32 @@ function ShareModal() {
   const dispatch = useShareDispatch();
   const hasLink = !!snap.shareToken && !!snap.shareUrl;
 
-  /* The overlay element exists only once React has rendered it, so the
-     Esc/focus wiring is installed from here. */
-  useEffect(() => {
-    installModalA11y({ overlayId: OVERLAY_ID, closeFn: () => dispatch.close() });
-    /* The close function is stable for the lifetime of the modal. */
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   return (
-    <div
-      className={cn('share-overlay', !snap.open && 'hidden')}
+    <DialogFrame
       id={OVERLAY_ID}
-      role="dialog"
-      aria-modal="true"
+      open={snap.open}
+      onOpenChange={(open) => {
+        if (!open) dispatch.close();
+      }}
+      size="sm"
+      title={shareText('share.title', 'Share conversation')}
       aria-label={i18n('chrome.shareChat', 'Share chat')}
       data-i18n-aria="chrome.shareChat"
+      overlayClassName="share-overlay"
+      className="share-modal"
+      closeClassName="share-close"
+      keepMounted
     >
-      <div className="share-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="share-header">
-          <span className="share-title">{shareText('share.title', 'Share conversation')}</span>
-          <UiButton
-            type="button"
-            className="share-close"
-            aria-label={shareText('common.close', 'Close')}
-            onClick={() => dispatch.close()}
-          >
-            <Icon name="close" size={16} strokeWidth={2.5} />
-          </UiButton>
-        </div>
-        <ShareVisibilityOptions visibility={snap.visibility} onSelect={dispatch.selectVis} />
-        <ShareLinkPanel
-          hasLink={hasLink}
-          shareUrl={snap.shareUrl}
-          error={snap.error}
-          status={snap.status}
-          onRevoke={dispatch.revokeLink}
-          onCreate={dispatch.createLink}
-        />
-      </div>
-    </div>
+      <ShareVisibilityOptions visibility={snap.visibility} onSelect={dispatch.selectVis} />
+      <ShareLinkPanel
+        hasLink={hasLink}
+        shareUrl={snap.shareUrl}
+        error={snap.error}
+        status={snap.status}
+        onRevoke={dispatch.revokeLink}
+        onCreate={dispatch.createLink}
+      />
+    </DialogFrame>
   );
 }
 

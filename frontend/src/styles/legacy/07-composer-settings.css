@@ -609,19 +609,6 @@
   display: flex;
   flex-direction: column;
 }
-.usage-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 18px 22px;
-  border-bottom: 0.5px solid hsl(var(--border-300) / 0.08);
-  flex-shrink: 0;
-}
-.usage-title {
-  font-size: calc(16px * var(--app-font-scale, 1));
-  font-weight: var(--ui-font-weight-semibold);
-  color: hsl(var(--text-100));
-}
 .usage-close {
   appearance: none;
   display: inline-flex;

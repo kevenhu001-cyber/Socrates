@@ -305,26 +305,6 @@
   flex-direction: column;
   overflow: hidden;
 }
-.viz-modal-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: 40px;
-  padding: 0 8px 0 14px;
-  border-bottom: 0.5px solid hsl(var(--border-300) / 0.1);
-  flex-shrink: 0;
-}
-.viz-modal-title {
-  font-size: calc(13px * var(--app-font-scale, 1));
-  font-weight: var(--ui-font-weight-medium);
-  flex: 1;
-}
-.viz-modal-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-left: auto;
-}
 .viz-modal-body {
   flex: 1;
   min-height: 0;

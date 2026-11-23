@@ -194,7 +194,7 @@
   margin-bottom: 16px;
 }
 .workspace-dialog-title h2 {
-  font-size: 21px;
+  font-size: var(--ui-font-size-lg);
   line-height: 1.1;
   font-weight: var(--ui-font-weight-semibold);
 }
@@ -212,7 +212,7 @@
   height: 26px;
   border-radius: 6px;
   color: hsl(var(--text-400));
-  font-size: 21px;
+  font-size: var(--ui-font-size-lg);
   line-height: 1;
 }
 .workspace-dialog-title > button:hover {

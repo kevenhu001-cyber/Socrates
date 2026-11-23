@@ -1,11 +1,9 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, MouseEvent as ReactMouseEvent } from 'react';
-import { Button } from '../ui/shadcn/button';
 import { ToggleGroup, ToggleGroupItem } from '../ui/shadcn/toggle-group';
 import { createRootSlot } from '../lib/boot/ownedRoot';
 import { ensureBodyContainer } from '../lib/boot/mountContainer';
-import { cn } from 'cn';
-import { installModalA11y } from '../../legacy/modalA11y.ts';
+import { DialogFrame } from '../dialog/DialogFrame';
 
 import { t as _t } from '../../ui/legacyI18n.ts';
 import {
@@ -410,51 +408,27 @@ function UsageModal() {
   const snap = useUsageSnapshot();
   const dispatch = useUsageDispatch();
 
-  useEffect(() => {
-    installModalA11y({ overlayId: OVERLAY_ID, closeFn: () => dispatch.close() });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   return (
-    <div
-      className={cn('usage-overlay', !snap.open && 'hidden')}
+    <DialogFrame
       id={OVERLAY_ID}
-      role="dialog"
-      aria-modal="true"
+      open={snap.open}
+      onOpenChange={(open) => {
+        if (!open) dispatch.close();
+      }}
+      size="lg"
+      title={i18n('usage.title', 'Token Usage')}
       aria-label={i18n('profile.usage', 'Token usage')}
       data-i18n-aria="profile.usage"
-      onClick={() => dispatch.close()}
+      overlayClassName="usage-overlay"
+      className="usage-modal"
+      closeClassName="usage-close"
+      bodyClassName="usage-body"
+      keepMounted
     >
-      <div className="usage-modal" onClick={(event) => event.stopPropagation()}>
-        <div className="usage-header">
-          <span className="usage-title">{i18n('usage.title', 'Token Usage')}</span>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            type="button"
-            className="usage-close"
-            onClick={() => dispatch.close()}
-            aria-label={i18n('common.close', 'Close')}
-            data-initial-focus="true"
-          >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-            >
-              <path d="M18 6 6 18M6 6l12 12" />
-            </svg>
-          </Button>
-        </div>
-        <div className="usage-body" id="usageBody">
-          <UsageReport />
-        </div>
+      <div id="usageBody">
+        <UsageReport />
       </div>
-    </div>
+    </DialogFrame>
   );
 }
 

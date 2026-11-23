@@ -1,4 +1,5 @@
 import { useEffect, type CSSProperties, type ComponentProps, type ReactNode } from 'react';
+import { cn } from 'cn';
 import {
   Dialog,
   DialogPortal,
@@ -22,6 +23,9 @@ export function FoundationDialog({
   finalFocus,
   role = 'dialog',
   contentStyle,
+  'aria-label': ariaLabel,
+  'data-i18n-aria': dataI18nAria,
+  keepMounted = false,
   children,
 }: {
   id: string;
@@ -33,6 +37,9 @@ export function FoundationDialog({
   finalFocus?: ComponentProps<typeof DialogPopup>['finalFocus'];
   role?: 'dialog' | 'alertdialog';
   contentStyle?: CSSProperties;
+  'aria-label'?: string;
+  'data-i18n-aria'?: string;
+  keepMounted?: boolean;
   children: ReactNode;
 }) {
   useEffect(() => {
@@ -43,14 +50,16 @@ export function FoundationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogPortal>
+      <DialogPortal keepMounted={keepMounted}>
         <DialogOverlay
           surface
           data-ui-motion="scrim"
           id={id}
-          className={overlayClassName}
+          className={cn(overlayClassName, !open && 'hidden')}
           data-state={open ? 'open' : 'closing'}
           inert={!open}
+          aria-label={ariaLabel}
+          data-i18n-aria={dataI18nAria}
           style={{ zIndex: 'var(--ui-z-modal)' }}
         >
           <DialogPopup

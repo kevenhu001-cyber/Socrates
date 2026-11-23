@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { DialogFrame } from '../dialog/DialogFrame';
 import { VizModalActions } from './VizModalActions';
 import { nativeIslandFrameAttributes } from '../../ui/nativeIslandFrame';
 
@@ -58,44 +58,22 @@ function bodyFor(variant: VizModalProps['variant'], content: string) {
  * declarative surface instead of three imperative builders.
  */
 export function VizModal({ variant, content, title, onClose, onCopy }: VizModalProps) {
-  const dialogRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
-
-  useLayoutEffect(() => {
-    /* Match the old modal: the close action is the initial focused control,
-       and Escape then returns focus to the opener from the caller. */
-    dialogRef.current?.querySelector<HTMLButtonElement>('.viz-modal-actions button')?.focus();
-  }, []);
-
   return (
-    <div
-      className="viz-modal-backdrop"
-      onClick={(event) => {
-        if (event.target === event.currentTarget) onClose();
+    <DialogFrame
+      id="vizModal"
+      open={true}
+      onOpenChange={(open) => {
+        if (!open) onClose();
       }}
+      size="full"
+      title={title}
+      aria-label={ariaLabel(variant, title)}
+      overlayClassName="viz-modal-backdrop"
+      className={'viz-modal' + (variant === 'source' ? ' viz-source-modal' : '')}
+      showClose={false}
+      headerActions={<VizModalActions onClose={onClose} onCopy={onCopy} />}
     >
-      <div
-        ref={dialogRef}
-        className={'viz-modal' + (variant === 'source' ? ' viz-source-modal' : '')}
-        role="dialog"
-        aria-label={ariaLabel(variant, title)}
-        aria-modal="true"
-      >
-        <div className="viz-modal-head">
-          <span className="viz-modal-title">{title}</span>
-          <div className="viz-modal-actions">
-            <VizModalActions onClose={onClose} onCopy={onCopy} />
-          </div>
-        </div>
-        {bodyFor(variant, content)}
-      </div>
-    </div>
+      {bodyFor(variant, content)}
+    </DialogFrame>
   );
 }
