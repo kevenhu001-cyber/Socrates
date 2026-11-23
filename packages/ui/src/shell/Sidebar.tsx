@@ -111,6 +111,17 @@ export interface SidebarBrandProps {
   caret?: boolean;
   /** Hide the mark and let the wordmark carry the lockup. */
   hideLogo?: boolean;
+  /**
+   * Take the lockup out of the layout entirely.
+   *
+   * The brand paints its own `display: flex` / height inline, and an inline
+   * declaration wins over the shell stylesheet — so a host that folds the
+   * column to an icon rail cannot hide the wordmark from CSS alone: it keeps
+   * its 117px box inside the 52px rail and is clipped mid-word ("Socra…").
+   * Same contract as `SidebarIconAction.visible`: the only thing this prop
+   * ever forces is `display: none`; when shown, the host's layout CSS decides.
+   */
+  hidden?: boolean;
 }
 
 /** The mark and the wordmark. Decorative: the drawer is named by its nav landmark. */
@@ -123,6 +134,7 @@ export function SidebarBrand({
   nameStyle,
   caret = false,
   hideLogo = false,
+  hidden = false,
 }: SidebarBrandProps) {
   const { colors, fontFamily, typeScale } = useUiTheme();
   const size = compact ? 24 : 20;
@@ -130,7 +142,14 @@ export function SidebarBrand({
     <div
       aria-hidden
       className={domClassName(hostStyle)}
-      style={domStyle([styles.brand, hostStyle])}
+      style={domStyle([
+        styles.brand,
+        hostStyle,
+        /* Last, so it wins over the base row: a folded rail has no room for
+           the lockup, and an inline `display: none` is the one value a host
+           stylesheet cannot take back. */
+        hidden ? { display: 'none' } : null,
+      ])}
       {...dataAttributes({ part: 'sidebar-brand' })}
     >
       {hideLogo ? null : (

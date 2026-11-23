@@ -45,6 +45,10 @@ export function SidebarHeader() {
         logo={LOGO}
         compact={isMobile}
         hideLogo={isMobile}
+        /* The desktop rail folds to 52px: the wordmark has nowhere to go and
+           would be clipped mid-word inside the rail. Phones keep it — the
+           drawer is 260px even when `isOpen` is false (it is off-canvas). */
+        hidden={!isMobile && !sidebarOpen}
         nameStyle={isMobile ? MOBILE_BRAND_NAME : undefined}
         hostStyle={webClass('sidebar-logo')}
       />

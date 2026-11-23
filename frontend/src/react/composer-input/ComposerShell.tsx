@@ -63,9 +63,12 @@ function useComposerPhone(): boolean {
 }
 
 const FIELD_SHADOWS = {
-  field: 'var(--ui-elevation-field)',
-  fieldHover: 'var(--ui-elevation-field-hover)',
-  fieldFocus: 'var(--ui-elevation-field-focus)',
+  /* RN-9: the lit recipes put a 1px top-edge highlight over the same
+     outward shadow, so the sheet reads as a surface catching light from
+     above instead of a flat cut-out. */
+  field: 'var(--ui-elevation-lit-field)',
+  fieldHover: 'var(--ui-elevation-lit-field-hover)',
+  fieldFocus: 'var(--ui-elevation-lit-field-focus)',
 };
 
 /* Focus inside the editor deepens the sheet's hairline (site ask-box). */

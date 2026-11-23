@@ -36,15 +36,25 @@
   background: transparent;
   box-shadow: none;
   color: var(--foreground);
-  --ui-elevation-field: 0 0 0 1px rgb(255 255 255 / 10%), 0 2px 8px rgb(0 0 0 / 25%);
-  --ui-elevation-field-hover: 0 0 0 1px rgb(255 255 255 / 18%), 0 4px 18px rgb(0 0 0 / 35%);
+  --ui-elevation-field:
+    inset 0 1px 0 0 rgb(255 255 255 / 12%), 0 0 0 1px rgb(255 255 255 / 10%),
+    0 12px 40px -12px rgb(0 0 0 / 50%);
+  --ui-elevation-field-hover:
+    inset 0 1px 0 0 rgb(255 255 255 / 18%), 0 0 0 1px rgb(255 255 255 / 16%),
+    0 16px 48px -14px rgb(0 0 0 / 55%);
   --ui-elevation-field-focus:
-    0 0 0 1px rgb(255 255 255 / 28%), 0 0 0 3px rgb(255 255 255 / 5%), 0 8px 24px rgb(0 0 0 / 40%);
+    inset 0 1px 0 0 rgb(255 255 255 / 24%), 0 0 0 1px rgb(255 255 255 / 32%),
+    0 0 0 3px rgb(255 255 255 / 5%), 0 16px 48px -14px rgb(0 0 0 / 55%);
 }
 [data-mode='light'] #appShell .composer-shell [data-composer-frame] {
   --ui-elevation-field: none;
   --ui-elevation-field-hover: none;
   --ui-elevation-field-focus: none;
+  /* RN-9 reads the lit recipes; light mode keeps its hairline-only edge
+     (the paper sheet is separated by the ::before ring, never by a shadow). */
+  --ui-elevation-lit-field: none;
+  --ui-elevation-lit-field-hover: none;
+  --ui-elevation-lit-field-focus: none;
 }
 [data-mode='light'] #appShell .composer-shell [data-composer-frame]::before {
   content: '';
@@ -56,6 +66,26 @@
 }
 [data-mode='light'] #appShell .composer-shell [data-composer-frame][data-focused='true']::before {
   border-color: var(--ui-border-strong);
+}
+/* ── Material: the sheet is lit from above ───────────────────────────────
+   A flat fill makes a 24px-radius panel read as a hole in the canvas; the
+   reference sheets read as an object because their top edge catches light
+   and the body falls away a few percent toward the bottom. The gradient is
+   painted on the frame's own background, so it never leaks past the radius
+   and costs no extra node. Light mode keeps its flat paper + ::before ring
+   (chat-light-palette pins that edge), so the lift is dark-mode only. */
+[data-mode='dark'] #appShell .composer-shell [data-composer-frame] {
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--ui-card) 92%, white 8%) 0%,
+    var(--ui-card) 38%,
+    color-mix(in srgb, var(--ui-card) 94%, black 6%) 100%
+  );
+}
+@media (forced-colors: active) {
+  [data-mode='dark'] #appShell .composer-shell [data-composer-frame] {
+    background-image: none;
+  }
 }
 #appShell .composer-shell .composer-editor-root {
   display: block;
@@ -276,6 +306,12 @@
     --ui-elevation-field: 0 0 0 1px rgb(255 255 255 / 12%);
     --ui-elevation-field-hover: var(--ui-elevation-field);
     --ui-elevation-field-focus: 0 0 0 1px var(--ui-border-strong);
+  }
+  /* The phone sheet is a flat reference field (one measured tone, hairline
+     edge); the desktop material gradient would tint it, so it is pinned off
+     at this breakpoint alongside the rail shadows above. */
+  [data-mode='dark'] #appShell .composer-shell [data-composer-frame] {
+    background-image: none;
   }
   [data-mode='light'] #appShell .composer-shell {
     --ui-ink-secondary: var(--geist-gray-700);

@@ -158,8 +158,10 @@ export interface UiTypeStep {
 export const uiType = {
   display: { size: 52, lineHeight: 56, weight: '500', tracking: -1.82 },
   displayCompact: { size: 34, lineHeight: 40, weight: '500', tracking: -0.85 },
-  /** Home greeting: kept at the app's restrained 28px (24px on phones). */
-  greeting: { size: 28, lineHeight: 36, weight: '500', tracking: -0.42 },
+  /** Home greeting: the landing line is the page's one display moment, so it
+   *  sits two steps above the previous 28px — large enough to read as a title
+   *  rather than a label, still restrained next to a marketing hero. */
+  greeting: { size: 40, lineHeight: 48, weight: '500', tracking: -0.9 },
   greetingCompact: { size: 24, lineHeight: 32, weight: '500', tracking: -0.36 },
   title: { size: 20, lineHeight: 28, weight: '500', tracking: -0.3 },
   titleSm: { size: 17, lineHeight: 24, weight: '500', tracking: -0.17 },
@@ -248,6 +250,15 @@ export const uiControl = {
  *   overlay   shadow-2: menus, popovers
  *   dialog    shadow-3: dialogs, drawers
  *   field / fieldHover / fieldFocus   the question box at rest / hover / focus
+ *
+ * RN-9 — a sheet's *material* is a light source, not a colour. The three
+ * `lit*` recipes layer a 1px inset highlight along the top edge (the surface
+ * catching light from above) over the matching outward shadow, so a panel
+ * reads as a raised object instead of a flat rectangle cut out of the canvas.
+ * Below the top edge the inset highlight fades to a hairline, which is what
+ * keeps the bottom edge from glowing. The gradient stays inside the sheet:
+ * an inset shadow never paints outside the border box, so no control can
+ * grow a box on focus.
  */
 export interface UiShadowSet {
   readonly ring: string;
@@ -257,6 +268,14 @@ export interface UiShadowSet {
   readonly field: string;
   readonly fieldHover: string;
   readonly fieldFocus: string;
+  /** `raised` + a 1px top-edge highlight (cards that should read as material). */
+  readonly litRaised: string;
+  /** `field` + a 1px top-edge highlight (the question box at rest). */
+  readonly litField: string;
+  /** `fieldHover` + the same highlight, brighter. */
+  readonly litFieldHover: string;
+  /** `fieldFocus` + the same highlight, brightest. */
+  readonly litFieldFocus: string;
 }
 
 export const uiShadow: Readonly<Record<ThemeMode, UiShadowSet>> = {
@@ -273,6 +292,16 @@ export const uiShadow: Readonly<Record<ThemeMode, UiShadowSet>> = {
       '0 0 0 1px rgb(0 0 0 / 12%), 0 1px 2px rgb(0 0 0 / 5%), 0 16px 48px -14px rgb(0 0 0 / 16%)',
     fieldFocus:
       '0 0 0 1px rgb(0 0 0 / 28%), 0 0 0 4px rgb(0 0 0 / 5%), 0 16px 48px -14px rgb(0 0 0 / 16%)',
+    /* On paper the highlight is a white line, which only reads against the
+       hairline ring above it — the effect is a seam of light, not a glow. */
+    litRaised:
+      'inset 0 1px 0 0 rgb(255 255 255 / 90%), 0 0 0 1px rgb(0 0 0 / 5%), 0 1px 2px rgb(0 0 0 / 4%), 0 4px 12px -4px rgb(0 0 0 / 5%)',
+    litField:
+      'inset 0 1px 0 0 rgb(255 255 255 / 95%), 0 0 0 1px rgb(0 0 0 / 8%), 0 1px 2px rgb(0 0 0 / 4%), 0 12px 40px -12px rgb(0 0 0 / 14%)',
+    litFieldHover:
+      'inset 0 1px 0 0 rgb(255 255 255 / 95%), 0 0 0 1px rgb(0 0 0 / 12%), 0 1px 2px rgb(0 0 0 / 5%), 0 16px 48px -14px rgb(0 0 0 / 16%)',
+    litFieldFocus:
+      'inset 0 1px 0 0 rgb(255 255 255 / 95%), 0 0 0 1px rgb(0 0 0 / 28%), 0 0 0 4px rgb(0 0 0 / 5%), 0 16px 48px -14px rgb(0 0 0 / 16%)',
   },
   dark: {
     ring: '0 0 0 1px rgb(255 255 255 / 10%)',
@@ -283,6 +312,17 @@ export const uiShadow: Readonly<Record<ThemeMode, UiShadowSet>> = {
     fieldHover: '0 0 0 1px rgb(255 255 255 / 16%), 0 16px 48px -14px rgb(0 0 0 / 55%)',
     fieldFocus:
       '0 0 0 1px rgb(255 255 255 / 32%), 0 0 0 4px rgb(255 255 255 / 6%), 0 16px 48px -14px rgb(0 0 0 / 55%)',
+    /* Dark surfaces are lit the same way, but the highlight has to be dimmer
+       than white to stay a sheen rather than an edge: 12% on a #1f1f1f sheet
+       is the point where the top line reads as light catching a chamfer. */
+    litRaised:
+      'inset 0 1px 0 0 rgb(255 255 255 / 12%), 0 0 0 1px rgb(255 255 255 / 8%), 0 1px 2px rgb(0 0 0 / 40%)',
+    litField:
+      'inset 0 1px 0 0 rgb(255 255 255 / 14%), 0 0 0 1px rgb(255 255 255 / 10%), 0 12px 40px -12px rgb(0 0 0 / 50%)',
+    litFieldHover:
+      'inset 0 1px 0 0 rgb(255 255 255 / 20%), 0 0 0 1px rgb(255 255 255 / 16%), 0 16px 48px -14px rgb(0 0 0 / 55%)',
+    litFieldFocus:
+      'inset 0 1px 0 0 rgb(255 255 255 / 26%), 0 0 0 1px rgb(255 255 255 / 32%), 0 0 0 4px rgb(255 255 255 / 6%), 0 16px 48px -14px rgb(0 0 0 / 55%)',
   },
 };
 

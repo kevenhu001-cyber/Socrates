@@ -24,6 +24,20 @@
   }
 }
 
+/* RN-9 — the hero is set in the theme's display face (Newsreader on
+   `socrates`), so the landing line is written language rather than a UI
+   label. The rule above owns the interface face for the surfaces that still
+   ask for `--cg-font`; this one re-faces only the landing hero. The
+   shared RN component passes `var(--font-display)` inline, which the
+   composer stylesheet's `--cg-font` pin would otherwise win over on
+   specificity, so the display face is re-declared at the same weight. */
+@media (min-width: 769px) {
+  :root:not(#_composer-a):not(#_composer-b) #appShell #topicSetup #homeHero .topic-title.greeting {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+  }
+}
+
 /* Greeting stays one line in every locale. The pool strings are short, but
    long translations or an XL font scale must never wrap the hero line —
    nowrap + ellipsis is the hard guarantee. No competing rule sets these

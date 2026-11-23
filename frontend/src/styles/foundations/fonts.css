@@ -38,3 +38,29 @@
      and their punctuation must not collapse to the Latin metrics. */
   unicode-range: U+0000-2E7F, U+3040-FEFF, U+FFF0-FFFF;
 }
+
+/* Newsreader — the display face (`--font-display`). Only the landing hero and
+   other display-size headings read it, and only in Latin: Chinese has no
+   serif in the bundle, so the CJK blocks fall through to Noto Sans SC. The
+   two files are the packaged @fontsource/newsreader latin subsets, copied
+   into `assets/fonts` next to Geist so they resolve like every other local
+   face. Both weights are declared because the hero asks for medium and the
+   browser would otherwise synthesise it from 400. The range is Geist's: it
+   leaves U+2E80-303F and U+FF00-FFEF to the CJK families, so Chinese
+   punctuation keeps its full-width metrics. */
+@font-face {
+  font-family: 'Newsreader';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../../assets/fonts/newsreader-latin-400.woff2') format('woff2');
+  unicode-range: U+0000-2E7F, U+3040-FEFF, U+FFF0-FFFF;
+}
+@font-face {
+  font-family: 'Newsreader';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('../../assets/fonts/newsreader-latin-500.woff2') format('woff2');
+  unicode-range: U+0000-2E7F, U+3040-FEFF, U+FFF0-FFFF;
+}

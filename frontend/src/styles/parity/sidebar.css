@@ -575,9 +575,11 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     height: auto;
     padding: 8px 8px 4px;
   }
-  #appShell #sidebar.collapsed #sidebarHeader .sidebar-logo {
-    display: none;
-  }
+  /* The brand lockup is taken out of the layout by React
+     (`SidebarBrand.hidden`), not here: the component paints its own
+     `display: flex` inline, and an inline declaration outranks this sheet,
+     so a `display: none` written at this level never won and the wordmark sat
+     clipped in the 52px rail. */
   #appShell #sidebar.collapsed #sidebarNav {
     padding: 0 8px;
     align-items: center;

@@ -110,13 +110,15 @@
   }
   /* The pill carries the focus treatment for its bare input (the input has
      no frame of its own, so a ring around it read as a box drawn around the
-     sidebar). A filled surface plus the project focus ring reads as focus
-     without the hard frame. */
+     sidebar). The treatment is neutral: the field's own hairline deepens and
+     the surface steps up — never `--ui-focus-shadow`, whose blue ring is the
+     keyboard indicator for controls and reads as a coloured glow wrapped
+     around a text field. parity/sidebar.css owns that hairline for desktop;
+     this layer only keeps the surface and the glyph emphasis. */
   #appShell #sidebar .sidebar-search:focus-within {
     border-color: var(--ui-border-strong);
     background: var(--ui-card);
     color: var(--foreground);
-    box-shadow: var(--ui-focus-shadow);
   }
   #appShell #sidebar .sidebar-search svg {
     width: 16px;

@@ -30,7 +30,13 @@ export function publishSessionList(): void {
     const allSessions = getRecents();
     const filter = getRecentsFilter();
     let sessions = filterRecentsByChip(allSessions, filter) as SessionRow[];
-    const searchQ = getSessionListSearchQuery().trim().toLowerCase();
+    /* The published query is the reader's own text, not a normalised copy:
+       the search field binds its value to this snapshot, so publishing a
+       trimmed/lowercased string would rewrite the input on every keystroke
+       that changes case or adds a trailing space and snap the caret to the
+       end. Case folding belongs to the comparison below, not to the state. */
+    const rawSearchQuery = getSessionListSearchQuery();
+    const searchQ = rawSearchQuery.trim().toLowerCase();
     if (searchQ) {
       sessions = sessions.filter(function (s) {
         const hay = (((s.title as string) || '') + ' ' + ((s.topic as string) || '')).toLowerCase();
@@ -55,7 +61,7 @@ export function publishSessionList(): void {
     publishSessionListState({
       sessions: previousRows,
       currentSessionId: sessionBridge.getSnapshot().currentSessionId as string | null,
-      searchQuery: searchQ,
+      searchQuery: rawSearchQuery,
       filter,
       fetchFailed: !!window.SERVER_SESSIONS_FETCH_FAILED,
     });

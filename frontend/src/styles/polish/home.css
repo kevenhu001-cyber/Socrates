@@ -12,7 +12,9 @@
  * greeting plus the composer, so the hosts and their geometry are gone too.
  */
 
-/* Hero host: the welcome line sits above the composer. */
+/* Hero host: the welcome line sits above the composer. RN-9 widens the
+   pause to 48px: a display-size line needs more air beneath it than a label
+   did, or the composer reads as attached to the words. */
 @media (min-width: 769px) {
   #appShell #topicSetup .home-hero {
     width: min(100%, var(--ui-content-chat));

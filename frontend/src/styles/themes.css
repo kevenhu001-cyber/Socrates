@@ -22,8 +22,14 @@ html[data-theme='socrates'][data-mode],
 html[data-theme='socrates'][data-mode]:lang(zh) {
   --font-sans: var(--ui-font-ui);
   --cg-font: var(--font-sans);
-  --font-display: var(--font-sans);
-  --font-serif: var(--font-sans);
+  /* RN-9 — the interface stays Geist; the display face is the bundled
+     Newsreader serif, which the landing hero, learning-mode headings and any
+     `.greeting` surface opt into. It is a local, same-origin face (packaged
+     with @fontsource/newsreader), so nothing new is fetched. The serif is what
+     gives the empty state a voice: at 32–40px it reads as written language
+     rather than as a UI label. Chinese falls through to Noto Sans SC. */
+  --font-display: 'Newsreader', 'Charis SIL', 'Noto Sans SC', 'Georgia', serif;
+  --font-serif: var(--font-display);
   --font-mono: var(--ui-font-ui-mono);
   --ui-text-prose: color-mix(in srgb, var(--ui-text-primary) 88%, var(--ui-text-secondary));
   --ui-bg-header-glass: color-mix(in srgb, var(--ui-bg-page) 90%, transparent);

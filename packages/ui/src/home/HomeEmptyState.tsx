@@ -45,9 +45,31 @@ export interface HomeHeroProps {
   titleId?: string;
   /** Host-decided phone composition. */
   compact?: boolean;
+  /**
+   * Display face for the title. The primitive stays DOM-free, so the host
+   * passes the family it already has loaded (web: `var(--font-display)`).
+   * Omit to keep the interface face.
+   */
+  titleFontFamily?: string;
 }
 
-export function HomeHero({ title, subtitle, titleId, compact = false }: HomeHeroProps) {
+export function HomeHero({
+  title,
+  subtitle,
+  titleId,
+  compact = false,
+  titleFontFamily,
+}: HomeHeroProps) {
+  const { typeScale } = useUiTheme();
+  /* The landing line is the page's display moment: it is allowed to breathe
+     to the widest step the column affords instead of sitting at one fixed
+     size on every desktop. Both clamp bounds and the fluid middle follow the
+     reader's text-size preference, so this stays a scale, not a pin. */
+  const fluidTitleSize = compact
+    ? undefined
+    : `clamp(${Math.round(32 * typeScale)}px, ${(3.1 * typeScale).toFixed(2)}vw, ${Math.round(
+        40 * typeScale,
+      )}px)`;
   return (
     <div
       style={{
@@ -62,7 +84,11 @@ export function HomeHero({ title, subtitle, titleId, compact = false }: HomeHero
         role="heading"
         aria-level={1}
         variant={compact ? 'greetingCompact' : 'greeting'}
-        style={compact ? { fontWeight: '400' } : undefined}
+        style={{
+          ...(compact ? { fontWeight: '400' } : null),
+          ...(titleFontFamily ? { fontFamily: titleFontFamily } : null),
+          ...(fluidTitleSize ? { fontSize: fluidTitleSize } : null),
+        }}
         align="center"
       >
         {title}

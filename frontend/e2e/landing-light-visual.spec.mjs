@@ -61,11 +61,16 @@ test('light conversation home has a neutral readable palette and balanced compos
      control rail + 8px bottom = 94px at the desktop width. */
   expect(geometry.composer?.height).toBe(94);
   expect(geometry.topicFontSize).toBe(16);
-  /* RN-1 (2026-11-01): the greeting is the React Native hero, set on the
-     greeting step of packages/theme uiType (28px Geist medium), with a 40px
-     pause before the 768×94 ask-box (the #homeHero host margin). */
-  expect(geometry.titleSize).toBe('28px');
-  expect(geometry.fontFamily).toContain('Geist Sans');
+  /* RN-9 (2026-11-23): the greeting is the React Native hero on the
+     greeting step of packages/theme uiType, fluid between 32px and 40px, in
+     the theme's display face, with a 40px pause before the 768×94 ask-box
+     (the #homeHero host margin). */
+  expect(parseFloat(geometry.titleSize)).toBeGreaterThanOrEqual(32);
+  expect(parseFloat(geometry.titleSize)).toBeLessThanOrEqual(40);
+  /* `--font-display` is the theme's own decision: Geist Sans on `socrates`,
+     Newsreader on `philosophy`. The hero must read it from the theme rather
+     than pinning a face of its own. */
+  expect(geometry.fontFamily).toMatch(/Geist Sans|Newsreader/);
   expect((geometry.composer?.top ?? 0) - (geometry.title?.bottom ?? 0)).toBeGreaterThanOrEqual(38);
   expect((geometry.composer?.top ?? 0) - (geometry.title?.bottom ?? 0)).toBeLessThanOrEqual(42);
   expect(geometry.composer?.bottom ?? 960).toBeLessThan(960 * 0.64);

@@ -42,6 +42,7 @@ export function HomeHeroRoot() {
       <HomeHero
         compact={compact}
         titleId="topicTitle"
+        titleFontFamily="var(--font-display)"
         title={greeting || t('greeting.chat', 'Ready when you are')}
       />
     </WebUiTheme>
