@@ -178,7 +178,9 @@ export function UiButton({
           alignItems: 'center',
           justifyContent: 'center',
           gap: uiSpace[2],
-          height: HEIGHT[size],
+          /* The host may raise the touch target without changing the visual
+             size of every button on the surface. */
+          height: `var(--ui-button-height, ${HEIGHT[size]}px)`,
           paddingLeft: PAD_X[size],
           paddingRight: PAD_X[size],
           borderRadius: uiRadius.pill,

@@ -5,6 +5,12 @@
  */
 
 @media (max-width: 768px) {
+  /* The terminal Retry is the only control in a failed tool row, so it takes
+     the phone touch rung instead of the 32px compact button height. */
+  [data-testid='tool-error-retry'] {
+    --ui-button-height: var(--ui-control-touch);
+  }
+
   /* Retain a hard viewport bound for very narrow devices. */
   #appShell .sidebar {
     max-width: min(var(--ui-sidebar-mobile), 90vw);

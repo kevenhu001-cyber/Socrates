@@ -38,7 +38,7 @@ test('preference Select supports keyboard selection and Escape closes only the t
   await expect(appearance).toContainText('Light');
 });
 
-test('provider radio arrow navigation preserves text editing and persists the new active model', async ({
+test('provider workbench preserves text editing, selects an editor and persists the active model', async ({
   page,
 }) => {
   await mockAuthedApp(page, {
@@ -75,11 +75,21 @@ test('provider radio arrow navigation preserves text editing and persists the ne
   await page.keyboard.press('ArrowDown');
   await expect(name).toBeFocused();
   await expect(first.getByRole('radio')).toBeChecked();
-  await first.getByRole('radio').focus();
-  await page.keyboard.press('ArrowDown');
+
+  /* The workbench keeps one editor mounted at a time. Choosing the second
+     provider in the navigator reveals its form; the radio then activates it
+     without switching the visible editor back. */
+  const navSecond = settings.locator('.provider-workbench-nav [data-provider-id="second"]');
+  await navSecond.click();
+  await expect(navSecond).toHaveAttribute('aria-pressed', 'true');
+  await expect(second).toBeVisible();
+  await expect(first).toBeHidden();
+  await second.getByRole('radio').focus();
+  await page.keyboard.press('Space');
   await expect(second.getByRole('radio')).toBeChecked();
   await expect(second.getByRole('radio')).toBeFocused();
-  await expect(first.getByRole('radio')).not.toBeChecked();
+  /* The hidden editor keeps its radio in the DOM; role lookup ignores it. */
+  await expect(first.locator('[role="radio"]')).not.toBeChecked();
   await expect
     .poll(() => page.evaluate(() => localStorage.getItem('socrates-last-active-id')))
     .toBe('second');

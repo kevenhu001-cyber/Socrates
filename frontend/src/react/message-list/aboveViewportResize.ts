@@ -32,6 +32,8 @@ interface Keeper {
   observer: ResizeObserver;
   heights: WeakMap<Element, number>;
   observed: Set<Element>;
+  /** Whether the reader was at the bottom at the last scroll event. */
+  atBottom: boolean;
 }
 
 let keeper: Keeper | null = null;
@@ -66,7 +68,20 @@ function onResize(entries: ResizeObserverEntry[]): void {
     if (hostTop === null) hostTop = host.getBoundingClientRect().top;
     if (entry.target.getBoundingClientRect().bottom <= hostTop + 1) delta += height - previous;
   }
-  if (Math.abs(delta) < 0.5 || viewportOwnedElsewhere(host)) return;
+  if (Math.abs(delta) < 0.5) return;
+  /* A pinned reader follows the tail. This observer is the only signal for
+     a row above the viewport that grows after `content-visibility` renders
+     it: the content-follow observer watches the last row, and the sticky
+     history pin only watches the list's own box. Without this branch three
+     deferred assistant rows settling at 56px each left the bottom 112px
+     short. Skip it while the send anchor is settling — that controller is
+     already animating scrollTop. */
+  if (delta > 0 && current.atBottom && host.dataset.turnAnchorSettling !== 'true') {
+    writeScrollTop(host, host.scrollHeight, 'content');
+    current.atBottom = true;
+    return;
+  }
+  if (viewportOwnedElsewhere(host)) return;
   /* A reader already at the bottom is followed by the content-follow path.
      The browser also clamps their scrollTop to the new maximum in the same
      layout pass; adding this delta again moved them up by the shrink a
@@ -89,6 +104,7 @@ function keeperFor(host: HTMLElement): Keeper | null {
     observer: new ResizeObserver(onResize),
     heights: new WeakMap(),
     observed: new Set(),
+    atBottom: readerPinned(host),
   };
   return keeper;
 }
@@ -285,6 +301,8 @@ function scheduleRememberAnchor(): void {
 }
 
 function onReaderScroll(): void {
+  const current = keeper;
+  if (current) current.atBottom = readerPinned(current.host);
   scheduleRememberAnchor();
 }
 

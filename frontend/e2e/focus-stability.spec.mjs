@@ -79,6 +79,19 @@ const COLLECT = async () => {
     return alphaOf(`${style.outlineColor}`) > 0;
   };
 
+  /* A pseudo-element is paint too: the light composer draws its focus edge on
+     the frame's ::before, so an ancestor cue must compare that layer as well
+     as the element's own border and shadow. */
+  const describePseudo = (el, which) => {
+    const style = getComputedStyle(el, which);
+    return {
+      boxShadow: style.boxShadow,
+      outlineVisible: outlinePaints(style),
+      borderColor: style.borderTopColor,
+      backgroundColor: style.backgroundColor,
+    };
+  };
+
   const describe = (el) => {
     const style = getComputedStyle(el);
     const rect = el.getBoundingClientRect();
@@ -88,6 +101,8 @@ const COLLECT = async () => {
       layers,
       outlineVisible: outlinePaints(style),
       borderColor: style.borderTopColor,
+      before: describePseudo(el, '::before'),
+      after: describePseudo(el, '::after'),
       rect: [rect.x, rect.y, rect.width, rect.height],
     };
   };
@@ -203,7 +218,13 @@ const COLLECT = async () => {
       return (
         now.borderColor !== ancestor.borderColor ||
         now.boxShadow !== ancestor.boxShadow ||
-        now.outlineVisible
+        now.outlineVisible ||
+        now.before.borderColor !== ancestor.before.borderColor ||
+        now.before.boxShadow !== ancestor.before.boxShadow ||
+        now.before.backgroundColor !== ancestor.before.backgroundColor ||
+        now.after.borderColor !== ancestor.after.borderColor ||
+        now.after.boxShadow !== ancestor.after.boxShadow ||
+        now.after.backgroundColor !== ancestor.after.backgroundColor
       );
     });
 

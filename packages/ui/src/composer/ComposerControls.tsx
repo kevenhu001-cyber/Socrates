@@ -224,6 +224,7 @@ export function ComposerControls({
             paddingRight: 10,
             borderRadius: uiRadius.pill,
             borderWidth: compact ? 0 : 1,
+            borderStyle: 'solid',
             borderColor:
               effortPress.hovered || effort.expanded ? colors.hairlineStrong : colors.hairline,
             backgroundColor: effortPress.pressed
@@ -250,7 +251,7 @@ export function ComposerControls({
               variant={compact ? 'body' : 'labelSm'}
               tone={compact ? 'tertiary' : 'ink'}
               numberOfLines={1}
-              style={compact ? { lineHeight: 20 } : undefined}
+              style={compact ? { lineHeight: '20px' } : undefined}
               aria-hidden
               {...dataAttributes({ effortValue: '' })}
             >

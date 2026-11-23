@@ -506,8 +506,15 @@ async function mountThree(
   stage.appendChild(renderer.domElement);
 
   let frame = 0;
+  /* Controls update and the theme subscription can ask for a frame while
+     `bindThreeVisibilityAndResize` is still constructing `life`. Treat the
+     pre-bind state as visible: the first draw is exactly what the initial
+     `invalidate()` is for, and reading an uninitialised const here is a
+     temporal-dead-zone crash. */
+  const lifeRef: { current?: { isVisible(): boolean } } = {};
   function invalidate() {
-    if (!frame && life?.isVisible() && !document.hidden) frame = requestAnimationFrame(draw);
+    const visible = lifeRef.current ? lifeRef.current.isVisible() : true;
+    if (!frame && visible && !document.hidden) frame = requestAnimationFrame(draw);
   }
   function suspend() {
     cancelAnimationFrame(frame);
@@ -558,6 +565,7 @@ async function mountThree(
   controls.target.copy(center);
 
   const life = bindThreeVisibilityAndResize(renderer, camera, controls, stage, invalidate, suspend);
+  lifeRef.current = life;
   return {
     handled: true,
     chart: {

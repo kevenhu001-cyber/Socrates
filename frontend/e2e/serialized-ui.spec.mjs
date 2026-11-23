@@ -54,9 +54,11 @@ for (const mobile of [false, true]) {
     await expect(body).not.toContainText('minimax');
     await expect(body).not.toContainText('root = Col');
     await expect(body).toContainText('图示结束。');
-    const frame = body.locator('.visualization-card iframe');
-    await expect(frame).toBeVisible();
-    await expect(frame.contentFrame().locator('.visualization-svg-illustration')).toBeVisible();
+    /* A static illustration is drawn inline by the native SVG renderer now;
+       it no longer boots an extension iframe. */
+    const illustration = body.locator('.visualization-card svg[role="img"]');
+    await expect(illustration).toBeVisible();
+    await expect(illustration).toHaveAttribute('aria-label', 'Two overlapping diffraction peaks');
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth - innerWidth),
     ).toBeLessThanOrEqual(1);
@@ -87,9 +89,9 @@ test('a leaked call stays isolated during streaming and renders on completion', 
     window.__serializedTurn.append(text);
     window.__serializedTurn.finish();
   }, rawText.slice(prefix.length));
-  const frame = body.locator('.visualization-card iframe');
-  await expect(frame).toBeVisible();
-  await expect(frame.contentFrame().locator('.visualization-svg-illustration')).toBeVisible();
+  const illustration = body.locator('.visualization-card svg[role="img"]');
+  await expect(illustration).toBeVisible();
+  await expect(illustration).toHaveAttribute('aria-label', 'Two overlapping diffraction peaks');
   await expect(body).toContainText('图示结束。');
   await expectNoGlobalError(page);
 });

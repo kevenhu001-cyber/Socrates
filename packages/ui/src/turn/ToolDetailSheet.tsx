@@ -99,7 +99,10 @@ export function CodeBlock({
         }}
       >
         <div style={{ paddingInline: S[200], paddingBlock: S[100] }}>
-          <MonoText testID="tool-code-output" style={{ fontFamily: monoFamily, lineHeight: 20 }}>
+          <MonoText
+            testID="tool-code-output"
+            style={{ fontFamily: monoFamily, lineHeight: '20px' }}
+          >
             {text}
           </MonoText>
         </div>
@@ -152,7 +155,7 @@ function SourceFavicon({ source }: { source: SourceCardView }) {
         <UiText
           variant="eyebrow"
           tone="secondary"
-          style={{ fontSize: 10, lineHeight: 12, letterSpacing: 0 }}
+          style={{ fontSize: 10, lineHeight: '12px', letterSpacing: 0 }}
         >
           {source.monogram}
         </UiText>

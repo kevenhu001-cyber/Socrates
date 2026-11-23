@@ -58,9 +58,10 @@
    Upgrade button; the pricing entry point is the account menu's "Upgrade
    plan" item, identical on desktop and phone. */
 @media (max-width: 768px) {
-  :is(body, body.plugins-active, body.workspace-active)
-    #appShell
-    :is(#pluginWorkspaceTabs, .mobile-newchat-btn) {
+  /* Plugin workspace tabs are a desktop-only header slot. The new-chat
+     button's phone visibility belongs to mobile-shell.css: it is shown in
+     an active conversation and hidden on the home/directory views. */
+  #appShell #pluginWorkspaceTabs {
     display: none;
   }
 }

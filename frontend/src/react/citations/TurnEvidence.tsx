@@ -274,7 +274,13 @@ export function TurnEvidence({
     if (!preview?.pinned) hoverTimer.current = setTimeout(() => setPreview(null), 240);
   };
 
-  const visibleSources = citedSources.length ? citedSources : sources;
+  /* Sources only become references through validated annotations. A stored
+     runtime whose quote no longer matches the rendered prose (an edited or
+     stale message) must not fall back to listing every source: that would
+     present metadata the text never cited. A sources-only runtime keeps its
+     list because there are no claims to validate. */
+  const annotated = citations.length > 0 || (runtime?.claims?.length ?? 0) > 0;
+  const visibleSources = citedSources.length ? citedSources : annotated ? [] : sources;
 
   return (
     <div

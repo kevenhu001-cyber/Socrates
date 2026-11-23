@@ -760,7 +760,7 @@ function KnowledgeNodeSheet({
                 color: colors.ink,
                 fontFamily,
                 fontSize: 14,
-                lineHeight: 22,
+                lineHeight: '22px',
                 resize: 'vertical',
               }}
             />

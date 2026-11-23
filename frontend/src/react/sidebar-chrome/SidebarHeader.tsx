@@ -13,7 +13,7 @@ import type { TextStyle } from '@socrates/ui/primitives';
 const LOGO = { uri: '/logo.png' };
 const MOBILE_BRAND_NAME = {
   fontSize: 'var(--ui-font-size-xxl)',
-  lineHeight: 32,
+  lineHeight: '32px',
 } as unknown as TextStyle;
 
 /** Host bindings for the shared sidebar brand and controls. */

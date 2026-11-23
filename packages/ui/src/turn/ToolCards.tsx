@@ -179,7 +179,7 @@ export function ToolErrorNotice({
           boxShadow: insetRing(colors.hairlineStrong, 1.5),
         }}
       >
-        <UiText variant="labelSm" tone="secondary" style={{ fontSize: 11, lineHeight: 20 }}>
+        <UiText variant="labelSm" tone="secondary" style={{ fontSize: 11, lineHeight: '20px' }}>
           ✕
         </UiText>
       </span>

@@ -90,7 +90,7 @@ for (const theme of ['light', 'dark']) {
     await page.locator('#sidebarOpenBtn').click();
     await expect
       .poll(async () => Math.round((await page.locator('#sidebar').boundingBox()).width))
-      .toBe(254);
+      .toBe(351);
     await expect
       .poll(async () => Math.round((await page.locator('#sidebar').boundingBox()).x))
       .toBe(0);
@@ -102,8 +102,6 @@ for (const theme of ['light', 'dark']) {
           .map((node) => node.id),
       );
     expect(order).toEqual([
-      'navNew',
-      'navSearch',
       'navProjects',
       'navLibrary',
       'navScheduled',
@@ -111,6 +109,9 @@ for (const theme of ['light', 'dark']) {
       'navSites',
       'navMore',
     ]);
+    /* New chat and search are drawer chrome on a phone, not nav rows. */
+    await expect(page.locator('.sidebar-mobile-new-chat')).toBeInViewport();
+    await expect(page.locator('#sidebarSearchBtn')).toBeVisible();
     const projects = await page.locator('#navProjects').boundingBox();
     const create = await page.locator('.sidebar-project-create').boundingBox();
     expect(create.x).toBeGreaterThanOrEqual(projects.x + projects.width);

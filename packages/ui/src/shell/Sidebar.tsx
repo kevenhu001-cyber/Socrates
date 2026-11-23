@@ -81,6 +81,7 @@ const styles: Record<string, ViewStyle> = {
     paddingBottom: uiStep[25],
     borderRadius: uiRadius.pill,
     borderWidth: 1,
+    borderStyle: 'solid',
   },
 };
 

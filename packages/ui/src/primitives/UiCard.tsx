@@ -17,6 +17,7 @@ function cardStyle(
     padding: uiSpace[5],
     backgroundColor: tone === 'raised' ? colors.card : hovered ? colors.fillHover : colors.fill,
     borderWidth: 1,
+    borderStyle: 'solid',
     borderColor:
       tone === 'raised' ? (hovered ? colors.hairlineStrong : colors.hairline) : 'transparent',
   };

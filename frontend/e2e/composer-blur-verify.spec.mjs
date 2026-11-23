@@ -59,8 +59,16 @@ test('click-send blurs the composer; Enter-send keeps focus', async ({ page }) =
 
 test('click-send blurs before asynchronous attachment preparation finishes', async ({ page }) => {
   await mockAuthedApp(page);
-  await page.route(/\/api\/(?:v2\/)?files(?:\?|$)/, (route) =>
-    route.fulfill({
+  let uploadStarted = false;
+  let releaseUpload;
+  const uploadGate = new Promise((resolve) => {
+    releaseUpload = resolve;
+  });
+  await page.route(/\/api\/(?:v2\/)?files(?:\?|$)/, async (route) => {
+    if (route.request().method() !== 'POST') return route.fallback();
+    uploadStarted = true;
+    await uploadGate;
+    await route.fulfill({
       status: 201,
       contentType: 'application/json',
       body: JSON.stringify({
@@ -70,16 +78,6 @@ test('click-send blurs before asynchronous attachment preparation finishes', asy
         size: 68,
         kind: 'image',
       }),
-    }),
-  );
-  let visionStarted = false;
-  await page.route(/\/api\/vision\/describe(?:\?|$)/, async (route) => {
-    visionStarted = true;
-    await new Promise((resolve) => setTimeout(resolve, 900));
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ description: 'A delayed test image.' }),
     });
   });
   await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, (route) =>
@@ -105,26 +103,30 @@ test('click-send blurs before asynchronous attachment preparation finishes', asy
   });
   await expect(page.locator('#composerAttachmentChips .attachment-chip')).toHaveCount(1);
   await editor.focus();
-  await page.locator('#composerPrimaryBtn').click();
+  try {
+    await page.locator('#composerPrimaryBtn').click();
 
-  // The vision request is still pending here. Focus and selection must
-  // already be gone rather than waiting for buildMessageContent().
-  await expect.poll(() => visionStarted).toBe(true);
-  await page.waitForTimeout(80);
-  expect(await focusInComposer(page)).toBe(false);
-  await expect(
-    page.locator('#msgList .msg.user').filter({ hasText: 'send with a slow image' }).last(),
-    'the submitted bubble must commit before attachment preparation finishes',
-  ).toBeVisible();
-  await expect(editor, 'the draft clears in the same submit frame').toHaveText('');
-  const selectionCleared = await page.evaluate(() => {
-    const selection = window.getSelection();
-    return !selection || selection.rangeCount === 0;
-  });
-  expect(selectionCleared).toBe(true);
+    // The upload is still pending here. Focus and selection must already be
+    // gone rather than waiting for buildMessageContent().
+    await expect.poll(() => uploadStarted).toBe(true);
+    await page.waitForTimeout(80);
+    expect(await focusInComposer(page)).toBe(false);
+    await expect(
+      page.locator('#msgList .msg.user').filter({ hasText: 'send with a slow image' }).last(),
+      'the submitted bubble must commit before attachment preparation finishes',
+    ).toBeVisible();
+    await expect(editor, 'the draft clears in the same submit frame').toHaveText('');
+    const selectionCleared = await page.evaluate(() => {
+      const selection = window.getSelection();
+      return !selection || selection.rangeCount === 0;
+    });
+    expect(selectionCleared).toBe(true);
+  } finally {
+    releaseUpload?.();
+  }
 });
 
-test('chat-input-wrap transitions cover focus feedback without geometry animation', async ({
+test('composer frame transitions cover focus feedback without geometry animation', async ({
   page,
 }) => {
   await mockAuthedApp(page);
@@ -132,21 +134,19 @@ test('chat-input-wrap transitions cover focus feedback without geometry animatio
   await waitForAppShell(page);
   await enterChat(page);
   const t = await page.evaluate(() => {
-    const wrap = document.getElementById('composerInputWrap');
-    const cs = getComputedStyle(wrap);
+    const frame = document.querySelector('#composerInputWrap [data-composer-frame]');
+    const cs = getComputedStyle(frame);
     return { property: cs.transitionProperty, duration: cs.transitionDuration };
   });
   console.log('[transition]', JSON.stringify(t));
-  /* The composer is in the flex flow: focus never changes its geometry, so
-     only the edge/surface feedback (border-color, the box-shadow focus
-     ring, background-color) may transition — a geometry transition would
-     animate the reveal of the hidden chat shell out of its legacy one-row
-     state. box-shadow is paint-only (no layout), so the ring may fade. */
-  for (const prop of ['border-color', 'background-color']) {
+  /* The painter is the frame, not the transparent moving host. Focus never
+     changes its geometry, so only the paint feedback (box-shadow ring,
+     background-color) may transition. box-shadow is paint-only. */
+  for (const prop of ['box-shadow', 'background-color']) {
     expect(t.property, `transition must include ${prop}`).toContain(prop);
   }
   expect(t.property, 'no geometry property may transition').not.toMatch(
     /min-height|padding|border-radius/,
   );
-  expect(t.duration).toContain('0.18s');
+  expect(t.duration).toContain('0.3s');
 });

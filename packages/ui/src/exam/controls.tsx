@@ -297,7 +297,11 @@ export function ExamTypeCards({
                   }}
                 >
                   {selected ? (
-                    <UiText variant="labelSm" tone="onInk" style={{ fontSize: 11, lineHeight: 16 }}>
+                    <UiText
+                      variant="labelSm"
+                      tone="onInk"
+                      style={{ fontSize: 11, lineHeight: '16px' }}
+                    >
                       ✓
                     </UiText>
                   ) : null}

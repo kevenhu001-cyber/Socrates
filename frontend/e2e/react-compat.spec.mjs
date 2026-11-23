@@ -108,6 +108,9 @@ test('React chat store observes legacy message and stream lifecycle', async ({ p
 
   await page.evaluate(() => window.__reactChatStreamPromise);
 
+  /* The assistant body is a lazy chunk. The contract starts from the rendered
+     answer, not from a row shell whose content is still loading. */
+  await expect(page.locator('#msgList')).toContainText('Bridge response.');
   await expect(page.locator('#composerPrimaryBtn')).toHaveAttribute('data-stop', '0');
   await expect(page.locator('#composerPrimaryBtnContent [data-ui-icon=arrow-up]')).toHaveCount(1);
   await expect(page.locator('#composerPrimaryBtnContent rect')).toHaveCount(0);

@@ -9,7 +9,7 @@ import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 async function activateExtension(page, actionName) {
   await page.evaluate((name) => {
-    const action = window[name];
+    const action = name.split('.').reduce((target, key) => target?.[key], window);
     if (typeof action !== 'function') throw new Error(`${name} is not installed`);
     action();
   }, actionName);
@@ -32,7 +32,7 @@ test('workflow layer mounts empty and shows stepper on research planning', async
   await expect(layer).toHaveCount(0);
   expect(await page.evaluate(() => !('__socratesAgentRunBridge' in window))).toBe(true);
 
-  await activateExtension(page, 'exploreAction');
+  await activateExtension(page, '__socratesLegacy.composer.exploreAction');
 
   await expect(page.locator('#workflowLayerReactRoot .workflow-layer')).toHaveCount(1);
   await expect(page.locator('#chatView #workflowLayerReactRoot')).toHaveCount(1);
@@ -77,7 +77,7 @@ test('stepper advances through searching and hides after completed', async ({ pa
     };
   });
   await prepareChatWorkbench(page);
-  await activateExtension(page, 'exploreAction');
+  await activateExtension(page, '__socratesLegacy.composer.exploreAction');
   await page.evaluate(() => {
     window.askChatTurn('Research the sample topic.');
   });
@@ -96,7 +96,7 @@ test('analyze planning does not render a separate analysis workbench', async ({ 
   await waitForAppShell(page);
   await enterChat(page);
 
-  await activateExtension(page, 'analyzeAction');
+  await activateExtension(page, '__socratesLegacy.composer.analyzeAction');
 
   await expect(page.locator('.analyze-workbench')).toHaveCount(0);
   await expect(page.getByText('Analysis tools', { exact: true })).toHaveCount(0);

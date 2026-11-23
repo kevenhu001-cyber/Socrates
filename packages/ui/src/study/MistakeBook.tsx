@@ -294,7 +294,7 @@ function OptionMark({ letter, tag }: { letter: string; tag?: string | null }) {
       <UiText
         variant="labelSm"
         tone={right ? 'onInk' : 'tertiary'}
-        style={{ fontVariant: ['tabular-nums'], lineHeight: 22 }}
+        style={{ fontVariant: ['tabular-nums'], lineHeight: '22px' }}
       >
         {letter}
       </UiText>

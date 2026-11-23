@@ -16,7 +16,8 @@ async function readPalette(page) {
       mode: document.documentElement.dataset.mode,
       page: read('.main-content', 'background-color'),
       sidebar: read('#sidebar', 'background-color'),
-      composer: read('#composerInputWrap', 'background-color'),
+      /* The moving host is transparent; the raised sheet is the frame. */
+      composer: read('#composerInputWrap [data-composer-frame]', 'background-color'),
       iconColor: icon ? getComputedStyle(icon).color : null,
       buttonColor: button ? getComputedStyle(button).color : null,
     };

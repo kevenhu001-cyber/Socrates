@@ -60,6 +60,7 @@ export function ScaffoldCard({
         borderRadius: R.card,
         backgroundColor: colors.card,
         borderWidth: 1,
+        borderStyle: 'solid',
         borderColor: colors.hairline,
         overflow: 'hidden',
       }}

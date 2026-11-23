@@ -45,8 +45,16 @@ test('download-first UI fonts preload one variable face without duplicate transf
   expect(result.count).toBe(1);
   expect(result.initiator).toBe('link');
   expect(result.preload).toBe(1);
-  expect(result.family).toMatch(/^"Geist Sans", "Noto Sans SC"/);
-  expect([...new Set(result.cjkFonts)]).toEqual([result.appOrigin]);
+  /* Platform CJK faces stay ahead of the self-hosted Noto subset: a Mac or
+     Windows reader renders Chinese from PingFang/YaHei without downloading
+     ~560KB of Noto, while Linux (the test runner) still reaches Noto before
+     the generic fallback. */
+  expect(result.family).toMatch(
+    /^"Geist Sans", .*"PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", "Noto Sans SC", system-ui, sans-serif$/,
+  );
+  /* Platform CJK faces may satisfy the glyphs entirely; what must never
+     happen is a third-party font origin. */
+  expect([...new Set(result.cjkFonts)].filter((origin) => origin !== result.appOrigin)).toEqual([]);
   const devTools = await page.context().newCDPSession(page);
   await devTools.send('DOM.enable');
   await devTools.send('CSS.enable');
@@ -56,9 +64,7 @@ test('download-first UI fonts preload one variable face without duplicate transf
     selector: '#composerInputWrap .tiptap p',
   });
   const { fonts: renderedFonts } = await devTools.send('CSS.getPlatformFontsForNode', { nodeId });
-  expect(renderedFonts).toEqual([
-    expect.objectContaining({ familyName: 'Noto Sans SC', isCustomFont: true, glyphCount: 8 }),
-  ]);
+  expect(renderedFonts).toEqual([expect.objectContaining({ glyphCount: 8 })]);
   await devTools.detach();
   expect(result.commaWidth).toBeGreaterThan(14);
   expect(errors).toEqual([]);
@@ -291,9 +297,7 @@ test('settings page and first pane preload on trigger intent before the click', 
   await expect(page.locator('.settings-pane:visible h2')).toHaveText('General');
 });
 
-test('signed-in boot reuses the head session prefetch instead of fetching twice', async ({
-  page,
-}) => {
+test('signed-in boot takes the head prefetch and adds only the pinned lookup', async ({ page }) => {
   const rows = [
     {
       id: 'sess-alpha',
@@ -326,11 +330,17 @@ test('signed-in boot reuses the head session prefetch instead of fetching twice'
     'Alpha',
     { timeout: 15_000 },
   );
-  /* ...and the prefetch must REPLACE the later fetch, not add to it. Two GETs
-     here means session/bootSessions.ts failed to take the handoff and the
-     sidebar paid a second round trip. */
-  expect(sessionGets.length).toBe(1);
-  expect(sessionGets[0]).toContain('archived=true');
+  /* ...and the first page comes from the head prefetch, not a second
+     identical fetch. Paged history adds one separate pinned lookup so the
+     pinned index can exist without downloading the archive. */
+  expect(sessionGets.length).toBe(2);
+  const firstPage = sessionGets.filter((url) => !url.includes('pinnedOnly=true'));
+  const pinned = sessionGets.filter((url) => url.includes('pinnedOnly=true'));
+  expect(firstPage).toHaveLength(1);
+  expect(firstPage[0]).toContain('limit=40');
+  expect(firstPage[0]).toContain('cursorVersion=2');
+  expect(pinned).toHaveLength(1);
+  expect(pinned[0]).toContain('limit=200');
 });
 
 test('anonymous boot checks the session once', async ({ page }) => {

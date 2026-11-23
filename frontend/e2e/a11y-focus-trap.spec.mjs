@@ -41,9 +41,7 @@ test.describe('Modal accessibility focus trap and background isolation', () => {
     await expect(appShell).not.toHaveAttribute('inert');
   });
 
-  test('Settings gives focus to the page and leaves sidebar navigation available', async ({
-    page,
-  }) => {
+  test('Settings gives focus to its own page and leaves the shell uninert', async ({ page }) => {
     await mockAuthedApp(page);
     await gotoAndSettle(page, '/');
     await login(page);
@@ -55,8 +53,11 @@ test.describe('Modal accessibility focus trap and background isolation', () => {
 
     await page.keyboard.press('Tab');
     await expect(settings.getByRole('searchbox')).toBeFocused();
-    const sidebarSearch = page.getByRole('textbox', { name: 'Filter recent chats', exact: true });
-    await sidebarSearch.focus();
-    await expect(sidebarSearch).toBeFocused();
+    /* Settings is a standalone page: its own rail replaces the app rail. */
+    await expect(page.locator('#appShell #sidebar')).toBeHidden();
+
+    await page.locator('#settingsCloseBtn').click();
+    await expect(settings).toBeHidden();
+    await expect(page.locator('#appShell #sidebar')).toBeVisible();
   });
 });

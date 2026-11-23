@@ -248,10 +248,19 @@ test('phone library filters actual images and selects only visible rows', async 
     if (sidebar && !sidebar.classList.contains('collapsed'))
       window.__socratesLegacy.navigation.toggleSidebar?.();
   });
-  // The reference phone drawer is 65vw capped at 280px: 253.5px at 390px.
+  // The phone drawer is min(420px, 90vw) wide and parks one control step
+  // outside the viewport when closed: -(351 + 32) = -383 at 390px.
+  const closedDrawerX = await page.evaluate(() => {
+    const sidebar = document.getElementById('sidebar');
+    const width = sidebar?.getBoundingClientRect().width ?? 0;
+    const control = parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue('--ui-control-sm'),
+    );
+    return Math.round(-(width + control));
+  });
   await expect
     .poll(async () => Math.round((await page.locator('#sidebar').boundingBox())?.x ?? 0))
-    .toBe(Math.round(-390 * 0.65));
+    .toBe(closedDrawerX);
   await expect(page.locator('.library-directory')).toBeVisible();
   await page.screenshot({
     path: 'test-results/socrates-reference-mobile-library-list-390x769.png',

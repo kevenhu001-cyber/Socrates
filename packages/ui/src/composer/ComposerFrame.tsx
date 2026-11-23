@@ -95,7 +95,9 @@ export function ComposerFrame({
           display: 'flex',
           flexDirection: 'row',
           alignItems: 'center',
-          gap: uiStep[50],
+          /* The phone reference keeps an 8px gap between the rail controls;
+             desktop uses the quieter 4px rhythm. */
+          gap: compact ? uiStep[100] : uiStep[50],
           minHeight: 36,
         }}
       >

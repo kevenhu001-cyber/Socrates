@@ -58,6 +58,15 @@ async function prepareStream(page, options = {}) {
       }
       await new Promise((resolve) => requestAnimationFrame(resolve));
       const list = document.getElementById('msgList');
+      /* Historical assistant bodies are a lazy chunk. The anchor baseline is
+         only meaningful after each row has its real height. */
+      const historyPainted = () =>
+        [...list.querySelectorAll('.msg.assistant .msg-body')].every(
+          (body) => body.textContent.trim().length > 0,
+        );
+      for (let frame = 0; frame < 120 && !historyPainted(); frame += 1) {
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+      }
       list.scrollTop = list.scrollHeight;
       await new Promise((resolve) => requestAnimationFrame(resolve));
       window.__socratesTestState.patch({ ui: { _userScrolledAway: false } });
@@ -112,7 +121,7 @@ async function prepareStream(page, options = {}) {
   );
 }
 
-test('instrumented: new turn anchors the question near the top after finish (think + long answer)', async ({
+test('instrumented: a long answer releases the top anchor and finish keeps the pinned tail', async ({
   page,
 }) => {
   await mockAuthedApp(page);
@@ -181,12 +190,15 @@ test('instrumented: new turn anchors the question near the top after finish (thi
   }, tFinish);
 
   console.log(JSON.stringify(report, null, 2));
-  // The reader never scrolled away, so the turn-to-top anchor must hold:
-  // the newest question stays near the top of the scroller (targetOffset
-  // is ~12px; allow generous slack for reserve/handoff settle) and the
-  // scrolled-away flag stays clear.
+  /* An answer taller than its reserve deliberately releases the turn-to-top
+     hold and lets the pinned reader follow the tail. At finish the reader is
+     already at the bottom, so the newest question sits above the viewport and
+     the answer is the top visible row. What finish must not do is jump the
+     reader elsewhere: it may only clamp by the chrome that disappeared. */
   expect(report.userScrolledAway).toBeFalsy();
+  expect(report.topEl).toMatch(/^msg assistant/);
   expect(report.userTopOffset).not.toBeNull();
-  expect(report.userTopOffset).toBeLessThanOrEqual(48);
-  expect(report.userTopOffset).toBeGreaterThanOrEqual(-4);
+  expect(report.userTopOffset).toBeLessThan(0);
+  expect(report.finalDfb).toBeLessThanOrEqual(2);
+  for (const event of report.postFinishScrolls) expect(event.away).toBe(false);
 });

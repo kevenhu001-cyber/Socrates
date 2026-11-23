@@ -246,6 +246,7 @@ test('search replays the latest query when Fuse arrives without another server r
   let requested = false;
   let release;
   let searches = 0;
+  const searchBodies = [];
   const gate = new Promise((resolve) => {
     release = resolve;
   });
@@ -258,6 +259,7 @@ test('search replays the latest query when Fuse arrives without another server r
     await prepareChatWorkbench(page, { messages: [plain] });
     await page.route(/\/api\/(?:v2\/)?search(?:\?|$)/, (route) => {
       searches += 1;
+      searchBodies.push(route.request().postDataJSON());
       return route.fulfill({ json: { hits: [] } });
     });
     expect(requested).toBe(false);
@@ -272,12 +274,15 @@ test('search replays the latest query when Fuse arrives without another server r
     const input = page.locator('#cmdKInput');
     await input.fill('calculus');
     await input.fill('physics');
-    await expect.poll(() => searches).toBe(2);
+    /* The remote lookup is debounced: two keystrokes inside the window make
+       one request, for the latest query. */
+    await expect.poll(() => searches).toBe(1);
+    expect(searchBodies[0]).toMatchObject({ q: 'physics', scope: 'all', limit: 20 });
     await expect(page.locator('#cmdKResults .cmd-k-row')).toHaveCount(0);
     release();
     await expect(page.locator('#cmdKResults .cmd-k-row')).toHaveCount(1);
     await expect(page.locator('#cmdKResults')).toContainText('Particle physics');
-    expect(searches).toBe(2);
+    expect(searches).toBe(1);
   } finally {
     release();
   }

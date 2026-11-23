@@ -5,7 +5,7 @@ for (const viewport of [
   { width: 1440, height: 900 },
   { width: 390, height: 844 },
 ]) {
-  test(`Chinese prose and system hints use full-width punctuation, width ${viewport.width}`, async ({
+  test(`Chinese prose and system hints keep their authored punctuation, width ${viewport.width}`, async ({
     page,
   }) => {
     await prepareChatWorkbench(page, { viewport, lang: 'zh' });
@@ -90,7 +90,7 @@ for (const viewport of [
     });
     const answer = page.locator('#msgList .msg.assistant').last();
     await expect.poll(() => page.evaluate(() => window.__chineseArrived)).toBe(true);
-    await expect(answer).toContainText('他说： “你好，世界！” （再试一次）； 下一步？');
+    await expect(answer).toContainText('他说: "你好,世界!" (再试一次); 下一步?');
     await expect(answer.locator('a', { hasText: '文档' })).toHaveAttribute(
       'href',
       'https://example.test/%E4%B8%AD%E6%96%87?q=1,2',
@@ -103,21 +103,21 @@ for (const viewport of [
       window.__finishChinese();
       await window.__chineseTurn;
     });
-    await expect(answer).toContainText('他说： “你好，世界！” （再试一次）； 下一步？');
+    await expect(answer).toContainText('他说: "你好,世界!" (再试一次); 下一步?');
     await expect(answer.locator('pre code')).toContainText('{"提示":"你好,世界.","值":1.5}');
-    await expect(page.locator('.intui-panel-title')).toHaveText('AI卡片： “说明”');
-    await expect(page.locator('.intui-panel-description')).toHaveText('这是说明（可选）。');
-    await expect(page.locator('.intui-text')).toHaveText('你好，世界！');
+    await expect(page.locator('.intui-panel-title')).toHaveText('AI卡片: "说明"');
+    await expect(page.locator('.intui-panel-description')).toHaveText('这是说明(可选).');
+    await expect(page.locator('.intui-text')).toHaveText('你好,世界!');
     await page.evaluate(() => window.showToast('已保存: "中文提示",请继续.', { duration: 10_000 }));
-    await expect(page.locator('.msg-toast')).toHaveText('已保存： “中文提示”，请继续。');
+    await expect(page.locator('.msg-toast')).toHaveText('已保存: "中文提示",请继续.');
     await page.evaluate(() => {
       window.__chineseConfirm = window.__socratesLegacy.confirm.showConfirm(
         '系统提示: "确认"',
         '是否继续(本次操作)?',
       );
     });
-    await expect(page.locator('#confirmTitle')).toHaveText('系统提示： “确认”');
-    await expect(page.locator('#confirmMsg')).toHaveText('是否继续（本次操作）？');
+    await expect(page.locator('#confirmTitle')).toHaveText('系统提示: "确认"');
+    await expect(page.locator('#confirmMsg')).toHaveText('是否继续(本次操作)?');
     await page.locator('#confirmCancelBtn').click();
     await expect(page.locator('#confirmDialog')).toBeHidden();
     expect(errors).toEqual([]);

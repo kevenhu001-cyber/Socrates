@@ -49,13 +49,10 @@ const styles: Record<string, ViewStyle> = {
   title: { ...inheritType, flexShrink: 1, minWidth: 0 },
   pin: { flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   label: { ...inheritType, flexShrink: 0 },
-  meta: {
-    display: 'flex',
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    columnGap: uiStep[75],
-    minWidth: 0,
-  },
+  /* The host CSS owns the meta line's display and spacing: an inline
+     display would beat the sidebar's `display:none` that keeps rows to
+     one line. */
+  meta: { minWidth: 0 },
   metaItem: { ...inheritType },
   badge: { ...inheritType },
   actions: { display: 'flex', flexDirection: 'row', alignItems: 'center', flexShrink: 0 },

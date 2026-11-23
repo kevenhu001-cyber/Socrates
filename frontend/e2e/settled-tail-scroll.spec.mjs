@@ -48,26 +48,30 @@ for (const width of [1280, 390]) {
     });
     const list = page.locator('#msgList');
     await expect(list.locator(':scope > .msg')).toHaveCount(18);
+    /* The assistant body is a lazy chunk. Measure history only after every
+       answer has painted its real height, not the empty Suspense boundary. */
+    await expect
+      .poll(() =>
+        list.evaluate((node) =>
+          [...node.querySelectorAll('.msg.assistant .msg-body')].every(
+            (body) => body.textContent.trim().length > 0,
+          ),
+        ),
+      )
+      .toBe(true);
     const tail = list.locator(':scope > .msg').last();
     await expect(tail).toHaveAttribute('data-stream-settled', 'true');
     // A settled tail below the fold must have its true height BEFORE the
     // initial bottom write. Previously it used 240px, then shrank to 64px.
     expect(await tail.evaluate((row) => getComputedStyle(row).contentVisibility)).toBe('visible');
-    await list.evaluate(
-      (list) =>
-        new Promise((resolve) => {
-          // Establish a pinned reader, including the scroll-intent sampler's
-          // event delivery and the browser's first off-screen layout pass.
-          list.addEventListener(
-            'scroll',
-            () => {
-              requestAnimationFrame(() => requestAnimationFrame(resolve));
-            },
-            { once: true },
-          );
-          list.scrollTop = list.scrollHeight;
-        }),
-    );
+    await list.evaluate(async (list) => {
+      // Already at the bottom writes no scroll event; wait two painted frames
+      // so the scroll-intent sampler and the first off-screen layout pass see
+      // the pinned position either way.
+      list.scrollTop = list.scrollHeight;
+      await new Promise(requestAnimationFrame);
+      await new Promise(requestAnimationFrame);
+    });
     const initial = await list.evaluate((list) => {
       return {
         client: list.clientHeight,
