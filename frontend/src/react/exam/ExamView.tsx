@@ -17,6 +17,7 @@ import {
 } from '../../exam/screen.ts';
 import { useInlineMath } from '../rn/useInlineMath';
 import { WebUiTheme } from '../rn/WebUiTheme';
+import { ActionBar } from '../ui/page/ActionBar';
 
 /* Host ids kept from the DOM baseline: navigation.ts / persistence.ts query
  * them, and the Playwright specs address the same nodes. */
@@ -213,9 +214,9 @@ export function ExamView() {
 
   return (
     <WebUiTheme>
-      <h2 className="sr-only" id="examViewTitle">
+      <h1 className="sr-only" id="examViewTitle" data-page-title>
         {title}
-      </h2>
+      </h1>
       <div className="exam-view-body" id="examViewBody">
         {showNav && screen.kind === 'questions' ? (
           <div className="exam-root-slot" id="examViewReactNav">
@@ -241,11 +242,11 @@ export function ExamView() {
           />
         </div>
       </div>
-      <div className="exam-view-footer" id="examViewFooter">
+      <ActionBar className="exam-view-footer" id="examViewFooter">
         <div className="exam-root-slot" id="examViewReactFooter">
           <ExamFooter actions={actions} onCommand={onCommand} />
         </div>
-      </div>
+      </ActionBar>
     </WebUiTheme>
   );
 }

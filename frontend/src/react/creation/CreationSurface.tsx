@@ -101,9 +101,7 @@ function CreationHeader({
             <strong>{text.siteBanner}</strong>
             <small>{text.siteBannerBody}</small>
           </div>
-          <Button onClick={onNew}>
-            {text.createSite}
-          </Button>
+          <Button onClick={onNew}>{text.createSite}</Button>
         </div>
       </>
     );
@@ -115,11 +113,7 @@ function CreationHeader({
       <PageHeader
         titleId={`creation-${name}-title`}
         title={text[name]}
-        actions={
-          <Button onClick={onNew}>
-            {createLabel}
-          </Button>
-        }
+        actions={<Button onClick={onNew}>{createLabel}</Button>}
       />
       <PageToolbar>
         <PageSearchField
@@ -139,12 +133,7 @@ function CreationEmpty({ name }: { name: CreationName }) {
     text[
       name === 'images' ? 'emptyImages' : name === 'assistants' ? 'emptyAssistants' : 'emptySites'
     ];
-  return (
-    <PageEmptyState
-      className="creation-empty"
-      title={message}
-    />
-  );
+  return <PageEmptyState className="creation-empty" title={message} />;
 }
 
 function assistantDescription(item: CreationItem) {

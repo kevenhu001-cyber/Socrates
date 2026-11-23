@@ -2,6 +2,7 @@ import { Field, FieldGroup, FieldLabel } from '../ui/shadcn/field';
 import { Input as ShadcnInput } from '../ui/shadcn/input';
 import { Checkbox } from '../ui/shadcn/checkbox';
 import { Button as UiButton } from '../ui/shadcn/button';
+import { SectionCard } from '../ui/page/SectionCard';
 import type { FormEvent } from 'react';
 
 import type { SystemModelConfig } from './types';
@@ -24,12 +25,11 @@ export function SystemModelSection({
   onSubmit,
 }: SystemModelSectionProps) {
   return (
-    <section className="admin-section">
-      <h3>System model (built-in / Beagle)</h3>
-      <p className="admin-hint">
-        The LLM anonymous visitors and users without their own key use. Leave the key blank to keep
-        the existing one.
-      </p>
+    <SectionCard
+      className="admin-section"
+      title="System model (built-in / Beagle)"
+      description="The LLM anonymous visitors and users without their own key use. Leave the key blank to keep the existing one."
+    >
       {form ? (
         <form onSubmit={onSubmit}>
           <FieldGroup>
@@ -102,6 +102,6 @@ export function SystemModelSection({
       ) : (
         <p className="admin-empty">Not configured yet — fill the form and save.</p>
       )}
-    </section>
+    </SectionCard>
   );
 }

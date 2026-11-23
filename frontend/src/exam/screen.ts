@@ -118,8 +118,8 @@ export function examActionsOf(snapshot: ExamSnapshot, chrome: ExamChromeCopy): E
   if (snapshot.readOnly) return [{ command: 'close', label: chrome.close, tone: 'quiet' }];
   if (snapshot.submitted) {
     return [
-      { command: 'form', label: chrome.newExam, tone: 'solid' },
       { command: 'close', label: chrome.close, tone: 'quiet' },
+      { command: 'form', label: chrome.newExam, tone: 'solid' },
     ];
   }
   if (mode === 'form') {
@@ -132,12 +132,12 @@ export function examActionsOf(snapshot: ExamSnapshot, chrome: ExamChromeCopy): E
   if (mode === 'provider-required') return [{ command: 'form', label: chrome.back, tone: 'quiet' }];
   if (mode === 'cancelled' || mode === 'error' || snapshot.questions.length === 0) {
     return [
-      { command: 'form', label: chrome.tryAgain, tone: 'solid' },
       { command: 'close', label: chrome.close, tone: 'quiet' },
+      { command: 'form', label: chrome.tryAgain, tone: 'solid' },
     ];
   }
   return [
-    { command: 'submit', label: chrome.submit, tone: 'solid' },
     { command: 'close', label: chrome.close, tone: 'quiet' },
+    { command: 'submit', label: chrome.submit, tone: 'solid' },
   ];
 }

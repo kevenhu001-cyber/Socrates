@@ -518,7 +518,11 @@ function KnowledgeNodeSheet({
             onClose();
           }
         }}
-        {...dataAttributes({ kbNodeDetail: index, kbPresentation: wide ? 'drawer' : 'sheet' })}
+        {...dataAttributes({
+          kbNodeDetail: index,
+          kbPresentation: wide ? 'drawer' : 'sheet',
+          sectionCard: '',
+        })}
         style={{
           ...panelStyle,
           display: 'flex',
@@ -555,7 +559,18 @@ function KnowledgeNodeSheet({
           <div
             style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, gap: S[75] }}
           >
-            <UiText variant="title">{name}</UiText>
+            <UiText
+              variant="title"
+              role="heading"
+              aria-level={2}
+              style={{
+                fontSize: 'var(--ui-text-lg, 20px)',
+                lineHeight: '28px',
+                fontWeight: 'var(--ui-font-weight-semibold, 500)',
+              }}
+            >
+              {name}
+            </UiText>
             <div
               style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: S[75] }}
             >

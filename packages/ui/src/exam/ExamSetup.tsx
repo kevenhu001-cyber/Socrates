@@ -54,7 +54,17 @@ export function ExamSetup({
         <UiText variant="eyebrow" tone="tertiary">
           {t.eyebrow}
         </UiText>
-        <UiText variant="title">{t.heroTitle}</UiText>
+        <UiText
+          variant="title"
+          style={{
+            fontSize: 'var(--ui-text-page, 24px)',
+            lineHeight: '36px',
+            fontWeight: 'var(--ui-font-weight-semibold, 600)',
+            letterSpacing: '-0.02em',
+          }}
+        >
+          {t.heroTitle}
+        </UiText>
         <UiText variant="body" tone="secondary">
           {t.heroDescription}
         </UiText>

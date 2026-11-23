@@ -163,11 +163,7 @@
   color: var(--ui-text-primary);
 }
 
-.ui-page-tab[data-slot='toggle-group-item']:is(
-  [aria-pressed='true'],
-  [data-state='on'],
-  .active
-),
+.ui-page-tab[data-slot='toggle-group-item']:is([aria-pressed='true'], [data-state='on'], .active),
 .ui-page-tab[data-slot='tabs-trigger']:is([aria-selected='true'], [data-state='on'], .active) {
   background: var(--ui-bg-pill-selected);
   color: var(--ui-text-primary);
@@ -194,9 +190,90 @@
   line-height: 1.5;
 }
 
+/* ── Section card ────────────────────────────────────────────────────── */
+
+.ui-section-card {
+  box-sizing: border-box;
+  width: 100%;
+  padding: var(--ui-space-lg);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-bg-raised);
+}
+
+.ui-section-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ui-space-sm);
+  margin-bottom: var(--ui-space-md);
+}
+
+.ui-section-card-badge {
+  display: inline-flex;
+  min-width: 28px;
+  height: 22px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-bg-page);
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-font-weight-medium);
+}
+
+.ui-section-card-heading {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ui-section-card-title {
+  margin: 0;
+  color: var(--ui-text-primary);
+  font-size: var(--ui-text-lg);
+  font-weight: var(--ui-font-weight-semibold);
+  line-height: 1.5;
+}
+
+.ui-section-card-description {
+  margin: var(--ui-space-xxs) 0 0;
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-sm);
+  line-height: 1.5;
+}
+
+.ui-section-card-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--ui-space-sm);
+}
+
+.ui-section-card-content {
+  width: 100%;
+}
+
+/* ── Sticky action bar ───────────────────────────────────────────────── */
+
+.ui-action-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--ui-space-sm);
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--ui-space-sm) var(--ui-space-xl);
+  background: var(--ui-bg-page);
+  border-top: 1px solid var(--ui-border-subtle);
+}
+
 /* ── Phone ───────────────────────────────────────────────────────────── */
 
 @media (max-width: 768px) {
+  .ui-action-bar {
+    padding: var(--ui-space-sm) var(--ui-mobile-page-gutter);
+  }
+
   .ui-page-frame {
     padding: var(--ui-space-lg) var(--ui-mobile-page-gutter) var(--ui-space-xxl);
   }

@@ -159,7 +159,10 @@
 #appShell .creation-sites-table.is-grid .creation-site-visibility {
   padding: 0 4px;
 }
-#appShell .creation-image-actions input, #appShell .creation-editor input, #appShell .creation-editor textarea, #appShell .creation-editor select {
+#appShell .creation-image-actions input,
+#appShell .creation-editor input,
+#appShell .creation-editor textarea,
+#appShell .creation-editor select {
   box-sizing: border-box;
   min-height: var(--ui-control-desktop);
   border: 1px solid var(--input);
@@ -174,7 +177,10 @@
 #appShell .creation-editor textarea {
   padding: 8px 12px;
 }
-#appShell .creation-image-actions input:focus, #appShell .creation-editor input:focus, #appShell .creation-editor textarea:focus, #appShell .creation-editor select:focus {
+#appShell .creation-image-actions input:focus,
+#appShell .creation-editor input:focus,
+#appShell .creation-editor textarea:focus,
+#appShell .creation-editor select:focus {
   border-color: var(--ring);
   box-shadow: var(--ui-focus-shadow);
 }

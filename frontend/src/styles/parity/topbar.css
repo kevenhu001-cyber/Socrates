@@ -36,7 +36,14 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
   display: none;
 }
 
-html:is([data-main-view='settingsPage'], [data-main-view='profilePage']) #appShell .top-model-slot {
+html:is(
+    [data-main-view='settingsPage'],
+    [data-main-view='profilePage'],
+    [data-main-view='examView']
+  )
+  #appShell
+  .top-model-slot,
+body.exam-active #appShell .top-model-slot {
   display: none;
 }
 

@@ -1,6 +1,7 @@
 import { Field, FieldGroup, FieldLabel } from '../ui/shadcn/field';
 import { Input as ShadcnInput } from '../ui/shadcn/input';
 import { Button as UiButton } from '../ui/shadcn/button';
+import { SectionCard } from '../ui/page/SectionCard';
 import type { FormEvent } from 'react';
 
 import type { EmbeddingProviderConfig } from './types';
@@ -138,12 +139,11 @@ export function EmbeddingProviderSection({
   onRemove,
 }: EmbeddingProviderSectionProps) {
   return (
-    <section className="admin-section">
-      <h3>Embedding provider (vector retrieval)</h3>
-      <p className="admin-hint">
-        Backs the session RAG hybrid search. Leave the key blank to keep the existing one. Remove
-        the provider to degrade to BM25-only.
-      </p>
+    <SectionCard
+      className="admin-section"
+      title="Embedding provider (vector retrieval)"
+      description="Backs the session RAG hybrid search. Leave the key blank to keep the existing one. Remove the provider to degrade to BM25-only."
+    >
       {!form ? (
         <UiButton
           variant="default"
@@ -175,6 +175,6 @@ export function EmbeddingProviderSection({
           onRemove={onRemove}
         />
       )}
-    </section>
+    </SectionCard>
   );
 }

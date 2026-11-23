@@ -145,7 +145,10 @@ export function PluginDirectory({
       <PageHeader
         titleId="plugin-directory-title"
         title={i18n('sidebar.plugins.title', 'Plugins')}
-        description={i18n('plugins.directoryDesc', 'Connect apps so Socrates can use them in chat.')}
+        description={i18n(
+          'plugins.directoryDesc',
+          'Connect apps so Socrates can use them in chat.',
+        )}
         actions={<PluginDirectoryAddAction setQuery={setQuery} setScope={setScope} />}
       />
 

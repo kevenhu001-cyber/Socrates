@@ -15,7 +15,9 @@
     padding: 0;
   }
 
-  body.workspace-active #appShell :is(#libraryPanel, #spacesPanel, #scheduledPanel, #pluginsPanel, .creation-panel.main-page),
+  body.workspace-active
+    #appShell
+    :is(#libraryPanel, #spacesPanel, #scheduledPanel, #pluginsPanel, .creation-panel.main-page),
   body.admin-active #appShell #adminPanel {
     width: 100%;
     max-width: var(--ui-page-width);

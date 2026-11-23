@@ -141,6 +141,7 @@ function Card({
   return (
     <div
       className="diag-card"
+      data-section-card=""
       {...dataAttributes(data ?? {})}
       style={{
         alignSelf: 'center',

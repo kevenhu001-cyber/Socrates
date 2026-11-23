@@ -342,6 +342,7 @@ function MistakeCard({
       {...dataAttributes({
         mistakeId: row.id,
         mistakeResolved: row.resolved ? '1' : undefined,
+        sectionCard: '',
       })}
       style={{
         borderRadius: R.card,

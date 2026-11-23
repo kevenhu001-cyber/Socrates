@@ -638,6 +638,7 @@ export function ExamSection({
   const { colors } = useUiTheme();
   return (
     <div
+      data-section-card=""
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -665,7 +666,18 @@ export function ExamSection({
           </UiText>
         </div>
         <div style={{ display: 'flex', flex: 1, minWidth: 0, flexDirection: 'column', gap: 2 }}>
-          <UiText variant="titleSm">{title}</UiText>
+          <UiText
+            variant="titleSm"
+            role="heading"
+            aria-level={2}
+            style={{
+              fontSize: 'var(--ui-text-lg, 17px)',
+              lineHeight: '24px',
+              fontWeight: 'var(--ui-font-weight-semibold, 500)',
+            }}
+          >
+            {title}
+          </UiText>
           <UiText variant="bodySm" tone="tertiary">
             {help}
           </UiText>
