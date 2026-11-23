@@ -1,13 +1,18 @@
 import { Button } from '../../ui/shadcn/button';
-import { ToggleGroup, ToggleGroupItem } from '../../ui/shadcn/toggle-group';
 import { useMemo, useState } from 'react';
 import { getCurrentLang } from '../../../ui/legacyI18n.ts';
 import type { useWorkspaceDispatch } from './workspace.hooks';
 import type { PluginItem } from './types';
-import { i18n, installedRank, PlusIcon, WorkspaceSearchField } from './workspaceUi';
+import { i18n, installedRank, PlusIcon } from './workspaceUi';
 import { PluginDirectoryCard } from './PluginDirectoryCard';
 import { InstalledPluginStrip } from './InstalledPluginStrip';
 import { dedupePlugins } from './pluginDirectory.data';
+import { PageEmptyState } from '../../ui/page/PageEmptyState';
+import { PageFrame } from '../../ui/page/PageFrame';
+import { PageHeader } from '../../ui/page/PageHeader';
+import { PageSearchField } from '../../ui/page/PageSearchField';
+import { PageTabs } from '../../ui/page/PageTabs';
+import { PageToolbar } from '../../ui/page/PageToolbar';
 
 interface PluginDirectoryProps {
   plugins: ReadonlyArray<PluginItem>;
@@ -21,48 +26,28 @@ function isInstalled(plugin: PluginItem): boolean {
   return plugin.connection?.status === 'connected' || plugin.connection?.status === 'initiated';
 }
 
-function PluginDirectoryHead({
-  query,
+function PluginDirectoryAddAction({
   setQuery,
   setScope,
-  searchLabel,
 }: {
-  query: string;
   setQuery: (q: string) => void;
   setScope: (scope: 'public' | 'personal') => void;
-  searchLabel: string;
 }) {
   return (
-    <div className="plugin-directory-head">
-      <div className="plugin-directory-heading">
-        <h2 id="plugin-directory-title">{i18n('sidebar.plugins.title', 'Plugins')}</h2>
-        <p className="plugin-directory-desc">
-          {i18n('plugins.directoryDesc', 'Connect apps so Socrates can use them in chat.')}
-        </p>
-      </div>
-      <div className="plugin-directory-tools">
-        <WorkspaceSearchField
-          className="workspace-search-field plugin-directory-search"
-          label={searchLabel}
-          query={query}
-          onQuery={setQuery}
-        />
-        <Button
-          type="button"
-          variant="outline"
-          size="icon-lg"
-          className="plugin-directory-add-btn rounded-full"
-          aria-label={getCurrentLang() === 'zh' ? '添加插件' : 'Add plugin'}
-          onClick={() => {
-            setScope('public');
-            setQuery('');
-            document.querySelector<HTMLInputElement>('.plugin-directory-search input')?.focus();
-          }}
-        >
-          <PlusIcon />
-        </Button>
-      </div>
-    </div>
+    <Button
+      type="button"
+      variant="outline"
+      size="icon-lg"
+      className="plugin-directory-add-btn rounded-full"
+      aria-label={getCurrentLang() === 'zh' ? '添加插件' : 'Add plugin'}
+      onClick={() => {
+        setScope('public');
+        setQuery('');
+        document.querySelector<HTMLInputElement>('.plugin-directory-search input')?.focus();
+      }}
+    >
+      <PlusIcon />
+    </Button>
   );
 }
 
@@ -84,10 +69,10 @@ function PluginDirectoryBody({
   return (
     <div className="plugin-directory-body">
       {visiblePlugins.length === 0 ? (
-        <div className="plugin-directory-empty">
-          <strong>{i18n('plugins.noMatch', 'No matching plugins')}</strong>
-          <span>{i18n('plugins.tryDifferent', 'Try a different search.')}</span>
-        </div>
+        <PageEmptyState
+          title={i18n('plugins.noMatch', 'No matching plugins')}
+          description={i18n('plugins.tryDifferent', 'Try a different search.')}
+        />
       ) : null}
       {popularPlugins.length > 0 ? (
         <section className="plugin-directory-section">
@@ -156,16 +141,22 @@ export function PluginDirectory({
   const searchLabel = i18n('plugins.search', 'Search plugins');
 
   return (
-    <section
-      className="workspace-surface plugin-directory"
-      aria-labelledby="plugin-directory-title"
-    >
-      <PluginDirectoryHead
-        query={query}
-        setQuery={setQuery}
-        setScope={setScope}
-        searchLabel={searchLabel}
+    <PageFrame className="plugin-directory" aria-labelledby="plugin-directory-title">
+      <PageHeader
+        titleId="plugin-directory-title"
+        title={i18n('sidebar.plugins.title', 'Plugins')}
+        description={i18n('plugins.directoryDesc', 'Connect apps so Socrates can use them in chat.')}
+        actions={<PluginDirectoryAddAction setQuery={setQuery} setScope={setScope} />}
       />
+
+      <PageToolbar>
+        <PageSearchField
+          className="plugin-directory-search"
+          label={searchLabel}
+          query={query}
+          onQuery={setQuery}
+        />
+      </PageToolbar>
 
       <InstalledPluginStrip
         plugins={installedPlugins}
@@ -173,29 +164,16 @@ export function PluginDirectory({
         onShowPersonal={() => setScope('personal')}
       />
 
-      <ToggleGroup
-        className="plugin-directory-tabs w-full min-w-0"
-        value={[scope]}
-        aria-label={i18n('plugins.allPlugins', 'All plugins')}
-        onValueChange={(values) => {
-          if (values[0] === 'public' || values[0] === 'personal') setScope(values[0]);
-        }}
-      >
-        <ToggleGroupItem
-          type="button"
-          value="public"
-          className={scope === 'public' ? 'active' : ''}
-        >
-          {i18n('plugins.public', 'Public')}
-        </ToggleGroupItem>
-        <ToggleGroupItem
-          type="button"
-          value="personal"
-          className={scope === 'personal' ? 'active' : ''}
-        >
-          {i18n('plugins.personal', 'Personal')}
-        </ToggleGroupItem>
-      </ToggleGroup>
+      <PageTabs
+        className="plugin-directory-tabs"
+        items={[
+          { value: 'public', label: i18n('plugins.public', 'Public') },
+          { value: 'personal', label: i18n('plugins.personal', 'Personal') },
+        ]}
+        value={scope}
+        onChange={setScope}
+        ariaLabel={i18n('plugins.allPlugins', 'All plugins')}
+      />
 
       <PluginDirectoryBody
         visiblePlugins={visiblePlugins}
@@ -211,7 +189,7 @@ export function PluginDirectory({
           {i18n('plugins.serverSetupNeeded', 'Connector service needs setup')}
         </p>
       ) : null}
-    </section>
+    </PageFrame>
   );
 }
 

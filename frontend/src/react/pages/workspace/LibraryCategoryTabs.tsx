@@ -26,13 +26,13 @@ export function LibraryCategoryTabs({ chip, onChipChange, dispatch }: LibraryCat
         if (value === 'images') dispatch.switchTab('files');
       }}
     >
-      <TabsList className="library-chips-bar" aria-label={i18n('sidebar.library.title', '资料库')}>
+      <TabsList className="ui-page-tabs" aria-label={i18n('sidebar.library.title', '资料库')}>
         {categories.map((category) => (
           <TabsTrigger
             key={category.id}
             type="button"
             value={category.id}
-            className={cn('library-chip', chip === category.id && 'active')}
+            className={cn('ui-page-tab', chip === category.id && 'active')}
           >
             {category.label}
           </TabsTrigger>

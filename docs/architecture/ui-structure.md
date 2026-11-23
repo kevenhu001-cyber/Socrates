@@ -159,6 +159,13 @@ dynamic import 与退役全局字段；类型 import、注释和字符串不计�
 
 - 唯一样式入口 `styles/index.css`：结构 token → legacy 兼容几何 → 当前组件、restore、parity、
   polish → themes。themes.css 只导入一次且最后导入。
+- 页面组合层从 2026-11-23 起是 `frontend/src/react/ui/page/` + `styles/features/page-kit.css`：
+  `PageFrame` 负责页面列（1040 / 32 gutter / 42 top），`PageHeader` 是唯一页头与 `h1`，
+  `PageToolbar` / `PageSearchField` / `PageTabs` / `PageEmptyState` 提供固定的工具栏、搜索、
+  范围标签和空态语法。目录页家族（Projects、Library、Plugins、Scheduled）已完成收敛；
+  Creation / Settings / Profile / Admin / Exam 仍按计划逐步迁移，迁移时只把页面外观收进 Page Kit，
+  不新建第二套控件或调色板。桌面目录页隐藏空的 topbar，手机保留 56px header；
+  `#mainInner` 的聊天 `5vh` 上留白不再作用于目录页。
 - 桌面 sidebar / topbar / composer / transcript 的所有者位于 parity；移动目录密度遵循固定参考。
 - 桌面主区域使用网格：顶部栏和聊天内容共用左列，工作台位于右列并跨两行；
   顶部栏的网格位置仍由 `parity/topbar.css` 持有。手机继续使用原有布局。

@@ -149,16 +149,6 @@
     padding: 30px 0 72px;
   }
 
-  #appShell .workspace-page-head p {
-    font-size: 17px;
-    line-height: 1.55;
-  }
-
-  #appShell .workspace-create-button {
-    min-height: 42px;
-    border-radius: 999px;
-  }
-
   #appShell .project-icon,
   #appShell .task-row .workspace-row-icon {
     width: 40px !important;

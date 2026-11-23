@@ -10,15 +10,11 @@ import {
 import { ToggleGroup, ToggleGroupItem } from '../../ui/shadcn/toggle-group';
 import { t as translate } from '../../../ui/legacyI18n.ts';
 import type { useWorkspaceDispatch } from './workspace.hooks';
-import {
-  ChevronDownIcon,
-  FilterIcon,
-  GridIcon,
-  i18n,
-  ListIcon,
-  WorkspaceSearchField,
-} from './workspaceUi';
+import { ChevronDownIcon, FilterIcon, GridIcon, i18n, ListIcon } from './workspaceUi';
 import { triggerLibraryUpload } from './LibraryUploadInput';
+import { PageHeader } from '../../ui/page/PageHeader';
+import { PageSearchField } from '../../ui/page/PageSearchField';
+import { PageToolbar } from '../../ui/page/PageToolbar';
 
 const FILE_TYPE_FILTERS = [
   { id: 'all', labelKey: 'library.filter.all', fallback: 'All' },
@@ -39,31 +35,19 @@ export interface LibraryToolbarProps {
   onTypeFilterChange: (filter: string) => void;
 }
 
-function LibraryHead() {
+function LibraryNewAction() {
   return (
-    <div className="library-head">
-      <div className="library-head-left">
-        <h1 id="library-directory-title">{i18n('sidebar.library.title', '资料库')}</h1>
-        <p className="library-desktop-desc">
-          {i18n('library.directoryDesc', 'Files and items you have added or created.')}
-        </p>
-      </div>
-      <div className="library-head-actions">
-        <DropdownMenu modal={false}>
-          <DropdownMenuTrigger
-            render={<Button className="workspace-create-button library-new-pill" />}
-          >
-            <span>{i18n('library.new', '新建')}</span>
-            <ChevronDownIcon />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="library-new-menu">
-            <DropdownMenuItem className="min-h-(--ui-control-sm)" onClick={triggerLibraryUpload}>
-              {i18n('library.upload', '上传文件')}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-    </div>
+    <DropdownMenu modal={false}>
+      <DropdownMenuTrigger render={<Button className="library-new-pill" />}>
+        <span>{i18n('library.new', '新建')}</span>
+        <ChevronDownIcon />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="library-new-menu">
+        <DropdownMenuItem className="min-h-(--ui-control-sm)" onClick={triggerLibraryUpload}>
+          {i18n('library.upload', '上传文件')}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -125,9 +109,14 @@ export function LibraryToolbar({
 }: LibraryToolbarProps) {
   return (
     <>
-      <LibraryHead />
+      <PageHeader
+        titleId="library-directory-title"
+        title={i18n('sidebar.library.title', '资料库')}
+        description={i18n('library.directoryDesc', 'Files and items you have added or created.')}
+        actions={<LibraryNewAction />}
+      />
 
-      <div className="library-toolbar">
+      <PageToolbar>
         <div className="library-toolbar-controls">
           <LibraryTypeFilter typeFilter={typeFilter} onTypeFilterChange={onTypeFilterChange} />
           <div className="library-toolbar-divider" />
@@ -159,13 +148,13 @@ export function LibraryToolbar({
             </ToggleGroupItem>
           </ToggleGroup>
         </div>
-        <WorkspaceSearchField
-          className="workspace-search-field library-search-pill"
+        <PageSearchField
+          className="library-search-pill"
           label={i18n('library.filterPlaceholder', '搜索资料库')}
           query={query}
           onQuery={dispatch.filter}
         />
-      </div>
+      </PageToolbar>
     </>
   );
 }

@@ -105,14 +105,15 @@ test('desktop directories share a title scale while their controls remain aligne
   page,
 }) => {
   await openApp(page);
-  for (const [nav, heading] of [
-    ['#navLibrary', '.library-head-left h1'],
-    ['#navProjects', '.projects-directory h1'],
-    ['#navScheduled', '.scheduled-directory h1'],
+  for (const [nav, root] of [
+    ['#navLibrary', '.library-directory'],
+    ['#navProjects', '.projects-directory'],
+    ['#navScheduled', '.scheduled-directory'],
   ]) {
     await page.locator(nav).click();
-    await expect(page.locator(heading)).toBeVisible();
-    await expect(page.locator(heading)).toHaveCSS('font-size', '24px');
+    const heading = page.locator(`${root} [data-page-title]`);
+    await expect(heading).toBeVisible();
+    await expect(heading).toHaveCSS('font-size', '24px');
   }
   await page.screenshot({ path: 'test-results/global-directory.png' });
 });

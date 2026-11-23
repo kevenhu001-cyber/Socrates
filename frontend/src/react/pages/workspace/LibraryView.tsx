@@ -8,6 +8,7 @@ import { LibraryCategoryTabs } from './LibraryCategoryTabs';
 import { LibraryEmptyState } from './LibraryEmptyState';
 import { LibrarySelectionBar } from './LibrarySelectionBar';
 import { LibraryToolbar } from './LibraryToolbar';
+import { PageFrame } from '../../ui/page/PageFrame';
 
 function LibraryView({
   data,
@@ -60,10 +61,7 @@ function LibraryView({
   const anySelected = items.some((item) => !!data.selection[item.id]);
 
   return (
-    <section
-      className="workspace-surface library-directory"
-      aria-labelledby="library-directory-title"
-    >
+    <PageFrame className="library-directory" aria-labelledby="library-directory-title">
       <LibraryToolbar
         query={data.query}
         dispatch={dispatch}
@@ -115,7 +113,7 @@ function LibraryView({
           ))}
         </div>
       )}
-    </section>
+    </PageFrame>
   );
 }
 

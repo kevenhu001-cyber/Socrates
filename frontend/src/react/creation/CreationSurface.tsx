@@ -4,7 +4,6 @@ import { Icon } from '../../legacy/Icon';
 import { nativeIslandFrameAttributes } from '../../ui/nativeIslandFrame';
 import { Badge } from '../ui/shadcn/badge';
 import { Button } from '../ui/shadcn/button';
-import { Empty, EmptyDescription, EmptyHeader } from '../ui/shadcn/empty';
 import { Field, FieldGroup, FieldLabel } from '../ui/shadcn/field';
 import { Input } from '../ui/shadcn/input';
 import {
@@ -17,7 +16,11 @@ import {
 import { NativeSelect, NativeSelectOption } from '../ui/shadcn/native-select';
 import { Textarea } from '../ui/shadcn/textarea';
 import { ToggleGroup, ToggleGroupItem } from '../ui/shadcn/toggle-group';
-import { WorkspaceSearchField } from '../pages/workspace/workspaceUi';
+import { PageEmptyState } from '../ui/page/PageEmptyState';
+import { PageFrame } from '../ui/page/PageFrame';
+import { PageHeader } from '../ui/page/PageHeader';
+import { PageSearchField } from '../ui/page/PageSearchField';
+import { PageToolbar } from '../ui/page/PageToolbar';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { getCurrentLanguage } from '../../i18n/languageState.ts';
 import {
@@ -33,31 +36,6 @@ import { useCreationSurfaceController } from './useCreationSurfaceController.ts'
 import type { CreationSurfacePreferences } from './useCreationSurfaceController.ts';
 
 export type { CreationName } from './creationModel.ts';
-
-function SearchField({
-  name,
-  query,
-  onQueryChange,
-}: {
-  name: CreationName;
-  query: string;
-  onQueryChange: (value: string) => void;
-}) {
-  const text = currentCopy();
-  const sites = name === 'sites';
-  return (
-    <WorkspaceSearchField
-      className={
-        sites
-          ? 'workspace-search-field creation-sites-search'
-          : 'workspace-search-field creation-header-search'
-      }
-      label={sites ? text.searchSites : text.search}
-      query={query}
-      onQuery={onQueryChange}
-    />
-  );
-}
 
 function CreationHeader({
   name,
@@ -78,33 +56,43 @@ function CreationHeader({
   if (name === 'sites') {
     return (
       <>
-        <header className="creation-header creation-sites-header">
-          <h1>{text.sites}</h1>
-          <Button className="creation-primary creation-sites-new" onClick={onNew}>
-            {text.create}
-          </Button>
-        </header>
-        <SearchField name={name} query={query} onQueryChange={onQueryChange} />
-        <div className="creation-sites-view" aria-label={text.listView}>
-          <ToggleGroup
-            value={[siteView]}
-            variant="outline"
-            size="sm"
-            spacing={0}
-            aria-label={text.listView}
-            onValueChange={(views) => {
-              const view = views[views.length - 1];
-              if (view === 'grid' || view === 'list') onSiteViewChange(view);
-            }}
-          >
-            <ToggleGroupItem value="grid" aria-label={text.gridView}>
-              <LayoutGrid data-icon="inline-start" />
-            </ToggleGroupItem>
-            <ToggleGroupItem value="list" aria-label={text.listView}>
-              <Icon name="list" size={16} data-icon="inline-start" />
-            </ToggleGroupItem>
-          </ToggleGroup>
-        </div>
+        <PageHeader
+          titleId="creation-sites-title"
+          title={text.sites}
+          actions={
+            <Button className="creation-sites-new" onClick={onNew}>
+              {text.create}
+            </Button>
+          }
+        />
+        <PageToolbar>
+          <PageSearchField
+            className="creation-sites-search"
+            label={text.searchSites}
+            query={query}
+            onQuery={onQueryChange}
+          />
+          <div className="creation-sites-view ml-auto" aria-label={text.listView}>
+            <ToggleGroup
+              value={[siteView]}
+              variant="outline"
+              size="sm"
+              spacing={0}
+              aria-label={text.listView}
+              onValueChange={(views) => {
+                const view = views[views.length - 1];
+                if (view === 'grid' || view === 'list') onSiteViewChange(view);
+              }}
+            >
+              <ToggleGroupItem value="grid" aria-label={text.gridView}>
+                <LayoutGrid data-icon="inline-start" />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="list" aria-label={text.listView}>
+                <Icon name="list" size={16} data-icon="inline-start" />
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
+        </PageToolbar>
         <div className="creation-site-banner">
           <span className="creation-site-banner-icon" aria-hidden="true">
             <PanelsTopLeft />
@@ -113,7 +101,7 @@ function CreationHeader({
             <strong>{text.siteBanner}</strong>
             <small>{text.siteBannerBody}</small>
           </div>
-          <Button className="creation-primary" onClick={onNew}>
+          <Button onClick={onNew}>
             {text.createSite}
           </Button>
         </div>
@@ -123,17 +111,25 @@ function CreationHeader({
 
   const createLabel = name === 'images' ? text.createImage : text.createAssistant;
   return (
-    <header className="creation-header">
-      <div>
-        <h1>{text[name]}</h1>
-      </div>
-      <div className="creation-header-actions">
-        <SearchField name={name} query={query} onQueryChange={onQueryChange} />
-        <Button className="creation-primary" onClick={onNew}>
-          {createLabel}
-        </Button>
-      </div>
-    </header>
+    <>
+      <PageHeader
+        titleId={`creation-${name}-title`}
+        title={text[name]}
+        actions={
+          <Button onClick={onNew}>
+            {createLabel}
+          </Button>
+        }
+      />
+      <PageToolbar>
+        <PageSearchField
+          className="creation-header-search"
+          label={text.search}
+          query={query}
+          onQuery={onQueryChange}
+        />
+      </PageToolbar>
+    </>
   );
 }
 
@@ -144,11 +140,10 @@ function CreationEmpty({ name }: { name: CreationName }) {
       name === 'images' ? 'emptyImages' : name === 'assistants' ? 'emptyAssistants' : 'emptySites'
     ];
   return (
-    <Empty className="creation-empty">
-      <EmptyHeader>
-        <EmptyDescription>{message}</EmptyDescription>
-      </EmptyHeader>
-    </Empty>
+    <PageEmptyState
+      className="creation-empty"
+      title={message}
+    />
   );
 }
 
@@ -463,7 +458,7 @@ function ImageComposer({
           value={model}
           onChange={(event) => onModelChange(event.currentTarget.value)}
         />
-        <Button className="creation-primary" type="submit" disabled={busy}>
+        <Button type="submit" disabled={busy}>
           {busy ? text.loading : text.create}
         </Button>
       </div>
@@ -566,7 +561,7 @@ function AssistantEditor({
           <Button variant="ghost" type="button" onClick={onClose}>
             {text.cancel}
           </Button>
-          <Button className="creation-primary" type="submit" disabled={busy}>
+          <Button type="submit" disabled={busy}>
             {busy ? text.loading : text.save}
           </Button>
         </footer>
@@ -674,7 +669,7 @@ function SiteEditor({
           <Button variant="ghost" type="button" onClick={onClose}>
             {text.cancel}
           </Button>
-          <Button className="creation-primary" type="submit" disabled={busy}>
+          <Button type="submit" disabled={busy}>
             {busy ? text.loading : text.save}
           </Button>
         </footer>
@@ -723,7 +718,7 @@ function CreationSurfaceContent({
   }
 
   return (
-    <>
+    <PageFrame className="creation-surface-frame">
       <CreationHeader
         name={name}
         query={controller.query}
@@ -761,7 +756,7 @@ function CreationSurfaceContent({
           onAction={controller.handleAction}
         />
       </div>
-    </>
+    </PageFrame>
   );
 }
 

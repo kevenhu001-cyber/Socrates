@@ -22,10 +22,11 @@
  */
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import postcss from 'postcss';
 
-const FRONTEND = 'C:/Users/Jiacheng/Desktop/Socrates/frontend';
-const REPO = 'C:/Users/Jiacheng/Desktop/Socrates';
+const FRONTEND = fileURLToPath(new URL('..', import.meta.url));
+const REPO = join(FRONTEND, '..');
 const DRY = process.argv.includes('--dry');
 const targets = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 

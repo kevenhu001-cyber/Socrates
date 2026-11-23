@@ -1,247 +1,37 @@
 /*
  * polish/workspace.css — shared directory page layout and controls.
  * The phone directories keep their geometry in the mobile surface owners.
+ *
+ * The page column, heading, toolbar, search field, range tabs and empty
+ * state are owned by features/page-kit.css. This file keeps only the
+ * directory content controls (view switch, filter button, table rows) and
+ * the creation page shell until that surface moves to the Page Kit.
  */
 
-/* The head is a flex row. The actions cell reserved a 520px basis while its
-   content is ~330px, so the title+description cell shrank to ~230px and the
-   Chinese description broke mid-phrase. Size actions to content and let the
-   copy claim the free width. */
-#appShell .projects-directory .workspace-page-head {
-  margin: 0 0 20px;
-}
-#appShell .workspace-head-actions {
-  flex: 0 0 auto;
-}
-#appShell .workspace-page-head > div:first-child {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-#appShell .workspace-page-head p {
-  max-width: 52ch;
-}
-
 @media (min-width: 769px) {
-  body.workspace-active #appShell :is(#libraryPanel, #spacesPanel, #scheduledPanel, #pluginsPanel) {
+  /* The shared landing/chat padding (5vh) must not inset a directory page:
+     PageFrame owns the page column and its 42px top rhythm. */
+  body.workspace-active #appShell #mainInner {
+    padding: 0;
+  }
+
+  body.workspace-active #appShell :is(#libraryPanel, #spacesPanel, #scheduledPanel, #pluginsPanel, .creation-panel.main-page) {
     width: 100%;
     max-width: var(--ui-page-width);
     margin-inline: auto;
     padding: 0;
   }
-
-  body.workspace-active #appShell .creation-panel.main-page {
-    inset-inline-start: 0;
-  }
-
-  body.workspace-active
-    #appShell
-    :is(
-      .projects-directory,
-      .scheduled-directory,
-      .library-directory,
-      .plugin-directory,
-      .creation-panel.main-page
-    ) {
-    box-sizing: border-box;
-    width: 100%;
-    max-width: var(--ui-page-width);
-    margin-inline: auto;
-    padding: var(--ui-page-top-space) var(--ui-page-gutter) var(--ui-page-bottom-space);
-  }
-
-  #appShell :is(.projects-directory, .scheduled-directory) .workspace-page-head {
-    align-items: flex-start;
-    gap: var(--ui-space-lg);
-    margin-bottom: var(--ui-space-lg);
-  }
-
-  #appShell
-    :is(
-      :is(.workspace-page-head, .library-head-left, .creation-header) h1,
-      .plugin-directory-heading h2
-    ) {
-    color: var(--ui-text-primary);
-    font-size: var(--ui-text-page);
-    line-height: var(--ui-control-desktop);
-    font-weight: var(--ui-font-weight-semibold);
-    letter-spacing: -0.02em;
-  }
-  #appShell :is(.workspace-page-head p, .library-desktop-desc, .plugin-directory-desc) {
-    margin: var(--ui-space-xxs) 0 0;
-    font-size: var(--ui-font-size-sm);
-    line-height: 1.5;
-    color: var(--ui-text-tertiary);
-  }
-  #appShell
-    :is(
-      .workspace-head-actions .workspace-create-button,
-      .library-head-actions .workspace-create-button,
-      .creation-header .creation-primary
-    ) {
-    min-height: var(--ui-control-md);
-    height: var(--ui-control-md);
-    padding-inline: var(--ui-space-md);
-    border-radius: var(--ui-radius-pill);
-  }
-  #appShell .creation-sites-header {
-    margin-bottom: var(--ui-space-lg);
-  }
-  #appShell .creation-header {
-    align-items: flex-start;
-  }
-
-  #appShell
-    :is(.projects-filter-tabs, .library-chips-bar, .plugin-directory-tabs, .scheduled-filter-tabs) {
-    background: transparent;
-    box-shadow: none;
-  }
-  #appShell
-    :is(.projects-filter-tabs, .library-chips-bar, .plugin-directory-tabs, .scheduled-filter-tabs)
-    button {
-    border-color: transparent;
-    border-radius: var(--ui-radius-pill);
-    color: var(--ui-text-secondary);
-  }
-  #appShell
-    :is(.projects-filter-tabs, .library-chips-bar, .plugin-directory-tabs, .scheduled-filter-tabs)
-    button:is([aria-pressed='true'], [aria-selected='true']) {
-    background: var(--ui-bg-pill-selected);
-    color: var(--ui-text-primary);
-    font-weight: var(--ui-font-weight-medium);
-  }
 }
 
-#appShell :is(.workspace-empty, .creation-empty)[data-slot='empty'] {
+#appShell .creation-empty[data-slot='empty'] {
   flex: 0 0 auto;
   gap: var(--ui-space-md);
   padding-block: var(--ui-space-xxl);
 }
 
-#appShell
-  :is(.projects-directory, .scheduled-directory, .library-directory)
-  .workspace-empty
-  [data-slot='empty-title'] {
-  color: var(--ui-text-primary);
-  font-size: var(--ui-font-size-md);
-  font-weight: var(--ui-font-weight-semibold);
-}
-
-@media (max-width: 768px) {
-  /* The restore layer used to dock the projects title + create button into
-     the top chrome and pull the panel up 71px to meet them. That was meant
-     to match a phone reference, but next to Library — which keeps an
-     in-flow hero header — it reads as a broken title crammed beside the
-     hamburger. The docked/fixed rules in ref-baseline.css and the generic
-     h1/search pins in mobile-parity.css were narrowed off the projects
-     subtree, so these rules own the layout outright: title + create pill
-     on row 1, search full-width on row 2. */
-  body.workspace-active #appShell #scheduledPanel {
-    top: 0;
-    padding-top: 16px;
-  }
-
-  #appShell .projects-directory .workspace-page-head {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-rows: none;
-    gap: 18px 10px;
-    align-items: start;
-    margin: 0 0 24px;
-    position: static;
-    z-index: auto;
-  }
-
-  #appShell .projects-directory .workspace-page-head > div:first-child {
-    grid-column: 1;
-    grid-row: 1;
-    display: block;
-    padding-left: 0;
-  }
-
-  /* One workspace title size across every directory page — see the Scheduled
-     head in features/surfaces.css. Library and Sites are both 28px/36px. */
-  #appShell .projects-directory .workspace-page-head h1 {
-    position: static;
-    font-size: var(--ui-text-hero);
-    line-height: 36px;
-    z-index: auto;
-  }
-
-  #appShell .projects-directory .workspace-page-head p {
-    display: none;
-  }
-
-  #appShell .projects-directory .workspace-head-actions {
-    display: contents;
-  }
-
-  #appShell .projects-directory .projects-create-button {
-    position: static;
-    top: auto;
-    right: auto;
-    z-index: auto;
-    grid-column: 2;
-    grid-row: 1;
-    align-self: start;
-    width: auto;
-    min-width: 52px;
-    height: auto;
-    /* mobile-parity.css still pins every .workspace-create-button to 42px
-       for the directory pages that keep the reference rhythm; projects
-       converges on the 40px density Library already uses. */
-    min-height: 40px;
-    padding: 0 16px;
-    font-size: var(--ui-font-size-md);
-    font-weight: var(--ui-font-weight-medium);
-  }
-
-  #appShell .projects-directory .workspace-search-field {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    width: 100%;
-    height: var(--ui-control-search);
-    min-height: var(--ui-control-search);
-    border-radius: var(--ui-radius-pill);
-  }
-}
-
-/* ==========================================================================
-   Library Directory — shared content heading and page actions
-   ========================================================================== */
-
-#appShell .library-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin: 0 0 16px;
-}
-
-#appShell .library-head-left h1 {
-  margin: 0;
-}
-
-#appShell .library-head-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-#appShell .library-new-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: var(--ui-control-desktop);
-  padding: 0 14px;
-}
-
-#appShell .library-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 0 0 16px;
-}
-
+/* Library toolbar controls. The header/search/tabs themselves are Page Kit
+   components; these classes only place the filter, divider and view switch
+   inside the shared toolbar row. */
 #appShell .library-toolbar-controls {
   display: flex;
   align-items: center;
@@ -271,72 +61,13 @@
 #appShell .library-view-btn {
   display: grid;
   place-items: center;
-  /* --ui-control-desktop, matching .library-tool-btn — this button sits in the same toolbar row, and a 34px
-     box beside 36px siblings reads as a rendering bug rather than a density
-     choice. */
+  /* --ui-control-desktop, matching .library-tool-btn — this button sits in
+     the same toolbar row, and a 34px box beside 36px siblings reads as a
+     rendering bug rather than a density choice. */
   width: var(--ui-control-desktop);
   height: var(--ui-control-desktop);
 }
 
-/* Layout hook only — the shared .workspace-search-field pill chrome
-   (42px, 999px radius, 18px icon, gap 10px) is the single search-field
-   UI across every workspace page; only the flex sizing is local. */
-#appShell .library-search-pill {
-  flex: 1;
-  min-width: 0;
-  min-height: var(--ui-control-search);
-  padding: 0 14px;
-  border-radius: var(--ui-radius-pill);
-}
-
-#appShell .library-chips-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0 0 16px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-#appShell .library-chips-bar::-webkit-scrollbar {
-  display: none;
-}
-
-#appShell .library-chip {
-  flex: 0 0 auto;
-  /* --ui-control-desktop, the same rung as the .plugin-directory-tabs /
-     .scheduled-filter-tabs pills this chip row sits beside. It was a literal
-     34px — the exact "renders 2px shorter than its siblings" bug the
-     .library-view-btn note above calls out. */
-  height: var(--ui-control-desktop);
-  padding: 0 16px;
-  border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-pill);
-  background: transparent;
-  color: var(--muted-foreground);
-  font-size: var(--ui-font-size-sm);
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-#appShell .library-chip:hover {
-  background: var(--accent);
-  color: var(--foreground);
-}
-
-#appShell .library-chip.active {
-  background: var(--ui-bg-raised);
-  color: var(--foreground);
-  font-weight: var(--ui-font-weight-medium);
-  border-color: var(--border);
-}
-
-/* File type squircle icons. The fill comes from the --ui-file-* palette in
-   themes.css (one token per type, mapped onto --ui-file-color by the
-   .library-file-* classes there), so the desktop tile and the phone row icon
-   — which already paints --ui-file-color as its glyph — are the same hue for
-   the same file type. These used to be eight hardcoded Tailwind rgb() values
-   that no theme could reach. */
 #appShell .library-file-icon {
   display: grid;
   place-items: center;

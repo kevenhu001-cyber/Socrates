@@ -136,7 +136,7 @@ test('plugin center filters public/personal apps and scheduled templates prefill
   await expect(page.locator('.plugin-directory-row')).toHaveCount(1);
   await appSearch.fill('zzz-no-such-app');
   await expect(page.locator('.plugin-directory-row')).toHaveCount(0);
-  await expect(page.locator('.plugin-directory-empty')).toBeVisible();
+  await expect(page.locator('.ui-page-empty')).toBeVisible();
   await appSearch.fill('');
   await expect(page.locator('.plugin-directory-row')).toHaveCount(3);
   const publicScope = page.getByRole('button', { name: 'Public' });

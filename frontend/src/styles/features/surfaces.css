@@ -19,9 +19,6 @@
   background: var(--ui-bg-page);
 }
 
-#appShell .workspace-page-head h1,
-#appShell .workspace-page-head h2,
-#appShell .plugin-directory-heading h2,
 #appShell .exam-view h1,
 #appShell .modal-head h2 {
   color: var(--foreground);
@@ -64,20 +61,6 @@
 /* ── Directory rows — Library/Projects/Scheduled hierarchy (moved from restore/fixes.css) ── */
 /* Directory rows share the same quiet hierarchy across Library, Projects,
    Plugins and Scheduled. Keep controls visible on touch devices. */
-#appShell .library-directory .workspace-page-head,
-#appShell .plugin-directory .plugin-directory-head {
-  margin-bottom: 20px;
-}
-#appShell .library-directory .workspace-tabs {
-  display: flex;
-  gap: 4px;
-  max-width: 100%;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-#appShell .library-directory .workspace-tabs button {
-  white-space: nowrap;
-}
 #appShell .library-row-menu-wrap {
   position: relative;
 }
@@ -146,32 +129,6 @@
   visibility: visible;
 }
 
-#appShell .plugin-directory-head {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 24px;
-  margin-bottom: 28px;
-}
-#appShell .plugin-directory-heading {
-  min-width: 0;
-}
-#appShell .plugin-directory-tools {
-  display: flex;
-  align-items: center;
-}
-#appShell .plugin-directory-add-btn {
-  display: grid;
-  place-items: center;
-  flex: 0 0 auto;
-  width: 40px;
-  height: 40px;
-}
-#appShell .plugin-directory-add-btn svg {
-  width: 20px;
-  height: 20px;
-}
-
 /* Your apps — the connected strip doubles as the jump target for "Personal". */
 #appShell .plugin-installed-strip {
   display: flex;
@@ -226,29 +183,6 @@
   background: var(--ui-bg-raised);
 }
 
-/* Scope chips use the shadcn ToggleGroup interaction. These rules own only
-   the scroll rail; the Toggle and selected-state styling comes from shadcn. */
-#appShell .plugin-directory-tabs {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0 0 28px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-#appShell .plugin-directory-tabs::-webkit-scrollbar {
-  display: none;
-}
-#appShell .plugin-directory-tabs [data-slot='toggle-group-item'] {
-  flex: 0 0 auto;
-  white-space: nowrap;
-}
-#appShell .plugin-directory-tab-count {
-  color: var(--ui-text-tertiary);
-  font-size: var(--ui-font-size-xs);
-  font-weight: var(--ui-font-weight-regular);
-}
-
 #appShell .plugin-directory-section {
   margin: 0 0 32px;
 }
@@ -282,76 +216,8 @@
   background: var(--accent);
 }
 
-/* Scheduled directory — same page chrome as Projects/Library: a shared
-   .workspace-page-head (title + description left, search + create right),
-   a pill tab rail for the active filter, quiet section labels, and the
-   raised card grid for template suggestions. */
-
-/* Scope tabs mirror .plugin-directory-tabs: plain-text pills with a
-   filled active state rather than a boxed segmented control. */
-#appShell .scheduled-filter-tabs {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0 0 28px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-#appShell .scheduled-filter-tabs::-webkit-scrollbar {
-  display: none;
-}
-#appShell .scheduled-filter-tabs button {
-  display: flex;
-  align-items: center;
-  flex: 0 0 auto;
-  min-height: var(--ui-control-desktop);
-  padding: 0 16px;
-  border: 0;
-  border-radius: var(--ui-radius-pill);
-  background: transparent;
-  color: var(--muted-foreground);
-  font-size: var(--ui-font-size-sm);
-  white-space: nowrap;
-}
-#appShell .scheduled-filter-tabs button:hover {
-  background: var(--accent);
-  color: var(--foreground);
-}
-
-/* Section labels match .plugin-directory-section h3: quiet text, no chip. */
-#appShell .scheduled-section-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  height: auto;
-  margin: 0 0 14px;
-  padding: 0;
-  color: var(--foreground);
-  font-size: 17px;
-  font-weight: var(--ui-font-weight-semibold);
-}
-#appShell .scheduled-section-heading > span:last-child {
-  color: var(--ui-text-tertiary);
-  font-size: var(--ui-font-size-xs);
-  font-weight: var(--ui-font-weight-regular);
-}
-#appShell .scheduled-heading-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  height: auto;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  color: inherit;
-  font-size: inherit;
-}
-#appShell .scheduled-heading-label svg {
-  display: none;
-}
-
-/* Template suggestions become the same raised cards as the plugin grid. */
+/* Scheduled directory — Page Kit owns the page header, toolbar, range tabs
+   and empty state; this file keeps the suggestion grid and task rows. */
 #appShell .scheduled-recommendations {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -591,38 +457,6 @@
 /* Plugin discovery follows the reference's open, editorial list: the search
    field sits under the intro and results breathe in two quiet columns. */
 @media (min-width: 769px) {
-  #appShell .plugin-directory-head {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 20px;
-    margin-bottom: 26px;
-  }
-  #appShell .plugin-directory-heading h2 {
-    margin: 0;
-  }
-  #appShell .plugin-directory-tools {
-    gap: 10px;
-    width: 100%;
-  }
-  /* Desktop search pill = the shared 42px workspace search field (same box as
-     .library-search-pill / .workspace-search-field). It was 46px here, so the
-     Plugin directory rendered a taller search than every other directory.
-     Mobile keeps its own 36px density, pinned by polish/mobile-directories.css
-     against docs/ref/mobile-reference-2026-10-04.md — do not align the two. */
-  #appShell .plugin-directory-search {
-    flex: 1 1 auto;
-    min-width: 0;
-    min-height: var(--ui-control-search);
-    border-radius: var(--ui-radius-pill);
-    background: var(--ui-bg-surface);
-  }
-  #appShell .plugin-directory-search input {
-    min-height: var(--ui-control-md);
-  }
-  #appShell .plugin-directory-add-btn {
-    width: var(--ui-control-md);
-    height: var(--ui-control-md);
-  }
   #appShell .plugin-installed-strip {
     min-height: 56px;
     margin-bottom: 22px;
@@ -634,13 +468,6 @@
     width: 42px;
     height: 42px;
     border-radius: var(--ui-radius-lg);
-  }
-  #appShell .plugin-directory-tabs {
-    gap: 3px;
-    margin-bottom: 26px;
-  }
-  #appShell .plugin-directory-tabs [data-slot='toggle-group-item'] {
-    min-height: 36px;
   }
   #appShell .plugin-directory-section {
     margin-bottom: 34px;
@@ -697,7 +524,6 @@
 }
 
 #appShell .workspace-search-field,
-#appShell .plugin-directory-search,
 #appShell .workspace-field input,
 #appShell .workspace-field textarea,
 #appShell .workspace-field select {
@@ -812,72 +638,6 @@
     min-height: calc(100dvh - 56px);
     overflow-y: auto;
     overscroll-behavior: contain;
-  }
-  /* ref-baseline docks #scheduledPanel's title into the top chrome
-     (top:-71px + position:fixed h1). The panel reset lives in
-     polish/workspace.css next to the Projects one — this file loads before
-     restore/, so an !important here would lose. Scheduled shares the Projects
-     head structure and gets the same in-flow grid pattern: title + create
-     pill on row 1, search full-width on row 2. */
-  #appShell .scheduled-directory .workspace-page-head {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 18px 10px;
-    align-items: start;
-    margin: 0 0 24px;
-    position: static;
-    z-index: auto;
-  }
-  #appShell .scheduled-directory .workspace-page-head > div:first-child {
-    display: block;
-    padding-left: 0;
-  }
-  /* Workspace page titles share one size. Library (polish/workspace.css) and
-     Sites (features/surfaces.css:350) already sit at 28px/36px; Projects and
-     Scheduled used to sit a step below at 27px, which read as a rendering
-     accident rather than a hierarchy. */
-  #appShell .scheduled-directory .workspace-page-head h1 {
-    position: static;
-    margin: 0;
-    font-size: var(--ui-text-hero);
-    line-height: 36px;
-    z-index: auto;
-  }
-  #appShell .scheduled-directory .workspace-page-head p {
-    display: none;
-  }
-  #appShell .scheduled-directory .workspace-head-actions {
-    display: contents;
-  }
-  #appShell .scheduled-directory .workspace-create-button {
-    grid-column: 2;
-    grid-row: 1;
-    align-self: start;
-    min-height: 40px;
-    padding: 0 16px;
-    border-radius: var(--ui-radius-pill);
-  }
-  #appShell .scheduled-directory .workspace-search-field {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    width: 100%;
-    height: var(--ui-control-search);
-    min-height: var(--ui-control-search);
-    border-radius: var(--ui-radius-pill);
-  }
-  #appShell .scheduled-filter-tabs {
-    margin: 0 -16px 18px;
-    padding: 0 16px;
-  }
-  #appShell .scheduled-filter-tabs button {
-    min-height: 40px;
-    padding: 0 16px;
-    font-size: var(--ui-font-size-md);
-  }
-  #appShell .scheduled-filter-tabs button.active {
-    background: var(--ui-bg-raised);
-    color: var(--ui-text-primary);
-    font-weight: var(--ui-font-weight-semibold);
   }
   #appShell .scheduled-section-heading {
     font-size: var(--ui-font-size-md);

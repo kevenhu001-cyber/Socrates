@@ -232,6 +232,27 @@ html[data-main-view$='Panel'] #appShell .mobile-newchat-btn {
   display: none;
 }
 
+/* Directory and creation pages supply their own page header below the
+   canvas edge. On desktop the 44px chat bar has nothing left to show once
+   the model, mode and new-chat controls are hidden, so it must not sit as
+   an empty strip above the page. Phones keep the bar for the hamburger and
+   the page title. */
+@media (min-width: 769px) {
+  html:is(
+      [data-main-view='libraryPanel'],
+      [data-main-view='spacesPanel'],
+      [data-main-view='pluginsPanel'],
+      [data-main-view='scheduledPanel'],
+      [data-main-view='imagesPanel'],
+      [data-main-view='assistantsPanel'],
+      [data-main-view='sitesPanel']
+    )
+    #appShell
+    #topBar {
+    display: none;
+  }
+}
+
 /* Phones: the model chip sits at the trailing edge of the landing header.
    The RN chip sizes itself; only its placement is the page's. */
 @media (max-width: 768px) {

@@ -743,34 +743,6 @@ body.workspace-active #appShell #mainInner {
   width: 100%;
 }
 
-.workspace-page-head {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 40px;
-  margin: 0 0 46px;
-}
-.plugin-directory-head {
-  display: flex;
-  margin: 0 0 46px;
-}
-
-.workspace-page-head h1,
-.plugin-directory-head h2 {
-  margin: 0;
-  color: var(--cg-text);
-  letter-spacing: -0.035em;
-  line-height: 1.15;
-}
-
-.workspace-head-actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  flex: 0 1 520px;
-  gap: 12px;
-}
-
 .workspace-search-field,
 .plugin-directory-search {
   display: flex;
@@ -818,33 +790,6 @@ body.workspace-active #appShell #mainInner {
 .workspace-search-field input::placeholder,
 .plugin-directory-search input::placeholder {
   color: var(--cg-text-muted);
-}
-
-.workspace-create-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  padding: 0 18px;
-  gap: 8px;
-  border: 1px solid var(--cg-border-strong);
-  border-radius: 24px;
-  color: var(--cg-page);
-  background: var(--cg-text);
-  font: var(--ui-font-weight-semibold) 14px/1 var(--cg-font);
-  cursor: pointer;
-}
-
-.workspace-create-button:hover {
-  opacity: 0.88;
-}
-.workspace-create-button:focus-visible {
-  outline: 2px solid transparent;
-  outline-offset: 2px;
-}
-.workspace-create-button svg {
-  width: 18px;
-  height: 18px;
 }
 
 .plugin-directory-tabs {
@@ -973,18 +918,6 @@ body.workspace-active #appShell .project-row {
 }
 
 @media (max-width: 900px) {
-  .workspace-page-head {
-    align-items: stretch;
-    flex-direction: column;
-    gap: 20px;
-  }
-  .plugin-directory-head {
-    flex-direction: column;
-  }
-  .workspace-head-actions {
-    flex: 0 0 auto;
-    justify-content: flex-start;
-  }
   .workspace-table-head {
     grid-template-columns: minmax(0, 1fr) 120px 80px 48px;
   }
@@ -994,20 +927,6 @@ body.workspace-active #appShell .project-row {
 }
 
 @media (max-width: 640px) {
-  .workspace-page-head h1,
-  .plugin-directory-head h2 {
-    font-size: 26px;
-  }
-  .workspace-head-actions {
-    align-items: stretch;
-    flex-direction: column;
-  }
-  .workspace-search-field {
-    width: 100%;
-  }
-  .workspace-create-button {
-    align-self: flex-start;
-  }
   .workspace-table-head {
     display: none;
   }

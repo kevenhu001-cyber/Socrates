@@ -1,6 +1,3 @@
-import { Label as ShadcnLabel } from '../../ui/shadcn/label';
-import { Input as ShadcnInput } from '../../ui/shadcn/input';
-import { Button } from '../../ui/shadcn/button';
 import { ListFilter } from 'lucide-react';
 import { t as _t } from '../../../ui/legacyI18n.ts';
 
@@ -37,22 +34,6 @@ function libraryDate(value?: string): string {
     rel = rtf.format(-elapsedHours, 'hour');
   }
   return isZh ? `修改于 ${rel}` : `Modified ${rel}`;
-}
-
-function SearchIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <circle cx="11" cy="11" r="7" />
-      <path d="m20 20-4-4" />
-    </svg>
-  );
 }
 
 function PlusIcon() {
@@ -208,74 +189,6 @@ function projectMeta(project: {
   return project.description || '';
 }
 
-function WorkspaceSearchField({
-  label,
-  query,
-  onQuery,
-  className = 'workspace-search-field',
-}: {
-  label: string;
-  query: string;
-  onQuery: (value: string) => void;
-  className?: string;
-}) {
-  return (
-    <ShadcnLabel className={className}>
-      <SearchIcon />
-      <ShadcnInput
-        type="search"
-        value={query}
-        onChange={(event) => onQuery(event.target.value)}
-        placeholder={label}
-        aria-label={label}
-      />
-    </ShadcnLabel>
-  );
-}
-
-function WorkspacePageHeader({
-  titleId,
-  title,
-  description,
-  searchLabel,
-  query,
-  onQuery,
-  actionLabel,
-  onAction,
-  actionClassName = '',
-}: {
-  titleId: string;
-  title: string;
-  description: string;
-  searchLabel: string;
-  query: string;
-  onQuery: (value: string) => void;
-  actionLabel: string;
-  onAction: () => void;
-  actionClassName?: string;
-}) {
-  return (
-    <div className="workspace-page-head">
-      <div>
-        <h1 id={titleId}>{title}</h1>
-        <p>{description}</p>
-      </div>
-      <div className="workspace-head-actions">
-        <WorkspaceSearchField label={searchLabel} query={query} onQuery={onQuery} />
-        <Button
-          type="button"
-          variant="default"
-          className={`workspace-create-button ${actionClassName}`}
-          onClick={onAction}
-        >
-          <PlusIcon />
-          <span>{actionLabel}</span>
-        </Button>
-      </div>
-    </div>
-  );
-}
-
 /* ------------------------------------------------------------------ */
 /*  Plugins sub-component                                              */
 /* ------------------------------------------------------------------ */
@@ -284,7 +197,6 @@ export {
   i18n,
   fileSize,
   libraryDate,
-  SearchIcon,
   PlusIcon,
   FilterIcon,
   GridIcon,
@@ -294,6 +206,4 @@ export {
   pluginDirectoryRank,
   installedRank,
   projectMeta,
-  WorkspacePageHeader,
-  WorkspaceSearchField,
 };

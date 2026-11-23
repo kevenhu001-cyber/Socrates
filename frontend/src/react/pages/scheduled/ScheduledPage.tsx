@@ -1,5 +1,6 @@
 import { Tabs, TabsList, TabsTrigger } from '../../ui/shadcn/tabs';
 import { Alert, AlertDescription } from '../../ui/shadcn/alert';
+import { Button } from '../../ui/shadcn/button';
 import { cn } from 'cn';
 import { createRootSlot } from '../../lib/boot/ownedRoot';
 import { useMemo, useState } from 'react';
@@ -12,7 +13,10 @@ import { ScheduledRecommendations } from './ScheduledRecommendations';
 import { ScheduledTaskList } from './ScheduledTaskList';
 import { scheduledText } from './scheduled.copy';
 import { WorkspaceLoadingView } from '../workspace/WorkspaceLoadingView';
-import { WorkspacePageHeader } from '../workspace/workspaceUi';
+import { PageFrame } from '../../ui/page/PageFrame';
+import { PageHeader } from '../../ui/page/PageHeader';
+import { PageSearchField } from '../../ui/page/PageSearchField';
+import { PageToolbar } from '../../ui/page/PageToolbar';
 
 const PANEL_ID = 'scheduledPanel';
 
@@ -45,33 +49,46 @@ export function ScheduledPage() {
   const createTask = (initialPrompt?: string) => openScheduledTaskForm(undefined, initialPrompt);
 
   return (
-    <section
-      className="workspace-surface scheduled-directory"
-      aria-labelledby="scheduled-directory-title"
-    >
-      <WorkspacePageHeader
+    <PageFrame className="scheduled-directory" aria-labelledby="scheduled-directory-title">
+      <PageHeader
         titleId="scheduled-directory-title"
         title={scheduledText('scheduled.title', 'Scheduled')}
         description={scheduledText(
           'scheduled.subtitle',
           'Let Socrates plan follow-ups, reminders, and recurring updates for you.',
         )}
-        searchLabel={scheduledText('scheduled.search', 'Search tasks')}
-        query={query}
-        onQuery={setQuery}
-        actionLabel={scheduledText('scheduled.new', 'New')}
-        onAction={() => createTask()}
+        actions={
+          <Button type="button" onClick={() => createTask()}>
+            {scheduledText('scheduled.new', 'New')}
+          </Button>
+        }
       />
+
+      <PageToolbar>
+        <PageSearchField
+          label={scheduledText('scheduled.search', 'Search tasks')}
+          query={query}
+          onQuery={setQuery}
+        />
+      </PageToolbar>
 
       <Tabs value={scope} onValueChange={(value) => setScope(value as typeof scope)}>
         <TabsList
-          className="scheduled-filter-tabs"
+          className="ui-page-tabs scheduled-filter-tabs"
           aria-label={scheduledText('scheduled.filter', 'Task filter')}
         >
-          <TabsTrigger type="button" value="all" className={cn(scope === 'all' && 'active')}>
+          <TabsTrigger
+            type="button"
+            value="all"
+            className={cn('ui-page-tab', scope === 'all' && 'active')}
+          >
             {scheduledText('scheduled.all', 'All')}
           </TabsTrigger>
-          <TabsTrigger type="button" value="active" className={cn(scope === 'active' && 'active')}>
+          <TabsTrigger
+            type="button"
+            value="active"
+            className={cn('ui-page-tab', scope === 'active' && 'active')}
+          >
             {scheduledText('scheduled.activeOnly', 'Active')}
           </TabsTrigger>
         </TabsList>
@@ -98,7 +115,7 @@ export function ScheduledPage() {
           }}
         />
       )}
-    </section>
+    </PageFrame>
   );
 }
 

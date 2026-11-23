@@ -1,6 +1,6 @@
 import { i18n } from './workspaceUi';
-import { Empty, EmptyHeader, EmptyTitle, EmptyDescription } from '../../ui/shadcn/empty';
 import { Button } from '../../ui/shadcn/button';
+import { PageEmptyState } from '../../ui/page/PageEmptyState';
 
 import { triggerLibraryUpload } from './LibraryUploadInput';
 
@@ -11,37 +11,33 @@ interface LibraryEmptyStateProps {
 }
 
 export function LibraryEmptyState({ query, chip, canUpload }: LibraryEmptyStateProps) {
+  if (query) {
+    return (
+      <PageEmptyState
+        title={i18n('library.noMatch', 'No matching items')}
+        description={i18n('library.noMatchDesc', 'Try a different search.')}
+      />
+    );
+  }
+  if (chip === 'images') {
+    return (
+      <PageEmptyState
+        title={i18n('library.emptyImages', 'No images yet')}
+        description={i18n('library.emptyImagesDesc', 'Images you add will appear here.')}
+      />
+    );
+  }
   return (
-    <Empty className="workspace-empty">
-      <EmptyHeader>
-        {query ? (
-          <>
-            <EmptyTitle>{i18n('library.noMatch', 'No matching items')}</EmptyTitle>
-            <EmptyDescription>
-              {i18n('library.noMatchDesc', 'Try a different search.')}
-            </EmptyDescription>
-          </>
-        ) : chip === 'images' ? (
-          <>
-            <EmptyTitle>{i18n('library.emptyImages', 'No images yet')}</EmptyTitle>
-            <EmptyDescription>
-              {i18n('library.emptyImagesDesc', 'Images you add will appear here.')}
-            </EmptyDescription>
-          </>
-        ) : (
-          <>
-            <EmptyTitle>{i18n('library.emptyFiles', '你的资料库已就绪')}</EmptyTitle>
-            <EmptyDescription>
-              {i18n('library.emptyFilesDesc', '上传文件，或在对话中添加附件。')}
-            </EmptyDescription>
-          </>
-        )}
-      </EmptyHeader>
-      {canUpload && (
-        <Button type="button" onClick={() => triggerLibraryUpload()}>
-          {i18n('library.upload', 'Upload file')}
-        </Button>
-      )}
-    </Empty>
+    <PageEmptyState
+      title={i18n('library.emptyFiles', '你的资料库已就绪')}
+      description={i18n('library.emptyFilesDesc', '上传文件，或在对话中添加附件。')}
+      action={
+        canUpload ? (
+          <Button type="button" onClick={() => triggerLibraryUpload()}>
+            {i18n('library.upload', 'Upload file')}
+          </Button>
+        ) : undefined
+      }
+    />
   );
 }

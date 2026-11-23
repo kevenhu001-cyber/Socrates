@@ -63,15 +63,16 @@ test('projects directory header, tabs, and search keep compact geometry', async 
       const rect = node?.getBoundingClientRect();
       return rect ? { x: rect.x, y: rect.y, width: rect.width, height: rect.height } : null;
     };
-    const desc = document.querySelector('.workspace-page-head p');
+    const desc = document.querySelector('.ui-page-description');
     const descStyle = desc ? getComputedStyle(desc) : null;
     return {
-      head: box('.workspace-page-head'),
+      head: box('.ui-page-header'),
+      toolbar: box('.ui-page-toolbar'),
       descHeight: desc?.getBoundingClientRect().height ?? null,
       descWraps: desc && descStyle ? desc.scrollWidth > desc.clientWidth + 1 : null,
-      search: box('.workspace-search-field'),
-      tabs: box('.projects-filter-tabs'),
-      tabButton: box('.projects-filter-tabs [data-slot="toggle-group-item"]'),
+      search: box('.ui-page-search'),
+      tabs: box('.ui-page-tabs'),
+      tabButton: box('.ui-page-tabs [data-slot="toggle-group-item"]'),
     };
   });
 
@@ -80,9 +81,11 @@ test('projects directory header, tabs, and search keep compact geometry', async 
   expect(geometry.descHeight ?? 99).toBeLessThanOrEqual(24);
   expect(geometry.descWraps).toBe(false);
   /* Search stays the compact field inside the header row. */
-  expect(geometry.search?.width ?? 0).toBeGreaterThanOrEqual(200);
-  expect(geometry.search?.width ?? 999).toBeLessThanOrEqual(280);
-  expect(Math.abs((geometry.search?.y ?? 0) - (geometry.head?.y ?? 0))).toBeLessThanOrEqual(20);
+  expect(geometry.search?.width ?? 0).toBeGreaterThanOrEqual(240);
+  expect(geometry.search?.width ?? 999).toBeLessThanOrEqual(420);
+  expect(geometry.toolbar?.y ?? 0).toBeGreaterThanOrEqual(
+    (geometry.head?.y ?? 0) + (geometry.head?.height ?? 0),
+  );
   /* Tab rail and pills. */
   expect(geometry.tabs?.height ?? 0).toBeLessThanOrEqual(48);
   expect(geometry.tabButton?.height ?? 0).toBeLessThanOrEqual(36);
@@ -101,11 +104,11 @@ test('projects directory header, tabs, and search keep compact geometry', async 
 
 test('projects directory empty state keeps the same compact chrome', async ({ page }) => {
   await openProjects(page, { withProjects: false });
-  const empty = page.locator('.projects-directory .workspace-empty');
+  const empty = page.locator('.projects-directory .ui-page-empty');
   await expect(empty).toBeVisible();
 
   const tabsHeight = await page
-    .locator('.projects-filter-tabs')
+    .locator('.ui-page-tabs')
     .evaluate((el) => el.getBoundingClientRect().height);
   expect(tabsHeight).toBeLessThanOrEqual(48);
   const titleBox = await page.locator('#projects-directory-title').boundingBox();
@@ -169,7 +172,7 @@ test('typed project actions create, edit, and open a workspace from API data', a
   await waitForAppShell(page);
   await page.locator('#navProjects').click();
 
-  await page.locator('.projects-directory .workspace-create-button').click();
+  await page.locator('.projects-directory .projects-create-button').click();
   const form = page.locator('#projectForm');
   await page.screenshot({
     path: 'test-results/project-memory-mode-dialog.png',

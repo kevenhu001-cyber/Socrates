@@ -86,7 +86,7 @@ test('scheduled task list searches, filters active tasks, and dispatches row act
   await expect(page.locator('.task-row')).toHaveCount(3);
   await expect(page.locator('.scheduled-recommendation').first()).toBeVisible();
 
-  const search = page.locator('.workspace-search-field input');
+  const search = page.locator('.ui-page-search input');
   await search.fill('newsletter');
   await expect(page.locator('.task-row')).toHaveCount(1);
   await expect(page.locator('.task-row')).toContainText('Morning briefing');
@@ -107,7 +107,7 @@ test('scheduled task list searches, filters active tasks, and dispatches row act
   await expect.poll(() => runRequests).toEqual(['task-active']);
 
   await page.locator('.task-row .workspace-row-action').nth(1).click();
-  await expect(page.locator('.workspace-empty')).toContainText('No active tasks');
+  await expect(page.locator('.ui-page-empty')).toContainText('No active tasks');
   await expect(page.locator('.task-row')).toHaveCount(0);
 });
 

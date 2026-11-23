@@ -1,12 +1,6 @@
 import { Button } from '../../ui/shadcn/button';
 import { scheduledText } from './scheduled.copy';
-import {
-  Empty,
-  EmptyHeader,
-  EmptyTitle,
-  EmptyDescription,
-  EmptyContent,
-} from '../../ui/shadcn/empty';
+import { PageEmptyState } from '../../ui/page/PageEmptyState';
 
 interface ScheduledEmptyStateProps {
   searching: boolean;
@@ -15,42 +9,37 @@ interface ScheduledEmptyStateProps {
 }
 
 export function ScheduledEmptyState({ searching, scope, onCreate }: ScheduledEmptyStateProps) {
-  return (
-    <Empty className="workspace-empty">
-      <EmptyHeader>
-        {searching ? (
-          <>
-            <EmptyTitle>{scheduledText('scheduled.noMatch', 'No matching tasks')}</EmptyTitle>
-            <EmptyDescription>
-              {scheduledText('scheduled.noMatchDesc', 'Try a different search.')}
-            </EmptyDescription>
-          </>
-        ) : scope === 'active' ? (
-          <>
-            <EmptyTitle>{scheduledText('scheduled.noActive', 'No active tasks')}</EmptyTitle>
-            <EmptyDescription>
-              {scheduledText('scheduled.noActiveDesc', 'Paused and completed tasks are hidden.')}
-            </EmptyDescription>
-          </>
-        ) : (
-          <>
-            <EmptyTitle>{scheduledText('scheduled.empty', 'Let Socrates follow up')}</EmptyTitle>
-            <EmptyDescription>
-              {scheduledText(
-                'scheduled.emptyDesc',
-                'Create a reminder, recurring briefing, or monitoring task.',
-              )}
-            </EmptyDescription>
-          </>
+  if (searching) {
+    return (
+      <PageEmptyState
+        title={scheduledText('scheduled.noMatch', 'No matching tasks')}
+        description={scheduledText('scheduled.noMatchDesc', 'Try a different search.')}
+      />
+    );
+  }
+  if (scope === 'active') {
+    return (
+      <PageEmptyState
+        title={scheduledText('scheduled.noActive', 'No active tasks')}
+        description={scheduledText(
+          'scheduled.noActiveDesc',
+          'Paused and completed tasks are hidden.',
         )}
-      </EmptyHeader>
-      {!searching && scope === 'all' ? (
-        <EmptyContent>
-          <Button type="button" onClick={onCreate}>
-            {scheduledText('scheduled.createTask', 'Create task')}
-          </Button>
-        </EmptyContent>
-      ) : null}
-    </Empty>
+      />
+    );
+  }
+  return (
+    <PageEmptyState
+      title={scheduledText('scheduled.empty', 'Let Socrates follow up')}
+      description={scheduledText(
+        'scheduled.emptyDesc',
+        'Create a reminder, recurring briefing, or monitoring task.',
+      )}
+      action={
+        <Button type="button" onClick={onCreate}>
+          {scheduledText('scheduled.createTask', 'Create task')}
+        </Button>
+      }
+    />
   );
 }

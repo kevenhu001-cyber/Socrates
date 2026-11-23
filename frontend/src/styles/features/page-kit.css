@@ -1,0 +1,250 @@
+/*
+ * page-kit.css — shared page composition layer.
+ *
+ * This file owns the page column, heading, toolbar, range tabs and empty
+ * state for every standard app page. It is layout and rhythm only: colour,
+ * type, radius and control sizes come from the --ui-* contract. Individual
+ * pages keep only their content layout; they must not re-declare a page
+ * header, a primary button skin or a second search field.
+ */
+
+/* ── Page column ─────────────────────────────────────────────────────── */
+
+.ui-page-frame {
+  box-sizing: border-box;
+  align-self: flex-start;
+  width: 100%;
+  max-width: var(--ui-page-width);
+  margin-inline: auto;
+  padding: var(--ui-page-top-space) var(--ui-page-gutter) var(--ui-page-bottom-space);
+}
+
+/* ── Page header ─────────────────────────────────────────────────────── */
+
+.ui-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--ui-space-xl);
+  margin: 0 0 var(--ui-space-lg);
+}
+
+.ui-page-heading {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ui-page-heading h1 {
+  margin: 0;
+  color: var(--ui-text-primary);
+  font-size: var(--ui-text-page);
+  font-weight: var(--ui-font-weight-semibold);
+  line-height: 1.5;
+  letter-spacing: -0.02em;
+}
+
+.ui-page-eyebrow {
+  margin: 0 0 var(--ui-space-xxs);
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-font-weight-medium);
+  line-height: 1.5;
+}
+
+.ui-page-description {
+  max-width: 52ch;
+  margin: var(--ui-space-xxs) 0 0;
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-sm);
+  line-height: 1.5;
+}
+
+.ui-page-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--ui-space-sm);
+}
+
+/* ── Toolbar ─────────────────────────────────────────────────────────── */
+
+.ui-page-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ui-space-sm);
+  margin: 0 0 var(--ui-space-md);
+}
+
+/* Shared page search: one 42px pill, same chrome as Library. The inner
+ * input drops its own frame and lets the wrapper carry the focus ring. */
+.ui-page-search {
+  display: flex;
+  flex: 1 1 240px;
+  align-items: center;
+  gap: var(--ui-space-sm);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 420px;
+  height: var(--ui-control-search);
+  padding: 0 var(--ui-space-md);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-bg-raised);
+  color: var(--ui-text-tertiary);
+}
+
+.ui-page-search > svg {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+}
+
+.ui-page-search input {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ui-text-primary);
+  font-size: var(--ui-font-size-sm);
+  box-shadow: none;
+}
+
+.ui-page-search input::placeholder {
+  color: var(--ui-text-placeholder);
+  opacity: 1;
+}
+
+.ui-page-search:focus-within {
+  border-color: var(--ui-border-default);
+  box-shadow: var(--ui-focus-shadow);
+}
+
+@media (forced-colors: active) {
+  .ui-page-search:focus-within {
+    outline: 2px solid Highlight;
+  }
+}
+
+/* ── Range tabs ──────────────────────────────────────────────────────── */
+
+.ui-page-tabs[data-slot='toggle-group'],
+.ui-page-tabs[data-slot='tabs-list'] {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-xxs);
+  box-sizing: border-box;
+  height: var(--ui-control-desktop);
+  padding: var(--ui-space-xxs);
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-bg-raised);
+}
+
+.ui-page-tab[data-slot='toggle-group-item'],
+.ui-page-tab[data-slot='tabs-trigger'] {
+  height: var(--ui-control-sm);
+  min-height: 0;
+  padding: 0 var(--ui-space-md);
+  border: 0;
+  border-radius: var(--ui-radius-pill);
+  background: transparent;
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-medium);
+  box-shadow: none;
+}
+
+.ui-page-tab[data-slot='toggle-group-item']:hover,
+.ui-page-tab[data-slot='tabs-trigger']:hover {
+  background: var(--ui-bg-hover);
+  color: var(--ui-text-primary);
+}
+
+.ui-page-tab[data-slot='toggle-group-item']:is(
+  [aria-pressed='true'],
+  [data-state='on'],
+  .active
+),
+.ui-page-tab[data-slot='tabs-trigger']:is([aria-selected='true'], [data-state='on'], .active) {
+  background: var(--ui-bg-pill-selected);
+  color: var(--ui-text-primary);
+}
+
+/* ── Empty state ─────────────────────────────────────────────────────── */
+
+.ui-page-empty[data-slot='empty'] {
+  flex: 0 0 auto;
+  gap: var(--ui-space-md);
+  padding-block: var(--ui-space-xxl);
+}
+
+.ui-page-empty [data-slot='empty-title'] {
+  color: var(--ui-text-primary);
+  font-size: var(--ui-font-size-md);
+  font-weight: var(--ui-font-weight-semibold);
+  line-height: 1.5;
+}
+
+.ui-page-empty [data-slot='empty-description'] {
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-sm);
+  line-height: 1.5;
+}
+
+/* ── Phone ───────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .ui-page-frame {
+    padding: var(--ui-space-lg) var(--ui-mobile-page-gutter) var(--ui-space-xxl);
+  }
+
+  .ui-page-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--ui-space-md);
+    align-items: start;
+    margin-bottom: var(--ui-space-lg);
+  }
+
+  .ui-page-heading {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .ui-page-actions {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: start;
+  }
+
+  .ui-page-description {
+    display: none;
+  }
+
+  .ui-page-toolbar {
+    margin-bottom: var(--ui-space-md);
+  }
+
+  .ui-page-search {
+    max-width: none;
+  }
+
+  .ui-page-tabs {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .ui-page-tabs[data-slot='toggle-group'],
+  .ui-page-tabs[data-slot='tabs-list'] {
+    height: var(--ui-control-md);
+  }
+
+  .ui-page-tab[data-slot='toggle-group-item'],
+  .ui-page-tab[data-slot='tabs-trigger'] {
+    height: var(--ui-control-desktop);
+    flex: 0 0 auto;
+  }
+}

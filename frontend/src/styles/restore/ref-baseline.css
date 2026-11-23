@@ -179,14 +179,6 @@
    is re-pointed at the theme tokens here. Dark mode is untouched.
    -------------------------------------------------------------------------- */
 
-[data-mode='light'] #appShell .workspace-page-head h1 {
-  color: var(--cg-text) !important;
-}
-
-[data-mode='light'] #appShell .workspace-page-head p {
-  color: var(--cg-text-muted) !important;
-}
-
 /* --------------------------------------------------------------------------
    5. Workspace page heads — reference rhythm shared by Library / Projects /
    Scheduled / Plugins: large title, muted one-line description, search pill
@@ -305,10 +297,6 @@ body.workspace-active #appShell .main-page {
     left: 0;
   }
 
-  #appShell #libraryPanel .workspace-page-head p {
-    display: none !important;
-  }
-
   /* While the plugins panel is open, keep #mainContent's overflow visible so
      fixed page chrome is not clipped. #pluginsPanel itself is the React-owned
      scroll container. */
@@ -326,27 +314,6 @@ body.workspace-active #appShell .main-page {
     #mainContent {
     position: relative !important;
     z-index: 10 !important;
-  }
-
-  #appShell .plugin-directory-head {
-    align-items: flex-start;
-  }
-
-  #appShell .workspace-page-head h1,
-  #appShell .plugin-directory-heading h2 {
-    margin: 0;
-  }
-
-  #appShell .workspace-page-head p,
-  #appShell .plugin-directory-desc {
-    margin: 4px 0 0;
-    font-size: 14px !important;
-    line-height: 20px !important;
-  }
-
-  #appShell .workspace-head-actions,
-  #appShell .plugin-directory-tools {
-    gap: 16px !important;
   }
 
   #appShell .workspace-search-field,
@@ -421,15 +388,6 @@ body.workspace-active #appShell .main-page {
       )
     ) {
     padding-top: 27px !important;
-  }
-
-  #appShell .workspace-page-head h1,
-  #appShell .plugin-directory-heading h2 {
-    line-height: 36px !important;
-  }
-
-  #appShell #libraryPanel .workspace-page-head {
-    margin-bottom: 44px !important;
   }
 
   #appShell .plugin-directory-tabs button {
@@ -510,18 +468,6 @@ body.workspace-active #appShell .main-page {
 }
 
 /* --------------------------------------------------------------------------
-   Projects directory readability — body copy shipped one step smaller than
-   the surrounding surfaces (12px header description, 13px row summary).
-   Lift the Projects surface one step; title size and control geometry stay
-   as they are. Scoped to .projects-directory so Library / Plugins keep
-   their own scale.
-   -------------------------------------------------------------------------- */
-#appShell .projects-directory .workspace-page-head p {
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-/* --------------------------------------------------------------------------
    Reference parity finish — keep this small, scoped layer last so the older
    workbench rules above remain available to non-reference surfaces while the
    screenshot-owned shell has one deterministic set of measurements.
@@ -566,21 +512,6 @@ body.workspace-active #appShell .main-page {
   height: 22px;
   stroke-linecap: round;
   stroke-linejoin: round;
-}
-
-#appShell .workspace-page-head h1,
-#appShell .plugin-directory-heading h2 {
-  color: var(--cg-text) !important;
-  font-family: var(--cg-font);
-  font-weight: var(--ui-font-weight-semibold) !important;
-  letter-spacing: -0.025em !important;
-}
-
-#appShell .workspace-page-head p,
-#appShell .plugin-directory-desc {
-  color: var(--cg-text-secondary) !important;
-  font-size: 16px;
-  line-height: 1.55;
 }
 
 #appShell .plugin-installed-icons .connector-icon,
@@ -677,19 +608,10 @@ body.workspace-active #appShell .main-page {
     margin-inline: auto !important;
   }
 
-  #appShell .plugin-directory-head {
-    margin-bottom: 32px !important;
-  }
-
   #appShell .workspace-search-field,
   #appShell .plugin-directory-search {
     width: 240px;
     height: 42px;
-  }
-
-  #appShell .workspace-create-button {
-    min-height: 42px;
-    border-radius: 999px;
   }
 
   #appShell .plugin-directory-row,
@@ -747,32 +669,9 @@ body.workspace-active #appShell .main-page {
    send target once the editor grows to two rows.  The id-qualified rules also
    beat the legacy footer defaults without changing the mobile landing shell. */
 
-/* Projects use the same calm, full-width filter rail as the supplied mobile
-   reference.  The list heading is deliberately separate from the live API
+/* The project filter rail is owned by the shared Page Kit
+   (features/page-kit.css); the list heading stays separate from the live API
    rows so an empty response never needs a fabricated project entry. */
-#appShell .projects-filter-tabs {
-  display: flex !important;
-  align-items: center !important;
-  gap: 8px !important;
-  min-height: 40px !important;
-  margin: 0 0 16px !important;
-  padding: 0 !important;
-  border-bottom: none !important;
-  overflow-x: auto !important;
-  scrollbar-width: none;
-}
-
-#appShell .projects-filter-tabs::-webkit-scrollbar {
-  display: none;
-}
-
-#appShell .projects-filter-tabs button {
-  flex: 0 0 auto !important;
-  min-height: 34px !important;
-  padding: 0 16px !important;
-  white-space: nowrap !important;
-}
-
 #appShell .projects-list-heading {
   margin: 0 0 12px !important;
   color: var(--cg-text-secondary) !important;
@@ -788,10 +687,6 @@ body.workspace-active #appShell .main-page {
   width: 18px !important;
   height: 18px !important;
   stroke-width: 1.8;
-}
-
-[data-mode='light'] #appShell .projects-filter-tabs {
-  border-bottom-color: rgb(0 0 0 / 10%) !important;
 }
 
 @media (max-width: 768px) {
@@ -815,20 +710,6 @@ body.workspace-active #appShell .main-page {
 
   /* The mobile projects head layout moved to polish/workspace.css — it owns
      the grid outright now (no fixed docking, no !important bidding). */
-
-  #appShell .projects-filter-tabs {
-    min-height: 40px !important;
-    margin: 0 -16px 20px !important;
-    padding: 0 16px !important;
-    gap: 6px !important;
-  }
-
-  #appShell .projects-filter-tabs button {
-    min-height: 36px !important;
-    padding: 0 16px !important;
-    font-size: 14px !important;
-    line-height: 20px !important;
-  }
 
   #appShell .projects-list-heading {
     margin: 0 0 12px !important;

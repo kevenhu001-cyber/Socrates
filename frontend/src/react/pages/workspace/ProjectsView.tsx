@@ -1,53 +1,17 @@
+import { Plus } from 'lucide-react';
 import { Button } from '../../ui/shadcn/button';
-import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '../../ui/shadcn/empty';
-import { ToggleGroup, ToggleGroupItem } from '../../ui/shadcn/toggle-group';
 import { useMemo, useState } from 'react';
 import type { useWorkspaceDispatch } from './workspace.hooks';
 import type { ProjectItem } from './types';
-import { i18n, MoreIcon, projectMeta, WorkspacePageHeader } from './workspaceUi';
+import { i18n, MoreIcon, projectMeta } from './workspaceUi';
+import { PageEmptyState } from '../../ui/page/PageEmptyState';
+import { PageFrame } from '../../ui/page/PageFrame';
+import { PageHeader } from '../../ui/page/PageHeader';
+import { PageSearchField } from '../../ui/page/PageSearchField';
+import { PageTabs } from '../../ui/page/PageTabs';
+import { PageToolbar } from '../../ui/page/PageToolbar';
 
-function ProjectsFilterTabs({
-  scope,
-  onScopeChange,
-}: {
-  scope: 'all' | 'owned' | 'shared';
-  onScopeChange: (scope: 'all' | 'owned' | 'shared') => void;
-}) {
-  return (
-    <ToggleGroup
-      className="projects-filter-tabs w-full min-w-0"
-      value={[scope]}
-      aria-label={i18n('projects.filter', 'Project filter')}
-      onValueChange={(values) => {
-        const nextScope = values[0];
-        if (nextScope === 'all' || nextScope === 'owned' || nextScope === 'shared')
-          onScopeChange(nextScope);
-      }}
-    >
-      <ToggleGroupItem
-        type="button"
-        value="all"
-        className="rounded-full text-muted-foreground aria-pressed:text-foreground"
-      >
-        {i18n('projects.all', 'All')}
-      </ToggleGroupItem>
-      <ToggleGroupItem
-        type="button"
-        value="owned"
-        className="rounded-full text-muted-foreground aria-pressed:text-foreground"
-      >
-        {i18n('projects.owned', 'Created by you')}
-      </ToggleGroupItem>
-      <ToggleGroupItem
-        type="button"
-        value="shared"
-        className="rounded-full text-muted-foreground aria-pressed:text-foreground"
-      >
-        {i18n('projects.shared', 'Shared with you')}
-      </ToggleGroupItem>
-    </ToggleGroup>
-  );
-}
+type ProjectScope = 'all' | 'owned' | 'shared';
 
 function ProjectRow({
   project,
@@ -111,7 +75,7 @@ function ProjectsView({
   dispatch: ReturnType<typeof useWorkspaceDispatch>;
 }) {
   const [query, setQuery] = useState('');
-  const [scope, setScope] = useState<'all' | 'owned' | 'shared'>('all');
+  const [scope, setScope] = useState<ProjectScope>('all');
   const visibleProjects = useMemo(() => {
     const needle = query.trim().toLowerCase();
     const scoped = projects.filter((project) => {
@@ -129,41 +93,59 @@ function ProjectsView({
     );
   }, [projects, query, scope]);
 
+  const scopeItems = [
+    { value: 'all' as const, label: i18n('projects.all', 'All') },
+    { value: 'owned' as const, label: i18n('projects.owned', 'Created by you') },
+    { value: 'shared' as const, label: i18n('projects.shared', 'Shared with you') },
+  ];
+
   return (
-    <section
-      className="workspace-surface projects-directory"
-      aria-labelledby="projects-directory-title"
-    >
-      <WorkspacePageHeader
+    <PageFrame className="projects-directory" aria-labelledby="projects-directory-title">
+      <PageHeader
         titleId="projects-directory-title"
         title={i18n('sidebar.spaces.title', 'Projects')}
         description={i18n(
           'projects.directoryDesc',
           'Keep related chats, files, and instructions together.',
         )}
-        query={query}
-        searchLabel={i18n('projects.search', 'Search projects')}
-        onQuery={setQuery}
-        actionLabel={i18n('projects.new', 'New')}
-        onAction={() => dispatch.createProject()}
-        actionClassName="projects-create-button"
-      />
-      <ProjectsFilterTabs scope={scope} onScopeChange={setScope} />
-      {projects.length === 0 ? (
-        <Empty className="workspace-empty">
-          <EmptyHeader>
-            <EmptyTitle>{i18n('projects.empty', 'Make space for ongoing work')}</EmptyTitle>
-            <EmptyDescription>
-              {i18n(
-                'projects.emptyDesc',
-                'Projects keep related chats, files, and instructions together.',
-              )}
-            </EmptyDescription>
-          </EmptyHeader>
-          <Button variant="default" type="button" onClick={() => dispatch.createProject()}>
-            {i18n('projects.create', 'Create project')}
+        actions={
+          <Button
+            variant="default"
+            type="button"
+            className="projects-create-button"
+            onClick={() => dispatch.createProject()}
+          >
+            <Plus aria-hidden="true" />
+            <span>{i18n('projects.new', 'New')}</span>
           </Button>
-        </Empty>
+        }
+      />
+      <PageToolbar>
+        <PageSearchField
+          label={i18n('projects.search', 'Search projects')}
+          query={query}
+          onQuery={setQuery}
+        />
+      </PageToolbar>
+      <PageTabs
+        items={scopeItems}
+        value={scope}
+        onChange={setScope}
+        ariaLabel={i18n('projects.filter', 'Project filter')}
+      />
+      {projects.length === 0 ? (
+        <PageEmptyState
+          title={i18n('projects.empty', 'Make space for ongoing work')}
+          description={i18n(
+            'projects.emptyDesc',
+            'Projects keep related chats, files, and instructions together.',
+          )}
+          action={
+            <Button variant="default" type="button" onClick={() => dispatch.createProject()}>
+              {i18n('projects.create', 'Create project')}
+            </Button>
+          }
+        />
       ) : (
         <div className="projects-list">
           <div className="projects-list-heading">{i18n('projects.name', 'Name')}</div>
@@ -171,18 +153,14 @@ function ProjectsView({
             <ProjectRow key={project.id} project={project} dispatch={dispatch} />
           ))}
           {visibleProjects.length === 0 ? (
-            <Empty className="workspace-empty">
-              <EmptyHeader>
-                <EmptyTitle>{i18n('projects.noMatch', 'No matching projects')}</EmptyTitle>
-                <EmptyDescription>
-                  {i18n('projects.noMatchDesc', 'Try a different search.')}
-                </EmptyDescription>
-              </EmptyHeader>
-            </Empty>
+            <PageEmptyState
+              title={i18n('projects.noMatch', 'No matching projects')}
+              description={i18n('projects.noMatchDesc', 'Try a different search.')}
+            />
           ) : null}
         </div>
       )}
-    </section>
+    </PageFrame>
   );
 }
 

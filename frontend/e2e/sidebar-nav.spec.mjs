@@ -383,11 +383,11 @@ test('Admin page hides the conversation top-bar controls', async ({ page }) => {
     .evaluateAll((els) => els.map((el) => getComputedStyle(el).display));
   expect(displays).toEqual(['none', 'none', 'none']);
   // Leaving the console drops the admin body class and restores chrome.
-  await page.evaluate(() => window.__socratesLegacy.navigation.openNav('library'));
+  // Workspace pages intentionally hide the chat top bar now, so return to
+  // the chat surface to prove the console was the only thing suppressing
+  // the conversation controls.
+  await page.locator('#navNew').click();
   await expect(page.locator('body')).not.toHaveClass(/admin-active/);
-  /* The conversation actions are recomputed from the live view, so a
-     workspace page clears them; re-arm them to prove the console was the
-     only thing suppressing the chrome while it was open. */
   await page.evaluate(() => window.__testShowConversationActions(true));
   await expect(page.locator('#shareBtn')).toBeVisible();
 });

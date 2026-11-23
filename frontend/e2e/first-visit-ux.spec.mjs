@@ -54,7 +54,7 @@ test('empty library offers a direct file upload', async ({ page }) => {
   await waitForAppShell(page);
   await page.locator('#navLibrary').click();
   const upload = page
-    .locator('.library-directory .workspace-empty')
+    .locator('.library-directory .ui-page-empty')
     .getByRole('button', { name: /upload|上传文件/i });
   await expect(upload).toBeVisible();
   const chooser = page.waitForEvent('filechooser');

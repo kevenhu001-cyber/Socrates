@@ -113,7 +113,7 @@ test('directory headings and actions align without occupying the phone app bar',
       const panel = document.getElementById('pluginsPanel');
       if (panel) await Promise.all(panel.getAnimations().map((a) => a.finished));
     });
-    const plugin = await page.locator('.plugin-directory-heading h2').boundingBox();
+    const plugin = await page.locator('.plugin-directory [data-page-title]').boundingBox();
     await page.evaluate(() => window.__socratesLegacy.navigation.openNav('library'));
     await expect(page.locator('.library-directory')).toBeVisible();
     await page.evaluate(async () => {
@@ -122,12 +122,14 @@ test('directory headings and actions align without occupying the phone app bar',
       if (panel) await Promise.all(panel.getAnimations().map((a) => a.finished));
     });
     const title = await page.locator('#library-directory-title').boundingBox();
-    const actions = await page.locator('.library-head-actions').boundingBox();
+    const actions = await page.locator('.library-directory [data-page-actions]').boundingBox();
     const appBar = await page.locator('.top-bar').boundingBox();
     expect(Math.abs(title.x - plugin.x)).toBeLessThan(1);
     expect(Math.abs(title.y - plugin.y)).toBeLessThan(1);
     expect(title.height).toBe(plugin.height);
-    expect(title.y).toBeGreaterThan(appBar.y + appBar.height);
+    /* Desktop directory pages hide the empty chat bar; the phone keeps it
+       for the hamburger and page title. */
+    if (appBar) expect(title.y).toBeGreaterThan(appBar.y + appBar.height);
     expect(Math.abs(actions.y - title.y)).toBeLessThan(1);
     expect(actions.x).toBeGreaterThan(title.x + title.width);
     expect(actions.x + actions.width).toBeLessThanOrEqual(width - 16);
