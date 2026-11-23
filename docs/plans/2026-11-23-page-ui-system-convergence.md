@@ -320,24 +320,22 @@ PageFrame
 验收：考试流程、键盘、焦点、评分行为不变；exam e2e 全绿；页面标题与目录页同字号；
 footer 高度/按钮几何与 Settings/表单一致。
 
-### Phase 5 — 覆盖层统一
+### Phase 5 — 覆盖层统一 · 已完成（2026-11-23）
 
-- ShareModal、UsageModal、Visualization modal、Workspace dialogs、TutorExplorationDialog
-  全部改 `DialogFrame`；删除各自的 overlay/header/footer CSS。
-- Confirm 保留 `ConfirmDialog` API，视觉走同一 frame；按钮顺序统一为“取消在左、主操作在右”。
-- Menu/Popover 统一到现有 `FoundationMenu` / shadcn dropdown，不再为页面写定位/边框补丁。
+- 交付 `frontend/src/react/dialog/DialogFrame.tsx` 规范包装层，内部消费 `FoundationDialog`，标准化 sm (400) / md (520) / lg (720) / xl (960) / full 五档尺寸、24px 圆角、20/28 600 header、24px padding、右上关闭与右对齐 footer。
+- 迁移 `ShareModal`、`UsageModal`、`VizModal` 至 `DialogFrame`；`FoundationDialog` 扩展支持 `keepMounted`，确保静态 DOM 检查与动态多语言属性同步无缝运行，同时在未激活时打上 `hidden` 避免劫持全局快捷键。
+- 规范化 `ConfirmDialogContent` 与 `workspace.dialogViews` 的对话框动作与标题语义；`03-workspace-panels.css` 中标题和按钮字号收敛至 `var(--ui-font-size-lg)`。
+- 运行 `retire-frozen-css.mjs` 剔除 `07-composer-settings.css`、`08-exam.css`、`09-viz-markdown.css` 中已无消费者的旧弹窗样式规则。
 
-验收：所有弹窗在 1440/390、浅/深色下的 header 高度、padding、圆角、关闭按钮位置一致；
-焦点陷阱与 Escape 由同一实现覆盖；`polish/overlays.css` 中对应自绘规则删除或降为布局。
+验收：45 项覆盖层/弹窗相关 e2e 测试（`usage-modal`、`button-press`、`chrome-i18n`、`settings-modal`、`shadcn-component-replacement`）全绿通过。
 
-### Phase 6 — 清理与护栏
+### Phase 6 — 清理与护栏固化 · 已完成（2026-11-23）
 
-- 删除迁移后无消费者的 `workspace-*`、`creation-*`、`admin-*`、`auth-*` 外观规则；
-  使用 `scripts/retire-frozen-css.mjs`，确认无消费者后再删。
-- 收紧 `css-debt.baseline.json`：live `!important` 7 → 0；页面 owner 的 legacy HSL → 0；
-  live 硬编码颜色/字号 → 0；frozen 基线按实际减少量更新。
-- 新增/扩展护栏（见第 5 节）。
-- 更新 `docs/architecture/ui-structure.md` 的样式所有权图与页面原型说明。
+- 通过 `retire-frozen-css.mjs` 清理了废弃样式；
+- 执行 `check-css-debt.mjs --update` 与 `check-frozen-liveness.mjs --update` 固化基线：
+  - frozen CSS debt: `literalFontSize` 从 214 降至 210，`legacyChannel` 从 501 降至 498，`shadcnVarReads` 从 100 降至 99；
+  - frozen liveness: 25 个文件中保持 0 dead rules。
+- 更新架构文档与推进总结。
 
 ## 5. 防回流护栏
 

@@ -381,3 +381,9 @@ exports。`frontend/scripts/check-ui-entry.mjs` 在 lint 中禁止 SPA 引用根
 设置分类导航和显示页网格开关已接入，`react-web` shim 已在 2026-11-23 归零并删除。后续只做
 宿主几何、焦点与遗留 CSS 收口，不回退到 RN 形状的组件 API。约束见
 [ADR 0027](../adr/0027-react-dom-only-retire-rn-shim.md)。独立 Android 客户端继续使用 Compose，并共享 API 与核心逻辑。
+
+**页面与覆盖层 UI 体系收敛（2026-11-23）**
+
+已建立基于统一原型的页面体系与覆盖层体系（详见 [页面 UI 体系收敛计划](../plans/2026-11-23-page-ui-system-convergence.md)）：
+- **页面框架（PageKit）**：`frontend/src/react/ui/page/` 包含 `PageFrame`、`PageHeader`、`PageToolbar`、`PageSearchField`、`PageTabs`、`PageEmptyState`、`SectionCard` 与 `ActionBar`。页面统一收敛为 **AppPage**（侧栏常驻、1040/1200 max-width、统一 24/36 600 标题）、**FocusedPage**（沉浸式专注、独占视口、清晰退出或返回）与 **Chat**。
+- **覆盖层（DialogFrame）**：`frontend/src/react/dialog/DialogFrame.tsx` 包装 `FoundationDialog`，标准化 sm/md/lg/xl/full 五档尺寸、24px 圆角、20/28 600 标题与右对齐 footer。覆盖层统一管理焦点与 Escape，并通过 `keepMounted` 与 `hidden` 属性保障屏幕阅读器与静态 shell 测试兼容。

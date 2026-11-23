@@ -14,9 +14,9 @@
       "hexColor": 28,
       "literalRadius": 119,
       "stackedId": 27,
-      "literalFontSize": 214,
-      "legacyChannel": 501,
-      "shadcnVarReads": 100
+      "literalFontSize": 210,
+      "legacyChannel": 498,
+      "shadcnVarReads": 99
     }
   },
   "generatedBy": "check-css-debt.mjs --update"
