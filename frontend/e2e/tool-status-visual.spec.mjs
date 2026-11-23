@@ -97,12 +97,11 @@ test('deferred tool shows a clean single status line, no orphan dots', async ({ 
   await page.waitForTimeout(400);
   await bubble.screenshot({ path: 'test-results/tool-status-deferred.png' });
 
-  // Completing the paragraph mounts the row exactly once, retires the
-  // status line, and hands the liveness signal back to the cursor.
+  // Completing the paragraph hands the working cue to the single inline row.
   await page.evaluate(() => window.__pushText('容。文件已经写好。\n\n你可以看了。'));
   const row = bubble.locator('.rn-tool-row[data-tcid="w-defer"]');
   await expect(row).toHaveCount(1);
-  await expect(bubble.locator('[data-testid="turn-activity"]')).toHaveCount(1);
+  await expect(bubble.locator('[data-testid="turn-activity"]')).toHaveCount(0);
   await expect(bubble.locator('.stream-cursor')).toHaveCount(0);
   await expect(row.locator('[data-testid="thinking-step-title"]')).toContainText('demo.txt');
   await page.waitForTimeout(400);
@@ -176,7 +175,7 @@ test('an active tool at the turn tail owns progress without an extra cursor', as
 
   await expect(row).toHaveAttribute('data-state', 'running');
   await expect(bubble.locator('.stream-cursor')).toHaveCount(0);
-  await expect(bubble.locator('[data-testid="turn-activity"]')).toHaveCount(1);
+  await expect(bubble.locator('[data-testid="turn-activity"]')).toHaveCount(0);
   await page.waitForTimeout(400);
   await bubble.screenshot({ path: 'test-results/tool-status-cursor-below-row.png' });
 });

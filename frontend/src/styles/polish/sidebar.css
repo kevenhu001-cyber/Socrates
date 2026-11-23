@@ -246,8 +246,9 @@
   #appShell .sidebar-account-trigger {
     gap: 8px;
     min-height: 40px;
-    padding: 6px 8px;
-    border-radius: var(--ui-radius-sm);
+    padding: 0 var(--ui-space-sm);
+    justify-content: flex-start;
+    border-radius: var(--ui-radius-row);
     color: var(--foreground);
     transition:
       background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
@@ -310,9 +311,6 @@
   #appShell .sidebar-account-menu hr {
     margin: 5px 6px;
     border-top-color: var(--ui-border-subtle);
-  }
-  #appShell .sidebar-account-menu .account-menu-identity {
-    min-height: 42px;
   }
 
   #appShell #sidebar.collapsed #sidebarHeader {
@@ -465,8 +463,7 @@
   }
 }
 
-/* Sidebar footer: identity remains the primary target, but Settings no longer
- * requires a second menu gesture. In collapsed mode preserve one avatar. */
+/* The account trigger fills the space alongside the desktop shortcuts. */
 #appShell .sidebar-footer-account-wrap {
   width: 100%;
   min-width: 0;
@@ -476,13 +473,17 @@
   align-items: center;
   width: 100%;
   min-width: 0;
-  gap: 2px;
+  gap: var(--ui-space-xs);
 }
 #appShell .sidebar-footer-identity-row > .sidebar-account-trigger {
   flex: 1 1 auto;
   min-width: 0;
 }
-#appShell .sidebar-quick-settings {
+#appShell .sidebar-account-chevron {
+  margin-inline-start: auto;
+  color: var(--ui-text-secondary);
+}
+#appShell .collapsed .sidebar-account-chevron {
   display: none;
 }
 

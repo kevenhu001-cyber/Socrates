@@ -1,6 +1,6 @@
 import type { ProfileUserSnapshot } from './types';
 import { profileText } from './profileText';
-import { Badge } from '../ui/shadcn/badge';
+
 import { buttonVariants } from '../ui/shadcn/button';
 
 export function ProfileAccountSection({ user }: { user: ProfileUserSnapshot }) {
@@ -17,11 +17,11 @@ export function ProfileAccountSection({ user }: { user: ProfileUserSnapshot }) {
         <span className="profile-row-label">
           {profileText('profile.emailVerified', 'Email verified')}
         </span>
-        <Badge variant={user.verifiedAt ? 'secondary' : 'outline'} id="profileVerified">
+        <span className="profile-row-value" id="profileVerified">
           {user.verifiedAt
             ? profileText('profile.verified', 'Verified')
             : profileText('profile.unverified', 'Unverified')}
-        </Badge>
+        </span>
       </div>
       <div className="profile-row">
         <span className="profile-row-label">{profileText('profile.userId', 'User ID')}</span>
@@ -34,7 +34,10 @@ export function ProfileAccountSection({ user }: { user: ProfileUserSnapshot }) {
 }
 
 export function ProfileSubscriptionSection({ user }: { user: ProfileUserSnapshot }) {
-  const tierLabel = user.tier.charAt(0).toUpperCase() + user.tier.slice(1);
+  const tierLabel =
+    user.tier === 'diophantus' || user.tier === 'free'
+      ? profileText('profile.freePlan', 'Free')
+      : user.tier.charAt(0).toUpperCase() + user.tier.slice(1);
   return (
     <div className="profile-section">
       <h2 className="profile-section-title">
@@ -44,9 +47,17 @@ export function ProfileSubscriptionSection({ user }: { user: ProfileUserSnapshot
         <span className="profile-row-label">
           {profileText('profile.currentPlan', 'Current plan')}
         </span>
-        <Badge variant="secondary" id="profileTier">
-          {tierLabel}
-        </Badge>
+        <div className="profile-plan-actions">
+          <span className="profile-row-value" id="profileTier">
+            {tierLabel}
+          </span>
+          <a
+            href="https://topodrive.top/pricing"
+            className={buttonVariants({ variant: 'link', size: 'sm' })}
+          >
+            {profileText('profile.comparePlans', 'Compare plans')}
+          </a>
+        </div>
       </div>
       <div
         className="profile-row"
@@ -57,14 +68,6 @@ export function ProfileSubscriptionSection({ user }: { user: ProfileUserSnapshot
         <span className="profile-row-value" id="profileSubEnd">
           {user.subEnd || '—'}
         </span>
-      </div>
-      <div style={{ marginTop: 10 }}>
-        <a
-          href="https://topodrive.top/pricing"
-          className={buttonVariants({ variant: 'outline', className: 'w-full' })}
-        >
-          {profileText('profile.comparePlans', 'Compare plans')}
-        </a>
       </div>
     </div>
   );

@@ -58,18 +58,21 @@ export function ProfilePreferencesSection({
         </ToggleGroup>
       </div>
 
-      <div className="profile-toggle-desc">
-        {profileText(
-          'profile.webSearchDesc',
-          'Enable web search to include real-time results in questions.',
-        )}
-      </div>
       <Field orientation="horizontal" className="profile-row">
-        <FieldLabel htmlFor="profileWebSearchToggle" className="flex-1">
-          {profileText('profile.webSearch', 'Web search')}
-        </FieldLabel>
+        <div>
+          <FieldLabel htmlFor="profileWebSearchToggle">
+            {profileText('profile.webSearch', 'Web search')}
+          </FieldLabel>
+          <div className="profile-toggle-desc" id="profileWebSearchDesc">
+            {profileText(
+              'profile.webSearchDesc',
+              'Enable web search to include real-time results in questions.',
+            )}
+          </div>
+        </div>
         <Switch
           id="profileWebSearchToggle"
+          aria-describedby="profileWebSearchDesc"
           checked={snapshot.webSearchOn}
           onCheckedChange={dispatch.toggleWebSearch}
         />
@@ -88,11 +91,7 @@ export function ProfilePreferencesSection({
           defaultValue={snapshot.instResponse}
           onInput={handleInstChange}
         />
-        <ShadcnLabel
-          className="profile-instructions-label"
-          htmlFor="profileInstAbout"
-          style={{ marginTop: 10 }}
-        >
+        <ShadcnLabel className="profile-instructions-label" htmlFor="profileInstAbout">
           {profileText('profile.whatDoYouKnow', 'What do you know about me?')}
         </ShadcnLabel>
         <ShadcnTextarea

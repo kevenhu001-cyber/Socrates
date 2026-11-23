@@ -277,11 +277,7 @@
   background: transparent;
 }
 
-/* ── RN-2 hosts ──────────────────────────────────────────────────────────
-   DOM hosts around the shared React Native turn components
-   (@socrates/ui/turn). The components draw themselves; these rules only
-   let them stretch to the prose column and size the shell's SVG glyphs,
-   whose old sizing lived under the retired `.tool-inline` scope. */
+/* Tool triggers use the prose column and its type scale. */
 .rn-turn-activity,
 .rn-tool-row,
 .rn-tool-actions,
@@ -290,17 +286,6 @@
   flex-direction: column;
   min-width: 0;
 }
-.rn-turn-activity,
-.rn-tool-row {
-  /* The prose column's legacy icon rule sizes by these tokens. */
-  --tc-icon: 16px;
-  --tc-glyph: 14px;
-  border-radius: var(--ui-radius-sm);
-  transition: background-color var(--ui-duration-fast) ease;
-}
-.rn-tool-row:hover {
-  background-color: var(--ui-bg-hover, color-mix(in srgb, var(--foreground) 3%, transparent));
-}
 .rn-turn-activity {
   margin-block-end: var(--ui-gap-2);
 }
@@ -308,25 +293,67 @@
   gap: var(--ui-gap-2);
   margin-block: var(--ui-gap-2);
 }
-.rn-turn-activity .tool-inline-tool-icon,
-.rn-tool-row .tool-inline-tool-icon {
+.tool-run-prose + .rn-tool-row,
+.rn-tool-row + .tool-run-prose {
+  margin-block-start: var(--ui-space-xs);
+}
+.rn-tool-row .tool-run-trigger {
   display: inline-flex;
-  width: 100%;
-  height: 100%;
+  align-self: flex-start;
+  align-items: center;
+  gap: var(--ui-space-xs);
+  min-width: 0;
+  max-width: 100%;
+  min-height: var(--ui-control-sm);
+  padding: 0;
+  border: 0;
+  border-radius: var(--ui-radius-sm);
+  background: transparent;
+  color: var(--ui-text-secondary);
+  font: inherit;
+  text-align: start;
+}
+.rn-tool-row button.tool-run-trigger:hover,
+.rn-tool-row button.tool-run-trigger:focus-visible {
+  color: var(--foreground);
+}
+.tool-run-trigger .tool-run-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tool-run-trigger .tool-run-state {
+  flex: none;
+  font-size: var(--ui-font-size-xs);
+  color: var(--ui-text-secondary);
+}
+.rn-turn-activity .tool-inline-tool-icon,
+.tool-run-trigger .tool-inline-tool-icon {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--ui-ink-tertiary);
+}
+.rn-turn-activity .tool-inline-tool-icon {
+  width: 100%;
+  height: 100%;
+  color: var(--ui-text-secondary);
+}
+.tool-run-trigger .tool-inline-tool-icon {
+  flex: 0 0 1em;
+  width: 1em;
+  height: 1em;
+  color: inherit;
 }
 .rn-turn-activity .tool-inline-tool-icon svg,
 .rn-turn-activity .tool-inline-tool-icon img,
-.rn-tool-row .tool-inline-tool-icon svg,
-.rn-tool-row .tool-inline-tool-icon img {
+.tool-run-trigger .tool-inline-tool-icon svg,
+.tool-run-trigger .tool-inline-tool-icon img {
   display: block;
   width: 87.5%;
   height: 87.5%;
   object-fit: contain;
 }
-.rn-tool-row[data-state='error'] .tool-inline-tool-icon,
-.rn-tool-row[data-state='awaiting'] .tool-inline-tool-icon {
-  color: var(--ui-ink);
+.tool-run-trigger :is(.tool-site-marks, .is-connector-brand) {
+  flex: none;
+  filter: grayscale(1);
 }

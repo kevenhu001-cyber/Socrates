@@ -1,9 +1,9 @@
 import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
-import { openActivity, toolRow, toolRowButton } from './_turn-ui.mjs';
+import { toolRow, toolRowButton } from './_turn-ui.mjs';
 
-test('completed tool bursts collapse while errors stay accessible', async ({ page }) => {
+test('each tool in a burst is visible and individually expandable', async ({ page }) => {
   await mockAuthedApp(page, { lang: 'en' });
   await page.route('**/api/**/chat/stream', async (route) => {
     const frames = [];
@@ -51,21 +51,16 @@ test('completed tool bursts collapse while errors stay accessible', async ({ pag
   });
 
   const turn = page.locator('.msg.assistant').last();
-  await openActivity(turn);
-  const batch = turn.getByTestId('tool-call-batch');
-  const toggle = batch.getByTestId('tool-batch-toggle');
-  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-  await expect(batch.locator('.rn-tool-row')).toHaveCount(0);
-  await expect(toolRow(turn, 'batch-error')).toHaveAttribute('data-state', 'error');
-
-  await toggle.click();
-  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-  await expect(batch.locator('.rn-tool-row')).toHaveCount(4);
-  await expect(toolRowButton(turn, 'batch-a')).toBeVisible();
-  await toolRowButton(turn, 'batch-a').click();
+  await expect(turn.locator('.rn-tool-row')).toHaveCount(5);
+  await expect(turn.getByTestId('turn-activity-toggle')).toHaveCount(0);
+  for (const id of ['batch-a', 'batch-b', 'batch-c', 'batch-d']) {
+    await expect(toolRowButton(turn, id)).toBeVisible();
+  }
+  const first = toolRowButton(turn, 'batch-a');
+  await expect(first).toHaveAttribute('aria-expanded', 'false');
+  await first.click();
   await expect(turn.getByTestId('tool-detail')).toBeVisible();
-
-  await toggle.click();
-  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-  await expect(toolRow(turn, 'batch-error')).toBeVisible();
+  await first.click();
+  await expect(turn.getByTestId('tool-detail')).toHaveCount(0);
+  await expect(toolRow(turn, 'batch-error')).toHaveAttribute('data-state', 'error');
 });

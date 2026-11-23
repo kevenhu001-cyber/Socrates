@@ -29,22 +29,19 @@ function UserIdentityPill({ user, tier }: { user: ReturnType<typeof useUserInfo>
 }
 
 function AccountMenuItems({
-  user,
-  tier,
+  signedIn,
   accountTrigger,
   close,
   navigate,
   label,
   FoundationMenuItem,
 }: {
-  user: ReturnType<typeof useUserInfo>;
-  tier: string;
+  signedIn: boolean;
   accountTrigger: React.RefObject<HTMLButtonElement | null>;
   close: () => void;
   navigate: (section: 'general' | 'personalization') => void;
   label: (zh: string, en: string) => string;
   FoundationMenuItem: React.ComponentType<{
-    className?: string;
     onClick?: () => void;
     onPointerEnter?: () => void;
     onPointerDown?: () => void;
@@ -55,21 +52,6 @@ function AccountMenuItems({
   return (
     <>
       <FoundationMenuItem
-        className="account-menu-identity"
-        onClick={() => {
-          close();
-          getLegacyActions().navigation.openProfile(accountTrigger.current);
-        }}
-      >
-        <UserIdentityPill user={user} tier={tier} />
-        <Icon name="chevronRight" />
-      </FoundationMenuItem>
-      <ShadcnSeparator />
-      <FoundationMenuItem onClick={() => navigate('personalization')}>
-        <Icon name="sliders" />
-        {label('个性化', 'Personalization')}
-      </FoundationMenuItem>
-      <FoundationMenuItem
         onClick={() => {
           close();
           getLegacyActions().navigation.openProfile(accountTrigger.current);
@@ -77,6 +59,10 @@ function AccountMenuItems({
       >
         <Icon name="user" />
         {label('个人资料', 'Profile')}
+      </FoundationMenuItem>
+      <FoundationMenuItem onClick={() => navigate('personalization')}>
+        <Icon name="sliders" />
+        {label('个性化', 'Personalization')}
       </FoundationMenuItem>
       <FoundationMenuItem
         onPointerEnter={preloadSettingsPage}
@@ -98,7 +84,7 @@ function AccountMenuItems({
         {label('帮助', 'Help')}
         <Icon name="chevronRight" className="account-menu-trailing" />
       </FoundationMenuItem>
-      {user.isSignedIn && (
+      {signedIn && (
         <FoundationMenuItem
           onClick={() => {
             close();
@@ -150,13 +136,13 @@ export function SidebarFooter() {
               aria-label={[user.displayName, tier].filter(Boolean).join(' · ')}
             >
               <UserIdentityPill user={user} tier={tier} />
+              <Icon name="chevronDown" className="sidebar-account-chevron" />
             </Button>
           }
         >
           {({ FoundationMenuItem }) => (
             <AccountMenuItems
-              user={user}
-              tier={tier}
+              signedIn={user.isSignedIn}
               accountTrigger={accountTrigger}
               close={close}
               navigate={navigate}
@@ -179,21 +165,7 @@ export function SidebarFooter() {
             <Icon name="plus" />
             <span>{label('新建会话', 'New chat')}</span>
           </Button>
-        ) : (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            className="sidebar-quick-settings"
-            title={label('设置', 'Settings')}
-            aria-label={label('设置', 'Settings')}
-            onPointerEnter={preloadSettingsPage}
-            onFocus={preloadSettingsPage}
-            onClick={() => navigate('general')}
-          >
-            <Icon name="gear" />
-          </Button>
-        )}
+        ) : null}
       </div>
     </div>
   );

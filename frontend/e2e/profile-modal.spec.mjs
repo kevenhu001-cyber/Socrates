@@ -9,7 +9,11 @@ test('profile page renders account, subscription, preferences, and data sections
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   expect(await page.evaluate(() => '_userMemories' in window)).toBe(false);
-  await page.evaluate(() => window.__socratesLegacy.navigation.openProfile());
+  const account = page.locator('.sidebar-account-trigger');
+  await account.click();
+  const menu = page.getByRole('menu', { name: 'Account' });
+  await expect(menu.getByRole('menuitem', { name: 'Profile', exact: true })).toHaveCount(1);
+  await menu.getByRole('menuitem', { name: 'Profile', exact: true }).click();
 
   const profile = page.locator('#profilePage');
   await expect(page).toHaveURL(/\/profile$/);
@@ -36,4 +40,39 @@ test('profile page renders account, subscription, preferences, and data sections
   await page.locator('#profileBackBtn').click();
   await expect(page).toHaveURL(/\/$/);
   await expect(page.locator('#profilePage')).toBeHidden();
+  await expect(account).toBeFocused();
+});
+
+test('phone profile fits a narrow viewport and keeps the account identity visible in the drawer', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 780 });
+  await mockAuthedApp(page, {
+    lang: 'zh',
+    user: { displayName: '手机端测试用户', email: 'a.long.profile.address@example.test' },
+  });
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+
+  await page.locator('#sidebarOpenBtn').click();
+  const account = page.locator('.sidebar-account-trigger');
+  await expect(account.locator('.user-name')).toHaveText('手机端测试用户');
+  await expect(account.locator('.user-name')).toBeVisible();
+  await account.click();
+  await page.getByRole('menuitem', { name: '个人资料', exact: true }).click();
+
+  const profile = page.getByRole('region', { name: '个人资料', exact: true });
+  await expect(profile.locator('#profileEmail')).toHaveText('a.long.profile.address@example.test');
+  await expect(profile.locator('#profileName')).toHaveValue('手机端测试用户');
+  const layout = await profile.locator('.profile-page-body').evaluate((body) => ({
+    client: body.clientWidth,
+    scroll: body.scrollWidth,
+    sections: [...body.querySelectorAll('.profile-section')].map((section) => section.offsetLeft),
+  }));
+  expect(layout.scroll).toBeLessThanOrEqual(layout.client + 1);
+  expect(new Set(layout.sections).size).toBe(1);
+  await page.screenshot({ path: 'test-results/profile-mobile.png' });
+  await profile.locator('#profileBackBtn').click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.locator('#sidebarOpenBtn')).toBeVisible();
 });

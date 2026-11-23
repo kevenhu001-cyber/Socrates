@@ -136,7 +136,7 @@ export function ToolApprovalCard({
   );
 }
 
-/** Failed call: a tinted sheet with a ringed ✕ mark, the message and a retry capsule. */
+/** A readable failure and its retry action in the transcript. */
 export function ToolErrorNotice({
   message,
   retryLabel,
@@ -146,48 +146,23 @@ export function ToolErrorNotice({
   retryLabel?: string;
   onRetry?: () => void;
 }) {
-  const { colors } = useUiTheme();
-  const { subtle } = sheets(colors);
   return (
     <div
       data-testid="tool-error"
       role="alert"
       style={{
         display: 'flex',
-        flexDirection: 'row',
         alignItems: 'center',
         flexWrap: 'wrap',
-        gap: S[100],
-        minHeight: H.option,
-        paddingBlock: S[75],
-        paddingLeft: S[100],
-        paddingRight: S[75],
-        borderRadius: R.row,
-        backgroundColor: subtle,
-        boxShadow: insetRing(colors.hairlineStrong),
+        gap: S[75],
+        paddingBlock: S[50],
       }}
     >
-      <span
-        aria-hidden
-        style={{
-          display: 'inline-flex',
-          width: 20,
-          height: 20,
-          borderRadius: R.pill,
-          alignItems: 'center',
-          justifyContent: 'center',
-          boxShadow: insetRing(colors.hairlineStrong, 1.5),
-        }}
-      >
-        <UiText variant="labelSm" tone="secondary" style={{ fontSize: 11, lineHeight: '20px' }}>
-          ✕
-        </UiText>
-      </span>
       <UiText
         testID="tool-error-message"
         variant="bodySm"
-        tone="ink"
-        style={{ flex: 1, minWidth: 160 }}
+        tone="secondary"
+        style={{ flex: '1 1 14ch', minWidth: 0, overflowWrap: 'anywhere' }}
       >
         {message}
       </UiText>

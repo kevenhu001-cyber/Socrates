@@ -760,39 +760,26 @@
     width: 100%;
   }
   #appShell #sidebarUserRow .sidebar-account-trigger {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: var(--ui-control-touch);
+    display: flex;
+    flex: 1 1 auto;
+    justify-content: flex-start;
+    gap: var(--ui-space-sm);
     height: var(--ui-control-touch);
-    min-width: var(--ui-control-touch);
-    max-width: var(--ui-control-touch);
-    padding: 0;
-    margin: 0;
-    border-radius: var(--ui-radius-pill);
-    flex: 0 0 var(--ui-control-touch);
+    min-width: 0;
+    padding: 0 var(--ui-space-xs);
+    border: 0;
+    border-radius: var(--ui-radius-row);
     background: transparent;
-    border: none;
-    transition: opacity var(--ui-duration-hover) ease;
   }
   #appShell #sidebarUserRow .sidebar-account-trigger:hover,
-  #appShell #sidebarUserRow .sidebar-account-trigger:active,
   #appShell #sidebarUserRow .sidebar-account-trigger[aria-expanded='true'] {
-    background: transparent;
-    opacity: 0.82;
-  }
-  #appShell #sidebarUserRow .sidebar-account-trigger .user-identity {
-    display: none;
+    background: var(--ui-fill-hover);
   }
   #appShell #sidebarUserRow .user-avatar {
-    display: grid;
-    place-items: center;
-    flex: 0 0 var(--ui-control-touch);
-    width: var(--ui-control-touch);
-    height: var(--ui-control-touch);
-    border-radius: var(--ui-radius-pill);
-    font-size: var(--ui-font-size-sm);
-    font-weight: var(--ui-font-weight-medium);
+    flex: 0 0 var(--ui-control-sm);
+    width: var(--ui-control-sm);
+    height: var(--ui-control-sm);
+    font-size: var(--ui-font-size-xs);
   }
   #appShell .sidebar-mobile-new-chat {
     display: inline-flex;
@@ -839,41 +826,13 @@
   #appShell .sidebar-account-menu {
     width: min(304px, calc(100vw - 24px));
     max-width: calc(100vw - 24px);
-    padding: 12px;
+    padding: var(--ui-space-sm);
   }
   #appShell .sidebar-account-menu :is(button, a) {
-    height: var(--ui-control-md);
-    min-height: var(--ui-control-md);
-    font-size: var(--ui-mobile-font-nav);
-  }
-  #appShell .sidebar-account-menu .account-menu-identity {
     height: var(--ui-control-touch);
-    gap: 8px;
-  }
-  #appShell .sidebar-account-menu .user-avatar {
-    display: grid;
-    place-items: center;
-    width: 24px;
-    height: 24px;
-    flex: 0 0 24px;
-    font-size: var(--ui-font-size-xxs);
-    border-radius: 50%;
-    background: var(--ui-avatar-bg);
-    color: var(--primary-foreground);
-  }
-  #appShell .sidebar-account-menu .user-identity {
-    display: flex;
-    flex-direction: column;
-  }
-  #appShell .sidebar-account-menu .user-name {
+    min-height: var(--ui-control-touch);
     font-size: var(--ui-mobile-font-nav);
-    font-weight: var(--ui-font-weight-regular);
   }
-  #appShell .sidebar-account-menu .user-plan {
-    font-size: var(--ui-mobile-font-meta);
-    color: var(--ui-text-muted);
-  }
-
   /* Dark reference drawer tones: row glyphs and labels #cacaca, the header's
      search / collapse glyphs the secondary #b0b0b0, the wordmark and the
      account name the ink. The ancestor pair is written once and reused via

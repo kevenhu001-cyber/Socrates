@@ -18,7 +18,7 @@
 
 #appShell #chatInputBar {
   box-sizing: border-box;
-  padding-inline: 16px;
+  padding-inline: var(--ui-mobile-page-gutter);
   padding-bottom: var(--ui-safe-bottom);
   background: linear-gradient(to bottom, transparent, var(--background) 24px);
 }

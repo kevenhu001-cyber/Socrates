@@ -192,7 +192,6 @@ test('a shared turn lays its tool rows out declaratively, read-only', async ({ p
      activity-row pass hides — without it the turn renders but reads inert. */
   await expect(body).toHaveClass(/is-declarative/);
 
-  await body.getByTestId('turn-activity-toggle').click();
   // Each call is its own row in the shared transcript.
   await expect(body.locator('.rn-tool-row').first()).toBeVisible();
   await expect(body.locator('.rn-tool-row')).toHaveCount(2);
@@ -208,12 +207,12 @@ test('a shared turn lays its tool rows out declaratively, read-only', async ({ p
       Array.from(el.children).map((node) =>
         node.classList.contains('tool-run-prose')
           ? 'text:' + (node.textContent || '').replace(/\s+/g, ' ').trim()
-          : node.classList.contains('rn-turn-activity')
-            ? 'activity'
+          : node.classList.contains('rn-tool-row')
+            ? 'tool:' + node.dataset.tcid
             : 'other',
       ),
     );
-  expect(order).toEqual(['activity', 'text:' + oneLine(SHARED_RAW)]);
+  expect(order).toEqual(['tool:shared-search', 'tool:shared-fetch', 'text:' + oneLine(SHARED_RAW)]);
 
   await expect(body.getByTestId('thinking-step-title')).toContainText([
     'inverse square law',

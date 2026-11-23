@@ -1,50 +1,40 @@
-/**
- * react/tool-run/ToolRunRow.tsx — the transcript half of a tool call (RN-2).
- *
- * The row itself lives in the turn's activity rail (TurnActivitySurface);
- * what must stay in the prose flow is the readable error with Retry and any
- * pending approval, which cannot be hidden behind a collapsed surface.
- *
- * The DOM wrapper keeps `data-tcid` / `data-state` so legacy hooks (viewport
- * anchoring, persisted extras) and tests still find the call.
- */
-import { useRef } from 'react';
-import { ToolErrorNotice } from '@socrates/ui/turn';
+import { memo, useId, useRef } from 'react';
+import { Chevron, Spinner, ToolErrorNotice, toolTargetOf, toolVerbOf } from '@socrates/ui/turn';
 import { translate } from '../../legacy/toolPresentationModel.ts';
-import { WebUiTheme } from '../rn/WebUiTheme';
-import { ToolRunApproval } from './ToolRunApproval.js';
-import type { ToolCallRecord, ToolRunView } from './toolRunModel';
+import { Button } from '../ui/shadcn/button';
+import { useLocaleRefresh, WebUiTheme } from '../rn/WebUiTheme';
+import { ToolActivityIcon, toolActivitySites } from './ToolActivityIcon';
+import { ToolRunAgentSteps } from './ToolRunAgentSteps';
+import { ToolRunApproval } from './ToolRunApproval';
+import { ToolRunDetail } from './ToolRunDetail';
+import { useToolRunDisclosure } from './ToolRunDisclosure';
+import {
+  agentRunStateOf,
+  toolRunView,
+  type ToolCallRecord,
+  type ToolRunView,
+} from './toolRunModel';
 
-export interface ToolRunRowProps {
-  view: ToolRunView;
-  /** The record behind `view`: input for the object, outputs for images. */
-  call?: ToolCallRecord;
+interface ToolRunRowProps {
+  call: ToolCallRecord;
   messageId?: string;
   readOnly?: boolean;
-  nested?: boolean;
-  activityOnly?: boolean;
-  actionsOnly?: boolean;
+  live: boolean;
 }
 
-export function callDurationMs(call: ToolCallRecord | undefined): number | null {
-  if (!call) return null;
-  const record = call as ToolCallRecord & { durationMs?: number };
-  if (typeof record.durationMs === 'number') return record.durationMs;
-  const run = call._run;
-  if (run && typeof run.durationMs === 'number') return run.durationMs;
-  if (run && typeof run.startedAt === 'number' && typeof run.endedAt === 'number')
-    return run.endedAt - run.startedAt;
-  return null;
-}
-
-function errorMessageOf(view: ToolRunView, call: ToolCallRecord | undefined): string {
-  const friendly = call && typeof call.userMessage === 'string' ? call.userMessage.trim() : '';
+function errorMessageOf(view: ToolRunView, call: ToolCallRecord): string {
+  const friendly = typeof call.userMessage === 'string' ? call.userMessage.trim() : '';
   if (friendly) return friendly;
   const error = view.sections.find((section) => section.kind === 'error');
   return error?.kind === 'error' ? error.text.trim().split('\n')[0].slice(0, 180) : '';
 }
 
-function ToolRunActions({ view, call, messageId, readOnly }: ToolRunRowProps) {
+function ToolRunActions({
+  view,
+  call,
+  messageId,
+  readOnly,
+}: Omit<ToolRunRowProps, 'live'> & { view: ToolRunView }) {
   const host = useRef<HTMLDivElement>(null);
   const message = errorMessageOf(view, call);
   const retry = !readOnly ? view.retry : undefined;
@@ -72,7 +62,7 @@ function ToolRunActions({ view, call, messageId, readOnly }: ToolRunRowProps) {
       {view.approval ? (
         <ToolRunApproval
           view={view.approval}
-          messageId={messageId || ''}
+          messageId={messageId ?? ''}
           toolCallId={view.id}
           readOnly={readOnly}
         />
@@ -81,8 +71,109 @@ function ToolRunActions({ view, call, messageId, readOnly }: ToolRunRowProps) {
   );
 }
 
-export function ToolRunRow({ view, call, messageId, readOnly }: ToolRunRowProps) {
-  return <ToolRunActions view={view} call={call} messageId={messageId} readOnly={readOnly} />;
+/** The same sentence-safe position owns the trigger, its detail and its actions. */
+export const ToolRunRow = memo(function ToolRunRow({
+  call,
+  messageId,
+  readOnly,
+  live,
+}: ToolRunRowProps) {
+  useLocaleRefresh();
+  const view = toolRunView(call);
+  const disclosure = useToolRunDisclosure(view.id);
+  const detailId = useId();
+  const running = live && view.state === 'running';
+  const stateLabel = executionStateLabel(view.state, live);
+  const label = stateLabel ? toolActionLabel(call) : view.label;
+  const expandable = hasToolDetail(view);
+  const testId = `tool-row-${view.id}`;
+  const rowContent = (
+    <>
+      <ToolActivityIcon name={view.name} sites={toolActivitySites(call)} />
+      <span className="tool-run-label" data-testid="thinking-step-title">
+        {label}
+      </span>
+      {stateLabel ? (
+        <span className="tool-run-state" data-testid="thinking-step-status">
+          {stateLabel}
+        </span>
+      ) : null}
+      {running ? <Spinner /> : null}
+      {expandable ? <Chevron open={disclosure.open} size={6} /> : null}
+    </>
+  );
+
+  return (
+    <div
+      className={`rn-tool-row${running ? ' is-live' : ''}`}
+      data-tcid={view.id}
+      data-tool={view.name}
+      data-state={view.state}
+      data-react-owned="1"
+      data-error={view.state === 'error' ? '1' : undefined}
+    >
+      <WebUiTheme>
+        {expandable ? (
+          <Button
+            variant="surface"
+            type="button"
+            className="tool-run-trigger"
+            data-testid={testId}
+            title={label}
+            aria-expanded={disclosure.open}
+            aria-controls={detailId}
+            onClick={() => disclosure.setOpen(!disclosure.open)}
+          >
+            {rowContent}
+          </Button>
+        ) : (
+          <div className="tool-run-trigger" data-testid={testId} title={label}>
+            {rowContent}
+          </div>
+        )}
+        {disclosure.open && expandable ? (
+          <div id={detailId} className="tool-run-detail-body" data-testid="tool-detail">
+            <ToolRunDetail
+              view={view}
+              call={call}
+              inFlight={live && (view.state === 'running' || view.state === 'awaiting')}
+              readOnly={readOnly}
+            />
+            {view.agentRun ? (
+              <ToolRunAgentSteps
+                run={view.agentRun}
+                live={running}
+                state={agentRunStateOf(view.state)}
+              />
+            ) : null}
+          </div>
+        ) : null}
+      </WebUiTheme>
+      <ToolRunActions view={view} call={call} messageId={messageId} readOnly={readOnly} />
+    </div>
+  );
+});
+
+function hasToolDetail(view: ToolRunView): boolean {
+  return Boolean(
+    view.sections.length ||
+    view.tech.length ||
+    view.livePreview ||
+    view.liveOutput ||
+    view.approval ||
+    view.agentRun,
+  );
 }
 
-export default ToolRunRow;
+function executionStateLabel(state: ToolRunView['state'], live: boolean): string | undefined {
+  if (state === 'awaiting') return translate('tool.awaitingApproval', 'Waiting for your decision');
+  if (state === 'stopped') return translate('tool.statusStopped', 'Stopped');
+  if (state === 'running' && !live) return translate('tool.status.unknown', 'Status unknown');
+  return undefined;
+}
+
+function toolActionLabel(call: ToolCallRecord): string {
+  const verb = toolVerbOf(call.name);
+  const target = toolTargetOf(call.name, call.input);
+  return [translate(verb.key, verb.fallback), target].filter(Boolean).join(' · ');
+}

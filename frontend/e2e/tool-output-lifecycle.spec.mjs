@@ -160,19 +160,15 @@ test('a settled visualization beside visible tool activities stays on screen', a
     assistantMessage([searchCall('search-1', 'parabola'), vizCall('viz-1', 'Probe parabola')]),
   ]);
 
-  const group = body.locator('.rn-turn-activity');
-  await expect(group).toHaveCount(1);
-  await expect(group.locator('[data-testid="turn-activity-toggle"]')).toHaveAttribute(
-    'aria-expanded',
-    'false',
-  );
+  await expect(body.locator('.rn-tool-row')).toHaveCount(2);
+  await expect(body.getByTestId('tool-row-search-1')).toHaveAttribute('aria-expanded', 'false');
 
   const card = body.locator('.visualization-card');
   await expect(card).toBeVisible();
   await expect(card).toContainText('Probe parabola');
   // The chart is not buried inside the collapsed activity (nor inside the
   // tool group whose shape changes as members settle).
-  await expect(group.locator('.visualization-card')).toHaveCount(0);
+  await expect(body.locator('.rn-tool-row .visualization-card')).toHaveCount(0);
 
   const probe = await readVizProbe(page);
   expect(probe.created).toHaveLength(1);
@@ -208,17 +204,12 @@ test('opening a mobile tool detail does not move or duplicate call outputs', asy
     ]),
   ]);
 
-  const group = body.locator('.rn-turn-activity');
   const charts = body.locator('.visualization-card');
   await expect(charts).toHaveCount(2);
   await expect(charts.nth(0)).toContainText('Probe A');
   await expect(charts.nth(1)).toContainText('Probe B');
   await expect(body.locator('.exec-artifact')).toHaveCount(0);
 
-  await body.locator('[data-testid="turn-activity-toggle"]').click();
-  /* Four settled calls collapse into one batch inside the activity body. */
-  const batch = body.locator('[data-testid="tool-batch-toggle"]');
-  if (await batch.isVisible()) await batch.click();
   await body.locator('[data-testid="tool-row-search-1"]').click();
   /* The detail opens inline beneath its row; outputs above and below keep
      their nodes. */
@@ -227,7 +218,9 @@ test('opening a mobile tool detail does not move or duplicate call outputs', asy
   await expect(page.locator('[data-tool-run-sheet="1"]')).toHaveCount(0);
   await expect(charts).toHaveCount(2);
   await expect(body.locator('.exec-artifact')).toHaveCount(0);
-  await expect(group.locator('.visualization-card, .exec-artifact')).toHaveCount(0);
+  await expect(body.locator('.rn-tool-row :is(.visualization-card, .exec-artifact)')).toHaveCount(
+    0,
+  );
   await expect(sheet.locator('.visualization-card, .exec-artifact')).toHaveCount(0);
 
   const probe = await readVizProbe(page);
@@ -252,12 +245,10 @@ test('a generated image stays hidden until assistant prose references it', async
     assistantMessage([code, vizCall('viz-1', 'Probe scatter')]),
   ]);
 
-  const group = body.locator('.rn-turn-activity');
-  await expect(group).toHaveCount(1);
+  await expect(body.locator('.rn-tool-row')).toHaveCount(2);
   await expect(body.locator('.visualization-card')).toBeVisible();
   await expect(body.locator('.exec-artifact, .exec-artifact-image')).toHaveCount(0);
-  await expect(group.locator('.visualization-card')).toHaveCount(0);
-  await expect(group.locator('.exec-artifact')).toHaveCount(0);
+  await expect(body.locator('.rn-tool-row .visualization-card')).toHaveCount(0);
 });
 
 test('an explicit markdown reference renders the generated image in assistant prose', async ({
@@ -438,10 +429,7 @@ test('a visualization stays visible across the running → result transition', a
   const card = message.locator('.visualization-card').last();
   await expect(card).toBeVisible();
   await expect(card).toContainText('Probe transition');
-  const group = message.locator('.rn-turn-activity');
-  await expect(group).toHaveCount(1);
-  await expect(message.locator('.visualization-card')).toBeVisible();
-  await expect(group.locator('.visualization-card')).toHaveCount(0);
+  await expect(message.locator('.rn-tool-row .visualization-card')).toHaveCount(0);
   await expect(message.locator('.visualization-card')).toHaveCount(1);
 
   /* The settle must not have torn the running renderer down and rebuilt it:
@@ -472,7 +460,6 @@ test('expanding and collapsing a tool ten times never remounts its chart', async
 
   /* RN-2: a call opens its detail in place; repeated disclosure must not
      remount the chart that lives outside the row. */
-  await body.locator('[data-testid="turn-activity-toggle"]').click();
   const summary = body.locator('[data-testid="tool-row-search-1"]');
   for (let i = 0; i < 10; i++) {
     await summary.click();

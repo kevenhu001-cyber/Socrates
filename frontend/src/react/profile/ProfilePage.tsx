@@ -37,7 +37,7 @@ function ProfilePage() {
           backId="profileBackBtn"
           onBack={dispatch.close}
         >
-          <Button variant="outline" onClick={() => openSettings({ section: 'account' })}>
+          <Button variant="ghost" onClick={() => openSettings({ section: 'account' })}>
             <Settings2Icon aria-hidden />
             {label('账户设置', 'Account settings')}
           </Button>
@@ -46,10 +46,8 @@ function ProfilePage() {
           {snapshot.user.userId !== '—' && snapshot.user.userId ? (
             <>
               <ProfileHeader user={snapshot.user} onSaveName={dispatch.saveName} />
-              <div className="profile-overview">
-                <ProfileAccountSection user={snapshot.user} />
-                <ProfileSubscriptionSection user={snapshot.user} />
-              </div>
+              <ProfileAccountSection user={snapshot.user} />
+              <ProfileSubscriptionSection user={snapshot.user} />
               <ProfilePreferencesSection
                 snapshot={snapshot}
                 dispatch={dispatch}

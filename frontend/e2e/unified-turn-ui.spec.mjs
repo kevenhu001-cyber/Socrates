@@ -58,7 +58,7 @@ const message = {
   },
 };
 
-test('one process disclosure contains public summaries and tools while results stay visible', async ({
+test('public summaries disclose separately while tool rows and results stay visible', async ({
   page,
 }) => {
   await prepareChatWorkbench(page, { messages: [message] });
@@ -67,6 +67,7 @@ test('one process disclosure contains public summaries and tools while results s
   await expect(activity).toHaveCount(1);
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   await expect(page.locator('.intui')).toBeVisible();
+  await expect(toolRow(page, 'ui')).toBeVisible();
   const widths = await page
     .locator('.intui')
     .evaluate((node) => ({ ui: node.clientWidth, host: node.parentElement.clientWidth }));
@@ -75,18 +76,19 @@ test('one process disclosure contains public summaries and tools while results s
   await expect(page.locator('.msg-body')).not.toContainText(message.summary);
   await toggle.click();
   await expect(activity.getByText('Checked the assumptions.')).toBeVisible();
-  await expect(toolRow(activity, 'ui')).toBeVisible();
-  /* Row text sits on the same small label step as the thinking line. */
-  const type = await toolRow(activity, 'ui')
+  await expect(toolRow(page, 'ui')).toBeVisible();
+  /* Tool text sits on the same type step as the answer. */
+  const type = await toolRow(page, 'ui')
     .locator(TURN.stepTitle)
     .evaluate((node) => ({
       size: parseFloat(getComputedStyle(node).fontSize),
       line: parseFloat(getComputedStyle(node).lineHeight),
     }));
-  const labelSize = await activity
-    .locator(TURN.label)
+  const proseSize = await page
+    .locator('.tool-run-prose p')
+    .first()
     .evaluate((node) => parseFloat(getComputedStyle(node).fontSize));
-  expect(type.size).toBe(labelSize);
+  expect(type.size).toBe(proseSize);
   expect(type.line).toBeGreaterThanOrEqual(type.size);
   await toggle.click();
   await expect(page.locator('.intui')).toBeVisible();
@@ -153,9 +155,7 @@ test('inline results preserve node identity, edited values and tabs', async ({ p
   await page.screenshot({ path: 'test-results/intelligent-ui-inline-tabs.png' });
 });
 
-test('a live turn names its action, separates run time and spins exactly one running step', async ({
-  page,
-}) => {
+test('a live tool names its action and spins once beside the public summary', async ({ page }) => {
   await prepareChatWorkbench(page);
   await page.evaluate(async () => {
     const ctl = await window.addStreamingMessage({ userPrompt: 'Check assumptions.' });
@@ -173,20 +173,14 @@ test('a live turn names its action, separates run time and spins exactly one run
   const activity = page.locator(TURN.surface);
   await expect(activity).toHaveCount(1);
   await expect(activity.locator('.turn-activity-dot')).toHaveCount(0);
-  /* The action leads behind the original sphere; only the secondary time
-     ticks, so the status announcement and action text stay stable. */
-  const label = activity.locator(TURN.label);
-  await expect(label).toHaveAttribute('role', 'status');
+  const row = toolRow(page, 'search');
+  const label = row.locator(TURN.stepTitle);
   await expect(label).toContainText('official specifications');
-  await expect(activity.locator(TURN.duration)).toContainText(/\d/);
-  await expect(activity.locator(TURN.duration)).toHaveAttribute('aria-live', 'off');
-  await expect(activity.locator(TURN.indicator)).toHaveCount(1);
-  expect(await label.evaluate((node) => getComputedStyle(node).animationName)).toBe(
-    'ui-shimmer-sweep',
-  );
-  const spinner = activity.locator(TURN.spinner);
+  await expect(activity.locator(TURN.indicator)).toHaveCount(0);
+  const spinner = row.locator(TURN.spinner);
   await expect(spinner).toHaveCount(1);
   await activity.locator(TURN.toggle).click();
+  await expect(activity.getByText('Compared the official specifications.').first()).toBeVisible();
   const pose = () =>
     spinner.evaluate((node) => {
       const computed = getComputedStyle(node).transform;
@@ -200,7 +194,6 @@ test('a live turn names its action, separates run time and spins exactly one run
   const stillPose = await pose();
   await page.waitForTimeout(400);
   expect(await pose()).toBe(stillPose);
-  /* Reduced motion also stops the caption's shimmer. */
   expect(await label.evaluate((node) => getComputedStyle(node).animationName)).toBe('none');
   await page.evaluate(() => {
     const ctl = window.__unifiedController;
@@ -214,7 +207,7 @@ test('a live turn names its action, separates run time and spins exactly one run
     ctl.append('The answer.');
     ctl.finish();
   });
-  await expect(activity.locator(TURN.spinner)).toHaveCount(0);
+  await expect(row.locator(TURN.spinner)).toHaveCount(0);
   await expect(activity.locator(TURN.toggle)).toHaveAttribute('aria-expanded', 'true');
 });
 
@@ -242,7 +235,7 @@ test('pending approvals remain visible with activity collapsed', async ({ page }
       },
     ],
   });
-  await expect(page.locator(TURN.toggle)).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.locator('.tool-run-trigger')).toHaveAttribute('aria-expanded', 'false');
   await expect(page.locator(TURN.approval)).toBeVisible();
   await expect(page.locator('[data-approval-action="accept"]')).toBeVisible();
   expect(

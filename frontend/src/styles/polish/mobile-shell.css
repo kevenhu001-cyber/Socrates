@@ -82,6 +82,9 @@
   body[data-conversation-active='true'] #appShell .top-model-slot {
     display: none;
   }
+  body[data-conversation-active='true'] #appShell .top-bar {
+    background: var(--ui-bg-header-glass);
+  }
   /* Phone model control: a compact chip that names the model. The desktop
      lockup ("Socrates <model>") is 278px wide, which painted through the
      centred mode switch on a 390px bar; phones drop the brand and cap the

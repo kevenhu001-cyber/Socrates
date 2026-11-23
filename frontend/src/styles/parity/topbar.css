@@ -47,13 +47,16 @@ body.exam-active #appShell .top-model-slot {
   display: none;
 }
 
-/* Settings owns a full page with its own header, so the chat top bar is not
-   duplicated above it. Profile keeps the shared account-page frame. */
+/* Account pages have their own titles. Phones use the Profile back action. */
+html[data-main-view='profilePage'] #appShell .top-conversation-title,
 html[data-main-view='settingsPage'] #appShell .top-bar {
   display: none;
 }
 
 @media (max-width: 768px) {
+  html[data-main-view='profilePage'] #appShell .top-bar {
+    display: none;
+  }
   body[data-conversation-active='true'] #appShell .top-bar-left {
     flex: 1 1 0;
     min-width: 0;

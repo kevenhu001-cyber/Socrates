@@ -34,40 +34,6 @@
   display: contents;
 }
 
-/* ── Glyph slot ────────────────────────────────────────────────────────
-   Spinner and tool glyph share one fixed footprint, so a call settling
-   never reflows the label. While in flight the slot breathes on the slow
-   pulse lane: motion, not colour, is what says "working". */
-.msg.assistant .msg-body.is-declarative .tool-inline-tool-icon {
-  display: inline-flex;
-  width: var(--tc-icon);
-  height: var(--tc-icon);
-  flex: 0 0 var(--tc-icon);
-  margin-top: 0;
-  align-items: center;
-  justify-content: center;
-  color: var(--ui-text-tertiary);
-  transition: color var(--ui-duration-hover) ease;
-}
-.msg.assistant .msg-body.is-declarative .tool-inline-tool-icon svg {
-  display: block;
-  width: var(--tc-glyph);
-  height: var(--tc-glyph);
-}
-/* Brand marks reuse the plugin directory assets without a category outline. */
-.msg.assistant .msg-body.is-declarative .tool-inline-tool-icon img {
-  display: block;
-  width: var(--tc-glyph);
-  height: var(--tc-glyph);
-  object-fit: contain;
-}
-
-/* ── Expanded body: the rail ───────────────────────────────────────────
-   The 1px rule IS the containment model. It costs nothing while closed,
-   groups every child of a run into one visual block, and keeps a long
-   stdout from reading as a second answer. */
-/* Inside a member row of a run group */
-
 /* ── Approval ──────────────────────────────────────────────────────────
    The one surface in the transcript that is genuinely a decision, so it
    is the one surface that keeps a border and a fill. */

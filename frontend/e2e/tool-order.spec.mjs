@@ -91,7 +91,7 @@ async function startControllableStream(page) {
   return page.locator('.msg.assistant').last().locator('.msg-body');
 }
 
-test('a live row waits for its paragraph, then mounts once in activity before the prose', async ({
+test('a live row waits for its paragraph, then mounts once before the next paragraph', async ({
   page,
 }) => {
   const body = await startControllableStream(page);
@@ -124,7 +124,7 @@ test('a live row waits for its paragraph, then mounts once in activity before th
 
   /* Complete the paragraph: the <think> tail buffer holds back ~7 chars,
      so push enough that the blank line flushes through, then exactly one
-     row must mount in the unified activity surface. */
+     row must mount at the paragraph boundary. */
   await page.evaluate(() => window.__pushText('！查到了。今天很暖和。\n\n第二段讲讲结果。'));
   const row = body.locator('.rn-tool-row[data-tcid="live-search"]');
   await expect(row).toHaveCount(1);
@@ -136,18 +136,15 @@ test('a live row waits for its paragraph, then mounts once in activity before th
   await expect(row).toHaveAttribute('data-state', 'done');
   await expect(body.locator('.stream-cursor')).toHaveCount(0);
 
-  /* Strict order: one activity row precedes both prose segments; no tool
-     row is inserted between the original paragraph and the answer tail. */
+  /* The row follows the original paragraph and precedes the answer tail. */
   const order = await body.evaluate((el) => {
     const out = [];
     for (const node of Array.from(el.querySelector('.turn-evidence').children)) {
       if (node.classList.contains('tool-inline-attachments')) continue;
       if (node.classList.contains('stream-cursor')) continue;
       if (node.classList.contains('tool-run-prose')) {
-        out.push(`text:${(node.textContent || '').trim()}`);
-      } else if (node.classList.contains('rn-turn-activity')) {
-        for (const row of node.querySelectorAll('.rn-tool-row'))
-          out.push(`row:${row.dataset.tcid}`);
+        const text = node.textContent?.trim();
+        if (text) out.push(`text:${text}`);
       } else if (node.classList.contains('rn-tool-row')) {
         out.push(`row:${node.dataset.tcid}`);
       } else if (
@@ -160,9 +157,8 @@ test('a live row waits for its paragraph, then mounts once in activity before th
     return out;
   });
   expect(order).toEqual([
-    'row:live-search',
     'text:我先来查一下北京今天的天气情况。后来出太阳了！查到了。今天很暖和。',
-    'text:', // The paragraph-separating whitespace retains its prose segment.
+    'row:live-search',
     'text:第二段讲讲结果。',
   ]);
 });
@@ -229,20 +225,16 @@ async function loadColonFixture(page) {
   return page.locator('#msgList .msg.assistant').last().locator('.msg-body');
 }
 
-test('a restored colon-offset row stays in activity while prose splits at the next sentence', async ({
-  page,
-}) => {
+test('a restored colon-offset row follows the next complete sentence', async ({ page }) => {
   const body = await loadColonFixture(page);
-  await expect(body.locator('.rn-turn-activity .rn-tool-row[data-tcid="c1"]')).toHaveCount(1);
+  await expect(body.locator('.rn-tool-row[data-tcid="c1"]')).toHaveCount(1);
   const order = await body.evaluate((el) => {
     const out = [];
     for (const node of Array.from(el.querySelector('.turn-evidence').children)) {
       if (node.classList.contains('tool-inline-attachments')) continue;
       if (node.classList.contains('tool-run-prose')) {
-        out.push(`text:${(node.textContent || '').trim()}`);
-      } else if (node.classList.contains('rn-turn-activity')) {
-        for (const row of node.querySelectorAll('.rn-tool-row'))
-          out.push(`row:${row.dataset.tcid}`);
+        const text = node.textContent?.trim();
+        if (text) out.push(`text:${text}`);
       } else if (node.classList.contains('rn-tool-row')) {
         out.push(`row:${node.dataset.tcid}`);
       } else {
@@ -251,7 +243,5 @@ test('a restored colon-offset row stays in activity while prose splits at the ne
     }
     return out;
   });
-  /* The row belongs to activity; the sentence-safe prose split remains
-     intact without inserting a tool between the two text segments. */
-  expect(order).toEqual(['row:c1', 'text:原因有三：第一。', 'text:第二。尾巴。']);
+  expect(order).toEqual(['text:原因有三：第一。', 'row:c1', 'text:第二。尾巴。']);
 });

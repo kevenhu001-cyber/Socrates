@@ -610,6 +610,7 @@ export const en = {
   'profile.unverified': 'Unverified',
   'profile.userId': 'User ID',
   'profile.subscription': 'Subscription',
+  'profile.freePlan': 'Free',
   'profile.currentPlan': 'Current plan',
   'profile.renewal': 'Renewal',
   'profile.comparePlans': 'Compare plans',

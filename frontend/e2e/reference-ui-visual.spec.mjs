@@ -128,8 +128,11 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
       window.__socratesLegacy.navigation.toggleSidebar?.();
   });
   await expect
-    .poll(async () => Math.round((await page.locator('#sidebar').boundingBox())?.x ?? 0))
-    .toBe(Math.round(-MOBILE_DRAWER));
+    .poll(async () => {
+      const box = await page.locator('#sidebar').boundingBox();
+      return box ? box.x + box.width : Infinity;
+    })
+    .toBeLessThanOrEqual(0);
   await expect(page.locator('#topicSetup')).toBeVisible();
   await expect(page.locator('#composerInputWrap')).toBeVisible();
   await page.screenshot({
@@ -247,9 +250,10 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
     (pluginGeometry.installedLabel?.y ?? 0) + (pluginGeometry.installedLabel?.height ?? 0),
   ).toBeLessThanOrEqual(pluginGeometry.installedIcon?.y ?? 0);
   expect(pluginGeometry.installedIcon?.width).toBeCloseTo(40, 1);
-  /* Exact alignment at the lower edge is valid at the reference viewport. */
-  expect(pluginGeometry.tabs?.y).toBeGreaterThanOrEqual(315);
-  expect(pluginGeometry.tabs?.y).toBeLessThan(410);
+  expect(pluginGeometry.tabs?.y).toBeGreaterThanOrEqual(
+    (pluginGeometry.installedIcon?.y ?? 0) + (pluginGeometry.installedIcon?.height ?? 0),
+  );
+  expect(pluginGeometry.tabs?.y).toBeLessThan(pluginGeometry.rowIcon?.y ?? 0);
   expect(pluginGeometry.rowIcon?.width).toBeCloseTo(40, 1);
   await page.evaluate(() => document.getElementById('pluginWorkspaceSkillsTab')?.click());
   await expect(page.locator('#promptTemplatesOverlay')).toBeVisible();

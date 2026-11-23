@@ -9,7 +9,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   buildTurnLayout,
   groupOutputCalls,
-  sortableToolCalls,
   stripLegacyToolHtml,
   toolRunStateOf,
   type ToolCallRecord,
@@ -19,7 +18,7 @@ import { ToolRunDisclosureProvider } from './ToolRunDisclosure';
 import { TurnStatus } from './TurnStatus.js';
 import { TurnSegmentContent } from './TurnSegmentContent';
 import { ToolRunAttachments } from './ToolRunAttachments';
-import { ToolRunRows } from './ToolRunRows';
+import { ToolRunRow } from './ToolRunRow';
 import { useProseRenderer, useScaffoldTurnProse } from './proseRenderer';
 import { useLocaleRefresh } from '../rn/WebUiTheme';
 import { stripLegacyTerminalHtml } from './toolRunLegacyHtml';
@@ -57,21 +56,12 @@ function lastTextIndex(segments: TurnSegment[]): number {
   return -1;
 }
 
-function segmentKey(segment: TurnSegment): string {
+function segmentKey(segment: Exclude<TurnSegment, { kind: 'tool' | 'group' }>): string {
   // Text ranges never overlap, so the source offset alone names a prose run.
   // Folding in the array index re-keyed (and remounted, dropping the streamed
   // block DOM) every later prose run whenever a row or group was inserted
   // ahead of it, e.g. a deferred tool row mounting when the turn settles.
   if (segment.kind === 'text') return 'text-' + segment.start;
-  /* A group is named by the first call it owns, not by its position: prose
-     inserted ahead of it (every streaming token can add a text range) shifts
-     the array index, and an index key would unmount the whole run — dropping
-     its open detail, its focus, and any visualization iframe inside it. */
-  if (segment.kind === 'group') {
-    const first = segment.calls?.[0] || segment.members[0];
-    return 'group-' + (first?.id || segment.category);
-  }
-  if (segment.kind === 'tool') return 'tool-' + segment.call.id;
   /* Think ranges never overlap, so their source offset is stable too. */
   return 'think-' + segment.start;
 }
@@ -111,9 +101,11 @@ function callsForMessage(
   return calls;
 }
 
-function storedProseFor(rawText: string, html: string, calls: ToolCallRecord[]): string {
+function storedProseFor(rawText: string, html: string, segments: TurnSegment[]): string {
   if (rawText.trim() || !html.trim()) return '';
-  return sortableToolCalls(rawText, calls).length > 0 ? stripLegacyToolHtml(html) : html;
+  return segments.some((segment) => segment.kind === 'tool' || segment.kind === 'group')
+    ? stripLegacyToolHtml(html)
+    : html;
 }
 
 function hasRunningToolRow(segments: TurnSegment[]): boolean {
@@ -149,17 +141,6 @@ function useStreamSettling(isLive: boolean): boolean {
   return isSettling;
 }
 
-/** Activity-layer calls in transcript order (group members, then lone calls). */
-function activityCallsOf(segments: TurnSegment[]): ToolCallRecord[] {
-  return segments.flatMap((segment) =>
-    segment.kind === 'group'
-      ? groupOutputCalls(segment)
-      : segment.kind === 'tool'
-        ? [segment.call]
-        : [],
-  );
-}
-
 function TurnSegmentsView({
   segments,
   message,
@@ -167,6 +148,7 @@ function TurnSegmentsView({
   messageId,
   calls,
   readOnly,
+  live,
   prose,
 }: {
   segments: TurnSegment[];
@@ -175,6 +157,7 @@ function TurnSegmentsView({
   messageId: string;
   calls: ToolCallRecord[];
   readOnly?: boolean;
+  live: boolean;
   prose: ReturnType<typeof useProseRenderer>;
 }): React.ReactElement {
   return (
@@ -185,12 +168,15 @@ function TurnSegmentsView({
           // Parallel tools can join a group after its first output has mounted.
           // Keep attachments keyed by call at the transcript level across regrouping.
           return [
-            <ToolRunRows
-              key={segmentKey(segment)}
-              calls={members}
-              messageId={messageId}
-              readOnly={readOnly}
-            />,
+            ...members.map((call) => (
+              <ToolRunRow
+                key={`tool-${call.id}`}
+                call={call}
+                messageId={messageId}
+                readOnly={readOnly}
+                live={live}
+              />
+            )),
             ...members.map((call) => (
               <ToolRunAttachments
                 key={`output-${call.id}`}
@@ -286,7 +272,7 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
       }),
     [rawText, calls, isLive, message.restoredFromHistory],
   );
-  const storedProse = storedProseFor(rawText, storedHtml, calls);
+  const storedProse = storedProseFor(rawText, storedHtml, segments);
   // Keep the renderer and its block cache for the lifetime of a streamed turn.
   // Finishing only changes chrome; it must not repaint prose with another parser.
   const streamedRef = useRef(isLive);
@@ -300,19 +286,19 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
       : segments.findIndex((s) => s.kind === 'think')
     : -1;
   const hasRunningRow = hasRunningToolRow(segments);
-  /* One stable array per layout: the activity strip memoizes its rows on this
-     identity, and a fresh array on every parent render would rebuild them all
-     (including every tool detail) on each streaming commit. */
-  const activityCalls = useMemo(() => activityCallsOf(segments), [segments]);
-  /* The activity strip is mounted before the transcript so tool rows can
-     remain in their sentence-safe position. Tell it when real answer prose
-     has started, though, so the strip can become the small interleaved
-     progress cue ChatGPT uses while the response continues composing. */
   const hasAnswerProse = hasAnswerText(segments, storedProse);
   const hasSettledTool = calls.some((c) => toolRunStateOf(c) === 'done');
   const activeTool =
     calls.find((call) => toolRunStateOf(call) === 'awaiting') ||
     calls.find((call) => toolRunStateOf(call) === 'running');
+  const activeToolInline = Boolean(
+    activeTool &&
+    segments.some((segment) =>
+      segment.kind === 'group'
+        ? groupOutputCalls(segment).some((call) => call.id === activeTool.id)
+        : segment.kind === 'tool' && segment.call.id === activeTool.id,
+    ),
+  );
   const presentation = deriveTurnPresentationState(message, {
     live: isLive,
     answerStarted: hasAnswerProse,
@@ -334,13 +320,11 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
           status={presentation.activityStatus}
           activityStartedAt={presentation.activityStartedAt}
           reasoningDurationSec={presentation.reasoningDurationSec}
-          turnDurationMs={message.turnRuntime?.durationMs}
           statusLabel={presentation.activityLabel}
           intentSummary={presentation.intentSummary}
           answerStarted={hasAnswerProse}
-          calls={activityCalls}
+          activeToolInline={activeToolInline}
           activeTool={activeTool}
-          readOnly={readOnly}
         />
         {legacyHtml ? (
           <div
@@ -355,6 +339,7 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
           messageId={messageId}
           calls={calls}
           readOnly={readOnly}
+          live={isLive}
           prose={prose}
         />
         <TurnIndicators

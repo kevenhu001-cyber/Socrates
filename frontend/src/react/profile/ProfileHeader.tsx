@@ -1,4 +1,3 @@
-import { ProfileIdentity } from '@socrates/ui/settings';
 import { profileText } from './profileText';
 import { Label } from '../ui/shadcn/label';
 import { Input as ShadcnInput } from '../ui/shadcn/input';
@@ -23,6 +22,7 @@ export function ProfileHeader({
   /* The field is a draft until the server confirms it: a rejected rename
      restores the confirmed name instead of leaving the rejected text in
      the input. */
+  const suggestedName = user.email.split('@')[0];
   const [draft, setDraft] = useState(user.displayName);
   const confirmed = useRef(user.displayName);
 
@@ -49,7 +49,15 @@ export function ProfileHeader({
 
   return (
     <div className="profile-header">
-      <ProfileIdentity initials={user.initials} email={user.email} />
+      <div className="profile-identity">
+        <span className="profile-avatar" aria-hidden="true">
+          {user.initials}
+        </span>
+        <div className="profile-identity-copy">
+          <strong>{user.displayName || suggestedName}</strong>
+          <span id="profileEmail">{user.email}</span>
+        </div>
+      </div>
       <div className="profile-display-name">
         <Label htmlFor="profileName">{profileText('profile.displayName', 'Display name')}</Label>
         <ShadcnInput
@@ -57,6 +65,8 @@ export function ProfileHeader({
           id="profileName"
           type="text"
           maxLength={50}
+          autoComplete="nickname"
+          placeholder={suggestedName}
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           onBlur={handleNameBlur}

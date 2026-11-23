@@ -93,24 +93,24 @@
   overscroll-behavior: contain;
 }
 
-.rn-turn-activity .thinking-tool-input {
+.tool-run-detail-body .thinking-tool-input {
   display: flex;
   flex-direction: column;
   align-items: stretch;
   min-width: 0;
 }
 
-.rn-turn-activity .thinking-tool-input > [role='button'] {
+.tool-run-detail-body .thinking-tool-input > [role='button'] {
   align-self: flex-start;
 }
 
-.rn-turn-activity .tool-site-marks {
+:is(.rn-turn-activity, .tool-run-trigger) .tool-site-marks {
   display: inline-flex;
   align-items: center;
   gap: 2px;
 }
 
-.rn-turn-activity .tool-site-mark {
+:is(.rn-turn-activity, .tool-run-trigger) .tool-site-mark {
   position: relative;
   display: grid;
   place-items: center;
@@ -123,7 +123,7 @@
   line-height: 1;
 }
 
-.rn-turn-activity .tool-site-mark img {
+:is(.rn-turn-activity, .tool-run-trigger) .tool-site-mark img {
   position: absolute;
   inset: 0;
   display: block;
@@ -132,49 +132,19 @@
   object-fit: contain;
 }
 
-/* A tool's detail opens beneath its own label, capped and scrollable so one
-   long output cannot push the answer out of view. */
-.rn-turn-activity .thinking-step-detail-body {
+/* Long output scrolls beneath the trigger without moving the answer out of view. */
+.tool-run-detail-body {
   display: flex;
   flex-direction: column;
   gap: var(--ui-gap-3);
   min-width: 0;
   max-height: min(440px, 55dvh);
-  padding: var(--ui-space-sm) var(--ui-space-md);
-  margin-block-start: var(--ui-space-xs);
-  margin-block-end: var(--ui-space-sm);
-  background: var(--ui-bg-raised);
-  border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-md);
+  padding-inline-start: calc(1em + var(--ui-space-xs));
+  margin-block: var(--ui-space-xs) var(--ui-space-sm);
   overflow: auto;
+  overflow-wrap: anywhere;
   overscroll-behavior: contain;
   scrollbar-width: thin;
-}
-
-/* A ZCode-style settled batch adds one quiet nested rail. Only terminal,
-   non-actionable calls are grouped; the actual result rows stay unchanged. */
-.rn-turn-activity .thinking-tool-batch-content {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  margin-inline-start: 2px;
-  padding-inline-start: var(--ui-space-sm);
-  border-inline-start: 1px solid var(--ui-border-subtle);
-}
-
-.rn-turn-activity .thinking-tool-batch[data-testid='tool-call-batch'] {
-  min-width: 0;
-}
-
-/* A long code result scrolls inside its own detail instead of growing the
-   transcript, while headings and copy actions retain their normal hit area. */
-.rn-turn-activity [data-testid='tool-detail'] {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-.rn-turn-activity .thinking-step-detail-body .rn-tool-actions {
-  margin-block: 0;
 }
 
 /* The live caption is still text; the working cue is the glyph alongside
@@ -243,7 +213,8 @@
 }
 @media (max-width: 768px) {
   .rn-turn-activity-toggle,
-  .rn-thinking-step {
+  .rn-thinking-step,
+  .rn-tool-row .tool-run-trigger {
     min-height: var(--ui-control-touch);
   }
 }

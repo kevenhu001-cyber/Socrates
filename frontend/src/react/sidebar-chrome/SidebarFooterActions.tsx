@@ -418,7 +418,7 @@ export function SidebarFooterActions() {
         variant="ghost"
         size="icon-sm"
         type="button"
-        className="btn-icon theme-toggle"
+        className="btn-icon sm theme-toggle"
         id="themeToggle"
         title={t('display.themeToggle', 'Toggle theme')}
         aria-label={t('display.themeToggle', 'Toggle theme')}
@@ -435,7 +435,7 @@ export function SidebarFooterActions() {
         variant="ghost"
         size="icon-sm"
         type="button"
-        className="btn-icon"
+        className="btn-icon sm"
         id="displayPrefsBtn"
         title={t('chrome.displaySettings', 'Display settings')}
         aria-label={t('chrome.displaySettings', 'Display settings')}
@@ -466,7 +466,7 @@ export function SidebarFooterActions() {
         variant="ghost"
         size="icon-sm"
         type="button"
-        className="btn-icon"
+        className="btn-icon sm"
         id="apiSettingsBtn"
         title={t('chrome.apiSettings', 'API Settings')}
         aria-label={t('chrome.apiSettings', 'API Settings')}

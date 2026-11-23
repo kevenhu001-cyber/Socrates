@@ -44,7 +44,6 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
     await window.askChatTurn('Explore Socratic learning');
   });
 
-  await page.locator('.msg.assistant [data-testid="turn-activity-toggle"]').click();
   const toolRow = page.locator('.msg.assistant .rn-tool-row[data-tcid="search-visual"]');
   await expect(toolRow).toBeVisible();
   await expect(toolRow.locator('[data-testid="thinking-step-title"]')).toContainText(

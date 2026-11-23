@@ -570,6 +570,7 @@ export const zh = {
   'profile.unverified': '未验证',
   'profile.userId': '用户 ID',
   'profile.subscription': '订阅',
+  'profile.freePlan': '免费版',
   'profile.currentPlan': '当前套餐',
   'profile.renewal': '续费日期',
   'profile.comparePlans': '对比套餐',

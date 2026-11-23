@@ -1,16 +1,12 @@
-import { memo, useId, useMemo, useRef, useState, type ReactElement } from 'react';
+import { useId, useMemo, useRef, useState, type ReactElement } from 'react';
 import {
   ActivityStep,
   ThinkingSurface,
   ThinkingTimeline,
-  STATUS_COPY,
-  activityTimeline,
   publicSummariesOf,
   stepsWithFallback,
   thinkingHeaderOf,
   thinkingLabelOf,
-  toolTargetOf,
-  toolVerbOf,
   type ThinkingLabels,
   type ThinkingStep,
 } from '@socrates/ui/turn';
@@ -20,19 +16,9 @@ import { i18n } from '../../ui/legacyI18n.ts';
 import { WebUiTheme, useLocaleRefresh } from '../rn/WebUiTheme';
 import { ToolActivityIcon, toolActivitySites } from './ToolActivityIcon';
 import { ThinkingSpark } from './ThinkingSpark';
-import { ToolRunDetail } from './ToolRunDetail';
-import { ToolRunAgentSteps } from './ToolRunAgentSteps';
-import { useToolRunDisclosure } from './ToolRunDisclosure';
 import { useElapsed } from './useElapsed';
-import {
-  agentRunStateOf,
-  runStartedAt,
-  toolRunStateOf,
-  toolRunView,
-  type ToolCallRecord,
-  type ToolRunView,
-} from './toolRunModel';
-import { tf, toolRunLabel } from '../../legacy/toolPresentationModel.ts';
+import { runStartedAt, type ToolCallRecord } from './toolRunModel';
+import { tf } from '../../legacy/toolPresentationModel.ts';
 import { interfaceIcon } from '../../legacy/icons/interfaceIcons.ts';
 import { MathText } from '../rn/useInlineMath';
 
@@ -42,32 +28,24 @@ export interface TurnActivitySurfaceProps {
   activities?: ReadonlyArray<TurnActivityEntry>;
   isLive?: boolean;
   reasoningDurationSec?: number;
-  turnDurationMs?: number;
   activityStartedAt?: number;
   statusLabel?: string;
   status?: TurnActivityStatus;
   intentSummary?: string;
   /** True once answer prose has started, even if the turn is still live. */
   answerStarted?: boolean;
-  /** Activity-layer tool calls, in transcript order. */
-  calls?: ReadonlyArray<ToolCallRecord>;
+  activeToolInline?: boolean;
   activeTool?: ToolCallRecord;
-  readOnly?: boolean;
 }
 
-function thinkingLabels(hasSummary: boolean, hasIntent: boolean): ThinkingLabels {
-  const mixed = hasSummary || hasIntent;
+function thinkingLabels(hasSummary: boolean): ThinkingLabels {
   return {
     runningNoTime: i18n('think.rn.runningNoTime', '正在处理…'),
     doneNoTime: hasSummary
       ? i18n('think.reasoningSummary', 'Thinking summary')
       : i18n('think.activityHistory', 'Activity history'),
-    usedTool: mixed
-      ? i18n('think.activityWithTool', 'Activity · {n} tool')
-      : i18n('think.summaryToolTitle', 'Used {n} tool'),
-    usedTools: mixed
-      ? i18n('think.activityWithTools', 'Activity · {n} tools')
-      : i18n('think.summaryToolsTitle', 'Used {n} tools'),
+    usedTool: i18n('think.summaryToolTitle', 'Used {n} tool'),
+    usedTools: i18n('think.summaryToolsTitle', 'Used {n} tools'),
   };
 }
 
@@ -117,266 +95,19 @@ function StepGlyph({ html }: { html: string }) {
   );
 }
 
-function hasDetail(view: ToolRunView): boolean {
-  return Boolean(
-    view.sections.length ||
-    view.tech.length ||
-    view.livePreview ||
-    view.liveOutput ||
-    view.approval ||
-    view.agentRun,
-  );
-}
-
-interface ToolStepPresentation {
-  view: ToolRunView;
-  state: ReturnType<typeof toolRunStateOf>;
-  running: boolean;
-  inFlight: boolean;
-  expandable: boolean;
-  title: string;
-  statusLabel: string | undefined;
-  meta: string | undefined;
-  sites: string[];
-}
-
-function resolveToolStepPresentation(call: ToolCallRecord, live: boolean): ToolStepPresentation {
-  const view = toolRunView(call);
-  const state = toolRunStateOf(call);
-  const running = live && state === 'running';
-  const inFlight = live && (state === 'running' || state === 'awaiting');
-  const expandable = hasDetail(view);
-  const label = toolRunLabel(call, state);
-  const status = STATUS_COPY[state];
-  const isUnknownStatus = state === 'running' && !live;
-  const resolvedStatus = isUnknownStatus
-    ? i18n('tool.status.unknown', 'Status unknown')
-    : i18n(status.key, status.fallback);
-  const verb = toolVerbOf(view.name);
-  const showAction = state === 'awaiting' || state === 'stopped' || isUnknownStatus;
-  const actionTarget = toolTargetOf(view.name, call.input);
-  const actionTitle = [i18n(verb.key, verb.fallback), actionTarget].filter(Boolean).join(' · ');
-  const title = showAction ? actionTitle : label.text;
-  const sites = toolActivitySites(call);
-  const statusLabel = resolvedStatus === title ? undefined : resolvedStatus;
-  const meta = sites.length > 0 ? label.meta?.[0] : undefined;
-
-  return {
-    view,
-    state,
-    running,
-    inFlight,
-    expandable,
-    title,
-    statusLabel,
-    meta,
-    sites,
-  };
-}
-
-function ToolStepDetailBody({
-  view,
-  call,
-  inFlight,
-  readOnly,
-  state,
-}: {
-  view: ToolRunView;
-  call: ToolCallRecord;
-  inFlight: boolean;
-  readOnly?: boolean;
-  state: ReturnType<typeof toolRunStateOf>;
-}): ReactElement {
-  return (
-    <div className="thinking-step-detail-body" data-testid="tool-detail">
-      <ToolRunDetail view={view} call={call} inFlight={inFlight} readOnly={readOnly} />
-      {view.agentRun ? (
-        <ToolRunAgentSteps run={view.agentRun} live={inFlight} state={agentRunStateOf(state)} />
-      ) : null}
-    </div>
-  );
-}
-
-/** One tool call as one row. The detail opens inline, not in a drawer. */
-const ToolStep = memo(function ToolStep({
-  call,
-  live,
-  readOnly,
-}: {
-  call: ToolCallRecord;
-  live: boolean;
-  readOnly?: boolean;
-}): ReactElement {
-  useLocaleRefresh();
-  const pres = resolveToolStepPresentation(call, live);
-  const disclosure = useToolRunDisclosure(pres.view.id);
-  const onToggle = pres.expandable ? () => disclosure.setOpen(!disclosure.open) : undefined;
-  const detail = pres.expandable ? (
-    <ToolStepDetailBody
-      view={pres.view}
-      call={call}
-      inFlight={pres.inFlight}
-      readOnly={readOnly}
-      state={pres.state}
-    />
-  ) : null;
-
-  return (
-    <div
-      className={`rn-tool-row${pres.inFlight ? ' is-live' : ''}`}
-      data-tcid={pres.view.id}
-      data-tool={pres.view.name}
-      data-state={pres.state}
-      data-react-owned="1"
-      data-error={pres.state === 'error' ? '1' : undefined}
-    >
-      <WebUiTheme>
-        <ActivityStep
-          testID={`tool-row-${pres.view.id}`}
-          label={pres.title}
-          live={pres.running}
-          status={pres.statusLabel}
-          metadata={pres.meta}
-          error={pres.state === 'error'}
-          icon={<ToolActivityIcon name={pres.view.name} sites={pres.sites} />}
-          iconWidth={pres.sites.length > 1 ? 30 : undefined}
-          expandable={pres.expandable}
-          open={disclosure.open}
-          onToggle={onToggle}
-          detail={detail}
-        />
-      </WebUiTheme>
-    </div>
-  );
-});
-
-/**
- * ZCode-inspired compact batch: completed, non-interactive tool rows can be
- * collapsed together without concealing an approval, an error or active work.
- * The underlying ToolStep (and its result renderer) remains the single owner.
- */
-const MIN_BATCH_SIZE = 4;
-
-function canBatchTool(call: ToolCallRecord): boolean {
-  if (toolRunStateOf(call) !== 'done') return false;
-  const view = toolRunView(call);
-  return (
-    !view.approval && !view.agentRun && !view.sections.some((section) => section.kind === 'error')
-  );
-}
-
-function ToolBatch({
-  calls,
-  live,
-  readOnly,
-}: {
-  calls: ReadonlyArray<ToolCallRecord>;
-  live: boolean;
-  readOnly?: boolean;
-}): ReactElement {
-  const [open, setOpen] = useState(false);
-  const title = tf('think.summaryToolsTitle', 'Used {n} tools', { n: calls.length });
-  return (
-    <div className="thinking-tool-batch" data-testid="tool-call-batch">
-      <ActivityStep
-        testID="tool-batch-toggle"
-        label={title}
-        icon={<StepGlyph html={interfaceIcon('thinking')} />}
-        expandable
-        open={open}
-        onToggle={() => setOpen((previous) => !previous)}
-        detail={
-          <div className="thinking-tool-batch-content">
-            {calls.map((call) => (
-              <ToolStep key={call.id} call={call} live={live} readOnly={readOnly} />
-            ))}
-          </div>
-        }
-      />
-    </div>
-  );
-}
-
-function rowsFor(
-  steps: ThinkingStep[],
-  calls: ReadonlyArray<ToolCallRecord>,
-  intent: string,
-  live: boolean,
-  readOnly?: boolean,
-): ReactElement[] {
-  const timeline = activityTimeline(
-    steps,
-    calls.map((call) => ({ id: call.id, startedAt: runStartedAt(call) || undefined, item: call })),
-  );
-  const rows: ReactElement[] = [];
-  if (intent) {
-    rows.push(
-      <ActivityStep
-        key="intent"
-        label={i18n('think.taskOverview', 'Task overview')}
-        preview={
-          <p className="thinking-step-preview">
-            <MathText text={intent} />
-          </p>
-        }
-      />,
-    );
-  }
-  for (const entry of timeline) {
-    if (entry.kind === 'step') {
-      rows.push(<SummaryStep key={entry.step.id} step={entry.step} />);
-      continue;
-    }
-    let batch: ToolCallRecord[] = [];
-    const flushBatch = () => {
-      if (batch.length >= MIN_BATCH_SIZE) {
-        rows.push(
-          <ToolBatch key={`batch-${batch[0].id}`} calls={batch} live={live} readOnly={readOnly} />,
-        );
-      } else {
-        for (const call of batch) {
-          rows.push(<ToolStep key={call.id} call={call} live={live} readOnly={readOnly} />);
-        }
-      }
-      batch = [];
-    };
-    for (const call of entry.tools) {
-      if (canBatchTool(call)) {
-        batch.push(call);
-      } else {
-        flushBatch();
-        rows.push(<ToolStep key={call.id} call={call} live={live} readOnly={readOnly} />);
-      }
-    }
-    flushBatch();
-  }
-  return rows;
-}
-
 const NO_ACTIVITIES: ReadonlyArray<TurnActivityEntry> = [];
-const NO_CALLS: ReadonlyArray<ToolCallRecord> = [];
 
-function useActivityDuration(props: TurnActivitySurfaceProps): number | undefined {
-  const {
-    status,
-    activeTool,
-    isLive,
-    activityStartedAt,
-    reasoningDurationSec,
-    turnDurationMs,
-    calls,
-  } = props;
-  const phase = status?.phase;
-  const startedAt = phase === 'tool-running' ? runStartedAt(activeTool) : activityStartedAt || 0;
+function useActivityDuration(props: TurnActivitySurfaceProps, showLiveCaption: boolean) {
+  const { status, activeTool, isLive, activityStartedAt, reasoningDurationSec } = props;
+  const startedAt =
+    status?.phase === 'tool-running' ? runStartedAt(activeTool) : activityStartedAt || 0;
   const liveMs = useElapsed(
     Number.isFinite(startedAt) && startedAt > 0 ? startedAt : 0,
-    Boolean(isLive),
+    showLiveCaption,
   );
-  if (isLive) {
-    return liveMs > 0 ? liveMs / 1000 : status?.elapsedSec;
-  }
-  if (calls?.length) return turnDurationMs ? turnDurationMs / 1000 : undefined;
-  return reasoningDurationSec;
+  if (!isLive) return reasoningDurationSec;
+  if (showLiveCaption) return liveMs > 0 ? liveMs / 1000 : status?.elapsedSec;
+  return undefined;
 }
 
 function useTurnIntent(intentSummary?: string): string {
@@ -393,7 +124,6 @@ function resolveSurfaceHeaderCopy(
   hasDetails: boolean,
   isLive: boolean,
   hasSteps: boolean,
-  hasIntent: boolean,
 ): { label: string; durationLabel: string | undefined } {
   if (!isLive && !hasDetails) {
     return {
@@ -401,29 +131,12 @@ function resolveSurfaceHeaderCopy(
       durationLabel: undefined,
     };
   }
-  const label = thinkingLabelOf(header, thinkingLabels(hasSteps, hasIntent));
+  const label = thinkingLabelOf(header, thinkingLabels(hasSteps));
   const durationLabel =
     header.durationSec === null
       ? undefined
       : tf('think.rn.elapsed', '{sec}s', { sec: header.durationSec });
   return { label, durationLabel };
-}
-
-function shouldShowActivityCue(
-  isLive: boolean,
-  phase: string | undefined,
-  isOpen: boolean,
-  calls: ReadonlyArray<ToolCallRecord>,
-  activeToolId?: string,
-): boolean {
-  if (!isLive) return false;
-  if (phase === 'tool-awaiting' || phase === 'answering') return false;
-  const isRunningActiveTool =
-    isOpen &&
-    phase === 'tool-running' &&
-    Boolean(activeToolId) &&
-    calls.some((call) => call.id === activeToolId);
-  return !isRunningActiveTool;
 }
 
 function buildTurnActivityDataAttrs(
@@ -456,14 +169,6 @@ function resolveStatusLabel(
   return fallbackLabel;
 }
 
-function isTurnSurfaceEmpty(
-  isLive: boolean,
-  hasDetails: boolean,
-  durationSec: number | null,
-): boolean {
-  return !isLive && !hasDetails && durationSec === null;
-}
-
 function resolveSurfaceIconProps(isLive: boolean, activeTool?: ToolCallRecord, toolName?: string) {
   const resolvedToolName = isLive ? toolName : undefined;
   const sites = resolvedToolName ? toolActivitySites(activeTool) : [];
@@ -475,14 +180,7 @@ function resolveSurfaceIconProps(isLive: boolean, activeTool?: ToolCallRecord, t
 }
 
 export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
-  const {
-    activities = NO_ACTIVITIES,
-    calls = NO_CALLS,
-    activeTool,
-    isLive = false,
-    readOnly,
-    status,
-  } = props;
+  const { activities = NO_ACTIVITIES, activeTool, status } = props;
   const [isOpen, setIsOpen] = useState(false);
   const intent = useTurnIntent(props.intentSummary);
   const bodyId = useId();
@@ -492,41 +190,35 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
     () => stepsWithFallback(publicSummariesOf(activities), props.publicSummary),
     [activities, props.publicSummary],
   );
-  const rows = useMemo(
-    () => rowsFor(steps, calls, intent, isLive, readOnly),
-    [steps, calls, intent, isLive, readOnly],
-  );
-  const durationSec = useActivityDuration(props);
-  const statusLabel = resolveStatusLabel(isOpen, status, props.statusLabel);
-  const header = thinkingHeaderOf({
-    live: isLive,
-    durationSec,
-    toolCount: calls.length,
-    statusLabel,
-  });
-  const hasDetails = rows.length > 0;
-  if (isTurnSurfaceEmpty(isLive, hasDetails, header.durationSec)) return null;
+  const showLiveCaption = Boolean(props.isLive && !props.activeToolInline);
+  const durationSec = useActivityDuration(props, showLiveCaption);
+  const hasSteps = steps.length > 0;
+  const hasDetails = Boolean(intent) || hasSteps;
+  if (!showLiveCaption && !hasDetails && !durationSec) return null;
 
+  const header = thinkingHeaderOf({
+    live: showLiveCaption,
+    durationSec,
+    statusLabel: resolveStatusLabel(isOpen, status, props.statusLabel),
+  });
   const { label, durationLabel } = resolveSurfaceHeaderCopy(
     header,
     hasDetails,
-    isLive,
-    steps.length > 0,
-    Boolean(intent),
+    showLiveCaption,
+    hasSteps,
   );
-  const showActivityCue = shouldShowActivityCue(
-    isLive,
-    status?.phase,
-    isOpen,
-    calls,
-    activeTool?.id,
+  const phase = status?.phase;
+  const showActivityCue = showLiveCaption && phase !== 'tool-awaiting' && phase !== 'answering';
+  const { icon, iconWidth } = resolveSurfaceIconProps(
+    showLiveCaption,
+    activeTool,
+    status?.toolName,
   );
-  const { icon, iconWidth } = resolveSurfaceIconProps(isLive, activeTool, status?.toolName);
   const containerAttrs = buildTurnActivityDataAttrs(
-    isLive,
-    steps.length > 0,
+    showLiveCaption,
+    hasSteps,
     showActivityCue,
-    status?.phase,
+    phase,
     props.answerStarted,
     isOpen,
   );
@@ -537,7 +229,7 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
         <ThinkingSurface
           label={label}
           durationLabel={durationLabel}
-          live={isLive}
+          live={showLiveCaption}
           indicator={showActivityCue ? <ThinkingSpark /> : undefined}
           icon={icon}
           iconWidth={iconWidth}
@@ -546,7 +238,23 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
           onToggle={() => setIsOpen((previous) => !previous)}
           bodyId={bodyId}
         >
-          {hasDetails ? <ThinkingTimeline>{rows}</ThinkingTimeline> : null}
+          {hasDetails ? (
+            <ThinkingTimeline>
+              {intent ? (
+                <ActivityStep
+                  label={i18n('think.taskOverview', 'Task overview')}
+                  preview={
+                    <p className="thinking-step-preview">
+                      <MathText text={intent} />
+                    </p>
+                  }
+                />
+              ) : null}
+              {steps.map((step) => (
+                <SummaryStep key={step.id} step={step} />
+              ))}
+            </ThinkingTimeline>
+          ) : null}
         </ThinkingSurface>
       </WebUiTheme>
     </div>

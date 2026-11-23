@@ -215,7 +215,6 @@ test('detail-free rows are static and native UI output is outside disclosure', a
   const before = await page.locator('.intui').innerText();
   await page.getByRole('button', { name: 'Add one', exact: true }).click();
   await expect.poll(() => page.locator('.intui').innerText()).not.toBe(before);
-  await page.getByTestId('turn-activity-toggle').click();
   await page.getByTestId('tool-row-ui').click();
   await expect(page.getByTestId('tool-detail')).toBeVisible();
   // The native UI lives outside the disclosure, so opening and closing the

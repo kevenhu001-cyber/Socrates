@@ -175,11 +175,7 @@
   border-top: 1px solid var(--ui-border-strong);
   margin: 12px 0 8px;
 }
-#appShell .sidebar-account-menu .account-menu-identity {
-  min-height: 44px;
-}
-#appShell .sidebar-account-menu .account-menu-trailing,
-#appShell .sidebar-account-menu .account-menu-identity > svg {
+#appShell .sidebar-account-menu .account-menu-trailing {
   margin-left: auto;
 }
 

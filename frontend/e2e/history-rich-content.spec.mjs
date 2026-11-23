@@ -270,7 +270,6 @@ test('restored edit actions keep the answer intact inside the unified activity h
     )
     .toBe(rawText.replace(/\s/g, ''));
   /* Each edit keeps its own row and names its file. */
-  await body.locator('[data-testid="turn-activity-toggle"]').click();
   await expect(body.locator('.rn-tool-row [data-testid="thinking-step-title"]')).toContainText([
     'moe.py',
     'router_v2.py',

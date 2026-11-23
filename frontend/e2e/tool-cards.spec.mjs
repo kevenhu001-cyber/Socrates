@@ -1,30 +1,7 @@
-// Live-chat tool-call path no longer renders an agent-tool-card.
-// RN-2: each call is one row in the turn's activity timeline (verb · object ·
-// status word · time); tool-specific SVGs identify the operation and the
-// row opens its detail as a drawer / sheet. Generated images stay hidden unless the assistant
-// explicitly cites one in its markdown response.
-//
-// This file keeps three regression checks:
-//   1. The row's status word is live during the tool_use event and
-//      settles once the result lands.
-//   2. Running search and code rows show their specific SVG glyphs.
-//   3. The search result parser still treats javascript: URLs as
-//      non-clickable (defence against the model emitting unsafe URLs).
-//
-// The legacy agent-tool-card path is preserved for share/history
-// replay; that is exercised separately by share-view.spec.mjs.
-
 import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
-import {
-  TURN,
-  openActivity,
-  openToolDetail,
-  openToolGroups,
-  toolRow,
-  toolRowButton,
-} from './_turn-ui.mjs';
+import { TURN, openToolDetail, openToolGroups, toolRow, toolRowButton } from './_turn-ui.mjs';
 
 /* Every copy assertion below is English — the app ships with zh as its default
    language, and the labels are now derived per-tool with objects ("Searched
@@ -78,7 +55,6 @@ test('live chat shows an inline tool status instead of a tool card', async ({ pa
   });
 
   const bubble = page.locator('.msg.assistant').last();
-  await openActivity(bubble);
 
   // Live chat must not have the legacy tool card chrome.
   await expect(page.locator('.agent-tool-card')).toHaveCount(0);
@@ -133,7 +109,6 @@ test('live Python image artifacts stay hidden until cited in assistant markdown'
   });
 
   const bubble = page.locator('.msg.assistant').last();
-  await openActivity(bubble);
   await expect(toolRow(bubble, 'code-plot')).toHaveAttribute('data-state', 'done');
   await expect(bubble.locator('.exec-artifact, .exec-artifact-image')).toHaveCount(0);
 });
@@ -170,10 +145,9 @@ test('tool activity lands behind its paragraph without splitting it', async ({ p
   });
 
   const bubble = page.locator('.msg.assistant').last();
-  await openActivity(bubble);
   const row = toolRow(bubble, 'boundary-search');
   await expect(row).toHaveCount(1);
-  await expect(bubble.locator(`${TURN.body} [data-tcid="boundary-search"]`)).toHaveCount(1);
+  await expect(bubble.locator(`.turn-evidence > [data-tcid="boundary-search"]`)).toHaveCount(1);
   const prose = await bubble.locator('.tool-run-prose').allTextContents();
   expect(prose.join(' ').replace(/\s+/g, ' ')).toContain(
     '先说明结论。 然后继续检查这个模块的实现细节。 再给出修复方案。',
@@ -240,7 +214,6 @@ test('live chat shows a running search row while the model is searching', async 
   });
 
   const bubble = page.locator('.msg.assistant').last();
-  await openActivity(bubble);
   const row = toolRow(bubble, 'late-search');
   await expect(row).toBeVisible();
   /* One line of copy: the row names the object and never shimmers. */
@@ -327,12 +300,11 @@ test('code execution streams live output into its row without thinking overlap',
   });
 
   const bubble = page.locator('.msg.assistant').last();
-  await openActivity(bubble);
   const row = toolRow(bubble, 'live-code');
   await expect(row).toHaveAttribute('data-state', 'running');
   await expect(row.locator(TURN.stepTitle)).toContainText('Executing code');
   await expect(row.locator(TURN.spinner)).toHaveCount(1);
-  await expect(bubble.locator(TURN.surface)).toHaveCount(1);
+  await expect(bubble.locator(TURN.surface)).toHaveCount(0);
   /* RN-2 dropped the phase relabel (Executing code → Analyzing data): the
      verb stays put and the stdout chunk shows up as live output instead. */
   await page.evaluate(() => window.__sendCodeProgress());
@@ -382,7 +354,6 @@ test('Tutor streams the same native tools and sends the tutor mode contract', as
 
   expect(requestMode).toBe('tutor');
   const bubble = page.locator('.msg.assistant').last();
-  await openActivity(bubble);
   const row = toolRow(bubble, 'tutor-search');
   await expect(row).toHaveAttribute('data-state', 'done');
   const detail = await openToolDetail(page, bubble, 'tutor-search');
@@ -450,7 +421,6 @@ test('live chat keeps a burst in the reading flow and persists every call on fin
     expect(typeof offset, 'each persisted call records its split point').toBe('number');
   }
   const burst = page.locator('.msg.assistant').last();
-  await openActivity(burst);
   await openToolGroups(burst);
   await expect(burst.locator(TURN.row)).toHaveCount(3);
 });
@@ -488,7 +458,6 @@ test('consecutive tools stay one row each and open their own details', async ({ 
   });
 
   const bubble = page.locator('.msg.assistant').last();
-  await openActivity(bubble);
   /* Every call keeps its own row; there is no aggregate card between them. */
   await expect(bubble.locator(TURN.row)).toHaveCount(2);
   for (const id of ['group-a', 'group-b']) await expect(toolRow(bubble, id)).toBeVisible();
@@ -550,7 +519,6 @@ test('a failed member keeps its own error row and detail', async ({ page }) => {
 
   /* Failed actions remain visible beside successful actions. */
   const bubble = page.locator('.msg.assistant').last();
-  await openActivity(bubble);
   const failed = toolRow(bubble, 'fail-b');
   await expect(failed).toHaveAttribute('data-state', 'error');
   await expect(failed).toHaveAttribute('data-error', '1');

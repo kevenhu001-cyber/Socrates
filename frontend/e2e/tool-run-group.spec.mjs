@@ -1,5 +1,4 @@
-// RN-2 activity rail: every tool call is one row on the turn's hairline rail,
-// and a row opens its own detail inline beneath the label.
+// Tool execution is part of the transcript and opens its detail in place.
 import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
@@ -145,21 +144,19 @@ async function loadFixtureSession(
   });
   await page.evaluate((id) => window.loadSession(id), SESSION_ID);
   const body = page.locator('#msgList .msg.assistant').last().locator('.msg-body');
-  await body.getByTestId('turn-activity-toggle').click();
   return body;
 }
 
 async function openDetail(page, body, id) {
-  const toggle = body.getByTestId('turn-activity-toggle');
-  if ((await toggle.getAttribute('aria-expanded')) !== 'true') await toggle.click();
   await body.getByTestId(`tool-row-${id}`).click();
   const detail = page.getByTestId('tool-detail');
   await expect(detail).toBeVisible();
   return detail;
 }
 
-test('every call is one row on the rail, in call order', async ({ page }) => {
+test('every call is immediately visible in call order', async ({ page }) => {
   const body = await loadFixtureSession(page);
+  await expect(body.locator('.rn-tool-row')).toHaveCount(6);
   expect(
     await body.locator('.rn-tool-row').evaluateAll((rows) => rows.map((row) => row.dataset.tcid)),
   ).toEqual(['s1', 's2', 's3', 'f1', 'w1', 'w2']);
@@ -328,20 +325,22 @@ test('answer prose keeps its recorded order around the rows, with no baked-in du
     const order = [];
     for (const node of Array.from(el.children)) {
       if (node.classList.contains('tool-inline-attachments')) continue;
-      if (node.classList.contains('rn-turn-activity')) order.push('activity');
+      if (node.classList.contains('rn-tool-row')) order.push(`tool:${node.dataset.tcid}`);
       else if (node.classList.contains('tool-run-prose'))
         order.push(`text:${(node.textContent || '').trim()}`);
-      else if (node.classList.contains('rn-tool-actions'))
-        order.push(`actions:${node.dataset.toolActions}`);
       else order.push(`other:${node.className}`);
     }
     return order;
   });
   expect(layout).toEqual([
-    'activity',
+    'tool:s1',
+    'tool:s2',
+    'tool:s3',
     'text:Lead paragraph.',
-    'actions:f1',
+    'tool:f1',
     'text:Middle paragraph.',
+    'tool:w1',
+    'tool:w2',
     'text:Tail paragraph.',
   ]);
   await expect(body.locator('.agent-tool-card')).toHaveCount(0);
@@ -370,16 +369,6 @@ test('phone rows stay horizontal, touch-height and one line', async ({ page }) =
   await page.setViewportSize({ width: 320, height: 844 });
   const body = await loadFixtureSession(page, { theme: 'light', language: 'zh' });
 
-  const activity = body.getByTestId('turn-activity-toggle');
-  const activityLayout = await activity.evaluate((element) => ({
-    direction: getComputedStyle(element).flexDirection,
-    width: element.clientWidth,
-    scrollWidth: element.scrollWidth,
-    height: element.getBoundingClientRect().height,
-  }));
-  expect(activityLayout.direction).toBe('row');
-  expect(activityLayout.scrollWidth).toBeLessThanOrEqual(activityLayout.width + 1);
-  expect(activityLayout.height).toBeGreaterThanOrEqual(44);
   const retry = body.getByTestId('tool-error-retry');
   await expect(retry).toBeVisible();
   expect((await retry.boundingBox()).height).toBeGreaterThanOrEqual(44);
@@ -413,10 +402,23 @@ test('rows share one icon column and the prose column', async ({ page }) => {
   const body = await loadFixtureSession(page);
   await body.scrollIntoViewIfNeeded();
   await body.screenshot({ path: 'test-results/tool-run-group-dark-open.png' });
+  const row = body.getByTestId('tool-row-s1');
+  await expect(row).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  await expect(row).toHaveCSS('border-top-width', '0px');
+  await expect(row.getByTestId('thinking-step-status')).toHaveCount(0);
+  const prose = body.locator('.tool-run-prose p').first();
+  await expect(row).toHaveCSS(
+    'font-size',
+    await prose.evaluate((node) => getComputedStyle(node).fontSize),
+  );
+  expect((await row.boundingBox()).x).toBeCloseTo((await prose.boundingBox()).x, 0);
   const icons = await body
     .locator('.rn-tool-row :is(.tool-inline-tool-icon, .tool-site-marks)')
     .evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().left));
   expect(icons.length).toBe(6);
+  await expect(
+    body.locator('.rn-tool-row[data-tcid="w1"] .tool-inline-tool-icon svg'),
+  ).toBeVisible();
   expect(Math.max(...icons) - Math.min(...icons)).toBeLessThanOrEqual(1);
   await expect(
     body.locator('.rn-tool-row[data-tcid="s3"]').getByTestId('thinking-step-spinner'),
@@ -512,8 +514,8 @@ test('a running code call streams into the open panel and keeps it open on compl
   const bubble = page.locator('.msg.assistant').last();
   const row = bubble.locator('.rn-tool-row[data-tcid="live-code"]').last();
   await expect(row).toHaveAttribute('data-state', 'running');
-  await expect(bubble.getByTestId('turn-activity-label')).toContainText('Executing code');
-  await expect(bubble.getByTestId('turn-activity-duration')).toContainText(/\d/);
+  await expect(row.getByTestId('thinking-step-title')).toContainText('Executing code');
+  await expect(row.getByTestId('thinking-step-spinner')).toBeVisible();
 
   await page.evaluate(() => {
     window.__beforeToolSnapshot = window.__socratesTestState.session().messages.at(-1);
@@ -658,7 +660,7 @@ test('a pending approval stays visible in the transcript with pill decisions', a
   await page.evaluate(() => window.__requestToolApproval());
   const prompt = page.locator('.rn-tool-approval');
   await expect(row).toHaveAttribute('data-state', 'awaiting');
-  await expect(page.getByTestId('turn-activity-label')).toHaveText('Waiting for your decision');
+  await expect(row.getByTestId('thinking-step-status')).toHaveText('Waiting for your decision');
   await expect(page.getByTestId('turn-activity-indicator')).toHaveCount(0);
   await expect(row.getByTestId('thinking-step-spinner')).toHaveCount(0);
   await expect(prompt).toBeVisible();

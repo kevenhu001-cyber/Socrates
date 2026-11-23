@@ -172,7 +172,7 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
     #appShell
     #msgList {
     max-width: none;
-    padding: 20px 16px 36px;
+    padding: var(--ui-space-sm) var(--ui-mobile-page-gutter) var(--ui-space-lg);
   }
   body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
     #appShell

@@ -56,9 +56,8 @@ export async function openActivity(scope) {
  */
 export async function openToolGroups() {}
 
-/** Open the activity, then the call's inline detail. Returns the panel. */
+/** Open the call's inline detail. Returns the panel. */
 export async function openToolDetail(page, scope, id) {
-  await openActivity(scope);
   const row = toolRowButton(scope, id);
   if ((await row.getAttribute('aria-expanded')) !== 'true') await row.click();
   const detail = page.locator(TURN.detail);
