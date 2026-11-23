@@ -408,7 +408,18 @@ body.workspace-active #appShell .main-page {
   /* The reference segmented control is 220 x 40 with 36px inner segments. */
 
   /* The reference workspace heads use 28px type and 240px search fields. */
-  body.workspace-active #appShell .main-page:not(#sitesPanel):not(#settingsPage) {
+  body.workspace-active
+    #appShell
+    .main-page:not(
+      :is(
+        .creation-panel,
+        .library-panel,
+        .spaces-panel,
+        .scheduled-panel,
+        .plugins-panel,
+        #settingsPage
+      )
+    ) {
     padding-top: 27px !important;
   }
 
@@ -419,17 +430,6 @@ body.workspace-active #appShell .main-page {
 
   #appShell #libraryPanel .workspace-page-head {
     margin-bottom: 44px !important;
-  }
-
-  #appShell #libraryPanel .library-new-pill {
-    width: 76px !important;
-    min-width: 76px !important;
-    padding-inline: 0 !important;
-    justify-content: center !important;
-  }
-
-  #appShell #libraryPanel .workspace-create-button svg {
-    display: none !important;
   }
 
   #appShell .plugin-directory-tabs button {
@@ -660,9 +660,18 @@ body.workspace-active #appShell .main-page {
 }
 
 @media (min-width: 769px) {
-  /* .scheduled-directory dropped: it is not a chat-column surface and now
-     shares the 1040px directory column with the plugin and site pages. */
-  body.workspace-active #appShell .main-page:not(#sitesPanel):not(#settingsPage) {
+  body.workspace-active
+    #appShell
+    .main-page:not(
+      :is(
+        .creation-panel,
+        #libraryPanel,
+        #spacesPanel,
+        #scheduledPanel,
+        #pluginsPanel,
+        #settingsPage
+      )
+    ) {
     width: min(768px, calc(100% - 64px)) !important;
     max-width: 768px !important;
     margin-inline: auto !important;

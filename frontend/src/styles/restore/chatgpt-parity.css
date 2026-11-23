@@ -32,7 +32,7 @@
   }
 
   /* Plugin marketplace pages share the workspace page fill. */
-  body.workspace-active #appShell .main-page:not(#sitesPanel) {
+  body.workspace-active #appShell .main-page:not(.creation-panel) {
     padding: 0 !important;
     background: var(--background);
   }

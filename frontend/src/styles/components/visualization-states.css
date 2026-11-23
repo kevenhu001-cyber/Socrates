@@ -1,5 +1,4 @@
-/* Native visualization loading / failure states (V1 reliability).
-   Restrained on purpose: surface, 1px subtle rules, muted text. A moving highlight marks pending content. The full visual pass (V2) replaces this. */
+/* Native visualization loading and failure states. */
 .viz-state {
   display: grid;
   gap: var(--ui-space-sm);
@@ -46,7 +45,7 @@
 .viz-skeleton-title {
   margin: 0;
   color: var(--foreground);
-  font: var(--ui-font-weight-medium) var(--ui-font-size-sm) / 1.35 var(--font-sans);
+  font: var(--ui-font-weight-semibold) var(--ui-font-size-sm) / 1.35 var(--font-sans);
   letter-spacing: -0.01em;
   overflow-wrap: anywhere;
 }
@@ -179,9 +178,11 @@
   font-size: var(--ui-font-size-xs);
   font-family: var(--font-sans);
 }
-.visualization-stage.visualization-stage-collapsed {
+.visualization-card .visualization-stage.visualization-stage-collapsed {
+  display: block;
   height: auto;
   min-height: 0;
+  padding: 0;
 }
 /* A timeline, process or number line laid out at a phone stage's own width
    is drawn 1:1: the stage takes the drawing's height. */
@@ -191,15 +192,24 @@
 .visualization-stage[data-semantic-layout='narrow'] > svg {
   height: auto;
 }
-.visualization-fallback.visualization-fallback-inline {
-  display: grid;
-  place-content: start;
+.visualization-card .visualization-fallback {
+  place-content: stretch;
   justify-items: start;
   height: auto;
-  padding: var(--ui-space-sm) var(--ui-space-md);
+  gap: var(--ui-space-sm);
+  padding: var(--ui-space-md);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-bg-surface);
+  color: var(--ui-text-secondary);
   text-align: start;
+  overflow-wrap: anywhere;
 }
-.visualization-fallback-inline .visualization-fallback-actions {
+.visualization-card .visualization-fallback strong {
+  display: block;
+  color: var(--ui-text-primary);
+}
+.visualization-card .visualization-fallback-actions {
   justify-content: flex-start;
 }
 .openui-visualization {

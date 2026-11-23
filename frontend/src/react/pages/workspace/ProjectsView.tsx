@@ -1,4 +1,5 @@
 import { Button } from '../../ui/shadcn/button';
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '../../ui/shadcn/empty';
 import { ToggleGroup, ToggleGroupItem } from '../../ui/shadcn/toggle-group';
 import { useMemo, useState } from 'react';
 import type { useWorkspaceDispatch } from './workspace.hooks';
@@ -134,31 +135,35 @@ function ProjectsView({
       aria-labelledby="projects-directory-title"
     >
       <WorkspacePageHeader
+        titleId="projects-directory-title"
         title={i18n('sidebar.spaces.title', 'Projects')}
         description={i18n(
           'projects.directoryDesc',
           'Keep related chats, files, and instructions together.',
         )}
         query={query}
+        searchLabel={i18n('projects.search', 'Search projects')}
         onQuery={setQuery}
         actionLabel={i18n('projects.new', 'New')}
         onAction={() => dispatch.createProject()}
-        compactAction
+        actionClassName="projects-create-button"
       />
       <ProjectsFilterTabs scope={scope} onScopeChange={setScope} />
       {projects.length === 0 ? (
-        <div className="workspace-empty">
-          <strong>{i18n('projects.empty', 'Make space for ongoing work')}</strong>
-          <span>
-            {i18n(
-              'projects.emptyDesc',
-              'Projects keep related chats, files, and instructions together.',
-            )}
-          </span>
+        <Empty className="workspace-empty">
+          <EmptyHeader>
+            <EmptyTitle>{i18n('projects.empty', 'Make space for ongoing work')}</EmptyTitle>
+            <EmptyDescription>
+              {i18n(
+                'projects.emptyDesc',
+                'Projects keep related chats, files, and instructions together.',
+              )}
+            </EmptyDescription>
+          </EmptyHeader>
           <Button variant="default" type="button" onClick={() => dispatch.createProject()}>
             {i18n('projects.create', 'Create project')}
           </Button>
-        </div>
+        </Empty>
       ) : (
         <div className="projects-list">
           <div className="projects-list-heading">{i18n('projects.name', 'Name')}</div>
@@ -166,10 +171,14 @@ function ProjectsView({
             <ProjectRow key={project.id} project={project} dispatch={dispatch} />
           ))}
           {visibleProjects.length === 0 ? (
-            <div className="workspace-empty">
-              <strong>{i18n('projects.noMatch', 'No matching projects')}</strong>
-              <span>{i18n('projects.noMatchDesc', 'Try a different search.')}</span>
-            </div>
+            <Empty className="workspace-empty">
+              <EmptyHeader>
+                <EmptyTitle>{i18n('projects.noMatch', 'No matching projects')}</EmptyTitle>
+                <EmptyDescription>
+                  {i18n('projects.noMatchDesc', 'Try a different search.')}
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
           ) : null}
         </div>
       )}

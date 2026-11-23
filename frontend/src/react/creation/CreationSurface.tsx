@@ -1,5 +1,5 @@
 import { useState, type FormEvent, type Ref } from 'react';
-import { LayoutGrid, PanelsTopLeft, Search, Trash2, X } from 'lucide-react';
+import { LayoutGrid, PanelsTopLeft, Trash2, X } from 'lucide-react';
 import { Icon } from '../../legacy/Icon';
 import { nativeIslandFrameAttributes } from '../../ui/nativeIslandFrame';
 import { Badge } from '../ui/shadcn/badge';
@@ -17,6 +17,7 @@ import {
 import { NativeSelect, NativeSelectOption } from '../ui/shadcn/native-select';
 import { Textarea } from '../ui/shadcn/textarea';
 import { ToggleGroup, ToggleGroupItem } from '../ui/shadcn/toggle-group';
+import { WorkspaceSearchField } from '../pages/workspace/workspaceUi';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { getCurrentLanguage } from '../../i18n/languageState.ts';
 import {
@@ -45,22 +46,16 @@ function SearchField({
   const text = currentCopy();
   const sites = name === 'sites';
   return (
-    <div
+    <WorkspaceSearchField
       className={
         sites
           ? 'workspace-search-field creation-sites-search'
           : 'workspace-search-field creation-header-search'
       }
-    >
-      <Search aria-hidden="true" />
-      <Input
-        type="search"
-        aria-label={sites ? text.searchSites : text.search}
-        placeholder={sites ? text.searchSites : text.search}
-        value={query}
-        onChange={(event) => onQueryChange(event.currentTarget.value)}
-      />
-    </div>
+      label={sites ? text.searchSites : text.search}
+      query={query}
+      onQuery={onQueryChange}
+    />
   );
 }
 

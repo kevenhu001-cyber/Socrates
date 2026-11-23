@@ -415,11 +415,11 @@ function renderVisualizationFailure(
   const reason = FALLBACK_REASON_TEXT[fallbackReasonOf(error)];
   const reasonText = vizT('viz.state.reasonLabel', 'Reason: ') + vizT(reason[0], reason[1]);
   card.dataset.visualizationState = hasTable ? 'fallback-table' : 'failed';
+  stage.classList.add('visualization-stage-collapsed');
   if (hasTable && table) {
     table.hidden = false;
-    stage.classList.add('visualization-stage-collapsed');
     stage.innerHTML =
-      '<div class="visualization-fallback visualization-fallback-inline" role="status"><p><strong>' +
+      '<div class="visualization-fallback"><p role="status"><strong>' +
       esc(
         vizT(
           'viz.state.fellBack',
@@ -431,9 +431,9 @@ function renderVisualizationFailure(
       '</p><div data-viz-fallback-root></div></div>';
   } else {
     stage.innerHTML =
-      '<div class="visualization-fallback" role="status"><strong>' +
+      '<div class="visualization-fallback"><p role="status"><strong>' +
       esc(vizT('viz.state.failedTitle', 'The chart could not be drawn')) +
-      '</strong><p>' +
+      '</strong> ' +
       esc(reasonText) +
       '</p><div data-viz-fallback-root></div></div>';
   }

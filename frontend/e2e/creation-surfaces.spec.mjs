@@ -99,7 +99,19 @@ test('assistant can be created and started from More', async ({ page }) => {
 });
 
 test('Create site returns to chat and activates create-site mode', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.locator('#navProjects').click();
+  const projectsTitle = page.locator('#projects-directory-title');
+  await expect(projectsTitle).toBeVisible();
+  const projectsHeading = await projectsTitle.boundingBox();
+
   await page.locator('#navSites').click();
+  const sitesTitle = page.locator('#sitesPanel h1');
+  await expect(sitesTitle).toBeVisible();
+  const sitesHeading = await sitesTitle.boundingBox();
+  expect(sitesHeading?.x).toBeCloseTo(projectsHeading?.x, 0);
+  expect(sitesHeading?.y).toBeCloseTo(projectsHeading?.y, 0);
   await page.getByRole('button', { name: 'Create site' }).click();
   await expect(page.locator('#sitesPanel')).toBeHidden();
   await expect(page.locator('#topicSetup')).toBeVisible();

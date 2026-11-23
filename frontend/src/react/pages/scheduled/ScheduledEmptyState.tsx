@@ -1,4 +1,4 @@
-import { Button as UiButton } from '../../ui/Button';
+import { Button } from '../../ui/shadcn/button';
 import { scheduledText } from './scheduled.copy';
 import {
   Empty,
@@ -46,15 +46,9 @@ export function ScheduledEmptyState({ searching, scope, onCreate }: ScheduledEmp
       </EmptyHeader>
       {!searching && scope === 'all' ? (
         <EmptyContent>
-          <UiButton
-            variant="default"
-            size="desktop"
-            type="button"
-            className="workspace-primary"
-            onClick={onCreate}
-          >
+          <Button type="button" onClick={onCreate}>
             {scheduledText('scheduled.createTask', 'Create task')}
-          </UiButton>
+          </Button>
         </EmptyContent>
       ) : null}
     </Empty>

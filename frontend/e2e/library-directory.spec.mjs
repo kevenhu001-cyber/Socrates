@@ -144,13 +144,21 @@ test('directory headings and actions align without occupying the phone app bar',
 
 test('library filters and view mode use shadcn stateful controls', async ({ page }) => {
   const filterButton = page.locator('.library-tool-btn');
-  await expect(filterButton).toHaveAttribute('aria-pressed', 'false');
-  await filterButton.click();
-  const options = page.locator('.library-filter-menu [role="menuitemradio"]');
+  await filterButton.focus();
+  await page.keyboard.press('ArrowDown');
+  const options = page.getByRole('menuitemradio');
   await expect(options).toHaveCount(7);
-  await options.nth(1).click();
+  await expect(options.first()).toBeFocused();
+  await expect(options.first()).toHaveAttribute('aria-checked', 'true');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter');
   await expect(page.locator('.library-row')).toHaveCount(1);
-  await expect(filterButton).toHaveAttribute('aria-pressed', 'true');
+  await expect(filterButton).toHaveAttribute('aria-expanded', 'false');
+  await expect(filterButton).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(options.nth(1)).toHaveAttribute('aria-checked', 'true');
+  await page.keyboard.press('Escape');
+  await expect(filterButton).toBeFocused();
 
   const viewOptions = page.locator('.library-view-switcher [data-slot="toggle-group-item"]');
   const gridView = viewOptions.nth(0);

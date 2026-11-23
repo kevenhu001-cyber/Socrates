@@ -177,24 +177,20 @@ html[data-main-view='settingsPage'] #appShell .top-bar {
   /* ── Right actions ───────────────────────────────────────────────────── */
   /* Icon-only on desktop (sidebar-nav.spec contract). */
 
-  /* Every directory page carries its own head, so the shared bar only needs
-     to host the --ui-control-desktop tabs pill. Library and Plugins already
-     use the compact 44px row; Projects and Scheduled join them here, which
-     keeps the directory title on one baseline across the four pages instead
-     of stepping 8px down when the 52px bar is used. */
-  body:is(.plugins-active, .library-active, .projects-active, .scheduled-active)
+  /* Directory pages supply their own heading below the compact top bar. */
+  html:is(
+      [data-main-view='pluginsPanel'],
+      [data-main-view='libraryPanel'],
+      [data-main-view='spacesPanel'],
+      [data-main-view='scheduledPanel'],
+      [data-main-view='imagesPanel'],
+      [data-main-view='assistantsPanel'],
+      [data-main-view='sitesPanel']
+    )
     #appShell
-    .top-bar {
-    height: 44px;
-    min-height: 44px;
-  }
-  body:is(.plugins-active, .library-active, .projects-active, .scheduled-active)
-    #appShell
-    .top-bar-left,
-  body:is(.plugins-active, .library-active, .projects-active, .scheduled-active)
-    #appShell
-    .top-bar-right {
-    height: 44px;
+    :is(.top-bar, .top-bar-left, .top-bar-right) {
+    height: var(--ui-control-touch);
+    min-height: var(--ui-control-touch);
   }
   body:is(.plugins-active, .library-active, .projects-active, .scheduled-active)
     #appShell

@@ -84,6 +84,7 @@ test('scheduled task list searches, filters active tasks, and dispatches row act
   await page.locator('#navScheduled').click();
   await expect(page.locator('.scheduled-directory')).toBeVisible();
   await expect(page.locator('.task-row')).toHaveCount(3);
+  await expect(page.locator('.scheduled-recommendation').first()).toBeVisible();
 
   const search = page.locator('.workspace-search-field input');
   await search.fill('newsletter');
@@ -92,6 +93,7 @@ test('scheduled task list searches, filters active tasks, and dispatches row act
   await search.fill('');
 
   await page.locator('.scheduled-filter-tabs [role="tab"]').nth(1).click();
+  await expect(page.locator('.scheduled-recommendation')).toHaveCount(0);
   await expect(page.locator('.task-row')).toHaveCount(1);
   await expect(page.locator('.task-row')).toContainText('Morning briefing');
 

@@ -1,14 +1,6 @@
 /*
- * polish/workspace.css — Projects / workspace directory refinement.
- * Canonical owner of the projects directory head and filter rail density:
- * the competing all-!important rules in restore/ref-baseline.css,
- * restore/mobile-parity.css and restore/fixes.css were retired or narrowed
- * in the same change, so nothing here needs !important. Geometry owned by
- * restore/ stays measured (search field, create button, tab rail heights);
- * this layer fixes the proportional problems: the head copy column was
- * shrink-wrapped so the description broke mid-phrase, the filter tabs
- * inherited the mobile reference's oversized pills, and the empty state
- * read cramped at 12px in a sea of dead space.
+ * polish/workspace.css — shared directory page layout and controls.
+ * The phone directories keep their geometry in the mobile surface owners.
  */
 
 /* The head is a flex row. The actions cell reserved a 520px basis while its
@@ -27,33 +19,111 @@
 }
 #appShell .workspace-page-head p {
   max-width: 52ch;
-  text-wrap: balance;
 }
 
 @media (min-width: 769px) {
-  /* Empty state — own the vertical space instead of floating a 12px block
-     under the tabs. */
-  #appShell .projects-directory .workspace-empty {
-    padding: 88px 24px;
-    gap: 9px;
+  body.workspace-active #appShell :is(#libraryPanel, #spacesPanel, #scheduledPanel, #pluginsPanel) {
+    width: 100%;
+    max-width: var(--ui-page-width);
+    margin-inline: auto;
+    padding: 0;
   }
-  #appShell .projects-directory .workspace-empty strong {
-    font-size: var(--ui-font-size-md);
+
+  body.workspace-active #appShell .creation-panel.main-page {
+    inset-inline-start: 0;
+  }
+
+  body.workspace-active
+    #appShell
+    :is(
+      .projects-directory,
+      .scheduled-directory,
+      .library-directory,
+      .plugin-directory,
+      .creation-panel.main-page
+    ) {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: var(--ui-page-width);
+    margin-inline: auto;
+    padding: var(--ui-page-top-space) var(--ui-page-gutter) var(--ui-page-bottom-space);
+  }
+
+  #appShell :is(.projects-directory, .scheduled-directory) .workspace-page-head {
+    align-items: flex-start;
+    gap: var(--ui-space-lg);
+    margin-bottom: var(--ui-space-lg);
+  }
+
+  #appShell
+    :is(
+      :is(.workspace-page-head, .library-head-left, .creation-header) h1,
+      .plugin-directory-heading h2
+    ) {
+    color: var(--ui-text-primary);
+    font-size: var(--ui-text-page);
+    line-height: var(--ui-control-desktop);
     font-weight: var(--ui-font-weight-semibold);
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
   }
-  #appShell .projects-directory .workspace-empty > span {
-    font-size: var(--ui-font-size-xs);
-    line-height: 1.55;
+  #appShell :is(.workspace-page-head p, .library-desktop-desc, .plugin-directory-desc) {
+    margin: var(--ui-space-xxs) 0 0;
+    font-size: var(--ui-font-size-sm);
+    line-height: 1.5;
     color: var(--ui-text-tertiary);
   }
-  #appShell .projects-directory .workspace-empty .workspace-primary {
-    min-height: 36px;
-    margin-top: 10px;
-    padding: 0 18px;
+  #appShell
+    :is(
+      .workspace-head-actions .workspace-create-button,
+      .library-head-actions .workspace-create-button,
+      .creation-header .creation-primary
+    ) {
+    min-height: var(--ui-control-md);
+    height: var(--ui-control-md);
+    padding-inline: var(--ui-space-md);
     border-radius: var(--ui-radius-pill);
-    font-size: var(--ui-font-size-xs);
   }
+  #appShell .creation-sites-header {
+    margin-bottom: var(--ui-space-lg);
+  }
+  #appShell .creation-header {
+    align-items: flex-start;
+  }
+
+  #appShell
+    :is(.projects-filter-tabs, .library-chips-bar, .plugin-directory-tabs, .scheduled-filter-tabs) {
+    background: transparent;
+    box-shadow: none;
+  }
+  #appShell
+    :is(.projects-filter-tabs, .library-chips-bar, .plugin-directory-tabs, .scheduled-filter-tabs)
+    button {
+    border-color: transparent;
+    border-radius: var(--ui-radius-pill);
+    color: var(--ui-text-secondary);
+  }
+  #appShell
+    :is(.projects-filter-tabs, .library-chips-bar, .plugin-directory-tabs, .scheduled-filter-tabs)
+    button:is([aria-pressed='true'], [aria-selected='true']) {
+    background: var(--ui-bg-pill-selected);
+    color: var(--ui-text-primary);
+    font-weight: var(--ui-font-weight-medium);
+  }
+}
+
+#appShell :is(.workspace-empty, .creation-empty)[data-slot='empty'] {
+  flex: 0 0 auto;
+  gap: var(--ui-space-md);
+  padding-block: var(--ui-space-xxl);
+}
+
+#appShell
+  :is(.projects-directory, .scheduled-directory, .library-directory)
+  .workspace-empty
+  [data-slot='empty-title'] {
+  color: var(--ui-text-primary);
+  font-size: var(--ui-font-size-md);
+  font-weight: var(--ui-font-weight-semibold);
 }
 
 @media (max-width: 768px) {
@@ -139,39 +209,6 @@
    Library Directory — shared content heading and page actions
    ========================================================================== */
 
-#appShell .library-directory {
-  box-sizing: border-box;
-  width: 100%;
-  max-width: 1040px;
-  margin: 0 auto;
-  padding: 42px 32px 64px;
-}
-
-/* The Projects directory carried no column of its own: its head sat flush
-   against the 768px page column while Library, Scheduled and Plugins inset
-   theirs by 32px, so the title jumped sideways and downwards on every
-   switch. Give it the same box as Library — same centred column, same
-   heading inset, same head offset — so all four directory pages land on
-   one baseline. Desktop only: the phone keeps its own reference rhythm
-   (restore/mobile-parity.css). */
-@media (min-width: 769px) {
-  #appShell .projects-directory {
-    box-sizing: border-box;
-    width: 100%;
-    max-width: 1040px;
-    margin: 0 auto;
-    padding: 42px 32px 64px;
-  }
-  #appShell .library-directory .library-head-left h1 {
-    font-size: var(--ui-text-page);
-    /* 36px, not 1.35: the Plugins heading on the same surface is 24px on a
-       36px line box, and a heading that changes height when the sidebar
-       switches surface shifts everything under it. The base rule below
-       already uses 36px for the same heading. */
-    line-height: 36px;
-  }
-}
-
 #appShell .library-head {
   display: flex;
   align-items: flex-start;
@@ -182,17 +219,6 @@
 
 #appShell .library-head-left h1 {
   margin: 0;
-  font-size: var(--ui-text-hero);
-  line-height: 36px;
-  font-weight: var(--ui-font-weight-semibold);
-  letter-spacing: -0.02em;
-  color: var(--foreground);
-}
-
-#appShell .library-desktop-desc {
-  margin: 4px 0 0;
-  font-size: var(--ui-font-size-sm);
-  color: var(--ui-text-tertiary);
 }
 
 #appShell .library-head-actions {
@@ -201,33 +227,12 @@
   gap: 8px;
 }
 
-#appShell .library-new-wrap {
-  position: relative;
-}
-
 #appShell .library-new-pill {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   height: var(--ui-control-desktop);
   padding: 0 14px;
-}
-
-#appShell .library-new-menu {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 4px);
-  z-index: var(--ui-z-menu);
-  min-width: 120px;
-  padding: 4px;
-  border-radius: var(--ui-radius-popover);
-  background: var(--ui-bg-surface);
-  border: 1px solid var(--ui-border-subtle);
-  box-shadow: var(--ui-shadow-popover);
-}
-
-#appShell .library-new-menu button {
-  width: 100%;
 }
 
 #appShell .library-toolbar {
@@ -249,32 +254,6 @@
   place-items: center;
   width: var(--ui-control-desktop);
   height: var(--ui-control-desktop);
-}
-
-/* Filter popover — anchored under the toolbar button that owns it. */
-#appShell .library-tool-btn-wrap {
-  position: relative;
-  display: inline-flex;
-}
-
-#appShell .library-filter-menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  z-index: var(--ui-z-menu);
-  min-width: 148px;
-  padding: 4px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  background: var(--ui-bg-raised);
-  border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-popover);
-  box-shadow: var(--ui-shadow-popover);
-}
-
-#appShell .library-filter-option {
-  width: 100%;
 }
 
 #appShell .library-toolbar-divider {

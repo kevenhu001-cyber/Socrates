@@ -21,8 +21,6 @@ function LibraryView({
   );
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [typeFilter, setTypeFilter] = useState<string>('all');
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [newMenuOpen, setNewMenuOpen] = useState(false);
 
   const allItems = useMemo<LibraryDisplayItem[]>(() => {
     const rawFiles: LibraryDisplayItem[] = (data.files || []).map((f) => ({
@@ -73,10 +71,6 @@ function LibraryView({
         onViewModeChange={setViewMode}
         typeFilter={typeFilter}
         onTypeFilterChange={setTypeFilter}
-        filterOpen={filterOpen}
-        onFilterOpenChange={setFilterOpen}
-        newMenuOpen={newMenuOpen}
-        onNewMenuOpenChange={setNewMenuOpen}
       />
       <LibraryCategoryTabs chip={chip} onChipChange={setChip} dispatch={dispatch} />
 

@@ -1,10 +1,23 @@
-import { Label as ShadcnLabel } from '../../ui/shadcn/label';
-import { Input as ShadcnInput } from '../../ui/shadcn/input';
 import { Button } from '../../ui/shadcn/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from '../../ui/shadcn/dropdown-menu';
 import { ToggleGroup, ToggleGroupItem } from '../../ui/shadcn/toggle-group';
 import { t as translate } from '../../../ui/legacyI18n.ts';
 import type { useWorkspaceDispatch } from './workspace.hooks';
-import { ChevronDownIcon, FilterIcon, GridIcon, i18n, ListIcon, SearchIcon } from './workspaceUi';
+import {
+  ChevronDownIcon,
+  FilterIcon,
+  GridIcon,
+  i18n,
+  ListIcon,
+  WorkspaceSearchField,
+} from './workspaceUi';
 import { triggerLibraryUpload } from './LibraryUploadInput';
 
 const FILE_TYPE_FILTERS = [
@@ -24,19 +37,9 @@ export interface LibraryToolbarProps {
   onViewModeChange: (mode: 'list' | 'grid') => void;
   typeFilter: string;
   onTypeFilterChange: (filter: string) => void;
-  filterOpen: boolean;
-  onFilterOpenChange: (open: boolean) => void;
-  newMenuOpen: boolean;
-  onNewMenuOpenChange: (open: boolean) => void;
 }
 
-function LibraryHead({
-  newMenuOpen,
-  onNewMenuOpenChange,
-}: {
-  newMenuOpen: boolean;
-  onNewMenuOpenChange: (open: boolean) => void;
-}) {
+function LibraryHead() {
   return (
     <div className="library-head">
       <div className="library-head-left">
@@ -46,34 +49,19 @@ function LibraryHead({
         </p>
       </div>
       <div className="library-head-actions">
-        <div className="library-new-wrap">
-          <Button
-            type="button"
-            className="library-new-pill rounded-full"
-            aria-haspopup="menu"
-            aria-expanded={newMenuOpen}
-            onClick={() => onNewMenuOpenChange(!newMenuOpen)}
+        <DropdownMenu modal={false}>
+          <DropdownMenuTrigger
+            render={<Button className="workspace-create-button library-new-pill" />}
           >
             <span>{i18n('library.new', '新建')}</span>
             <ChevronDownIcon />
-          </Button>
-          {newMenuOpen ? (
-            <div className="library-new-menu" role="menu">
-              <Button
-                type="button"
-                variant="ghost"
-                role="menuitem"
-                className="w-full justify-start"
-                onClick={() => {
-                  onNewMenuOpenChange(false);
-                  triggerLibraryUpload();
-                }}
-              >
-                {i18n('library.upload', '上传文件')}
-              </Button>
-            </div>
-          ) : null}
-        </div>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="library-new-menu">
+            <DropdownMenuItem className="min-h-(--ui-control-sm)" onClick={triggerLibraryUpload}>
+              {i18n('library.upload', '上传文件')}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );
@@ -82,57 +70,48 @@ function LibraryHead({
 function LibraryTypeFilter({
   typeFilter,
   onTypeFilterChange,
-  filterOpen,
-  onFilterOpenChange,
 }: {
   typeFilter: string;
   onTypeFilterChange: (type: string) => void;
-  filterOpen: boolean;
-  onFilterOpenChange: (open: boolean) => void;
 }) {
-  const activeTypeLabel = (
-    FILE_TYPE_FILTERS.find((filter) => filter.id === typeFilter) || FILE_TYPE_FILTERS[0]
-  ).fallback;
+  const activeFilter =
+    FILE_TYPE_FILTERS.find((filter) => filter.id === typeFilter) || FILE_TYPE_FILTERS[0];
   const filterLabel = i18n('library.filterByType', 'Filter by file type');
+  const triggerLabel =
+    typeFilter === 'all'
+      ? filterLabel
+      : `${filterLabel} · ${i18n(activeFilter.labelKey, activeFilter.fallback)}`;
 
   return (
-    <div className="library-tool-btn-wrap">
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon-lg"
-        className="library-tool-btn"
-        aria-label={filterLabel}
-        aria-pressed={typeFilter !== 'all'}
-        aria-expanded={filterOpen}
-        aria-haspopup="menu"
-        title={typeFilter === 'all' ? filterLabel : filterLabel + ': ' + activeTypeLabel}
-        onClick={() => onFilterOpenChange(!filterOpen)}
+    <DropdownMenu modal={false}>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            variant={typeFilter === 'all' ? 'ghost' : 'secondary'}
+            size="icon-lg"
+            className="library-tool-btn"
+          />
+        }
+        aria-label={triggerLabel}
+        title={triggerLabel}
       >
         <FilterIcon />
-      </Button>
-      {filterOpen ? (
-        <div className="library-filter-menu" role="menu">
+      </DropdownMenuTrigger>
+      <DropdownMenuContent aria-label={filterLabel} className="w-auto min-w-36">
+        <DropdownMenuRadioGroup value={typeFilter} onValueChange={onTypeFilterChange}>
           {FILE_TYPE_FILTERS.map((filter) => (
-            <Button
+            <DropdownMenuRadioItem
               key={filter.id}
-              type="button"
-              variant="ghost"
-              size="sm"
-              role="menuitemradio"
-              aria-checked={typeFilter === filter.id}
-              className="library-filter-option w-full justify-start aria-checked:bg-muted aria-checked:text-foreground"
-              onClick={() => {
-                onTypeFilterChange(filter.id);
-                onFilterOpenChange(false);
-              }}
+              value={filter.id}
+              closeOnClick
+              className="min-h-(--ui-control-sm)"
             >
               {i18n(filter.labelKey, filter.fallback)}
-            </Button>
+            </DropdownMenuRadioItem>
           ))}
-        </div>
-      ) : null}
-    </div>
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -143,23 +122,14 @@ export function LibraryToolbar({
   onViewModeChange,
   typeFilter,
   onTypeFilterChange,
-  filterOpen,
-  onFilterOpenChange,
-  newMenuOpen,
-  onNewMenuOpenChange,
 }: LibraryToolbarProps) {
   return (
     <>
-      <LibraryHead newMenuOpen={newMenuOpen} onNewMenuOpenChange={onNewMenuOpenChange} />
+      <LibraryHead />
 
       <div className="library-toolbar">
         <div className="library-toolbar-controls">
-          <LibraryTypeFilter
-            typeFilter={typeFilter}
-            onTypeFilterChange={onTypeFilterChange}
-            filterOpen={filterOpen}
-            onFilterOpenChange={onFilterOpenChange}
-          />
+          <LibraryTypeFilter typeFilter={typeFilter} onTypeFilterChange={onTypeFilterChange} />
           <div className="library-toolbar-divider" />
           <ToggleGroup
             className="library-view-switcher"
@@ -189,16 +159,12 @@ export function LibraryToolbar({
             </ToggleGroupItem>
           </ToggleGroup>
         </div>
-        <ShadcnLabel className="workspace-search-field library-search-pill">
-          <SearchIcon />
-          <ShadcnInput
-            type="search"
-            value={query}
-            onChange={(event) => dispatch.filter(event.target.value)}
-            placeholder={i18n('library.filterPlaceholder', '搜索资料库')}
-            aria-label={i18n('library.filterPlaceholder', '搜索资料库')}
-          />
-        </ShadcnLabel>
+        <WorkspaceSearchField
+          className="workspace-search-field library-search-pill"
+          label={i18n('library.filterPlaceholder', '搜索资料库')}
+          query={query}
+          onQuery={dispatch.filter}
+        />
       </div>
     </>
   );

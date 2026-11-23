@@ -238,9 +238,7 @@ body.composer-tools-open.composer-tools-open::after {
 .sidebar-more-popover,
 .anchored-menu,
 .msg-action-menu,
-.library-row-menu,
-.library-new-menu,
-.library-filter-menu {
+.library-row-menu {
   animation: ui-overlay-in var(--ui-duration-overlay) var(--ui-ease-out) both;
 }
 
@@ -333,12 +331,8 @@ body.composer-tools-open.composer-tools-open::after {
 .anchored-menu[data-align='start'][data-placement='above'] {
   transform-origin: bottom left;
 }
-#appShell .library-row-menu,
-#appShell .library-new-menu {
+#appShell .library-row-menu {
   transform-origin: top right;
-}
-#appShell .library-filter-menu {
-  transform-origin: top left;
 }
 
 /* The scrim fades with its card. `.cmd-k-overlay` was the one scrim with no
@@ -1030,7 +1024,7 @@ body.composer-tools-open.composer-tools-open::after {
   flex: 1;
   min-height: 0;
   width: 100%;
-  max-width: 1120px;
+  max-width: var(--ui-page-width);
   margin-inline: auto;
   padding-inline: clamp(16px, 3vw, 40px);
   color: var(--foreground);
@@ -1065,7 +1059,7 @@ body.composer-tools-open.composer-tools-open::after {
 }
 
 .profile-page {
-  max-width: 880px;
+  max-width: var(--ui-page-form-width);
 }
 .profile-page-body {
   display: grid;

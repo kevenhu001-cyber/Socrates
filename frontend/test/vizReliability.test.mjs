@@ -132,7 +132,8 @@ test('a chart with no drawable data shows a failure state instead of an empty ax
     payload: { categories: ['a'], series: [{ name: 'x' }] },
   });
   assert.ok(['failed', 'fallback-table'].includes(card.dataset.visualizationState));
-  assert.ok(card.querySelector('.visualization-fallback'));
+  assert.ok(card.querySelector('.visualization-stage-collapsed .visualization-fallback'));
+  assert.ok(card.querySelector('.visualization-fallback [role="status"] strong'));
   assert.equal(options.length, 0, 'no empty option is ever handed to the engine');
 });
 

@@ -208,54 +208,67 @@ function projectMeta(project: {
   return project.description || '';
 }
 
+function WorkspaceSearchField({
+  label,
+  query,
+  onQuery,
+  className = 'workspace-search-field',
+}: {
+  label: string;
+  query: string;
+  onQuery: (value: string) => void;
+  className?: string;
+}) {
+  return (
+    <ShadcnLabel className={className}>
+      <SearchIcon />
+      <ShadcnInput
+        type="search"
+        value={query}
+        onChange={(event) => onQuery(event.target.value)}
+        placeholder={label}
+        aria-label={label}
+      />
+    </ShadcnLabel>
+  );
+}
+
 function WorkspacePageHeader({
+  titleId,
   title,
   description,
+  searchLabel,
   query,
   onQuery,
   actionLabel,
   onAction,
-  compactAction,
+  actionClassName = '',
 }: {
+  titleId: string;
   title: string;
   description: string;
+  searchLabel: string;
   query: string;
   onQuery: (value: string) => void;
   actionLabel: string;
   onAction: () => void;
-  compactAction?: boolean;
+  actionClassName?: string;
 }) {
-  const searchLabel = i18n('projects.search', i18n('common.search', 'Search'));
   return (
     <div className="workspace-page-head">
       <div>
-        <h1 id="projects-directory-title">{title}</h1>
+        <h1 id={titleId}>{title}</h1>
         <p>{description}</p>
       </div>
       <div className="workspace-head-actions">
-        <ShadcnLabel className="workspace-search-field">
-          <SearchIcon />
-          <ShadcnInput
-            type="search"
-            value={query}
-            onChange={(event) => onQuery(event.target.value)}
-            placeholder={searchLabel}
-            aria-label={searchLabel}
-          />
-        </ShadcnLabel>
-        {/* The legacy class stays: it is the geometry contract for the
-            directory headers and the selector the projects e2e spec drives.
-            The component owns the structure, the owner keeps the pixels. */}
+        <WorkspaceSearchField label={searchLabel} query={query} onQuery={onQuery} />
         <Button
           type="button"
           variant="default"
-          className={
-            'workspace-create-button' +
-            (compactAction ? ' projects-create-button' : ' rounded-full')
-          }
+          className={`workspace-create-button ${actionClassName}`}
           onClick={onAction}
         >
-          {compactAction ? null : <PlusIcon />}
+          <PlusIcon />
           <span>{actionLabel}</span>
         </Button>
       </div>
@@ -282,4 +295,5 @@ export {
   installedRank,
   projectMeta,
   WorkspacePageHeader,
+  WorkspaceSearchField,
 };

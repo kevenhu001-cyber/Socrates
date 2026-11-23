@@ -1,12 +1,10 @@
-import { Label as ShadcnLabel } from '../../ui/shadcn/label';
-import { Input as ShadcnInput } from '../../ui/shadcn/input';
 import { Button } from '../../ui/shadcn/button';
 import { ToggleGroup, ToggleGroupItem } from '../../ui/shadcn/toggle-group';
 import { useMemo, useState } from 'react';
 import { getCurrentLang } from '../../../ui/legacyI18n.ts';
 import type { useWorkspaceDispatch } from './workspace.hooks';
 import type { PluginItem } from './types';
-import { i18n, installedRank, PlusIcon, SearchIcon } from './workspaceUi';
+import { i18n, installedRank, PlusIcon, WorkspaceSearchField } from './workspaceUi';
 import { PluginDirectoryCard } from './PluginDirectoryCard';
 import { InstalledPluginStrip } from './InstalledPluginStrip';
 import { dedupePlugins } from './pluginDirectory.data';
@@ -43,16 +41,12 @@ function PluginDirectoryHead({
         </p>
       </div>
       <div className="plugin-directory-tools">
-        <ShadcnLabel className="plugin-directory-search">
-          <SearchIcon />
-          <ShadcnInput
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder={searchLabel}
-            aria-label={searchLabel}
-          />
-        </ShadcnLabel>
+        <WorkspaceSearchField
+          className="workspace-search-field plugin-directory-search"
+          label={searchLabel}
+          query={query}
+          onQuery={setQuery}
+        />
         <Button
           type="button"
           variant="outline"

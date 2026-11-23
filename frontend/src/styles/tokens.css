@@ -24,6 +24,14 @@
   --ui-space-xl: var(--ui-foundation-space-lg);
   --ui-space-xxl: var(--ui-foundation-space-xl);
 
+  /* Page columns follow the same gutter scale across the app shell. */
+  --ui-page-width: 1040px;
+  --ui-page-form-width: 860px;
+  --ui-page-reading-width: 760px;
+  --ui-page-gutter: var(--ui-space-xxl);
+  --ui-page-top-space: var(--ui-control-search);
+  --ui-page-bottom-space: calc(2 * var(--ui-page-gutter));
+
   /* Radii — the Socrates corner ladder.
      The 2026-10-25 roundness pass ("尽量不要使用方形"): every rung below the
      chatgpt-pinned ones moved up one step, and --ui-radius-control was

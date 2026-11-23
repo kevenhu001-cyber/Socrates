@@ -139,7 +139,7 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
 
   /* ZCode's restrained document column: clear headings and wide form rows. */
   html[data-main-view='settingsPage'] #settingsPage .settings-pane {
-    max-width: 860px;
+    max-width: var(--ui-page-form-width);
   }
   html[data-main-view='settingsPage'] #settingsPage .settings-choice {
     min-height: 56px;

@@ -8,11 +8,11 @@ import { useScheduledStore } from './scheduled.store';
 import { openScheduledTaskForm } from '../workspace/workspace.dialogs';
 import { deleteScheduledTask, runScheduledTask, toggleScheduledTask } from './scheduled.service';
 import { ScheduledEmptyState } from './ScheduledEmptyState';
-import { ScheduledPageHeader } from './ScheduledPageHeader';
 import { ScheduledRecommendations } from './ScheduledRecommendations';
 import { ScheduledTaskList } from './ScheduledTaskList';
 import { scheduledText } from './scheduled.copy';
 import { WorkspaceLoadingView } from '../workspace/WorkspaceLoadingView';
+import { WorkspacePageHeader } from '../workspace/workspaceUi';
 
 const PANEL_ID = 'scheduledPanel';
 
@@ -49,7 +49,19 @@ export function ScheduledPage() {
       className="workspace-surface scheduled-directory"
       aria-labelledby="scheduled-directory-title"
     >
-      <ScheduledPageHeader query={query} onQueryChange={setQuery} onCreate={() => createTask()} />
+      <WorkspacePageHeader
+        titleId="scheduled-directory-title"
+        title={scheduledText('scheduled.title', 'Scheduled')}
+        description={scheduledText(
+          'scheduled.subtitle',
+          'Let Socrates plan follow-ups, reminders, and recurring updates for you.',
+        )}
+        searchLabel={scheduledText('scheduled.search', 'Search tasks')}
+        query={query}
+        onQuery={setQuery}
+        actionLabel={scheduledText('scheduled.new', 'New')}
+        onAction={() => createTask()}
+      />
 
       <Tabs value={scope} onValueChange={(value) => setScope(value as typeof scope)}>
         <TabsList
@@ -65,7 +77,9 @@ export function ScheduledPage() {
         </TabsList>
       </Tabs>
 
-      {!searching ? <ScheduledRecommendations onSelect={(prompt) => createTask(prompt)} /> : null}
+      {!searching && scope === 'all' ? (
+        <ScheduledRecommendations onSelect={(prompt) => createTask(prompt)} />
+      ) : null}
 
       {visibleTasks.length === 0 ? (
         <ScheduledEmptyState searching={searching} scope={scope} onCreate={() => createTask()} />
