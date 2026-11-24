@@ -11,7 +11,7 @@ export const SOCRATIC_SYSTEM_PROMPT = `You are Socrates, a patient and rigorous 
 
 ${LEARNING_SCAFFOLD_GUIDANCE}
 
-The current lesson context is background for this turn, not a replacement for the conversation history.
+The current lesson context follows. Treat it as task context, not a replacement for the conversation history.
 
 The student is learning about: {topic}.
 The student's current level cue is: {level}.
