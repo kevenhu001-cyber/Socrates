@@ -275,9 +275,14 @@
 .agent-run {
   display: block;
   margin: 6px 0 10px;
-  padding: 0 0 0 3px;
-  border-left: 1px solid var(--tool-activity-border);
+  /* No rail: a 1px line with no node on it reads as a stray border, not a
+     timeline. Hierarchy comes from indentation and type; a rail only works
+     when a status node anchors it. Activity is also one step quieter than the
+     answer: 13px, not the body's 16px. */
+  padding: 0;
   color: var(--tool-activity-row);
+  font-size: var(--ui-font-size-xs);
+  line-height: 20px;
 }
 .agent-run-shell {
   display: block;
@@ -289,12 +294,12 @@
   align-items: center;
   gap: 6px;
   min-height: 24px;
-  padding: 0 0 0 11px;
+  padding: 0;
   list-style: none;
   cursor: pointer;
   color: hsl(var(--text-500));
-  font-size: 12.5px;
-  line-height: 1.4;
+  font-size: var(--ui-font-size-xs);
+  line-height: 20px;
 }
 .agent-run-summary::-webkit-details-marker {
   display: none;
@@ -331,8 +336,10 @@
 .agent-run-steps {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 2px 0 0 11px;
+  gap: 6px;
+  /* The header and its rows share one left edge; the step's own icon is the
+     only marker, so no extra gutter is needed. */
+  padding: 6px 0 0;
 }
 .agent-step {
   display: block;
@@ -369,13 +376,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex: 0 0 17px;
+  flex: 0 0 16px;
   color: currentColor;
   opacity: 0.9;
 }
 .agent-step-label {
   flex: 0 0 auto;
-  line-height: 1.45;
+  font-size: var(--ui-font-size-xs);
+  line-height: 20px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -516,8 +524,10 @@
   color: hsl(var(--text-500));
 }
 .agent-plan-item[data-status='done'] .agent-plan-text {
-  text-decoration: line-through;
-  text-decoration-thickness: 1px;
+  /* A completed step is not a cancelled one: keep the wording intact and let
+     the check mark plus the muted ink carry the state. */
+  text-decoration: none;
+  color: var(--tool-activity-row);
 }
 .agent-plan-item[data-status='done'] .agent-plan-mark {
   border-color: hsl(var(--accent-000) / 0.4);

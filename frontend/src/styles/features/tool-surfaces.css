@@ -301,10 +301,14 @@
   display: inline-flex;
   align-self: flex-start;
   align-items: center;
-  gap: var(--ui-space-xs);
+  /* Activity is a caption, not a second answer: 13px on a 28px row, with an
+     8px gap so the site mark and its label read as one unit. */
+  gap: var(--ui-space-sm);
   min-width: 0;
   max-width: 100%;
-  min-height: var(--ui-control-sm);
+  min-height: 28px;
+  font-size: var(--ui-font-size-xs);
+  line-height: 20px;
   padding: 0;
   border: 0;
   border-radius: var(--ui-radius-sm);

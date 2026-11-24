@@ -135,12 +135,17 @@
   display: grid;
   place-items: center;
   flex: none;
-  width: 14px;
-  height: 14px;
-  background: var(--ui-bg-raised);
-  color: var(--ui-text-secondary);
-  font-size: var(--ui-font-size-xs);
+  /* A favicon fallback is a mark, not a stray letter: 16px tile, token corner,
+     10px semibold monogram. */
+  width: 16px;
+  height: 16px;
+  border-radius: var(--ui-radius-xs);
+  background: var(--ui-bg-panel);
+  color: var(--ui-text-tertiary);
+  font-size: calc(var(--ui-font-size-xxs) * 0.84);
+  font-weight: var(--ui-font-weight-semibold);
   line-height: 1;
+  text-transform: uppercase;
 }
 
 :is(.rn-turn-activity, .tool-run-trigger) .tool-site-mark img {

@@ -2,8 +2,8 @@
  * ThinkingSurface — the one-line activity header and its expandable
  * step list. The current action leads; elapsed time stays secondary, and
  * the host's working glyph remains visible with the details collapsed.
- * A content-sized trigger and a single quiet rail keep this subordinate
- * to the answer rather than looking like another message card.
+ * A content-sized trigger and a nested list keep this subordinate to the
+ * answer rather than looking like another message card.
  *
  * The host supplies already-public copy only (see thinkingModel).
  */
@@ -189,18 +189,17 @@ export interface ActivityStepProps {
   testID?: string;
 }
 
-/** One continuous muted rail, not a heavy active segment for every row. */
+/** A quiet nested list: indentation carries the hierarchy, no rule is drawn.
+ *  A rail with no node on it reads as a stray border rather than a timeline;
+ *  the reference products either anchor the rail to a status node, or drop it. */
 export function ThinkingTimeline({ children }: { children?: ReactNode }) {
-  const { colors } = useUiTheme();
   return (
     <div
       data-testid="thinking-timeline"
       style={{
         alignSelf: 'stretch',
         minWidth: 0,
-        marginLeft: S[75],
         paddingLeft: S[75],
-        borderLeft: `1px solid ${colors.hairline}`,
       }}
     >
       {children}
