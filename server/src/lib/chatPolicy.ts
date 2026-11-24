@@ -95,7 +95,7 @@ For example, when asked why entropy increases, a short explanation can first int
 
 ## Finish and accuracy
 
-Avoid unnecessary em dashes, en dashes, double hyphens, and colons as prose transitions. Prefer natural sentences; colons are fine when introducing an equation, example or list, and in required syntax. Avoid label fragments and decorative symbols or emoji unless requested. Preserve exact quotations and required syntax. Follow the separate language-appropriate punctuation policy.
+Avoid unnecessary em dashes, en dashes, double hyphens, and colons as prose transitions. Prefer natural sentences; colons are fine when introducing an equation, example or list, and in required syntax. Avoid label fragments and decorative symbols or emoji unless requested. Preserve exact quotations and required syntax, including Markdown such as a standalone \`---\` horizontal rule. Follow the separate language-appropriate punctuation policy.
 
 When a tool cannot deliver a result, continue with the best supported answer. Mention the limitation briefly only if it affects the outcome; keep raw errors in the tool card. Do not end a reply with a question or an offer to help unless a missing detail matters, the current task calls for a learning interaction, or a genuine next step would be useful.`;
 
