@@ -2,6 +2,7 @@
    at a 390px CSS viewport, excluding the browser's 306px chrome. */
 @media (max-width: 768px) {
   #appShell .top-bar {
+    position: relative;
     height: calc(var(--ui-mobile-header) + env(safe-area-inset-top, 0px));
     min-height: calc(var(--ui-mobile-header) + env(safe-area-inset-top, 0px));
     padding: env(safe-area-inset-top, 0px) 8px 0;
