@@ -455,11 +455,11 @@ export const WEB_FETCH_TOOL = {
       '- The relevant page text is already in your context (a [Referenced page] block or a prior web_fetch range this turn).\n' +
       '- The target needs a login — this tool cannot authenticate.\n\n' +
       '## Output\n' +
-      'Each page returns at most max_chars of extracted text starting at offset (defaults: 20000 and 0; in batch mode offset is unsupported and each page starts at 0). Start at offset 0; then use next_offset with the same single url to continue when has_more is yes. Ranges are zero-based with an exclusive end and total available characters are reported. If the cached page snapshot expires, restart from offset 0. The source is read up to 1 MB of raw text; source_truncated means content beyond that limit is unavailable, even when has_more is no. Summarize in natural prose; do not paste raw page text back to the user.',
+      'Each page returns at most max_chars of extracted text starting at offset (defaults: 8000 and 0; batch defaults to 4000 chars per page and shares a 32000-char text budget, starting each page at 0). Start at offset 0; then use next_offset with the same single url to continue when has_more is yes. Ranges are zero-based with an exclusive end and total available characters are reported. If the cached page snapshot expires, restart from offset 0. The source is read up to 1 MB of raw text; source_truncated means content beyond that limit is unavailable, even when has_more is no. Summarize in natural prose; do not paste raw page text back to the user.',
     parameters: {
       type: 'object',
       description:
-        'Provide exactly one of `url` or `urls`. `offset` and `max_chars` apply only to a single `url`; batch mode starts every page at offset 0.',
+        'Provide exactly one of `url` or `urls`. `offset` applies only to a single `url`; `max_chars` is a per-page ceiling, subject to the shared batch budget.',
       properties: {
         url: {
           type: 'string',
@@ -488,7 +488,7 @@ export const WEB_FETCH_TOOL = {
           minimum: 1,
           maximum: 30000,
           description:
-            'Maximum number of characters returned per page in this call (default 20000).',
+            'Maximum characters per page (default 8000 single, 4000 batch; batch total 32000).',
         },
       },
       required: [],
