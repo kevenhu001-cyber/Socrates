@@ -95,16 +95,15 @@ html[data-main-view='settingsPage'] #appShell .top-bar {
     box-shadow: none;
   }
 
-  /* The separator exists only when it separates something: while the
-     transcript is scrolled under the header (body[data-transcript-scrolled],
-     set by the message list). */
+  /* Soften the transcript/header boundary only when content moves beneath
+     it. This replaces a hard separator with a theme-aware edge fade. */
   #appShell .top-bar::after {
     content: '';
     position: absolute;
     inset-inline: 0;
-    bottom: 0;
-    height: 1px;
-    background: var(--ui-hairline);
+    bottom: calc(-1 * var(--ui-transcript-fade-top, 32px));
+    height: var(--ui-transcript-fade-top, 32px);
+    background: linear-gradient(to bottom, var(--conversation-page) 0%, transparent 100%);
     opacity: 0;
     transition: opacity var(--ui-duration-fast) var(--ui-ease-out);
     pointer-events: none;
