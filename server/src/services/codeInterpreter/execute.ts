@@ -51,6 +51,7 @@ export type ExecutionResponse = {
 export async function executeCode(
   opts: ExecuteOpts,
   waitSignal?: AbortSignal,
+  sessionLockQueueMs = 0,
 ): Promise<ExecutionResponse> {
   const requestStartedAt = Date.now();
   if (EXEC_RUNNER === 'disabled') {
@@ -288,6 +289,7 @@ export async function executeCode(
 
   // Persist artifacts. Each file in result.artifacts is something the
   // user's Python wrote into the artifacts/ subdir.
+  const artifactPersistenceStartedAt = Date.now();
   const artifactFileIds: Array<{ id?: string; name?: string; mimeType?: string | null }> = [];
   const droppedArtifacts: string[] = [];
   for (const art of result.artifacts || []) {
@@ -317,6 +319,7 @@ export async function executeCode(
     );
   }
 
+  const artifactPersistenceMs = Date.now() - artifactPersistenceStartedAt;
   const finalStatus = result.status || 'failed';
   const finalArtifactCount = artifactFileIds.length;
 
@@ -347,8 +350,15 @@ export async function executeCode(
     status: finalStatus,
     exitCode: result.exitCode,
     durationMs: result.durationMs,
+    sessionLockQueueMs,
     queueMs: result.queueMs,
+    workerBootMs: result.workerBootMs,
+    dependencyMs: result.dependencyMs,
+    fontMs: result.fontMs,
     packageMs: result.packageMs,
+    artifactPersistenceMs,
+    executionWallMs: Date.now() - requestStartedAt,
+    wallMs: Date.now() - requestStartedAt + sessionLockQueueMs,
     errorCode: result.errorCode,
     artifactCount: finalArtifactCount,
     errorMessage: result.errorMessage || null,

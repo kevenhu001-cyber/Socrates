@@ -24,52 +24,12 @@
     width: 100%;
     max-width: none;
     margin-inline: 0;
-    padding: 28px max(var(--ui-content-gutter), calc((100% - var(--ui-content-chat)) / 2)) 24px;
+    padding: 28px max(var(--ui-content-gutter), calc((100% - var(--ui-content-chat)) / 2)) 84px;
     gap: 0;
-    scroll-padding-block: 24px;
+    scroll-padding-block: 24px 84px;
     font-family: var(--font-sans);
     --ui-scroll-fade-top: 0px;
     --ui-scroll-fade-bottom: 0px;
-  }
-
-  /* The fade mask is a separate composited layer. Do not pay for it while the
-     transcript rests at the top or the bottom; messageScroll.ts sets this
-     attribute only when one of the two fades is non-zero. */
-  #appShell #msgList[data-scroll-fade='true'] {
-    mask-image: linear-gradient(
-      to bottom,
-      transparent 0%,
-      rgba(0, 0, 0, 0.05) calc(var(--ui-scroll-fade-top) * 0.15),
-      rgba(0, 0, 0, 0.18) calc(var(--ui-scroll-fade-top) * 0.32),
-      rgba(0, 0, 0, 0.38) calc(var(--ui-scroll-fade-top) * 0.5),
-      rgba(0, 0, 0, 0.64) calc(var(--ui-scroll-fade-top) * 0.68),
-      rgba(0, 0, 0, 0.88) calc(var(--ui-scroll-fade-top) * 0.85),
-      black var(--ui-scroll-fade-top),
-      black calc(100% - var(--ui-scroll-fade-bottom)),
-      rgba(0, 0, 0, 0.88) calc(100% - var(--ui-scroll-fade-bottom) * 0.85),
-      rgba(0, 0, 0, 0.64) calc(100% - var(--ui-scroll-fade-bottom) * 0.68),
-      rgba(0, 0, 0, 0.38) calc(100% - var(--ui-scroll-fade-bottom) * 0.5),
-      rgba(0, 0, 0, 0.18) calc(100% - var(--ui-scroll-fade-bottom) * 0.32),
-      rgba(0, 0, 0, 0.05) calc(100% - var(--ui-scroll-fade-bottom) * 0.15),
-      transparent 100%
-    );
-    -webkit-mask-image: linear-gradient(
-      to bottom,
-      transparent 0%,
-      rgba(0, 0, 0, 0.05) calc(var(--ui-scroll-fade-top) * 0.15),
-      rgba(0, 0, 0, 0.18) calc(var(--ui-scroll-fade-top) * 0.32),
-      rgba(0, 0, 0, 0.38) calc(var(--ui-scroll-fade-top) * 0.5),
-      rgba(0, 0, 0, 0.64) calc(var(--ui-scroll-fade-top) * 0.68),
-      rgba(0, 0, 0, 0.88) calc(var(--ui-scroll-fade-top) * 0.85),
-      black var(--ui-scroll-fade-top),
-      black calc(100% - var(--ui-scroll-fade-bottom)),
-      rgba(0, 0, 0, 0.88) calc(100% - var(--ui-scroll-fade-bottom) * 0.85),
-      rgba(0, 0, 0, 0.64) calc(100% - var(--ui-scroll-fade-bottom) * 0.68),
-      rgba(0, 0, 0, 0.38) calc(100% - var(--ui-scroll-fade-bottom) * 0.5),
-      rgba(0, 0, 0, 0.18) calc(100% - var(--ui-scroll-fade-bottom) * 0.32),
-      rgba(0, 0, 0, 0.05) calc(100% - var(--ui-scroll-fade-bottom) * 0.15),
-      transparent 100%
-    );
   }
 
   /* ── Turns ───────────────────────────────────────────────────────────── */
@@ -381,6 +341,15 @@
   }
 }
 
+@media (max-width: 768px) {
+  #appShell #msgList {
+    /* Keep the last message above the composited bottom fade so the mask
+       softens the hand-off to the composer without hiding the final lines. */
+    padding-bottom: max(72px, env(safe-area-inset-bottom));
+    scroll-padding-bottom: max(72px, env(safe-area-inset-bottom));
+  }
+}
+
 /* Phones clip horizontal overflow on the transcript (#msgList is
    `overflow-x: hidden`), so legacy un-wrapped tables need a fallback scroll rule.
    Unified `.ds-table-wrap` already manages its own scroll container on all screen widths. */
@@ -514,4 +483,50 @@ html[data-mode='light'] #appShell .msg-body .hljs :is(.hljs-deletion, .hljs-tag)
 html[data-mode='dark'] #appShell .msg-body .hljs :is(.hljs-comment, .hljs-quote) {
   color: var(--ui-text-tertiary);
   font-style: italic;
+}
+
+/* One mask owns both transcript boundaries on desktop and touch layouts.
+ * The top edge ramps only after scrolling; the bottom edge remains soft while
+ * the list overflows so the final response blends into the composer at bottom. */
+@media (forced-colors: none) {
+  /* The fade mask is a separate composited layer. Do not pay for it while the
+     transcript rests at the top or the bottom; messageScroll.ts sets this
+     attribute only when one of the two fades is non-zero. */
+  #appShell #msgList[data-scroll-fade='true'] {
+    mask-image: linear-gradient(
+      to bottom,
+      transparent 0%,
+      rgba(0, 0, 0, 0.05) calc(var(--ui-scroll-fade-top) * 0.15),
+      rgba(0, 0, 0, 0.18) calc(var(--ui-scroll-fade-top) * 0.32),
+      rgba(0, 0, 0, 0.38) calc(var(--ui-scroll-fade-top) * 0.5),
+      rgba(0, 0, 0, 0.64) calc(var(--ui-scroll-fade-top) * 0.68),
+      rgba(0, 0, 0, 0.88) calc(var(--ui-scroll-fade-top) * 0.85),
+      black var(--ui-scroll-fade-top),
+      black calc(100% - var(--ui-scroll-fade-bottom)),
+      rgba(0, 0, 0, 0.88) calc(100% - var(--ui-scroll-fade-bottom) * 0.85),
+      rgba(0, 0, 0, 0.64) calc(100% - var(--ui-scroll-fade-bottom) * 0.68),
+      rgba(0, 0, 0, 0.38) calc(100% - var(--ui-scroll-fade-bottom) * 0.5),
+      rgba(0, 0, 0, 0.18) calc(100% - var(--ui-scroll-fade-bottom) * 0.32),
+      rgba(0, 0, 0, 0.05) calc(100% - var(--ui-scroll-fade-bottom) * 0.15),
+      transparent 100%
+    );
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      transparent 0%,
+      rgba(0, 0, 0, 0.05) calc(var(--ui-scroll-fade-top) * 0.15),
+      rgba(0, 0, 0, 0.18) calc(var(--ui-scroll-fade-top) * 0.32),
+      rgba(0, 0, 0, 0.38) calc(var(--ui-scroll-fade-top) * 0.5),
+      rgba(0, 0, 0, 0.64) calc(var(--ui-scroll-fade-top) * 0.68),
+      rgba(0, 0, 0, 0.88) calc(var(--ui-scroll-fade-top) * 0.85),
+      black var(--ui-scroll-fade-top),
+      black calc(100% - var(--ui-scroll-fade-bottom)),
+      rgba(0, 0, 0, 0.88) calc(100% - var(--ui-scroll-fade-bottom) * 0.85),
+      rgba(0, 0, 0, 0.64) calc(100% - var(--ui-scroll-fade-bottom) * 0.68),
+      rgba(0, 0, 0, 0.38) calc(100% - var(--ui-scroll-fade-bottom) * 0.5),
+      rgba(0, 0, 0, 0.18) calc(100% - var(--ui-scroll-fade-bottom) * 0.32),
+      rgba(0, 0, 0, 0.05) calc(100% - var(--ui-scroll-fade-bottom) * 0.15),
+      transparent 100%
+    );
+  }
+
 }

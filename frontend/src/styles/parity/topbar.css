@@ -95,18 +95,24 @@ html[data-main-view='settingsPage'] #appShell .top-bar {
     box-shadow: none;
   }
 
-  /* The separator exists only when it separates something: while the
-     transcript is scrolled under the header (body[data-transcript-scrolled],
-     set by the message list). */
+  /* A soft canvas-to-transparent edge replaces the hard hairline while
+     transcript content scrolls beneath the fixed header. The transcript
+     mask owns the actual text fade; this layer only blends the chrome edge. */
   #appShell .top-bar::after {
     content: '';
     position: absolute;
+    z-index: 0;
     inset-inline: 0;
-    bottom: 0;
-    height: 1px;
-    background: var(--ui-hairline);
+    bottom: -24px;
+    height: 24px;
+    background: linear-gradient(
+      to bottom,
+      var(--ui-bg-page) 0%,
+      color-mix(in srgb, var(--ui-bg-page) 82%, transparent) 38%,
+      transparent 100%
+    );
     opacity: 0;
-    transition: opacity var(--ui-duration-fast) var(--ui-ease-out);
+    transition: opacity var(--ui-duration-normal) var(--ui-ease-out);
     pointer-events: none;
   }
   body[data-transcript-scrolled='true'] #appShell .top-bar::after {
@@ -227,6 +233,36 @@ html[data-main-view$='Panel'] #appShell .mobile-newchat-btn {
 }
 
 @media (max-width: 768px) {
+  /* The phone header also sits above the scrolling transcript. Blend its
+     lower edge into the first visible line instead of drawing a hard rule. */
+  #appShell .top-bar {
+    z-index: var(--ui-z-header);
+  }
+  #appShell .top-bar::after {
+    content: '';
+    position: absolute;
+    z-index: 0;
+    inset-inline: 0;
+    bottom: -20px;
+    height: 20px;
+    background: linear-gradient(
+      to bottom,
+      var(--ui-bg-page) 0%,
+      color-mix(in srgb, var(--ui-bg-page) 82%, transparent) 38%,
+      transparent 100%
+    );
+    opacity: 0;
+    transition: opacity var(--ui-duration-normal) var(--ui-ease-out);
+    pointer-events: none;
+  }
+  body[data-transcript-scrolled='true'] #appShell .top-bar::after {
+    opacity: 1;
+  }
+  #appShell .top-bar-left,
+  #appShell .top-bar-right {
+    position: relative;
+    z-index: 1;
+  }
   #appShell .top-model-slot {
     display: none;
   }
@@ -246,3 +282,5 @@ html[data-main-view$='Panel'] #appShell .mobile-newchat-btn {
   vector-effect: non-scaling-stroke;
   stroke-width: 1.5px;
 }
+
+

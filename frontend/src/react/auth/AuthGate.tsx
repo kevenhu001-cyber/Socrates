@@ -9,6 +9,7 @@ import {
 import { Button } from '../ui/shadcn/button';
 import { Input } from '../ui/shadcn/input';
 import { Label } from '../ui/shadcn/label';
+import { AuthCard } from '../ui/page/AuthCard';
 import {
   focusAuthTab,
   resendAuthCode,
@@ -100,7 +101,7 @@ export function AuthGate() {
 
   const activeTab = useAuthUi((state) => state.activeTab);
   return (
-    <div className="auth-card">
+    <AuthCard>
       <div className="auth-brand">
         <img src="/logo.png" width={32} height={32} alt="" className="logo-img" />
         <span>Socrates</span>
@@ -174,7 +175,7 @@ export function AuthGate() {
         <ResetSuccessView />
         <CodeLoginView />
       </div>
-    </div>
+    </AuthCard>
   );
 }
 

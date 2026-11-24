@@ -18,6 +18,12 @@ test('profile page renders account, subscription, preferences, and data sections
   const profile = page.locator('#profilePage');
   await expect(page).toHaveURL(/\/profile$/);
   await expect(page.getByRole('region', { name: 'Profile', exact: true })).toBeVisible();
+  await expect(profile.locator('.account-page-header')).toHaveAttribute(
+    'data-page-header-variant',
+    'account',
+  );
+  await expect(profile.locator('[data-page-title]')).toHaveCount(1);
+  await expect(profile.locator('.profile-section[data-section-card]')).toHaveCount(4);
   await expect(profile.locator('#profileName')).toBeVisible();
   await expect(profile.locator('#profileEmail')).not.toBeEmpty();
   await expect(profile.locator('#profileJoined')).not.toBeEmpty();

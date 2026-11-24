@@ -96,22 +96,30 @@
 #appShell .plugin-detail-view {
   display: flex;
   flex-direction: column;
-  max-width: 680px;
+  max-width: 760px;
   width: 100%;
   margin: 0 auto;
-  padding: 24px 24px 64px;
 }
 
-#appShell .plugin-detail-nav {
-  margin-bottom: 20px;
+#appShell .plugin-detail-page-header {
+  align-items: center;
+  padding-block: var(--ui-space-lg);
 }
 
-#appShell .plugin-detail-hero {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  margin-bottom: 24px;
+#appShell .plugin-detail-page-header .account-page-title {
+  flex: 1 1 180px;
 }
+
+#appShell .plugin-detail-page-header .account-page-actions {
+  flex: 0 1 42%;
+  min-width: 200px;
+}
+
+#appShell .plugin-detail-back-btn {
+  flex: 0 0 auto;
+  margin-inline-start: -8px;
+}
+
 
 #appShell .plugin-detail-logo-tile {
   flex: 0 0 64px;
@@ -142,56 +150,11 @@
   display: block;
 }
 
-#appShell .plugin-detail-hero-content {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-#appShell .plugin-detail-title-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-#appShell .plugin-detail-title-row h2 {
-  margin: 0;
-  font-size: 22px;
-  font-weight: var(--ui-font-weight-semibold);
-  color: var(--foreground);
-  line-height: 1.25;
-}
-
-#appShell .plugin-detail-badge-verified {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  border-radius: var(--ui-radius-pill);
-  background: var(--secondary);
-  font-size: var(--ui-font-size-xxs);
-  color: var(--muted-foreground);
-}
-
-#appShell .plugin-detail-meta-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: var(--ui-font-size-xs);
-  color: var(--ui-text-tertiary);
-  margin-top: 2px;
-}
-
-#appShell .plugin-detail-meta-dot {
-  opacity: 0.6;
-}
-
 #appShell .plugin-detail-status-row {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  gap: var(--ui-space-sm);
   margin-top: 2px;
 }
 
@@ -205,10 +168,6 @@
 #appShell .plugin-detail-status-pill.connected {
   color: var(--ui-ink);
   font-weight: var(--ui-font-weight-medium);
-}
-
-#appShell .plugin-detail-cta-bar {
-  margin-bottom: 28px;
 }
 
 #appShell .plugin-detail-cta-group {
@@ -348,105 +307,12 @@
 /*  Workspace Loading & Skeletons                                     */
 /* ------------------------------------------------------------------ */
 
-@keyframes workspaceTextShimmer {
-  from {
-    background-position: 150% 0;
-  }
-  to {
-    background-position: -50% 0;
-  }
-}
-
 #appShell .workspace-loading-surface {
   display: flex;
   flex-direction: column;
-  max-width: 800px;
+  max-width: var(--ui-page-width);
   width: 100%;
   margin: 0 auto;
-  padding: 24px 20px 60px;
-}
-
-#appShell .workspace-loading-banner {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 16px 20px;
-  margin-bottom: 24px;
-  border-radius: var(--ui-radius-lg);
-  background: var(--cg-surface-raised);
-  border: 1px solid var(--ui-border-subtle);
-}
-
-/* Keep the page-level loading affordance as a compact rotating
-   ring. The content placeholders below are the surfaces that use shimmer. */
-#appShell .workspace-loading-spinner-box {
-  position: relative;
-  width: 44px;
-  height: 44px;
-  flex: 0 0 44px;
-  display: grid;
-  place-items: center;
-  color: var(--foreground);
-}
-
-#appShell .workspace-loading-spinner-ring {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 2px solid var(--ui-border-subtle);
-  border-top-color: var(--primary);
-  border-right-color: var(--foreground);
-  box-sizing: border-box;
-  animation: workspaceLoadingSpin var(--ui-duration-spin) cubic-bezier(0.4, 0, 0.2, 1) infinite;
-  will-change: transform;
-}
-
-@keyframes workspaceLoadingSpin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-#appShell .workspace-loading-banner-text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-#appShell .workspace-loading-banner-text strong {
-  font-size: 15px;
-  font-weight: var(--ui-font-weight-semibold);
-  color: var(--foreground);
-}
-
-#appShell .workspace-loading-banner-text span {
-  font-size: var(--ui-font-size-xs);
-  color: var(--ui-text-tertiary);
-}
-
-/* Loading copy gets the same travelling highlight as the blocks below. Keep
-   this scoped to page-loading copy so the existing inline `shimmer-text`
-   contract remains free to serve stream/tool status labels elsewhere. */
-#appShell .workspace-loading-banner-text .shimmer-text {
-  color: var(--ui-text-tertiary);
-  -webkit-text-fill-color: transparent;
-  background-image: linear-gradient(
-    105deg,
-    var(--ui-text-tertiary) 0%,
-    var(--ui-text-tertiary) 28%,
-    color-mix(in srgb, var(--ui-text-tertiary), var(--foreground) 42%) 40%,
-    var(--foreground) 47%,
-    var(--primary) 50%,
-    var(--foreground) 53%,
-    color-mix(in srgb, var(--ui-text-tertiary), var(--foreground) 42%) 60%,
-    var(--ui-text-tertiary) 72%,
-    var(--ui-text-tertiary) 100%
-  );
-  background-size: 320% 100%;
-  background-position: 150% 0;
-  -webkit-background-clip: text;
-  background-clip: text;
-  animation: workspaceTextShimmer 1.35s linear infinite;
 }
 
 #appShell .workspace-skeleton-container {
@@ -466,21 +332,11 @@
   --skeleton-shimmer-highlight: color-mix(in srgb, var(--cg-surface-raised), var(--foreground) 12%);
 }
 
-/* The global .01ms blanket stops these loops but leaves the gradient frozen
-   mid-sweep, which reads as a random bright band. Give them a deliberate
-   static state instead: a flat placeholder, normal ink for the copy. */
+/* Keep placeholders static and legible when reduced motion is requested. */
 @media (prefers-reduced-motion: reduce) {
   #appShell .workspace-skeleton-shimmer {
     animation: none;
     background-image: none;
-  }
-  #appShell .workspace-loading-banner-text .shimmer-text {
-    animation: none;
-    background-image: none;
-    -webkit-text-fill-color: currentColor;
-  }
-  #appShell .workspace-loading-spinner-ring {
-    animation: none;
   }
 }
 
@@ -670,47 +526,7 @@
   flex-shrink: 0;
 }
 
-/* Scheduled tasks use the same card/list hierarchy as the settled page so a
-   slow request does not cause the whole directory to jump when it resolves. */
-#appShell .workspace-loading-scheduled {
-  max-width: 1040px;
-  padding: 40px 32px 64px;
-}
-
-#appShell .workspace-skeleton-scheduled-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 24px;
-}
-
-#appShell .workspace-skeleton-scheduled-heading {
-  max-width: 52%;
-  gap: 10px;
-}
-
-#appShell .workspace-skeleton-line-page-title {
-  width: 100%;
-  height: 32px;
-}
-
-#appShell .workspace-skeleton-line-page-desc {
-  width: 100%;
-  height: 12px;
-}
-
-#appShell .workspace-skeleton-scheduled-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-#appShell .workspace-skeleton-scheduled-actions .workspace-skeleton-search {
-  flex: 1 1 0;
-  width: auto;
-  height: var(--ui-control-search);
-}
-
+/* Scheduled tasks keep the same card/list hierarchy as the settled page. */
 #appShell .workspace-skeleton-create {
   width: 76px;
   height: var(--ui-control-desktop);
@@ -796,7 +612,22 @@
   /* Plugins page refinements on mobile */
 
   #appShell .plugin-detail-view {
-    padding: 12px 16px calc(32px + var(--ui-safe-bottom));
+    max-width: none;
+  }
+
+  #appShell .plugin-detail-page-header {
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  #appShell .plugin-detail-page-header .account-page-actions {
+    flex: 1 0 calc(100% - 108px);
+    min-width: 0;
+    margin-inline-start: 108px;
+  }
+
+  #appShell .plugin-detail-cta-group {
+    width: 100%;
   }
 
   #appShell .plugin-detail-logo-tile {
@@ -807,31 +638,17 @@
     min-height: 56px;
   }
 
-  #appShell .workspace-loading-scheduled {
-    max-width: none;
-    padding: 24px 16px 48px;
+  @media (max-width: 360px) {
+    #appShell .plugin-detail-cta-group {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    #appShell .plugin-detail-cta-group > button {
+      width: 100%;
+    }
   }
 
-  #appShell .workspace-skeleton-scheduled-head {
-    flex-direction: column;
-    gap: 18px;
-  }
-
-  #appShell .workspace-skeleton-scheduled-heading {
-    max-width: none;
-    width: 100%;
-  }
-
-  #appShell .workspace-skeleton-scheduled-actions {
-    width: 100%;
-  }
-
-  #appShell .workspace-skeleton-scheduled-actions .workspace-skeleton-search {
-    flex: 1 1 auto;
-    width: auto;
-  }
-
-  #appShell .workspace-skeleton-scheduled-cards {
+   #appShell .workspace-skeleton-scheduled-cards {
     grid-template-columns: 1fr;
   }
 
@@ -839,9 +656,6 @@
     padding: 14px;
   }
 
-  #appShell .plugin-detail-title-row h2 {
-    font-size: var(--ui-font-size-xl);
-  }
 }
 
 /* Both directory headings live inside the page beneath the app header. */

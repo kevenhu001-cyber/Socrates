@@ -24,8 +24,8 @@ export function animateSurfaceEntrance(
   const easing = style.getPropertyValue('--ui-ease-out').trim() || 'cubic-bezier(0.22, 1, 0.36, 1)';
   const animation = host.animate(
     [
-      { opacity: 0, transform: 'translateY(12px)' },
-      { opacity: 1, transform: 'translateY(0)' },
+      { opacity: 0 },
+      { opacity: 1 },
     ],
     { duration, easing },
   );

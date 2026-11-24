@@ -100,6 +100,21 @@ class WorkerFixture extends EventEmitter {
       queueMicrotask(() => {
         this.emit('message', {
           id: message.id,
+          type: 'phase',
+          phase: 'preparing',
+          elapsedMs: 1,
+        });
+        this.emit('message', {
+          id: message.id,
+          type: 'phase',
+          phase: 'running',
+          elapsedMs: 3,
+          packageMs: 2,
+          dependencyMs: 1,
+          fontMs: 1,
+        });
+        this.emit('message', {
+          id: message.id,
           type: 'result',
           status: 'completed',
           stdout: 'ok',
@@ -153,6 +168,10 @@ test('expired worker wait never posts queued code or consumes the next lease', a
   const next = await runOnWorker(job(), pool);
   assert.equal(next.status, 'completed');
   assert.equal(next.packageMs, 2);
+  assert.equal(next.dependencyMs, 1);
+  assert.equal(next.fontMs, 1);
+  assert.equal(typeof next.workerBootMs, 'number');
+  assert.ok(next.workerBootMs >= 0);
   assert.equal(typeof next.queueMs, 'number');
   assert.equal(workers[0].messages.length, 1);
 });

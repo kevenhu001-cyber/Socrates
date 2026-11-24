@@ -15,7 +15,14 @@ export function AdminPage() {
   const admin = useAdminConsole();
 
   if (admin.authed === null) {
-    return <div className="admin-loading">Loading…</div>;
+    return (
+      <PageFrame className="admin-console" aria-labelledby="admin-console-title" aria-busy="true">
+        <PageHeader titleId="admin-console-title" title="Admin console" />
+        <div className="admin-loading" role="status">
+          Loading…
+        </div>
+      </PageFrame>
+    );
   }
   if (!admin.authed) {
     return <LoginPage onReady={() => admin.setAuthed(true)} />;

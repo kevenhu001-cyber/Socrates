@@ -81,6 +81,8 @@ test('admin console signs in, saves both providers, removes embedding, and signs
   await waitForAppShell(page);
   await page.evaluate(() => window.__socratesLegacy.navigation.openNav('admin'));
   await expect(page.locator('.admin-login')).toBeVisible();
+  await expect(page.locator('.admin-login')).toHaveAttribute('data-auth-card', '');
+  await expect(page.locator('.admin-login h1[data-page-title]')).toHaveCount(1);
   await page.getByLabel('Admin password').fill('operator-secret');
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect.poll(() => loginHeaders).not.toBeUndefined();

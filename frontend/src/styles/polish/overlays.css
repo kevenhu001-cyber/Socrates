@@ -1038,7 +1038,14 @@ body.composer-tools-open.composer-tools-open::after {
 }
 .account-page-title {
   flex: 1;
+  min-width: 0;
   margin: 0;
+}
+.account-page-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--ui-space-sm);
 }
 .account-page-title h1 {
   margin: 0;
@@ -1065,6 +1072,30 @@ body.composer-tools-open.composer-tools-open::after {
 
 .profile-page {
   max-width: var(--ui-page-reading-width);
+}
+.profile-page .profile-section {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.profile-page .profile-section + .profile-section {
+  padding-top: var(--ui-space-lg);
+  border-top: 1px solid var(--ui-border-subtle);
+}
+.profile-page .profile-section .ui-section-card-header {
+  align-items: center;
+  margin-bottom: var(--ui-space-sm);
+}
+.profile-page .profile-section .ui-section-card-title {
+  font-size: var(--ui-font-size-md);
+  font-weight: var(--ui-font-weight-semibold);
+}
+.profile-page .profile-section .ui-section-card-content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 .profile-page .account-page-header {
   flex: 0 0 auto;
@@ -1131,13 +1162,6 @@ body.composer-tools-open.composer-tools-open::after {
   font-size: var(--ui-font-size-sm);
   color: var(--ui-text-secondary);
 }
-.profile-section-title {
-  margin: 0;
-  padding-block-end: var(--ui-space-sm);
-  border-bottom: 1px solid var(--ui-border-subtle);
-  font-size: var(--ui-font-size-md);
-  font-weight: var(--ui-font-weight-semibold);
-}
 .profile-row,
 .profile-action-row {
   display: flex;
@@ -1193,7 +1217,8 @@ body.composer-tools-open.composer-tools-open::after {
     padding: env(safe-area-inset-top, 0px) 0 0;
     overflow: hidden;
   }
-  .profile-page .account-page-header > button {
+  .profile-page .account-page-header > button,
+  .profile-page .account-page-actions > button {
     min-height: var(--ui-control-touch);
   }
 }
@@ -1371,4 +1396,14 @@ body.composer-tools-open.composer-tools-open::after {
   padding: 12px 4px;
   font-style: italic;
   line-height: 1.4;
+}
+
+
+.admin-login-title {
+  margin: 0;
+  color: var(--ui-text-primary);
+  font-size: var(--ui-text-page);
+  font-weight: var(--ui-font-weight-semibold);
+  line-height: 1.5;
+  letter-spacing: -0.02em;
 }

@@ -52,15 +52,22 @@ export function isSticky(list: HTMLElement): boolean {
   return Boolean(sticky && sticky.list === list && performance.now() < sticky.until);
 }
 
-const FADE_SIZE_PX = 28;
+const TOP_FADE_SIZE_PX = 32;
+const BOTTOM_FADE_SIZE_PX = 56;
 
 export function updateScrollFadeMask(list: HTMLElement | null): void {
   if (!list) return;
   const { scrollTop = 0, scrollHeight = 0, clientHeight = 0 } = list;
-  const isAtTop = scrollTop <= 2;
-  const isAtBottom = scrollTop + clientHeight >= scrollHeight - 2;
-  const topVal = isAtTop ? '0px' : `${FADE_SIZE_PX}px`;
-  const bottomVal = isAtBottom ? '0px' : `${FADE_SIZE_PX}px`;
+  // Ramp the mask over the distance actually clipped, rather than jumping
+  // from zero to the full fade on the first scroll pixel. Quantization keeps
+  // style updates bounded during touch scrolling.
+  const edgeFade = (distance: number) =>
+    `${Math.round(Math.min(TOP_FADE_SIZE_PX, Math.max(0, distance - 2)))}px`;
+  const topVal = edgeFade(scrollTop);
+  // Keep the composer edge soft even when the reader reaches the final
+  // message. The old clipped-distance rule removed the bottom fade at the
+  // exact point where the last response met the composer.
+  const bottomVal = scrollHeight > clientHeight + 1 ? `${BOTTOM_FADE_SIZE_PX}px` : '0px';
   if (list.style.getPropertyValue('--ui-scroll-fade-top') !== topVal) {
     list.style.setProperty('--ui-scroll-fade-top', topVal);
   }

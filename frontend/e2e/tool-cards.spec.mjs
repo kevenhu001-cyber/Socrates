@@ -458,7 +458,10 @@ test('consecutive tools stay one row each and open their own details', async ({ 
   });
 
   const bubble = page.locator('.msg.assistant').last();
-  /* Every call keeps its own row; there is no aggregate card between them. */
+  /* Each call keeps its own row inside the compact, expandable burst. */
+  const burstToggle = bubble.locator('.tool-activity-burst-toggle');
+  await expect(burstToggle).toHaveAttribute('aria-expanded', 'false');
+  await burstToggle.click();
   await expect(bubble.locator(TURN.row)).toHaveCount(2);
   for (const id of ['group-a', 'group-b']) await expect(toolRow(bubble, id)).toBeVisible();
   await expect(toolRow(bubble, 'group-a').locator(TURN.stepTitle)).toContainText('alpha');

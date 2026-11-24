@@ -18,6 +18,8 @@ import {
 import { useInlineMath } from '../rn/useInlineMath';
 import { WebUiTheme } from '../rn/WebUiTheme';
 import { ActionBar } from '../ui/page/ActionBar';
+import { PageFrame } from '../ui/page/PageFrame';
+import { PageHeader } from '../ui/page/PageHeader';
 
 /* Host ids kept from the DOM baseline: navigation.ts / persistence.ts query
  * them, and the Playwright specs address the same nodes. */
@@ -212,12 +214,27 @@ export function ExamView() {
     setCurrentIndex,
   );
 
+  const panel = (
+    <ExamPanel
+      screen={screen}
+      strings={strings}
+      onCommand={onCommand}
+      onAnswer={onAnswer}
+      onDraftChange={onDraftChange}
+      renderText={renderText}
+      ids={EXAM_IDS}
+    />
+  );
+  const isSetup = screen.kind === 'form';
+
   return (
     <WebUiTheme>
-      <h1 className="sr-only" id="examViewTitle" data-page-title>
-        {title}
-      </h1>
-      <div className="exam-view-body" id="examViewBody">
+      {!isSetup ? (
+        <h1 className="sr-only" id="examViewTitle" data-page-title>
+          {title}
+        </h1>
+      ) : null}
+      <div className={isSetup ? 'exam-view-body is-setup' : 'exam-view-body'} id="examViewBody">
         {showNav && screen.kind === 'questions' ? (
           <div className="exam-root-slot" id="examViewReactNav">
             <ExamNavigation
@@ -231,15 +248,18 @@ export function ExamView() {
           </div>
         ) : null}
         <div className="exam-root-slot" id="examViewReactBody">
-          <ExamPanel
-            screen={screen}
-            strings={strings}
-            onCommand={onCommand}
-            onAnswer={onAnswer}
-            onDraftChange={onDraftChange}
-            renderText={renderText}
-            ids={EXAM_IDS}
-          />
+          {isSetup ? (
+            <PageFrame className="exam-setup-page" aria-labelledby="examViewTitle">
+              <PageHeader
+                titleId="examViewTitle"
+                title={strings.setup.heroTitle}
+                description={strings.setup.heroDescription}
+              />
+              {panel}
+            </PageFrame>
+          ) : (
+            panel
+          )}
         </div>
       </div>
       <ActionBar className="exam-view-footer" id="examViewFooter">

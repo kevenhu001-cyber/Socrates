@@ -51,7 +51,26 @@ async function openConnectedPluginDetail(page) {
   await page.locator('#navPlugins').click();
   await page.locator('[data-connector-id="github"]').click();
   await expect(page.locator('.plugin-detail-view')).toBeVisible();
+  await expect(page.locator('.plugin-detail-view')).toHaveAttribute('data-page-frame', '');
+  await expect(page.locator('.plugin-detail-page-header')).toHaveAttribute(
+    'data-page-header-variant',
+    'account',
+  );
+  await expect(page.locator('#plugin-detail-title')).toHaveAttribute('data-page-title', '');
 }
+
+test('plugin detail header and actions fit a phone viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 780 });
+  await openConnectedPluginDetail(page);
+  const bounds = await page.locator('.plugin-detail-page-header').evaluate((header) => ({
+    width: header.clientWidth,
+    scrollWidth: header.scrollWidth,
+    actionsWidth: header.querySelector('.account-page-actions')?.getBoundingClientRect().width ?? 0,
+  }));
+  expect(bounds.scrollWidth).toBeLessThanOrEqual(bounds.width + 1);
+  expect(bounds.actionsWidth).toBeGreaterThan(120);
+  await expect(page.locator('.plugin-detail-btn-primary')).toBeVisible();
+});
 
 test('using a connected plugin waits for the chat reset to succeed', async ({ page }) => {
   await openConnectedPluginDetail(page);

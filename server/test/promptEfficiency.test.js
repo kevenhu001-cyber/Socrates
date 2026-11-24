@@ -53,3 +53,36 @@ test('deferred tools are discoverable only if registered; relevant tools are pre
   assert.equal(catalog.byTool.has('create_site'),false);
   assert.deepEqual(splitInitialToolNames(['web_search','code_interpreter'],catalog),['web_search']);
 });
+
+test('routine questions keep Python deferred while execution-heavy requests prewarm it', () => {
+  for (const content of [
+    '计算 2 + 3',
+    '推导这个方程',
+    '解释代码',
+    '画一个函数图像',
+    'calculate 2 + 3',
+    'explain this code',
+    'Python 执行为什么慢',
+    '什么是数据分析',
+    'what is data analysis',
+    'what is Python',
+    'explain numerical simulation',
+    'what is a CSV file',
+  ]) {
+    assert.ok(selectDeferredCoreTools({messages:[{role:'user',content}]},'chat').has('code_interpreter'),content);
+  }
+  for (const content of [
+    '用 Python 计算这组数据',
+    '进行数据分析',
+    'perform data analysis',
+    '分析这份 CSV 数据',
+    '执行代码',
+    '运行数值仿真',
+    '把结果导出为 CSV',
+    'run a numerical simulation',
+    'analyze this dataset',
+    'export this data as CSV',
+  ]) {
+    assert.ok(!selectDeferredCoreTools({messages:[{role:'user',content}]},'chat').has('code_interpreter'),content);
+  }
+});

@@ -670,16 +670,23 @@ async function runCode({
     /* empty-catch: intentional — offline auto-install probe; exec reports the real import error */
   }
 
+  const dependencyMs = Date.now() - packagesStartedAt;
+  let fontMs = 0;
   if (Object.hasOwn(pyodide.loadedPackages, 'matplotlib')) {
+    const fontStartedAt = Date.now();
     await _ensureCjkFontRegistered();
+    fontMs = Date.now() - fontStartedAt;
   }
 
-  const packageMs = Date.now() - packagesStartedAt;
+  const packageMs = dependencyMs + fontMs;
   parentPort!.postMessage({
     id,
     type: 'phase',
     phase: 'running',
     elapsedMs: Date.now() - startedAt,
+    packageMs,
+    dependencyMs,
+    fontMs,
   });
 
   let status = 'completed';

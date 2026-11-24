@@ -13,6 +13,7 @@
 .ui-page-frame {
   box-sizing: border-box;
   align-self: flex-start;
+  min-width: 0;
   width: 100%;
   max-width: var(--ui-page-width);
   margin-inline: auto;
@@ -26,7 +27,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--ui-space-xl);
-  margin: 0 0 var(--ui-space-lg);
+  margin: 0 0 var(--ui-space-xl);
 }
 
 .ui-page-heading {
@@ -61,7 +62,10 @@
 
 .ui-page-actions {
   display: flex;
-  flex: 0 0 auto;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  min-width: 0;
+  justify-content: flex-end;
   align-items: center;
   gap: var(--ui-space-sm);
 }
@@ -71,9 +75,10 @@
 .ui-page-toolbar {
   display: flex;
   flex-wrap: wrap;
+  min-width: 0;
   align-items: center;
   gap: var(--ui-space-sm);
-  margin: 0 0 var(--ui-space-md);
+  margin: 0 0 var(--ui-space-lg);
 }
 
 /* Shared page search: one 42px pill, same chrome as Library. The inner
@@ -468,4 +473,19 @@
     height: var(--ui-control-desktop);
     flex: 0 0 auto;
   }
+}
+
+
+/* Exam setup is an AppPage; the runner remains a focused surface. The shared
+   page frame owns the setup column while the shared header replaces the
+   legacy hero embedded in the cross-platform exam form. */
+.exam-view-body.is-setup {
+  align-items: stretch;
+  padding: 0;
+}
+.exam-view-body.is-setup > .exam-root-slot > .exam-setup-page {
+  max-width: var(--ui-page-width);
+}
+.exam-setup-page [data-exam-hero] {
+  display: none;
 }

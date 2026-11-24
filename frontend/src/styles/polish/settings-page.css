@@ -62,21 +62,19 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
 
 @media (min-width: 721px) {
   html[data-main-view='settingsPage'] #settingsPage .settings-page {
-    --settings-panel-gutter: clamp(16px, 3vw, 48px);
     box-sizing: border-box;
-    flex: none;
-    width: min(var(--ui-page-width), calc(100% - 2 * var(--settings-panel-gutter)));
-    height: min(44rem, calc(100% - 2 * var(--settings-panel-gutter)));
-    margin: auto;
+    flex: 1 1 auto;
+    width: 100%;
+    max-width: var(--ui-page-width);
+    height: 100%;
+    min-height: 0;
+    margin: 0 auto;
     overflow: hidden;
-    border: 1px solid var(--ui-account-border);
-    border-radius: var(--ui-radius-dialog);
-    background: var(--ui-account-panel);
-    box-shadow: var(--ui-shadow-dialog);
+    background: var(--ui-account-canvas);
   }
 
   html[data-main-view='settingsPage'] #settingsPage .settings-shell {
-    grid-template-columns: clamp(176px, 23%, 224px) minmax(0, 1fr);
+    grid-template-columns: clamp(184px, 23%, 224px) minmax(0, 1fr);
   }
 
   html[data-main-view='settingsPage'] #settingsPage .account-page-header {
@@ -93,7 +91,7 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
     gap: var(--ui-space-sm);
     padding: var(--ui-space-lg) var(--ui-space-md);
     border-color: var(--ui-account-border);
-    background: var(--ui-account-rail);
+    background: transparent;
   }
 
   html[data-main-view='settingsPage'] #settingsPage .settings-nav-item {
@@ -111,6 +109,7 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
   }
 
   html[data-main-view='settingsPage'] #settingsPage .settings-nav-item[aria-current='page'] {
+    background: var(--ui-bg-hover);
     color: var(--foreground);
     font-weight: var(--ui-font-weight-medium);
   }
@@ -122,7 +121,7 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
   }
 
   html[data-main-view='settingsPage'] #settingsPage .settings-body {
-    padding: var(--ui-space-xl) clamp(20px, 4vw, 40px) var(--ui-space-xxl);
+    padding: var(--ui-space-xxl) clamp(20px, 4vw, 40px) var(--ui-space-xxl);
   }
 
   html[data-main-view='settingsPage'] #settingsPage .settings-category-description {

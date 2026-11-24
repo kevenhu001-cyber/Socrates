@@ -8,7 +8,7 @@ import {
   MAX_OUTPUT_BYTES,
 } from './config.js';
 
-/* ─── Tool definition (sent to upstream on every chat turn) ─── */
+/* ─── Tool definition (exposed on relevant turns or through discovery) ─── */
 export const CODE_INTERPRETER_TOOL = {
   type: 'function',
   function: {
@@ -34,13 +34,13 @@ export const CODE_INTERPRETER_TOOL = {
       '- **Packages:** the runtime detects imports of Pyodide packages (numpy, pandas, matplotlib, scipy, sympy, …) and loads them on demand before running Python. First use may need a download. For a PyPI-only pure-Python wheel use `import micropip, asyncio; asyncio.run(micropip.install("pkg"))` — a bare `micropip.install(...)` call installs nothing. Never call `pip install` — there is no `subprocess`.\n' +
       '- **Group multi-step work in a single call.** Several independent calculations belong in one `code` body — the runner is one exec per tool call, and the per-turn tool-call budget (stated in the native-tool contract) is finite.\n\n' +
       '## When to call\n' +
-      '- Arithmetic, unit conversion, numeric verification, solving an equation, "is X > Y".\n' +
+      '- Default to answering without executing Python. Call only when substantial numerical computation or actual data/file processing is materially necessary, or the user explicitly asks to execute code.\n' +
       '- Complex computation, user-file analysis, data preprocessing, or explicitly requested CSV/PNG exports. For ordinary inline charts and function graphs, use render_intelligent_ui with the Visualization component instead.\n' +
-      '- Small data-exploration snippets (load inline data, summarize, sample-check a derivation).\n\n' +
+      '- Numerical exploration that cannot be reliably done directly. Combine related operations in one call.\n\n' +
       '## When NOT to call\n' +
       '- Illustrations of concrete subjects (animals, people, scenes, logos, icons) — those MUST go through render_intelligent_ui with a Visualization component using the svg_illustration template. SVG output here is rejected with `illustration_not_supported`. Never use code_interpreter for illustrations.\n' +
       '- Conceptual answers, code review, prose, explanations — answer those directly in markdown.\n' +
-      '- Trivial single-step arithmetic you can do in your head.\n\n' +
+      '- Ordinary arithmetic, unit conversion, routine equation solving, symbolic derivations, writing code without running it, and checks you can perform reliably in the answer.\n\n' +
       `## Limits\n` +
       `- Timeout: ${DEFAULT_TIMEOUT_MS / 1000}s default. Worker is killed if exceeded → status returns \`timeout\`.\n` +
       `- stdout / stderr capped at ${MAX_OUTPUT_BYTES / 1024} KB each per stream; exceeding it returns \`output_limit_exceeded\`.\n` +

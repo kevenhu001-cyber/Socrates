@@ -132,7 +132,9 @@ export function activateMainView(viewId: string, doc?: Document | null) {
 
   setConversationChrome(CONVERSATION_CHROME_VIEWS.has(viewId), currentDocument);
   toggleShareBtn(viewId);
-  animateSurfaceEntrance(target, previousView, WORKSPACE_PAGE_IDS.has(viewId));
+  // Keep the landing and chat composer geometry intact; reveal the content
+  // column when entering another surface. Same-session navigation is a no-op.
+  animateSurfaceEntrance(target, previousView, viewId !== 'topicSetup' && viewId !== 'chatView');
   return true;
 }
 
