@@ -154,12 +154,14 @@ export async function createStreamToolContext(
     return definition?.function?.parameters || null;
   };
 
-  /* One canonical example per callable tool, shared by the system-prompt
-   * contract and the correction text a rejected call receives, so the
-   * two can never disagree. */
+  /* Keep examples only for nontrivial structured calls. Simple calls have
+   * their native schemas, and generated placeholder examples for connector
+   * arguments are not necessarily semantically valid. On-error correction
+   * still has access to the canonical example for every tool. */
+  const exampleTools = new Set(['code_interpreter', 'patch_intelligent_ui', 'cite_sources', 'create_document']);
   const toolExamples: Record<string, string> = {};
   for (const name of toolNames) {
-    if (!name) continue;
+    if (!exampleTools.has(name)) continue;
     const example = canonicalToolExampleJson(name, schemaForTool(name));
     if (example) toolExamples[name] = example;
   }
