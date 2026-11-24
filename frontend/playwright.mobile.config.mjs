@@ -10,7 +10,9 @@ export default defineConfig({
   testMatch: ['mobile-composer-ux.spec.mjs', 'mobile-directory-ux.spec.mjs'],
   fullyParallel: false,
   workers: 1,
-  reporter: [['list']],
+  reporter: process.env.CI
+    ? [['list'], ['html', { outputFolder: 'playwright-mobile-report', open: 'never' }]]
+    : [['list']],
   timeout: 60_000,
   expect: { timeout: 10_000 },
   use: {

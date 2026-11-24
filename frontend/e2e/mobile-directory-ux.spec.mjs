@@ -17,8 +17,11 @@ async function assertFits(frame) {
 }
 
 for (const width of [320, 390, 430]) {
-  test(`touch directories fit a ${width}px viewport and library controls work`, async ({ page }) => {
+  test(`touch directories fit a ${width}px viewport and library controls work`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 680 });
+    const capture = async (name) => {
+      await testInfo.attach(name, { body: await page.screenshot(), contentType: 'image/png' });
+    };
     await mockAuthedApp(page, { lang: 'en' });
     await page.route(/\/api\/(?:v2\/)?files(?:\?|$)/, (route) =>
       route.fulfill({ json: { files, hasMore: false } }),
@@ -53,6 +56,7 @@ for (const width of [320, 390, 430]) {
     expect(second.x).toBeGreaterThan(first.x);
     expect(Math.abs(second.y - first.y)).toBeLessThan(2);
     await assertFits(library);
+    await capture('library-grid');
     await library.locator('.library-view-btn').last().tap();
     await expect(library.locator('.library-list')).toHaveClass(/view-list/);
     const more = rows.first().locator('.library-row-more-btn');
@@ -61,19 +65,23 @@ for (const width of [320, 390, 430]) {
     const fileMenu = page.locator('.library-row-menu[role="menu"]');
     await expect(fileMenu).toBeInViewport();
     await expect(fileMenu.getByRole('menuitem')).toHaveCount(3);
+    await capture('library-menu');
     await page.keyboard.press('Escape');
     await expect(fileMenu).toBeHidden();
     await expect(more).toBeFocused();
 
     const projects = await open('#navProjects', '.projects-directory');
     await expect(projects.locator('.ui-page-search input')).toHaveCSS('font-size', '16px');
+    await capture('projects');
     const plugins = await open('#navPlugins', '.plugin-directory');
     await expect(plugins.locator('.plugin-directory-search input')).toHaveCSS('font-size', '16px');
+    await capture('plugins');
     const scheduled = await open('#navScheduled', '.scheduled-directory');
     await expect(scheduled.locator('.ui-page-search input')).toHaveCSS('font-size', '16px');
     const task = scheduled.locator('.task-row').first();
     await expect(task).toBeVisible();
     await expect(task.locator('.task-inline-action').first()).toBeHidden();
+    await capture('scheduled');
     await task.locator('.task-more-btn').tap();
     const taskMenu = page.locator('.task-action-menu[role="menu"]');
     await expect(taskMenu).toBeInViewport();

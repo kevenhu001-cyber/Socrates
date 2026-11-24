@@ -902,6 +902,10 @@ body.workspace-active #appShell .ui-page-card.project-card {
     background: transparent;
   }
 
+  #appShell .project-card .project-icon {
+    background: transparent;
+  }
+
   #appShell .project-card .project-main {
     min-height: var(--ui-control-touch);
   }

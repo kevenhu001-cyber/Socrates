@@ -22,7 +22,7 @@ function ProjectRow({
 }>) {
   const color = /^#[0-9a-f]{3,8}$/i.test(project.color || '')
     ? project.color!
-    : 'hsl(var(--accent-000))';
+    : 'var(--ui-text-secondary)';
   return (
     <div className="ui-page-card project-card project-row" key={project.id}>
       <Button

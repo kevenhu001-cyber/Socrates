@@ -232,8 +232,7 @@ body.composer-tools-open.composer-tools-open::after {
 .confirm-box,
 .sidebar-more-popover,
 .anchored-menu,
-.msg-action-menu,
-.library-row-menu {
+.msg-action-menu {
   animation: ui-overlay-in var(--ui-duration-overlay) var(--ui-ease-out) both;
 }
 
@@ -325,9 +324,6 @@ body.composer-tools-open.composer-tools-open::after {
 }
 .anchored-menu[data-align='start'][data-placement='above'] {
   transform-origin: bottom left;
-}
-#appShell .library-row-menu {
-  transform-origin: top right;
 }
 
 /* The scrim fades with its card. `.cmd-k-overlay` was the one scrim with no

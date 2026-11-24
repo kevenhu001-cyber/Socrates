@@ -61,67 +61,6 @@
 /* ── Directory rows — Library/Projects/Scheduled hierarchy (moved from restore/fixes.css) ── */
 /* Directory rows share the same quiet hierarchy across Library, Projects,
    Plugins and Scheduled. Keep controls visible on touch devices. */
-#appShell .library-row-menu-wrap {
-  position: relative;
-}
-#appShell .library-row-menu-trigger {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  min-width: 34px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--muted-foreground);
-}
-#appShell .library-row-menu-trigger:hover,
-#appShell .library-row-menu-trigger[aria-expanded='true'] {
-  background: var(--accent);
-  color: var(--foreground);
-}
-#appShell .library-row-menu {
-  position: absolute;
-  right: 0;
-  top: 100%;
-  z-index: var(--ui-z-menu);
-  display: grid;
-  min-width: 126px;
-  padding: 5px;
-  border: 1px solid var(--border);
-  border-radius: var(--ui-radius-popover);
-  background: var(--ui-bg-surface);
-  box-shadow: var(--ui-shadow-menu);
-}
-#appShell .library-row-menu button {
-  padding: 8px 10px;
-  border: 0;
-  border-radius: var(--ui-radius-sm);
-  background: transparent;
-  color: var(--foreground);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-#appShell .library-row-menu button:hover {
-  background: var(--accent);
-}
-/* The Download entry is an <a download> so the bytes save directly —
- * styled exactly like its button siblings. */
-#appShell .library-row-menu .library-row-menu-link {
-  display: block;
-  padding: 8px 10px;
-  border-radius: var(--ui-radius-sm);
-  color: var(--foreground);
-  font: inherit;
-  text-align: left;
-  text-decoration: none;
-  cursor: pointer;
-}
-#appShell .library-row-menu .library-row-menu-link:hover {
-  background: var(--accent);
-}
 #appShell .library-row .library-mobile-meta {
   color: var(--ui-text-tertiary);
 }
