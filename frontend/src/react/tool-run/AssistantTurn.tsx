@@ -7,6 +7,7 @@ import { TurnActivitySurface } from './TurnActivitySurface';
 import { deriveTurnPresentationState } from '../../legacy/turnActivityModel';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Chevron } from '@socrates/ui/turn';
+import { Button } from '../ui/shadcn/button';
 import { tf } from '../../legacy/toolPresentationModel.ts';
 import {
   buildTurnLayout,
@@ -174,8 +175,10 @@ function ToolActivityBurst({
   return (
     <div className="tool-activity-burst">
       {canFold ? (
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="surface"
           className="tool-activity-burst-toggle"
           aria-expanded={open}
           aria-controls={bodyId}
@@ -183,7 +186,7 @@ function ToolActivityBurst({
         >
           {tf('think.summaryToolsTitle', 'Used {n} tools', { n: members.length })}
           <Chevron open={open} size={8} />
-        </button>
+        </Button>
       ) : live && completedCount >= 2 ? (
         <div className="tool-activity-burst-caption">
           {tf('think.summaryToolsTitle', 'Used {n} tools', { n: completedCount })}
