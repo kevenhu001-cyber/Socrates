@@ -12,7 +12,7 @@ export function normalizePromptCacheUsage(raw: unknown): {
 } | null {
   if (!raw || typeof raw !== 'object') return null;
   const u = raw as Record<string, unknown>;
-  const details = u.prompt_tokens_details;
+  const details = u.prompt_tokens_details ?? u.input_tokens_details;
   const openAiCached = details && typeof details === 'object'
     ? count((details as Record<string, unknown>).cached_tokens)
     : null;
@@ -25,6 +25,7 @@ export function normalizePromptCacheUsage(raw: unknown): {
   const input =
     count(u.prompt_tokens) ??
     count(u.promptTokenCount) ??
+    (openAiCached !== null ? directInput : null) ??
     (hit !== null && miss !== null ? hit + miss : null) ??
     (directRead !== null && directInput !== null
       ? directInput + directRead + (directWrite ?? 0)
