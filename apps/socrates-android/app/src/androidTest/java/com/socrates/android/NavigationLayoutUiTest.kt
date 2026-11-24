@@ -177,6 +177,19 @@ class NavigationLayoutUiTest {
         compose.onNodeWithContentDescription("对话菜单").assertIsDisplayed()
     }
 
+    @Test fun settingsNavigationUsesOneAccessibleFullWidthAction() {
+        var opened = 0
+        compose.setContent {
+            SocratesTheme {
+                Box(Modifier.requiredSize(320.dp, 120.dp)) {
+                    NativeSettingsRow("连接设置", ReferenceGlyph.Settings, onClick = { opened++ })
+                }
+            }
+        }
+        compose.onNodeWithText("连接设置").assertIsDisplayed().assertHasClickAction().performClick()
+        compose.runOnIdle { assertEquals(1, opened) }
+    }
+
     @Composable
     private fun Sidebar(ui: ChatUiState = ChatUiState(), onNew: () -> Unit = {}, onProfile: () -> Unit = {}) {
         NativeSidebar(ui, onNew, {}, onProfile, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})
