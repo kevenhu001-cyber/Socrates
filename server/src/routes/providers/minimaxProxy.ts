@@ -12,9 +12,9 @@ import { requireAuth } from '../../middleware/auth.js';
 import { chatLimiter } from '../../middleware/rateLimit.js';
 import { sanitizeExtraBody } from '../../lib/sanitize.js';
 import { trackSseConnection, startSseKeepalive } from '../../lib/sse.js';
-import { getBeagleSystemPrompt } from '../../lib/prompts.js';
-import { appendAssistantInstructions, prependTeacherModePrompt } from '../chat/prepare/prompts.js';
-import { appendMemoryContext } from '../chat/prepare/context.js';
+import { getBeagleSystemPrompt, getTeacherModePrompt } from '../../lib/prompts.js';
+import { resolveAssistantInstructions, TEACHER_MODE_MARKER } from '../chat/prepare/prompts.js';
+import { resolveMemoryContext, MEMORY_CONTEXT_MARKER } from '../chat/prepare/context.js';
 import {
   enforceServerSystemBoundary,
   classifyClientSystemMessages,
@@ -32,6 +32,7 @@ import {
   insertProviderIdentity,
   insertResponseTypography,
   refreshServerPrompt,
+  refreshSnapshotBlock,
 } from '../../lib/chatPolicy.js';
 import { buildSseErrorFrame } from '../../lib/sseErrorFrame.js';
 
@@ -96,24 +97,16 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
      * to their own upstream on every subsequent turn. The snapshot keeps only
      * provider-independent session state; the identity is appended per
      * request, after the snapshot has been resolved. */
+    const memoryPromise = resolveMemoryContext(req.userId ?? undefined, isUuid(req.body.projectId) ? req.body.projectId : undefined);
+    const teacherPromise = mode === 'tutor' ? getTeacherModePrompt() : Promise.resolve(null);
+    const assistantPromise = resolveAssistantInstructions(assistantId, sessionId, req.userId ?? undefined);
+    for (const p of [memoryPromise, teacherPromise, assistantPromise]) p.catch(() => {});
     const storedPrompt = await resolveSessionPromptOrAssemble(
       req.userId ?? undefined,
       sessionId,
       async () => {
         let initialized = enforceServerSystemBoundary(context.initialization);
         initialized = injectUserContext(initialized, req.user, { sessionSnapshot: !!sessionId });
-        if (mode === 'tutor') initialized = await prependTeacherModePrompt(initialized);
-        initialized = await appendAssistantInstructions(
-          initialized,
-          assistantId,
-          sessionId,
-          req.userId ?? undefined,
-        );
-        initialized = await appendMemoryContext(
-          initialized,
-          req.userId ?? undefined,
-          isUuid(req.body.projectId) ? req.body.projectId : undefined,
-        );
         initialized = appendFinalOutputConstraints(initialized);
         return initialized[0].content as string;
       },
@@ -129,10 +122,13 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
     const clientBlocks = hasClientSystemPrefix(context.initialization)
       ? renderClientBlocks(classifyClientSystemMessages(context.initialization))
       : undefined;
+    const [memoryBlock, teacherPrompt, assistantBlock] = await Promise.all([memoryPromise, teacherPromise, assistantPromise]);
+    let refreshed = refreshServerPrompt(storedPrompt, { clientBlocks, reasoningEffort: reasoning_effort });
+    refreshed = refreshSnapshotBlock(refreshed, TEACHER_MODE_MARKER, teacherPrompt);
+    refreshed = refreshSnapshotBlock(refreshed, '[User-selected assistant]', assistantBlock?.prompt ?? null);
+    refreshed = refreshSnapshotBlock(refreshed, MEMORY_CONTEXT_MARKER, memoryBlock?.prompt ?? null);
     const systemPrompt = insertProviderIdentity(
-      insertResponseTypography(
-        refreshServerPrompt(storedPrompt, { clientBlocks, reasoningEffort: reasoning_effort }),
-      ),
+      insertResponseTypography(refreshed),
       await getBeagleSystemPrompt(),
     );
     let messages = transformMessagesForModel(
