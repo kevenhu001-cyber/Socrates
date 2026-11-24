@@ -27,7 +27,7 @@ export function LoginPage({ onReady }: { onReady: () => void }) {
 
   return (
     <AuthCard className="admin-login">
-      <h1 className="admin-login-title" data-page-title>Admin console</h1>
+      <h1 id="admin-console-title" className="admin-login-title" data-page-title>Admin console</h1>
       <p className="admin-hint">
         Enter the operator password to manage the system model and embedding provider.
       </p>
