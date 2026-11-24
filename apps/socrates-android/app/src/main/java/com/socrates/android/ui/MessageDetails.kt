@@ -28,17 +28,38 @@ import java.io.ByteArrayInputStream
 import java.io.File
 import java.nio.charset.StandardCharsets
 
+/** Wire progress events are newer than a tool's initial status. Approval and
+ * failure remain explicit; missing outcomes must not look like active work. */
+internal fun toolActivityPhase(call: JSONObject): String {
+    val approval = call.optJSONObject("approval")?.optString("status")
+    val progress = call.optString("progressPhase").lowercase()
+    val status = call.optString("status").lowercase()
+    if (approval == "pending" || progress == "awaiting_approval" || status == "awaiting_approval") return "awaiting_approval"
+    if (call.optBoolean("isError") || progress in setOf("failed", "error", "timed_out") || status in setOf("failed", "error", "timed_out")) return "failed"
+    if (progress in setOf("stopped", "cancelled", "canceled") || status in setOf("stopped", "cancelled", "canceled")) return "stopped"
+    if (progress in setOf("completed", "done", "succeeded", "success") || status in setOf("completed", "done", "succeeded", "success")) return "completed"
+    if (progress in setOf("running", "started", "pending") || status in setOf("running", "started", "pending")) return "running"
+    return "unknown"
+}
+
+internal fun completedToolCount(wire: JSONObject?): Int {
+    val calls = wire?.optJSONArray("toolCalls") ?: return 0
+    return (0 until calls.length()).count { index ->
+        calls.optJSONObject(index)?.let { toolActivityPhase(it) == "completed" } == true
+    }
+}
+
 @Composable
 fun ToolActivityCard(call: JSONObject) {
     var expanded by remember(call.optString("id")) { mutableStateOf(false) }
-    val phase = call.optString("status").ifBlank { call.optString("progressPhase") }.lowercase()
-    val failed = call.optBoolean("isError") || phase in setOf("failed", "error", "timed_out")
+    val phase = toolActivityPhase(call)
+    val failed = phase in setOf("failed", "error", "timed_out")
     val state = when {
         failed -> "失败"
-        phase in setOf("completed", "done", "succeeded", "success") -> ""
+        phase == "completed" -> ""
         phase in setOf("awaiting", "awaiting_approval") -> "等待确认"
         phase in setOf("stopped", "cancelled", "canceled") -> "已停止"
-        phase in setOf("running", "started", "pending") -> "进行中"
+        phase == "running" -> "进行中"
         else -> "状态未知"
     }
     val name = call.optString("name")
