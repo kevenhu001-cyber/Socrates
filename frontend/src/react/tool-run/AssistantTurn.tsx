@@ -13,6 +13,7 @@ import {
   groupOutputCalls,
   stripLegacyToolHtml,
   toolRunStateOf,
+  toolRunView,
   type ToolCallRecord,
   type TurnSegment,
 } from './toolRunModel.js';
@@ -165,6 +166,7 @@ function ToolActivityBurst({
       (call) =>
         toolRunStateOf(call) === 'done' &&
         !call.approval &&
+        !toolRunView(call).agentRun &&
         call.name !== 'workspace_agent' &&
         call.name !== 'render_intelligent_ui',
     );
