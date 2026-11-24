@@ -259,12 +259,13 @@ export async function compressSessionMessages(
   /* return the memoized summary for this exact head
      instead of paying for the LLM again. The tail is rebuilt below from
      the current input, so the caller still gets fresh recent turns. */
+  const providerIdentity = [provider.id, provider.url, provider.model];
   const keyFor = (length: number, lines: string[]) => createHash('sha256')
-    .update(JSON.stringify(['summary-v2', opts.cacheScope ?? null, provider.id, provider.url, provider.model, length, lines]))
+    .update(JSON.stringify(['summary-v2', opts.cacheScope ?? null, ...providerIdentity, length, lines]))
     .digest('hex');
   const digest = keyFor(head.length, headLines);
   // Reuse an exact older checkpoint rather than resending the entire head.
-  // Editing an old message changes the digest, so stale summaries cannot match.
+  // Changes to the summarized transcript invalidate the corresponding digest.
   let checkpoint = '';
   let delta = headLines;
   if (opts.cacheScope) {
