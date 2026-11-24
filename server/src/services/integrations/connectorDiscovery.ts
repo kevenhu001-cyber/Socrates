@@ -19,7 +19,7 @@ export const SEARCH_CONNECTORS_TOOL = {
   function: {
     name: 'search_connectors',
     description:
-      "Search the user's connected apps for a tool that can answer the request. Returns matching tool names, the connected service, and a short description. Use this instead of guessing a connector tool name. After choosing a result, call get_connector_spec with the exact tool name to read its arguments; that tool becomes callable on the next step.",
+      "Search available connected apps and deferred native capabilities (charts, computation, workspace, images, documents, papers). Returns matching tool names and a short description. Use this instead of guessing an unavailable tool. After choosing a result, call get_connector_spec with the exact tool name to read its arguments; that tool becomes callable on the next step.",
     parameters: {
       type: 'object',
       additionalProperties: false,
@@ -48,7 +48,7 @@ export const GET_CONNECTOR_SPEC_TOOL = {
   function: {
     name: 'get_connector_spec',
     description:
-      'Read the exact argument schema and usage guidance for one connector tool returned by search_connectors. Call this before the first call to that tool. The tool becomes callable on the next step.',
+      'Read the exact argument schema and usage guidance for one available tool returned by search_connectors. Call this before the first call to that tool. The tool becomes callable on the next step.',
     parameters: {
       type: 'object',
       additionalProperties: false,
