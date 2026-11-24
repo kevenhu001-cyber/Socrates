@@ -124,16 +124,29 @@
   background: color-mix(in srgb, var(--destructive) 12%, transparent);
   color: var(--destructive);
 }
+/* A note is a soft block, not a margin rule. Manus never draws a rail beside
+   a note: the surface stays the same quiet grey for every tone, and one small
+   glyph carries the meaning. That keeps a warning from shouting in colour
+   while the prose around it stays calm. */
 .intui-callout {
-  --intui-tone: var(--ui-border-strong);
+  --intui-tone: var(--ui-text-tertiary);
   display: grid;
   gap: var(--ui-space-xs);
-  padding: var(--ui-space-md);
+  padding: var(--ui-space-md) var(--ui-space-lg);
   border: 0;
-  border-inline-start: 2px solid var(--intui-tone);
   border-radius: var(--ui-radius-md);
-  background: color-mix(in srgb, var(--intui-tone) 6%, transparent);
+  background: var(--secondary);
   color: var(--ui-text-secondary);
+}
+.intui-callout-title {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ui-space-xs);
+}
+.intui-callout-title > svg {
+  flex: none;
+  margin-block-start: 3px;
+  color: var(--intui-tone);
 }
 .intui-callout[data-tone='info'] {
   --intui-tone: var(--ui-info);
@@ -148,9 +161,7 @@
   --intui-tone: var(--destructive);
 }
 .intui-callout[data-tone='neutral'] {
-  border-color: transparent;
-  border-inline-start-color: var(--ui-border-strong);
-  background: var(--ui-bg-page);
+  --intui-tone: var(--ui-text-tertiary);
 }
 .msg.assistant
   .msg-body.is-declarative

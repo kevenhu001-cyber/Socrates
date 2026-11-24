@@ -1,3 +1,4 @@
+import { CircleCheck, Info, OctagonAlert, TriangleAlert } from 'lucide-react';
 import { MathText } from '../rn/useInlineMath';
 import { LazyLearningNode } from './LazyLearningNode';
 import { NativeVisualization } from './NativeVisualization';
@@ -252,14 +253,24 @@ function UiProgress({ node, context }: { node: IntelligentUiNode; context: Rende
   );
 }
 
+/* The tone is carried by one small glyph, the way Manus marks a note: the
+   block itself stays a quiet fill and the heading keeps the ink colour. */
+const CALLOUT_ICONS = {
+  info: Info,
+  success: CircleCheck,
+  warning: TriangleAlert,
+  danger: OctagonAlert,
+} as const;
 function UiCallout({ node, context }: { node: IntelligentUiNode; context: RenderContext }) {
   const title = asProse(resolve(node.title, context));
   const text = asProse(resolve(node.text, context));
   const tone = normalizeIntelligentUiTone(resolve(node.tone, context));
+  const ToneIcon = tone === 'neutral' ? null : CALLOUT_ICONS[tone];
   return (
     <aside className="intui-callout" data-intui-id={node.id} data-tone={tone} role="note">
       {title ? (
         <div className="intui-callout-title">
+          {ToneIcon ? <ToneIcon aria-hidden="true" size={14} strokeWidth={2} /> : null}
           <MathText text={title} />
         </div>
       ) : null}
