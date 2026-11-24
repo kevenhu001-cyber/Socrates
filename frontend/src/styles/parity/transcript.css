@@ -24,9 +24,9 @@
     width: 100%;
     max-width: none;
     margin-inline: 0;
-    padding: 28px max(var(--ui-content-gutter), calc((100% - var(--ui-content-chat)) / 2)) 24px;
+    padding: 28px max(var(--ui-content-gutter), calc((100% - var(--ui-content-chat)) / 2)) 84px;
     gap: 0;
-    scroll-padding-block: 24px;
+    scroll-padding-block: 24px 84px;
     font-family: var(--font-sans);
     --ui-scroll-fade-top: 0px;
     --ui-scroll-fade-bottom: 0px;
@@ -341,7 +341,7 @@
   }
 }
 
-/* Phones clip horizontal overflow on the transcript (#msgList is
+@media (max-width: 768px) {\n  #appShell #msgList {\n    /* Keep the last message above the composited bottom fade so the mask\n       softens the hand-off to the composer without hiding the final lines. */\n    padding-bottom: max(72px, env(safe-area-inset-bottom));\n    scroll-padding-bottom: max(72px, env(safe-area-inset-bottom));\n  }\n}\n\n/* Phones clip horizontal overflow on the transcript (#msgList is
    `overflow-x: hidden`), so legacy un-wrapped tables need a fallback scroll rule.
    Unified `.ds-table-wrap` already manages its own scroll container on all screen widths. */
 @media (max-width: 768px) {
