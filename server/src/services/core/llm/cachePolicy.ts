@@ -51,9 +51,9 @@ export function promptCacheFields(opts: ChatCompletionRequestOptions): Record<st
     if (version && (+version[1] > 5 || (+version[1] === 5 && +(version[2] || 0) >= 6))) return {};
     return { prompt_cache_key: key };
   }
-  if (provider === 'ark') return { prompt_cache_key: key };
+  if (provider === 'ark' || provider === 'moonshot') return { prompt_cache_key: key };
   // DeepSeek and supported Gemini/DashScope models use implicit caching.
   // Direct Anthropic OpenAI compatibility does not expose native caching.
-  // MiniMax, Moonshot, Zhipu and unknown gateways: no speculative parameters.
+  // MiniMax, Zhipu and unknown gateways: no speculative parameters.
   return {};
 }
