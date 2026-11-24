@@ -13,6 +13,7 @@
 .ui-page-frame {
   box-sizing: border-box;
   align-self: flex-start;
+  min-width: 0;
   width: 100%;
   max-width: var(--ui-page-width);
   margin-inline: auto;
@@ -63,6 +64,7 @@
   display: flex;
   flex: 0 1 auto;
   flex-wrap: wrap;
+  min-width: 0;
   justify-content: flex-end;
   align-items: center;
   gap: var(--ui-space-sm);
@@ -73,6 +75,7 @@
 .ui-page-toolbar {
   display: flex;
   flex-wrap: wrap;
+  min-width: 0;
   align-items: center;
   gap: var(--ui-space-sm);
   margin: 0 0 var(--ui-space-lg);
