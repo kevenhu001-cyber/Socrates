@@ -43,7 +43,15 @@ function SettingsIdentity({ label, onOpen }: { label: SettingsLabel; onOpen: () 
   const user = useUserInfo();
   const free = user.tier === 'diophantus' || user.tier === 'free';
   return (
-    <Button type="button" variant="ghost" size="surface" className="settings-index-identity" onClick={onOpen}>
+    <Button
+      type="button"
+      variant="ghost"
+      size="surface"
+      className="settings-index-identity"
+      data-section="account"
+      aria-label={label('账户', 'Account')}
+      onClick={onOpen}
+    >
       <span className="settings-identity-avatar"><UserRoundIcon aria-hidden /></span>
       <span className="settings-identity-copy">
         <span>{user.displayName || user.email || label('访客', 'Guest')}</span>
