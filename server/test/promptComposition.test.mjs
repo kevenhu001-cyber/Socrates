@@ -14,7 +14,7 @@ import {
 import { CHAT_SYSTEM_PROMPT, CHAT_CONCISE_PROMPT } from '../../frontend/src/chat/systemPrompts.ts';
 import { SOCRATIC_SYSTEM_PROMPT } from '../../frontend/src/prompts/socratic.ts';
 import * as webTutor from '../../frontend/src/chat/socraticDirectives.ts';
-import { splitPromptContext } from '../src/lib/chatPromptContext.js';
+import { splitPromptContext, STYLE_REMINDER } from '../src/lib/chatPromptContext.js';
 
 test('production chat and tutor instructions agree on native learning output and response defaults', async () => {
   for (const client of [CHAT_SYSTEM_PROMPT, CHAT_CONCISE_PROMPT, SOCRATIC_SYSTEM_PROMPT]) {
@@ -55,4 +55,18 @@ test('every learning mode composes with teacher policy without reintroducing XML
     assert.match(prompt, /tool is unavailable/, mode);
     assert.match(prompt, /latest explicit request/, mode);
   }
+});
+
+test('turn-level reminder follows the shared defaults and preserves explicit output requests', () => {
+  assert.match(STYLE_REMINDER, /user's explicit task/);
+  assert.match(STYLE_REMINDER, /Preserve structured output contracts/);
+  assert.doesNotMatch(STYLE_REMINDER, /do not use a colon|override any conflicting client style hint/);
+});
+
+test('current tutor role keeps the legacy split boundary and separates changing lesson state', () => {
+  const input = [{ role: 'system', content: '[Assistant mode instructions]\n' + SOCRATIC_SYSTEM_PROMPT.replace('{context}', 'Stage: exercise') }];
+  const split = splitPromptContext(input, 'tutor');
+  assert.equal(split.initialization.length, 1);
+  assert.doesNotMatch(split.initialization[0].content, /Stage: exercise/);
+  assert.match(split.turnInstructions[0], /Stage: exercise/);
 });
