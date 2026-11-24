@@ -85,7 +85,7 @@ const FIXTURE_CALLS = [
    scripts run later, so calling this again on the same page re-themes it. */
 async function loadFixtureSession(
   page,
-  { theme = 'dark', html = null, toolCalls = FIXTURE_CALLS, language = 'en' } = {},
+  { theme = 'dark', html = null, toolCalls = FIXTURE_CALLS, language = 'en', expandBursts = true } = {},
 ) {
   await mockAuthedApp(page);
   await page.addInitScript(
@@ -144,6 +144,11 @@ async function loadFixtureSession(
   });
   await page.evaluate((id) => window.loadSession(id), SESSION_ID);
   const body = page.locator('#msgList .msg.assistant').last().locator('.msg-body');
+  if (expandBursts && toolCalls.length) {
+    await expect(body.locator('.rn-tool-row').first()).toBeAttached();
+    const collapsed = body.locator('.tool-activity-burst-toggle[aria-expanded="false"]');
+    while (await collapsed.count()) await collapsed.first().click();
+  }
   return body;
 }
 
@@ -154,7 +159,7 @@ async function openDetail(page, body, id) {
   return detail;
 }
 
-test('every call is immediately visible in call order', async ({ page }) => {
+test('expanded calls are visible in call order', async ({ page }) => {
   const body = await loadFixtureSession(page);
   await expect(body.locator('.rn-tool-row')).toHaveCount(6);
   expect(
@@ -677,11 +682,9 @@ test('a pending approval stays visible in the transcript with pill decisions', a
 });
 
 
-test('completed activity burst can be folded without hiding failed or unknown rows', async ({ page }) => {
-  const body = await loadFixtureSession(page);
+test('completed activity burst starts collapsed without hiding failed or unknown rows', async ({ page }) => {
+  const body = await loadFixtureSession(page, { expandBursts: false });
   const burst = body.locator('.tool-activity-burst-toggle').last();
-  await expect(burst).toHaveAttribute('aria-expanded', 'true');
-  await burst.click();
   await expect(burst).toHaveAttribute('aria-expanded', 'false');
   await expect(body.getByTestId('tool-row-w1')).toBeHidden();
   await expect(body.getByTestId('tool-row-f1')).toBeVisible();
