@@ -23,9 +23,9 @@ html:not([data-main-view='settingsPage']) #appShell .main-page .ui-page-frame,
 #appShell .ui-page-header {
   align-items: flex-start;
   gap: var(--ui-space-lg);
-  margin-bottom: var(--ui-space-lg);
+  margin-bottom: var(--ui-space-xl);
   padding-bottom: var(--ui-space-sm);
-  border-bottom: 1px solid var(--ui-border-subtle);
+  border-bottom: 0;
 }
 
 #appShell .ui-page-heading h1 {
@@ -140,8 +140,8 @@ html:not([data-main-view='settingsPage']) #appShell .main-page .ui-page-frame,
   min-width: 0;
   overflow: hidden;
   border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-2xl);
-  background: var(--ui-bg-raised);
+  border-radius: var(--ui-radius-lg);
+  background: transparent;
 }
 
 #appShell .ui-collection-head {
@@ -152,7 +152,7 @@ html:not([data-main-view='settingsPage']) #appShell .main-page .ui-page-frame,
   min-height: var(--ui-control-md);
   padding: 0 var(--ui-space-lg);
   border-bottom: 1px solid var(--ui-border-subtle);
-  background: color-mix(in srgb, var(--ui-bg-raised), var(--ui-bg-page) 36%);
+  background: transparent;
   color: var(--ui-text-tertiary);
   font-size: var(--ui-font-size-xs);
   font-weight: var(--ui-font-weight-medium);

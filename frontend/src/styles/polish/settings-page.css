@@ -360,7 +360,7 @@ html[data-main-view='settingsPage'] #settingsPage .settings-choice {
     overscroll-behavior-y: contain;
   }
   .settings-page[data-mobile-index='false'] .settings-body {
-    background: var(--ui-account-panel);
+    background: var(--ui-account-canvas);
   }
   .settings-page .settings-search.hidden {
     display: none;
@@ -375,23 +375,52 @@ html[data-main-view='settingsPage'] #settingsPage .settings-choice {
   .settings-index-group {
     border: 0;
     border-radius: var(--ui-radius-lg);
-    background: var(--ui-account-panel);
+    background: transparent;
   }
   .settings-index-identity {
     display: flex;
     flex: none;
     align-items: center;
-    justify-content: space-between;
-    min-height: var(--ui-control-touch);
-    gap: var(--ui-space-sm);
-    padding: var(--ui-space-sm) var(--ui-space-lg);
+    justify-content: flex-start;
+    width: 100%;
+    min-height: 72px;
+    gap: var(--ui-space-md);
+    padding: var(--ui-space-md);
     font-size: var(--ui-font-size-md);
     font-weight: var(--ui-font-weight-medium);
+    text-align: start;
   }
-  .settings-index-identity > :first-child {
+  .settings-identity-avatar {
+    display: grid;
+    place-items: center;
+    flex: 0 0 44px;
+    height: 44px;
+    border-radius: var(--ui-radius-pill);
+    background: var(--ui-bg-raised);
+    color: var(--ui-text-primary);
+  }
+  .settings-identity-copy {
+    display: grid;
+    flex: 1;
+    min-width: 0;
+    gap: var(--ui-space-xxs);
+  }
+  .settings-identity-copy > span {
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+  }
+  .settings-identity-copy > span + span,
+  .settings-index-group-label {
+    color: var(--ui-text-secondary);
+    font-size: var(--ui-font-size-xs);
+    font-weight: var(--ui-font-weight-regular);
+  }
+  .settings-index-group-label {
+    margin: var(--ui-space-md) var(--ui-space-md) var(--ui-space-xs);
+  }
+  .settings-page .settings-index-group .settings-category-description {
+    display: none;
   }
   .settings-page .settings-nav-item {
     min-height: calc(var(--ui-control-touch) + 8px);
@@ -405,9 +434,7 @@ html[data-main-view='settingsPage'] #settingsPage .settings-choice {
     border-top-right-radius: 0;
   }
   .settings-page .settings-nav-item:not(:last-child) {
-    border-bottom: 1px solid var(--ui-account-border);
-    border-bottom-left-radius: 0;
-    border-bottom-right-radius: 0;
+    border-bottom: 0;
   }
   .settings-page .settings-nav-item:hover {
     background: var(--ui-fill-hover);

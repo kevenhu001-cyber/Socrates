@@ -53,11 +53,11 @@ export function isSticky(list: HTMLElement): boolean {
   return sticky.list === list && performance.now() < sticky.until;
 }
 
-const TOP_FADE_SIZE_PX = 56;
-const BOTTOM_FADE_SIZE_PX = 72;
+const TOP_FADE_SIZE_PX = 36;
+const BOTTOM_FADE_SIZE_PX = 48;
 /* The final message meets the composer, so the mask narrows once the reader
  * reaches the end instead of washing out the tail of the answer. */
-const BOTTOM_END_FADE_SIZE_PX = 56;
+const BOTTOM_END_FADE_SIZE_PX = 24;
 /* Reach the full top fade by roughly the height of one message row, so the
  * text leaving the viewport softens as it passes the edge instead of waiting
  * for a deep scroll before the mask appears. */
@@ -69,18 +69,20 @@ export function updateScrollFadeMask(list: HTMLElement | null): void {
   // Ramp the mask over the distance actually clipped, rather than jumping
   // from zero to the full fade on the first scroll pixel. Quantization keeps
   // style updates bounded during touch scrolling.
+  const overflow = scrollHeight > clientHeight + 1;
+  // Avoid masking most of the transcript when the keyboard leaves a short viewport.
+  const limit = Math.max(0, Math.floor(clientHeight / 4));
   const edgeFade = (distance: number) =>
     `${Math.round(
-      Math.min(TOP_FADE_SIZE_PX, (Math.max(0, distance) / TOP_FADE_RAMP_PX) * TOP_FADE_SIZE_PX),
+      Math.min(limit, TOP_FADE_SIZE_PX, (Math.max(0, distance) / TOP_FADE_RAMP_PX) * TOP_FADE_SIZE_PX),
     )}px`;
-  const topVal = edgeFade(scrollTop);
-  const overflow = scrollHeight > clientHeight + 1;
+  const topVal = overflow ? edgeFade(scrollTop) : '0px';
   const atEnd = overflow && scrollHeight - scrollTop - clientHeight <= 1;
   // Keep the composer edge soft even when the reader reaches the final
   // message. The old clipped-distance rule removed the bottom fade at the
   // exact point where the last response met the composer.
   const bottomFadePx = atEnd ? BOTTOM_END_FADE_SIZE_PX : BOTTOM_FADE_SIZE_PX;
-  const bottomVal = overflow ? `${bottomFadePx}px` : '0px';
+  const bottomVal = overflow ? `${Math.min(limit, bottomFadePx)}px` : '0px';
   if (list.style.getPropertyValue('--ui-scroll-fade-top') !== topVal) {
     list.style.setProperty('--ui-scroll-fade-top', topVal);
   }

@@ -37,7 +37,7 @@ for (const [label, viewport] of Object.entries(WORKBENCH_VIEWPORTS)) {
     });
     expect(initial.scrollable).toBe(true);
     expect(initial.top).toBe('0px');
-    expect(initial.bottom).toBe('72px');
+    expect(initial.bottom).toBe('48px');
     expect(initial.active).toBe('true');
     expect(initial.mask).toContain('linear-gradient');
 
@@ -54,14 +54,14 @@ for (const [label, viewport] of Object.entries(WORKBENCH_VIEWPORTS)) {
           .locator('#msgList')
           .evaluate((list) => list.style.getPropertyValue('--ui-scroll-fade-top')),
       )
-      .toBe('56px');
+      .toBe('36px');
     await expect
       .poll(() =>
         page
           .locator('#msgList')
           .evaluate((list) => list.style.getPropertyValue('--ui-scroll-fade-bottom')),
       )
-      .toBe('72px');
+      .toBe('48px');
 
     await page.locator('#msgList').evaluate((list) => {
       list.scrollTop = list.scrollHeight;
@@ -73,7 +73,7 @@ for (const [label, viewport] of Object.entries(WORKBENCH_VIEWPORTS)) {
           .locator('#msgList')
           .evaluate((list) => list.style.getPropertyValue('--ui-scroll-fade-bottom')),
       )
-      .toBe('56px');
+      .toBe('24px');
     await expect
       .poll(() => page.evaluate(() => document.body.dataset.transcriptScrolled))
       .toBe('true');

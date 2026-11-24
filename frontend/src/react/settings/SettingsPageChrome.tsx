@@ -17,7 +17,6 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from 'cn';
-import { Badge } from '../ui/shadcn/badge';
 import { useUserInfo } from '../sidebar-chrome/sidebarChrome.store';
 import { settingsPreferenceActions, useSettingsPreferencesStore } from './settings.store';
 import type { SaveSettingsPreference, SettingsLabel, SettingsSection } from './settings.types';
@@ -35,19 +34,23 @@ const categoryIcons: Record<SettingsSection, LucideIcon> = {
 };
 
 const mobileGroups = [
-  ['account', 'data'],
-  ['models', 'apps', 'personalization', 'notifications'],
-  ['general', 'display'],
+  ['general', 'display', 'personalization', 'notifications'],
+  ['models', 'apps'],
+  ['data', 'account'],
 ] as const;
 
-function SettingsIdentity({ label }: { label: SettingsLabel }) {
+function SettingsIdentity({ label, onOpen }: { label: SettingsLabel; onOpen: () => void }) {
   const user = useUserInfo();
   const free = user.tier === 'diophantus' || user.tier === 'free';
   return (
-    <div className="settings-index-identity">
-      <span>{user.email || user.displayName || label('访客', 'Guest')}</span>
-      <Badge variant="secondary">{free ? label('免费版', 'Free') : user.tierLabel}</Badge>
-    </div>
+    <Button type="button" variant="ghost" size="surface" className="settings-index-identity" onClick={onOpen}>
+      <span className="settings-identity-avatar"><UserRoundIcon aria-hidden /></span>
+      <span className="settings-identity-copy">
+        <span>{user.displayName || user.email || label('访客', 'Guest')}</span>
+        <span>{user.email && user.displayName ? user.email : free ? label('免费版', 'Free') : user.tierLabel}</span>
+      </span>
+      <ChevronRightIcon className="settings-category-chevron" aria-hidden />
+    </Button>
   );
 }
 
@@ -214,13 +217,13 @@ export function SettingsNavigation({
   const showOverview = mobile && !query.trim();
   const groups = mobile
     ? mobileGroups.map((keys) =>
-        keys.flatMap((key) => categories.filter((category) => category.key === key)),
+        keys.flatMap((key) => categories.filter((category) => category.key === key && (!showOverview || key !== 'account'))),
       )
     : [];
 
   return (
     <nav className="settings-nav" aria-label={label('设置分类', 'Settings categories')}>
-      {showOverview ? <SettingsIdentity label={label} /> : null}
+      {showOverview ? <SettingsIdentity label={label} onOpen={() => onSectionChange('account')} /> : null}
       <InputGroup className={cn('settings-search shrink-0', mobile && !searchOpen && 'hidden')}>
         <InputGroupInput
           id="settingsSearchInput"
@@ -244,7 +247,16 @@ export function SettingsNavigation({
           ? groups.map((group, index) =>
               group.length ? (
                 <div className="settings-index-group" key={mobileGroups[index][0]}>
-                  {showOverview && index === 2 ? (
+                  {showOverview ? (
+                    <p className="settings-index-group-label">
+                      {[
+                        label('偏好设置', 'Preferences'),
+                        label('模型与服务', 'Models & services'),
+                        label('数据与账户', 'Data & account'),
+                      ][index]}
+                    </p>
+                  ) : null}
+                  {showOverview && index === 0 ? (
                     <MobileAppearance label={label} savePreference={savePreference} />
                   ) : null}
                   {group.map(renderCategory)}
