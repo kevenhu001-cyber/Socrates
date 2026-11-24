@@ -28,6 +28,8 @@ function spawnPyodide() {
 class WorkerSlot {
   worker: Worker | null = null;
   ready: Promise<void> | null = null;
+  /** Last cold-start duration; reported separately from request wall time. */
+  bootMs = 0;
   #isReady = false;
   #stopping = false;
   #exited: Promise<void> = Promise.resolve();
@@ -43,8 +45,10 @@ class WorkerSlot {
   }
 
   private spawn() {
+    const bootStartedAt = Date.now();
     const worker = this.spawnWorker();
     this.worker = worker;
+    this.bootMs = 0;
     let exited!: () => void;
     this.#exited = new Promise<void>((resolve) => {
       exited = resolve;
@@ -60,6 +64,7 @@ class WorkerSlot {
           reject(Object.assign(error, { code: 'pyodide_worker_boot_failed' }));
           this.terminate();
         } else {
+          this.bootMs = Date.now() - bootStartedAt;
           this.#isReady = true;
           resolve();
         }
@@ -94,6 +99,7 @@ class WorkerSlot {
         this.ready = null;
         this.#stopping = false;
         this.#isReady = false;
+        this.bootMs = 0;
         exited();
         this.onRunFailure?.(error);
       });
