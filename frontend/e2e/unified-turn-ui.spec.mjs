@@ -77,7 +77,7 @@ test('public summaries disclose separately while tool rows and results stay visi
   await toggle.click();
   await expect(activity.getByText('Checked the assumptions.')).toBeVisible();
   await expect(toolRow(page, 'ui')).toBeVisible();
-  /* Tool text sits on the same type step as the answer. */
+  /* Tool activity uses a quieter type step than prose. */
   const type = await toolRow(page, 'ui')
     .locator(TURN.stepTitle)
     .evaluate((node) => ({
@@ -88,7 +88,7 @@ test('public summaries disclose separately while tool rows and results stay visi
     .locator('.tool-run-prose p')
     .first()
     .evaluate((node) => parseFloat(getComputedStyle(node).fontSize));
-  expect(type.size).toBe(proseSize);
+  expect(type.size).toBeLessThanOrEqual(proseSize);
   expect(type.line).toBeGreaterThanOrEqual(type.size);
   await toggle.click();
   await expect(page.locator('.intui')).toBeVisible();
@@ -243,4 +243,89 @@ test('pending approvals remain visible with activity collapsed', async ({ page }
       .locator(TURN.approval)
       .evaluate((node) => Boolean(node.closest('[data-testid="turn-activity"]'))),
   ).toBe(false);
+});
+
+
+test('live activity counts completed tools without hiding the active row', async ({ page }) => {
+  await prepareChatWorkbench(page);
+  await page.evaluate(async () => {
+    const ctl = await window.addStreamingMessage({ userPrompt: 'Check sources.' });
+    for (const id of ['first', 'second', 'third']) {
+      ctl.recordToolUse({ id, name: 'web_search', input: { query: id } });
+      if (id !== 'third') {
+        ctl.recordToolResult({ id, name: 'web_search', ok: true, status: 'completed', output: 'Checked.' });
+      }
+    }
+    window.__unifiedController = ctl;
+  });
+  await expect(page.locator('.tool-activity-burst-caption')).toBeVisible();
+  await expect(page.locator('.tool-activity-burst-toggle')).toHaveCount(0);
+  await expect(toolRow(page, 'third')).toBeVisible();
+  await expect(toolRow(page, 'third').locator(TURN.spinner)).toHaveCount(1);
+  await page.evaluate(() => {
+    const ctl = window.__unifiedController;
+    ctl.recordToolResult({ id: 'third', name: 'web_search', ok: true, status: 'completed', output: 'Checked.' });
+    ctl.append('The answer.');
+    ctl.finish();
+  });
+  await expect(page.locator('.tool-activity-burst-caption')).toHaveCount(0);
+  await expect(page.locator('.tool-activity-burst-toggle')).toBeVisible();
+});
+
+
+test('live workspace preview follows observed steps and yields to expanded details', async ({ page }) => {
+  await prepareChatWorkbench(page);
+  await page.evaluate(async () => {
+    const ctl = await window.addStreamingMessage({ userPrompt: 'Read project files.' });
+    window.__unifiedController = ctl;
+    ctl.recordToolUse({ id: 'agent', name: 'workspace_agent', input: { task: 'Read project files.' } });
+    ctl.recordAgentStep({ type: 'step', id: 'agent', runId: 'run-preview', stepId: 'read', kind: 'read', status: 'done' });
+    ctl.recordAgentStep({ type: 'step', id: 'agent', runId: 'run-preview', stepId: 'command', kind: 'command', status: 'running', command: 'npm test' });
+  });
+  const preview = page.getByTestId('agent-activity-preview');
+  await expect(preview).toBeVisible();
+  await expect(preview).toHaveAttribute('data-state', 'running');
+  await expect(preview).toContainText('1/2');
+  await toolRow(page, 'agent').click();
+  await expect(preview).toHaveCount(0);
+  await expect(page.locator('.agent-step')).toHaveCount(2);
+  await toolRow(page, 'agent').click();
+  await expect(preview).toBeVisible();
+  await page.evaluate(() => {
+    const ctl = window.__unifiedController;
+    ctl.recordToolResult({ id: 'agent', name: 'workspace_agent', status: 'completed', ok: true, output: 'Done.' });
+    ctl.append('Finished.');
+    ctl.finish();
+  });
+  await expect(preview).toHaveCount(0);
+});
+
+
+test('stopped workspace steps retain an unconfirmed outcome', async ({ page }) => {
+  await prepareChatWorkbench(page, {
+    messages: [{
+      clientId: 'cancelled-agent',
+      role: 'assistant',
+      rawText: 'Stopped.',
+      toolCalls: [{
+        id: 'cancelled',
+        name: 'workspace_agent',
+        textOffset: 0,
+        status: 'cancelled',
+        runId: 'cancelled-run',
+        steps: [
+          { stepId: 'read', kind: 'read', status: 'done' },
+          { stepId: 'command', kind: 'command', status: 'running', command: 'npm test' },
+        ],
+      }],
+    }],
+  });
+  await toolRow(page, 'cancelled').click();
+  const run = page.locator('.agent-run');
+  await expect(run).toHaveAttribute('data-state', 'cancelled');
+  await expect(run.locator('.agent-run-elapsed')).toHaveText('Stopped');
+  expect(await run.getAttribute('data-duration-ms')).toBeNull();
+  await expect(run.locator('[data-step-id="read"]')).toHaveAttribute('data-state', 'done');
+  await expect(run.locator('[data-step-id="command"]')).toHaveAttribute('data-state', 'stopped');
+  await expect(run.locator('[data-step-id="command"] .agent-step-meta')).toContainText('Stopped');
 });

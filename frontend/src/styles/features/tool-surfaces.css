@@ -314,7 +314,8 @@
   border-radius: var(--ui-radius-sm);
   background: transparent;
   color: var(--ui-text-secondary);
-  font: inherit;
+  font-family: inherit;
+  font-weight: var(--ui-font-weight-regular);
   text-align: start;
 }
 .rn-tool-row button.tool-run-trigger:hover,
@@ -360,4 +361,75 @@
 .tool-run-trigger :is(.tool-site-marks, .is-connector-brand) {
   flex: none;
   filter: grayscale(1);
+}
+
+/* Completed activity bursts read like a quiet transcript caption, not a card. */
+.tool-activity-burst-caption {
+  display: flex;
+  align-items: center;
+  min-height: var(--ui-control-sm);
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-sm);
+  line-height: var(--ui-text-ui-line);
+}
+.tool-activity-burst-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-xs);
+  min-height: var(--ui-control-sm);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ui-text-secondary);
+  font-family: inherit;
+  font-size: var(--ui-font-size-sm);
+  line-height: var(--ui-text-ui-line);
+  cursor: pointer;
+}
+.tool-activity-burst-toggle:hover,
+.tool-activity-burst-toggle:focus-visible {
+  color: var(--foreground);
+}
+.tool-activity-burst-toggle:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-focus-shadow);
+}
+.tool-run-prose + .tool-activity-burst,
+.tool-activity-burst + .tool-run-prose {
+  margin-block-start: var(--ui-space-xs);
+}
+@media (max-width: 768px) {
+  .tool-activity-burst-toggle {
+    min-height: var(--ui-control-touch);
+  }
+}
+
+/* Live workspace activity is secondary to the tool row and never replaces
+ * the actual command, output, or approval disclosure. */
+.agent-activity-preview {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-sm);
+  min-width: 0;
+  padding: var(--ui-space-xs) var(--ui-space-sm);
+  margin-block: var(--ui-space-xs);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-bg-raised);
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-xs);
+  line-height: var(--ui-text-ui-line);
+}
+.agent-activity-preview-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.agent-activity-preview-count {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+.agent-activity-preview[data-state='failed'] {
+  color: var(--destructive);
 }

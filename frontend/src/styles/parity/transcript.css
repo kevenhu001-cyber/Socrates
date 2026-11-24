@@ -233,7 +233,13 @@
   #appShell
     #msgList
     .msg-body
-    button:not(.code-block-copy, .tool-run-trigger, .intui-surface-more, .intui-panel-more) {
+    button:not(
+      .code-block-copy,
+      .tool-run-trigger,
+      .tool-activity-burst-toggle,
+      .intui-surface-more,
+      .intui-panel-more
+    ) {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -256,13 +262,25 @@
   #appShell
     #msgList
     .msg-body
-    button:not(.code-block-copy, .tool-run-trigger, .intui-surface-more, .intui-panel-more):hover {
+    button:not(
+      .code-block-copy,
+      .tool-run-trigger,
+      .tool-activity-burst-toggle,
+      .intui-surface-more,
+      .intui-panel-more
+    ):hover {
     background: color-mix(in srgb, var(--ui-action) 88%, white);
   }
   #appShell
     #msgList
     .msg-body
-    button:not(.code-block-copy, .tool-run-trigger, .intui-surface-more, .intui-panel-more):active {
+    button:not(
+      .code-block-copy,
+      .tool-run-trigger,
+      .tool-activity-burst-toggle,
+      .intui-surface-more,
+      .intui-panel-more
+    ):active {
     transform: scale(0.98);
   }
   #appShell
@@ -271,6 +289,7 @@
     button:not(
       .code-block-copy,
       .tool-run-trigger,
+      .tool-activity-burst-toggle,
       .intui-surface-more,
       .intui-panel-more
     ):focus-visible {

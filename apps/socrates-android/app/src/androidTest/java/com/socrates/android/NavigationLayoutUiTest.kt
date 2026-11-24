@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.socrates.android.data.ChatSession
+import com.socrates.android.data.ProviderEntry
 import com.socrates.android.ui.*
 import org.junit.Assert.*
 import org.junit.Rule
@@ -149,6 +150,64 @@ class NavigationLayoutUiTest {
         compose.onNodeWithTag("drawer-scrim").performClick()
         compose.onNodeWithTag("drawer-overlay").assertDoesNotExist()
         compose.onNodeWithTag("drawer-content").assertIsDisplayed()
+    }
+
+    @Test fun liveComposerStripShowsRecordedActivityAndCompletedCount() {
+        compose.setContent {
+            SocratesTheme {
+                Box(Modifier.requiredSize(320.dp, 120.dp)) {
+                    ComposerActivityStrip("正在检索论文", 2)
+                }
+            }
+        }
+        compose.onNodeWithTag("composer-activity-strip").assertIsDisplayed()
+        compose.onNodeWithText("正在检索论文").assertIsDisplayed()
+        compose.onNodeWithText("已完成 2 项").assertIsDisplayed()
+    }
+
+    @Test fun existingConversationShowsItsTitleAndActions() {
+        compose.setContent {
+            SocratesTheme {
+                Box(Modifier.requiredSize(320.dp, 100.dp)) {
+                    ChatHeader(false, false, true, ChatSession(id = "title", title = "论文分析"), {}, {}, {}, {})
+                }
+            }
+        }
+        compose.onNodeWithText("论文分析").assertIsDisplayed()
+        compose.onNodeWithContentDescription("新建对话").assertIsDisplayed()
+        compose.onNodeWithContentDescription("对话菜单").assertIsDisplayed()
+    }
+
+    @Test fun settingsNavigationUsesOneAccessibleFullWidthAction() {
+        var opened = 0
+        compose.setContent {
+            SocratesTheme {
+                Box(Modifier.requiredSize(320.dp, 120.dp)) {
+                    NativeSettingsRow("连接设置", ReferenceGlyph.Settings, onClick = { opened++ })
+                }
+            }
+        }
+        compose.onNodeWithText("连接设置").assertIsDisplayed().assertHasClickAction().performClick()
+        compose.runOnIdle { assertEquals(1, opened) }
+    }
+
+    @Test fun providerDetailsAndActivationAreSeparateActions() {
+        var opened = 0
+        var activated = 0
+        compose.setContent {
+            SocratesTheme {
+                Box(Modifier.requiredSize(320.dp, 160.dp)) {
+                    NativeProviderRow(
+                        ProviderEntry("test", "Custom", "https://example.test", "model", null, true, false, false, false),
+                        busy = false, onOpen = { opened++ }, onActivate = { activated++ },
+                    )
+                }
+            }
+        }
+        compose.onNodeWithText("启用").performClick()
+        compose.runOnIdle { assertEquals(0, opened); assertEquals(1, activated) }
+        compose.onNodeWithText("Custom", substring = true).performClick()
+        compose.runOnIdle { assertEquals(1, opened); assertEquals(1, activated) }
     }
 
     @Composable

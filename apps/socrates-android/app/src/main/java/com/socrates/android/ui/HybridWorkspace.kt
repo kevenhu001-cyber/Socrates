@@ -19,6 +19,7 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -29,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.ViewCompat
@@ -47,17 +49,25 @@ private const val SPA_INDEX_URL = "https://$SPA_DOMAIN/index.html"
 @Composable
 fun HybridWorkspace(
     modifier: Modifier = Modifier,
-    onBackExit: () -> Unit = {}
+    onBackExit: () -> Unit = {},
+    onThemeMode: (Boolean) -> Unit = {}
 ) {
     val context = LocalContext.current
     var webViewRef by remember { mutableStateOf<WebView?>(null) }
     var isBackInterceptActive by remember { mutableStateOf(false) }
+    val systemDark = isSystemInDarkTheme()
+    var resolvedDark by remember { mutableStateOf<Boolean?>(null) }
+    val canvasColor = if (resolvedDark ?: systemDark) Color.Black else Color(0xFFF8F8F8)
 
     val bridge = remember {
         SocratesNativeBridge(
             context = context,
             webViewProvider = { webViewRef },
-            onPageReady = {}
+            onPageReady = {},
+            onThemeMode = { dark ->
+                resolvedDark = dark
+                onThemeMode(dark)
+            }
         )
     }
 
@@ -74,16 +84,17 @@ fun HybridWorkspace(
         }
     }
 
-    Box(modifier = modifier.fillMaxSize().background(Color(0xFFF8F8F8))) {
+    Box(modifier = modifier.fillMaxSize().background(canvasColor)) {
         AndroidView(
             modifier = Modifier.fillMaxSize(),
             factory = { ctx ->
-                createConfiguredWebView(ctx, bridge) { wv ->
+                createConfiguredWebView(ctx, bridge, canvasColor.toArgb()) { wv ->
                     webViewRef = wv
                 }
             },
             update = { wv ->
                 webViewRef = wv
+                wv.setBackgroundColor(canvasColor.toArgb())
             }
         )
     }
@@ -105,6 +116,7 @@ fun HybridWorkspace(
 private fun createConfiguredWebView(
     context: Context,
     bridge: SocratesNativeBridge,
+    backgroundColor: Int,
     onCreated: (WebView) -> Unit
 ): WebView {
     val assetLoader = WebViewAssetLoader.Builder()
@@ -117,7 +129,7 @@ private fun createConfiguredWebView(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.MATCH_PARENT
         )
-        setBackgroundColor(android.graphics.Color.parseColor("#F8F8F8"))
+        setBackgroundColor(backgroundColor)
         isVerticalScrollBarEnabled = false
         isHorizontalScrollBarEnabled = false
 

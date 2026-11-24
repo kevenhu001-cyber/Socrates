@@ -675,3 +675,18 @@ test('a pending approval stays visible in the transcript with pill decisions', a
   await expect(prompt.getByTestId('tool-approval-status')).toHaveText('Approved');
   expect(decisions).toEqual([{ method: 'POST', body: { decision: 'accept' } }]);
 });
+
+
+test('completed activity burst can be folded without hiding failed or unknown rows', async ({ page }) => {
+  const body = await loadFixtureSession(page);
+  const burst = body.locator('.tool-activity-burst-toggle').last();
+  await expect(burst).toHaveAttribute('aria-expanded', 'true');
+  await burst.click();
+  await expect(burst).toHaveAttribute('aria-expanded', 'false');
+  await expect(body.getByTestId('tool-row-w1')).toBeHidden();
+  await expect(body.getByTestId('tool-row-f1')).toBeVisible();
+  await expect(body.getByTestId('tool-row-s3')).toBeVisible();
+  await burst.focus();
+  await page.keyboard.press('Enter');
+  await expect(body.getByTestId('tool-row-w1')).toBeVisible();
+});

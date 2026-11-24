@@ -56,6 +56,17 @@ object SocratesDesign {
     val Disabled = Color(0xFF8F8F8F)
     val Placeholder = Color(0xFF8F8F8F)
     val Avatar = Color(0xFF6B6B6B) // --ui-avatar-bg
+    val ActivityAccent = Color(0xFF0060CC) // semantic live-work cue; never used for ordinary text
+    // Named surfaces rather than per-screen literals. Native reading remains light
+    // until all renderer and system-bar roles can switch together.
+    val Surface = Color.White
+    val ComposerSurface = Surface
+    val CodeSurface = Color(NativeReadingColors.codeSurface)
+    val ComposerBorder = Color(0x1F000000)
+    val UserBubble = Color(0xFFF4F4F4)
+    val SidebarSurface = Surface
+    val OnAccent = Color.White
+    val UserBubbleRadius = 18.dp
     val Touch = 44.dp
     val PageGutter = 16.dp
     val HeaderHeight = 68.dp
@@ -396,5 +407,23 @@ fun SocratesSnackbarHost(hostState: SnackbarHostState, modifier: Modifier = Modi
             }
         }
         SocratesIconButton(onClick = data::dismiss) { ReferenceIcon(ReferenceGlyph.Close, "关闭提示", tint = Color.White) }
+    }
+}
+
+/** A single settings navigation grammar shared by the account and provider surfaces. */
+@Composable
+internal fun SettingsGroupLabel(label: String) {
+    Text(label, Modifier.padding(top = 12.dp, bottom = 4.dp).semantics { heading() },
+        style = MaterialTheme.typography.labelMedium, color = SocratesDesign.Muted)
+}
+
+@Composable
+internal fun NativeSettingsRow(title: String, glyph: ReferenceGlyph, onClick: () -> Unit) {
+    SocratesTextButton(onClick = onClick, modifier = Modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(horizontal = 0.dp, vertical = 8.dp)) {
+        ReferenceIcon(glyph, null, Modifier.size(20.dp), tint = SocratesDesign.Muted)
+        Spacer(Modifier.width(12.dp))
+        Text(title, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge, color = SocratesDesign.Ink)
+        ReferenceIcon(ReferenceGlyph.ChevronRight, null, Modifier.size(16.dp), tint = SocratesDesign.Muted)
     }
 }

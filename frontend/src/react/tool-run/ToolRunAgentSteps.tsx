@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   agentStepCommand,
   agentStepLabel,
@@ -17,7 +17,9 @@ export interface ToolRunAgentStepsProps {
   /** While true the run section keeps its live timer; then it settles once. */
   live: boolean;
   /** Terminal state to write when the run ends. */
-  state?: 'done' | 'failed' | 'cancelled';
+  state?: 'done' | 'failed' | 'cancelled' | 'awaiting';
+  /** A real wall-clock timestamp from the recorded tool run, when available. */
+  startedAt?: number;
 }
 
 function translate(key: string): string {
@@ -74,11 +76,14 @@ function AgentStep({
   state: ToolRunAgentStepsProps['state'];
   live: boolean;
 }) {
-  const status =
-    !live && step.status === 'running' ? (state === 'failed' ? 'failed' : 'done') : step.status;
-  const displayedStep = status === step.status ? step : { ...step, status };
+  // A settled run is not evidence that an unfinished individual step succeeded.
+  const status = !live && step.status === 'running'
+    ? state === 'cancelled' ? 'stopped' : 'unknown'
+    : step.status;
+  const displayedStep = step;
   const command = agentStepCommand(displayedStep);
-  const meta = agentStepMeta(displayedStep, translate);
+  const statusLabel = status === 'done' || status === 'failed' ? '' : translate(`tool.status.${status}`);
+  const meta = [agentStepMeta(displayedStep, translate), statusLabel].filter(Boolean).join(' · ');
   const bodyOutput = String(displayedStep.output || '');
   const visibleOutput =
     bodyOutput.length > MAX_OUTPUT_CHARS ? `…${bodyOutput.slice(-MAX_OUTPUT_CHARS)}` : bodyOutput;
@@ -123,26 +128,25 @@ function AgentStep({
   );
 }
 
-export function ToolRunAgentSteps({ run, live, state }: ToolRunAgentStepsProps) {
-  const startedAtRef = useRef({ runId: run.runId, at: Date.now() });
-  if (startedAtRef.current.runId !== run.runId) {
-    startedAtRef.current = { runId: run.runId, at: Date.now() };
-  }
+export function ToolRunAgentSteps({ run, live, state, startedAt = 0 }: ToolRunAgentStepsProps) {
   const [now, setNow] = useState(() => Date.now());
   const [open, setOpen] = useState(true);
 
   useEffect(() => {
-    if (!live) return undefined;
+    if (!live || startedAt <= 0) return undefined;
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
-  }, [live]);
+  }, [live, startedAt]);
 
   const finalDuration =
     run.durationMs != null && run.durationMs > 0
       ? run.durationMs
-      : Math.max(0, now - startedAtRef.current.at);
-  const runState = live ? 'running' : state || 'done';
-  const elapsed = formatElapsed(finalDuration, translate);
+      : live && startedAt > 0 ? Math.max(0, now - startedAt) : null;
+  const runState = live ? 'running' : state || 'unknown';
+  const statusKey = runState === 'cancelled' ? 'stopped' : runState;
+  const elapsed = finalDuration !== null
+    ? formatElapsed(finalDuration, translate)
+    : translate(`tool.status.${statusKey}`);
   const steps = run.steps.slice(0, 200);
 
   return (
@@ -151,8 +155,8 @@ export function ToolRunAgentSteps({ run, live, state }: ToolRunAgentStepsProps) 
         className="agent-run"
         data-run-id={run.runId || undefined}
         data-state={runState}
-        data-started-at={startedAtRef.current.at}
-        data-duration-ms={!live ? Math.round(finalDuration) : undefined}
+        data-started-at={startedAt > 0 ? startedAt : undefined}
+        data-duration-ms={!live && finalDuration !== null ? Math.round(finalDuration) : undefined}
       >
         <details
           className="agent-run-shell"

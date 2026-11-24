@@ -109,3 +109,27 @@ test('handleBackPress dismisses open overlays and returns true, or false if root
   cmdK.classList.add('hidden');
   assert.equal(handleBackPress(), false);
 });
+
+
+test('hybrid chrome follows the resolved theme and ignores unrelated changes', async () => {
+  const modes = [];
+  const root = document.documentElement;
+  root.setAttribute('data-mode', 'dark');
+  window.SocratesAndroid = { setThemeMode: (mode) => modes.push(mode) };
+  try {
+    initAndroidBridge();
+    assert.deepEqual(modes, ['dark']);
+    root.setAttribute('data-mode', 'light');
+    await Promise.resolve();
+    root.setAttribute('data-theme', 'philosophy');
+    await Promise.resolve();
+    assert.deepEqual(modes, ['dark', 'light']);
+    root.setAttribute('data-mode', 'invalid');
+    await Promise.resolve();
+    assert.deepEqual(modes, ['dark', 'light']);
+  } finally {
+    delete window.SocratesAndroid;
+    initAndroidBridge();
+    root.removeAttribute('data-mode');
+  }
+});

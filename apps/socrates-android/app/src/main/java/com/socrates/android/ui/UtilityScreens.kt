@@ -22,7 +22,7 @@ import androidx.compose.ui.graphics.Color
 @Composable
 fun ConnectionSheet(baseUrl: String, busy: Boolean, error: String?, onSave: (String) -> Unit, onDismiss: () -> Unit) {
     var address by rememberSaveable(baseUrl) { mutableStateOf(baseUrl) }
-    SocratesSheet(onDismissRequest = onDismiss, containerColor = Color.White) {
+    SocratesSheet(onDismissRequest = onDismiss, containerColor = SocratesDesign.Surface) {
         Column(Modifier.fillMaxWidth().imePadding().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text("连接 Socrates", style = MaterialTheme.typography.headlineSmall)
             Text("切换服务器会退出当前原生帐号，避免凭据被发送到其他服务器。浏览器登录仅支持生产服务器，不会把生产帐号保存到自定义服务器。", color = SocratesDesign.Muted)
@@ -65,7 +65,7 @@ fun AccountProfileSheet(onDismiss: () -> Unit) {
     var old by remember { mutableStateOf("") }; var next by remember { mutableStateOf("") }; var confirm by remember { mutableStateOf("") }
     LaunchedEffect(Unit) { vm.loadAccount() }
     val sheetState = rememberModalBottomSheetState(confirmValueChange = { target -> !s.busy || target != SheetValue.Hidden })
-    SocratesSheet(onDismissRequest={if(!s.busy) onDismiss()},sheetState=sheetState,containerColor=Color.White) {
+    SocratesSheet(onDismissRequest={if(!s.busy) onDismiss()},sheetState=sheetState,containerColor=SocratesDesign.Surface) {
         Column(Modifier.fillMaxWidth().imePadding().verticalScroll(rememberScrollState()).padding(24.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
             Text("帐号资料",style=MaterialTheme.typography.headlineSmall)
             Text("邮箱：${s.user?.optString("email")?.takeIf{it!="null"}.orEmpty()}")
