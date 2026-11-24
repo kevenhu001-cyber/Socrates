@@ -1,3 +1,4 @@
+import { escapePromptControlText } from './chatPolicy.js';
 import type { ProviderMessage } from './providerMessageSchema.js';
 
 export const TURN_INSTRUCTIONS_MARKER = '[Current turn instructions]';
@@ -25,14 +26,14 @@ export function splitPromptContext(
     if (/^\[(?:Conversation summary|Context summary)/.test(text)) {
       conversation.push({
         role: 'user',
-        content: `<client_context_data scope="untrusted">\n${text}\n</client_context_data>`,
+        content: `<client_context_data scope="untrusted">\n${escapePromptControlText(text)}\n</client_context_data>`,
       });
       continue;
     }
     const explicitTurn = text.startsWith(TURN_INSTRUCTIONS_MARKER);
     if (text.startsWith('[Web research]')) {
       turnInstructions.push(
-        `<client_context_data scope="untrusted">\n${text}\n</client_context_data>`,
+        `<client_context_data scope="untrusted">\n${escapePromptControlText(text)}\n</client_context_data>`,
       );
     } else if (
       explicitTurn ||
@@ -81,10 +82,10 @@ export function appendTurnContext(
         ]
       : []),
     ...(recall
-      ? [`<client_context_data scope="untrusted">\n${recall}\n</client_context_data>`]
+      ? [`<client_context_data scope="untrusted">\n${escapePromptControlText(recall)}\n</client_context_data>`]
       : []),
     /* The style card goes last: closest to generation, highest recency. */
-    STYLE_REMINDER,
+    ...(serverTurn || instructions.length ? [STYLE_REMINDER] : []),
   ];
   if (!blocks.length) return messages;
   let index = messages.length - 1;
