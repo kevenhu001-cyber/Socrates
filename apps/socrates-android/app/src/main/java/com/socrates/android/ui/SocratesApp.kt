@@ -36,7 +36,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -212,7 +211,7 @@ fun SocratesApp(vm: ChatViewModel = viewModel()) {
             }
         }
     ) {
-        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFFF8F8F8), Color(0xFFFDFDFD), Color(0xFFFDFDFD), Color(0xFFF7F7F7))))) {
+        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
             // AppSafeInsets adds the bottom gesture zone to safeDrawing; consume once at the viewport.
             Column(Modifier.fillMaxSize().windowInsetsPadding(AppSafeInsets)) {
                 ChatHeader(work, voice.active, ui.messages.isNotEmpty(), ui.current, onConversationAction = { action ->
@@ -494,7 +493,7 @@ private fun MessageBubble(message: ChatMessage, streaming: Boolean, activity: St
             }
         } else {
             val privateThinkingExists = message.reasoning.isNotBlank()
-            if (streaming || privateThinkingExists || publicSummary != null) {
+            if (!streaming && (privateThinkingExists || publicSummary != null)) {
                 val seconds = ((message.wire?.optLong("reasoningDurationMs") ?: 0L) / 1000L).coerceAtLeast(0)
                 Row(Modifier.padding(bottom = if (publicSummary == null) 6.dp else 2.dp), verticalAlignment = Alignment.CenterVertically) {
                     if (streaming) SocratesSpinner(Modifier.size(13.dp), strokeWidth = 1.5.dp, color = SocratesDesign.Muted)
@@ -502,7 +501,13 @@ private fun MessageBubble(message: ChatMessage, streaming: Boolean, activity: St
                     Spacer(Modifier.width(8.dp))
                     Text(if (streaming) "思考中" else "思考了 ${seconds}秒", color = SocratesDesign.Muted, fontSize = 13.sp)
                 }
-                publicSummary?.let { Text("公开思考摘要", Modifier.padding(bottom = 2.dp), style = MaterialTheme.typography.labelSmall, color = SocratesDesign.Muted); NativeMarkdown(it, Modifier.fillMaxWidth()) }
+                publicSummary?.let { summary ->
+                    var expandedSummary by remember(message.id) { mutableStateOf(false) }
+                    SocratesTextButton(onClick = { expandedSummary = !expandedSummary }, contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp)) {
+                        Text(if (expandedSummary) "收起思考摘要" else "查看思考摘要", style = MaterialTheme.typography.labelMedium, color = SocratesDesign.Muted)
+                    }
+                    if (expandedSummary) NativeMarkdown(summary, Modifier.fillMaxWidth())
+                }
             }
             turnSegments.forEachIndexed { index, segment ->
                 when (segment) {
@@ -512,9 +517,9 @@ private fun MessageBubble(message: ChatMessage, streaming: Boolean, activity: St
                     is AssistantTurnSegment.Tool -> ToolActivityCard(segment.call)
                 }
             }
-            if (streaming && (message.content.isBlank() || activity.isNotBlank())) Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (streaming) Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 SocratesSpinner(Modifier.size(12.dp), strokeWidth = 1.5.dp, color = SocratesDesign.Muted)
-                Spacer(Modifier.width(8.dp)); Text(activity.ifBlank { "正在回复" }, color = SocratesDesign.Muted, fontSize = 12.sp, maxLines = 2)
+                Spacer(Modifier.width(8.dp)); Text(activity.ifBlank { if (message.content.isBlank()) "正在思考" else "正在回复" }, color = SocratesDesign.Muted, fontSize = 13.sp, maxLines = 2)
             }
             if (!streaming && message.content.isNotBlank()) {
                 val context = LocalContext.current
@@ -556,9 +561,8 @@ private fun Composer(ui: ChatUiState, voice: VoiceInput, draft: String, onDraftC
     onMoveAttachment: (String, Int) -> Unit, onEditAttachment: (String, String, String) -> String?, onReasoning: () -> Unit) {
     var focused by remember { mutableStateOf(false) }
     val keyboardOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
-    val expanded = focused || keyboardOpen || draft.contains('\n') || ui.attachments.isNotEmpty()
-    val horizontal by animateDpAsState(if (expanded || voice.active) 12.dp else 34.dp, tween(180), label = "composerInset")
-    Column(Modifier.fillMaxWidth().padding(horizontal = horizontal).padding(top = 8.dp, bottom = 14.dp)) {
+    val expanded = focused || keyboardOpen || draft.contains('\n') || ui.attachments.isNotEmpty() || ui.streaming
+    Column(Modifier.fillMaxWidth().padding(horizontal = SocratesDesign.PageGutter).padding(top = 8.dp, bottom = 14.dp)) {
         key(ui.composerDraft.key) {
             AttachmentStrip(ui.attachments, !ui.busy && !ui.streaming && !voice.active, onRemoveAttachment, onMoveAttachment, onEditAttachment)
         }
