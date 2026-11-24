@@ -96,10 +96,16 @@ test('edge fading ramps smoothly as the transcript leaves the viewport', () => {
   const nearTop = fadeList(10, 1000, 200);
   updateScrollFadeMask(nearTop);
   assert.equal(nearTop.style.getPropertyValue('--ui-scroll-fade-top'), '8px');
+  assert.equal(nearTop.style.getPropertyValue('--ui-scroll-fade-bottom'), '56px');
   const nearBottom = fadeList(790, 1000, 200);
   updateScrollFadeMask(nearBottom);
-  assert.equal(nearBottom.style.getPropertyValue('--ui-scroll-fade-bottom'), '8px');
+  assert.equal(nearBottom.style.getPropertyValue('--ui-scroll-fade-top'), '32px');
+  assert.equal(nearBottom.style.getPropertyValue('--ui-scroll-fade-bottom'), '56px');
   const bottom = fadeList(800, 1000, 200);
   updateScrollFadeMask(bottom);
-  assert.equal(bottom.style.getPropertyValue('--ui-scroll-fade-bottom'), '0px');
+  assert.equal(bottom.style.getPropertyValue('--ui-scroll-fade-bottom'), '56px');
+  const shortList = fadeList(0, 180, 200);
+  updateScrollFadeMask(shortList);
+  assert.equal(shortList.style.getPropertyValue('--ui-scroll-fade-bottom'), '0px');
+  assert.equal(shortList.dataset.scrollFade, 'false');
 });
