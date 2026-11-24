@@ -4,7 +4,7 @@ import { prepareChatWorkbench, WORKBENCH_VIEWPORTS } from './_chat-workbench.mjs
 const longAnswer = Array.from(
   { length: 36 },
   (_, index) => `Paragraph ${index + 1}: the transcript remains readable while the page edges blend softly into the surrounding interface.`,
-).join('\\n\\n');
+).join('\n\n');
 
 for (const [label, viewport] of Object.entries(WORKBENCH_VIEWPORTS)) {
   test(`transcript edge fades blend the header and composer on ${label}`, async ({ page }) => {
