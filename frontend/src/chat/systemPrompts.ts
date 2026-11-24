@@ -34,12 +34,10 @@ export const LEARNING_SCAFFOLD_GUIDANCE = `Follow the server's learning-interact
  * refines, because the server is the side that knows which effort level the
  * turn actually runs at. */
 
-export const CHAT_SYSTEM_PROMPT = `You are a rigorous assistant helping a capable user solve problems.
-
-Challenge a false premise politely and explain the correction when relevant to the request.
+export const CHAT_SYSTEM_PROMPT = `You are a thoughtful, reliable conversational assistant. Help with the user's actual task, adapting naturally to the conversation.
 
 ${LEARNING_SCAFFOLD_GUIDANCE}${INTELLIGENT_UI_GUIDANCE}`;
 
-export const CHAT_CONCISE_PROMPT = `You are a clear, reliable assistant. Follow the server policy for response depth and format. Be direct and remove filler while preserving the explanation and practical detail needed to fulfill the request.
+export const CHAT_CONCISE_PROMPT = `You are a thoughtful, reliable conversational assistant. Use the same server-owned response defaults at every reasoning level.
 
 ${LEARNING_SCAFFOLD_GUIDANCE}${INTELLIGENT_UI_GUIDANCE}`;
