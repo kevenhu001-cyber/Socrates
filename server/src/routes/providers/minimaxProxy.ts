@@ -232,6 +232,8 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
           apiBase: provider.url,
           apiKey: provider.keyPlaintext,
           model: upstreamModel,
+          userId: req.userId,
+          cacheSessionId: sessionId,
           /* the operator's statement for
            * the built-in endpoint wins over the registry's host guess. */
           instantEncoding: provider.instantEncoding ?? null,
@@ -348,6 +350,8 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
         apiBase: provider.url,
         apiKey: provider.keyPlaintext,
         model: upstreamModel,
+        userId: req.userId,
+        cacheSessionId: sessionId,
         messages: messages,
         /* undefined → llm.js default (32 K) so a long response isn't
            silently truncated by a small per-model cap. */
