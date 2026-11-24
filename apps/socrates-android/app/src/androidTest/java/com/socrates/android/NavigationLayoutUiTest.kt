@@ -151,6 +151,32 @@ class NavigationLayoutUiTest {
         compose.onNodeWithTag("drawer-content").assertIsDisplayed()
     }
 
+    @Test fun liveComposerStripShowsRecordedActivityAndCompletedCount() {
+        compose.setContent {
+            SocratesTheme {
+                Box(Modifier.requiredSize(320.dp, 120.dp)) {
+                    ComposerActivityStrip("正在检索论文", 2)
+                }
+            }
+        }
+        compose.onNodeWithTag("composer-activity-strip").assertIsDisplayed()
+        compose.onNodeWithText("正在检索论文").assertIsDisplayed()
+        compose.onNodeWithText("已完成 2 项").assertIsDisplayed()
+    }
+
+    @Test fun existingConversationShowsItsTitleAndActions() {
+        compose.setContent {
+            SocratesTheme {
+                Box(Modifier.requiredSize(320.dp, 100.dp)) {
+                    ChatHeader(false, false, true, ChatSession(id = "title", title = "论文分析"), {}, {}, {}, {})
+                }
+            }
+        }
+        compose.onNodeWithText("论文分析").assertIsDisplayed()
+        compose.onNodeWithContentDescription("新建对话").assertIsDisplayed()
+        compose.onNodeWithContentDescription("对话菜单").assertIsDisplayed()
+    }
+
     @Composable
     private fun Sidebar(ui: ChatUiState = ChatUiState(), onNew: () -> Unit = {}, onProfile: () -> Unit = {}) {
         NativeSidebar(ui, onNew, {}, onProfile, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})
