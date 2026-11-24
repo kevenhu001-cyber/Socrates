@@ -2,7 +2,7 @@
 /*
  * scripts/check-forwarding-shims.mjs — the migration must not grow new shells.
  *
- * Both trees are mid-migration and use the same trick to avoid a rename:
+ * Historically both trees used the same trick to avoid a rename:
  * a file whose whole body is `export * from './canonical.js'`. It keeps old
  * importers working (and, on the server, keeps `services/foo.ts` alive after
  * the real module moved to `services/<group>/foo.ts`), but every shell is a
@@ -18,15 +18,13 @@
  * body is re-export statements. Barrels (`index.ts`), type declarations and
  * vendor bundles are not counted.
  *
- * Usage:  node scripts/check-forwarding-shims.mjs [--update]
+ * Usage:  node scripts/check-forwarding-shims.mjs
  */
-import { readFileSync, readdirSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
-const BASELINE = join(ROOT, 'scripts', 'forwarding-shims.baseline.json');
-const UPDATE = process.argv.includes('--update');
 
 const ROOTS = ['frontend/src', 'server/src'];
 const SKIP_DIRS = new Set(['node_modules', 'vendor-files', 'generated', 'dist', '__snapshots__']);
@@ -76,43 +74,10 @@ for (const root of ROOTS) {
 }
 shells.sort();
 
-const baseline = existsSync(BASELINE) ? JSON.parse(readFileSync(BASELINE, 'utf8')) : null;
-
-function writeBaseline(next) {
-  writeFileSync(
-    BASELINE,
-    JSON.stringify(
-      { shims: next.length, files: next, generatedBy: 'check-forwarding-shims.mjs --update' },
-      null,
-      2,
-    ) + '\n',
-  );
-}
-
-if (!baseline) {
-  writeBaseline(shells);
-  console.log(
-    `forwarding shims: no baseline found — wrote scripts/forwarding-shims.baseline.json (${shells.length} shells).`,
-  );
-  console.log('Commit the baseline; growth beyond it now fails.');
-} else if (UPDATE) {
-  /* Shrink-only: an update may drop shells, never add one. A legacy
-   * count-only baseline adopts the current set once. */
-  const allowed = new Set(baseline.files ?? shells);
-  const next = shells.filter((shell) => allowed.has(shell));
-  writeBaseline(next);
-  console.log(`forwarding shims: baseline updated to ${next.length} (counts only ever shrink).`);
-} else if (shells.length > baseline.shims) {
-  const known = new Set(baseline.files ?? []);
-  const added = shells.filter((shell) => !known.has(shell));
-  console.error(
-    `forwarding shims check FAILED: ${shells.length} > baseline ${baseline.shims} (+${shells.length - baseline.shims}).`,
-  );
-  console.error('Import the canonical module directly instead of adding another re-export shell:');
-  for (const shell of added) console.error(`  ${shell}`);
+if (shells.length) {
+  console.error('forwarding shims check FAILED: import canonical modules directly.');
+  for (const shell of shells) console.error(`  ${shell}`);
   process.exitCode = 1;
 } else {
-  console.log(
-    `forwarding shims check passed (${shells.length}/${baseline.shims} re-export-only files; baseline only shrinks).`,
-  );
+  console.log('forwarding shims check passed (zero re-export-only files).');
 }

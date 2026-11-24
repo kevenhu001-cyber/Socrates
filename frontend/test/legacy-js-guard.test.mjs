@@ -1,100 +1,55 @@
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import test from 'node:test';
+import { checkRetiredArchitecture } from '../scripts/check-retired-architecture.mjs';
 
-const sourceScript = fileURLToPath(new URL('../scripts/check-legacy-js.mjs', import.meta.url));
-
-function createFixture(currentPaths, baselinePaths = ['src/old-a.js', 'src/old-b.js']) {
-  const root = mkdtempSync(join(tmpdir(), 'socrates-legacy-js-'));
-  const frontend = join(root, 'frontend');
-  const scripts = join(frontend, 'scripts');
-  const src = join(frontend, 'src');
-  const baseline = join(scripts, 'legacy-js.baseline.json');
-  const script = join(scripts, 'check-legacy-js.mjs');
-
-  mkdirSync(scripts, { recursive: true });
-  mkdirSync(src, { recursive: true });
-  writeFileSync(script, readFileSync(sourceScript));
-  writeFileSync(
-    baseline,
-    `${JSON.stringify({ count: baselinePaths.length, files: baselinePaths }, null, 2)}\n`,
-  );
-
-  for (const path of currentPaths) {
-    const file = join(frontend, path);
+function fixture(t, files) {
+  const root = mkdtempSync(join(tmpdir(), 'socrates-retired-architecture-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  for (const [name, content] of Object.entries(files)) {
+    const file = join(root, name);
     mkdirSync(dirname(file), { recursive: true });
-    writeFileSync(file, 'export {};\n');
+    writeFileSync(file, content);
   }
-
-  return {
-    baseline,
-    cleanup: () => rmSync(root, { recursive: true, force: true }),
-    script,
-  };
+  return root;
 }
 
-function runCheck(script, ...args) {
-  const result = spawnSync(process.execPath, [script, ...args], { encoding: 'utf8' });
-  return { ...result, output: `${result.stdout ?? ''}${result.stderr ?? ''}` };
-}
-
-test('legacy JS guard rejects a new path even when it replaces a deleted path', (t) => {
-  const fixture = createFixture(['src/old-a.js', 'src/new-c.js']);
-  t.after(fixture.cleanup);
-
-  const result = runCheck(fixture.script);
-  assert.equal(result.status, 1, result.output);
-  assert.match(result.output, /src\/new-c\.js/);
-
-  const update = runCheck(fixture.script, '--update');
-  assert.equal(update.status, 1, update.output);
-  assert.match(update.output, /new JS paths are not allowed/);
-  assert.deepEqual(JSON.parse(readFileSync(fixture.baseline, 'utf8')), {
-    count: 2,
-    files: ['src/old-a.js', 'src/old-b.js'],
+for (const extension of ['js', 'mjs', 'cjs', 'jsx']) {
+  test('rejects first-party ' + extension + ' without a mutable baseline', (t) => {
+    const name = 'frontend/src/new.' + extension;
+    const root = fixture(t, { [name]: 'export {};' });
+    assert.deepEqual(checkRetiredArchitecture(root).map((item) => item.file), [name]);
   });
+}
+
+test('permits vendor bundles and ordinary typed source', (t) => {
+  const root = fixture(t, {
+    'frontend/src/vendor-files/library.js': 'export {};',
+    'frontend/src/current.ts': 'export const example = "window.stateStore";',
+  });
+  assert.deepEqual(checkRetiredArchitecture(root), []);
 });
 
-test('legacy JS baseline can shrink but cannot absorb new paths', (t) => {
-  const fixture = createFixture(['src/old-a.js']);
-  t.after(fixture.cleanup);
-
-  const beforeUpdate = runCheck(fixture.script);
-  assert.equal(beforeUpdate.status, 1, beforeUpdate.output);
-  assert.match(beforeUpdate.output, /src\/old-b\.js/);
-
-  const update = runCheck(fixture.script, '--update');
-  assert.equal(update.status, 0, update.output);
-  assert.deepEqual(JSON.parse(readFileSync(fixture.baseline, 'utf8')), {
-    count: 1,
-    files: ['src/old-a.js'],
-    generatedBy: 'check-legacy-js.mjs --update',
+test('rejects retired facade imports, global access and recreation', (t) => {
+  const root = fixture(t, {
+    'frontend/src/state/store.ts': 'export {};',
+    'frontend/src/current.ts': [
+      "import './state/store.js';",
+      "void import('@/state/store');",
+      "window['stateStore'];",
+      "type Old = typeof import('./state/store.ts');",
+    ].join('\n'),
   });
-
-  const afterUpdate = runCheck(fixture.script);
-  assert.equal(afterUpdate.status, 0, afterUpdate.output);
+  assert.equal(checkRetiredArchitecture(root, ['state-facade']).length, 5);
 });
 
-for (const extension of ['mjs', 'cjs', 'jsx']) {
-  test(`legacy guard rejects untyped ${extension} modules and baseline laundering`, (t) => {
-    const fixture = createFixture([`src/new.${extension}`], []);
-    t.after(fixture.cleanup);
-    for (const args of [[], ['--update']]) {
-      const result = runCheck(fixture.script, ...args);
-      assert.equal(result.status, 1, result.output);
-      assert.ok(result.output.includes(`src/new.${extension}`), result.output);
-    }
-    assert.equal(JSON.parse(readFileSync(fixture.baseline, 'utf8')).count, 0);
+test('rejects RN shim recreation, import variants and runtime dependencies', (t) => {
+  const root = fixture(t, {
+    'packages/ui/src/react-web.tsx': 'export {};',
+    'packages/ui/src/current.ts': 'import "./react-web";',
+    'frontend/package.json': JSON.stringify({ dependencies: { 'react-native-web': '1' } }),
   });
-}
-
-test('third-party bundles are excluded while a zero baseline prevents regressions', (t) => {
-  const fixture = createFixture(['src/vendor-files/library.js'], []);
-  t.after(fixture.cleanup);
-  const result = runCheck(fixture.script);
-  assert.equal(result.status, 0, result.output);
+  assert.equal(checkRetiredArchitecture(root, ['rn-shim']).length, 3);
 });

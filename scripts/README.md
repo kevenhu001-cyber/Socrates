@@ -16,7 +16,7 @@ scripts/
 ├── check-drizzle-drift.mjs      ← **CI 门禁**：drizzle migration 元数据漂移（server job）
 ├── check-openapi-drift.mjs      ← **CI 门禁**：路由 ↔ openapi.yaml 双向漂移棘轮（sanity job）
 ├── check-doc-paths.mjs          ← **CI 门禁**：入口文档（README/README.zh/AGENTS）相对链接必须存在（frontend lint）
-├── check-forwarding-shims.mjs   ← **CI 门禁**：只做 re-export 的过渡壳数量棘轮（frontend lint）
+├── check-forwarding-shims.mjs   ← **CI 门禁**：禁止只做 re-export 的过渡壳（frontend lint，无可变基线）
 ├── audit-ratchet.mjs            ← **CI 门禁**：npm audit 棘轮（security.yml）
 ├── coverage-ratchet.mjs         ← **CI 门禁**：覆盖率棘轮（ci.yml）
 ├── gen-csp-hashes.mjs           ← 生成 SPA CSP hash 片段（deploy.sh 用）
