@@ -52,6 +52,7 @@ export function classifyClientSystemMessages(
     if (message?.role !== 'system') continue;
     if (typeof message.content !== 'string' || !message.content.trim()) continue;
     const classified = classifyClientSystem(message.content.trim());
+    if (!classified.content) continue;
     if (classified.kind === 'application') application.push(classified.content);
     else context.push(classified.content);
     if (classified.contextExtras) {
@@ -132,7 +133,13 @@ function classifyClientSystem(raw: string): Classified {
      This narrow rule prevents arbitrary memory text containing that phrase
      from being promoted into application instructions.
   */
-  const trimmed = raw.trim();
+  let trimmed = raw.trim();
+  // Legacy clients sent account memory mirrors. The server now recalls these
+  // rows afresh. Preserve the separate local-memory section if one exists.
+  if (trimmed.startsWith("## User's saved memories (long-term context)")) {
+    const localAt = trimmed.indexOf('\n\n## MEMORY (things I know about the user)');
+    trimmed = localAt === -1 ? '' : trimmed.slice(localAt).trim();
+  }
   if (!trimmed) return { kind: 'context', content: '' };
 
   const lines = trimmed
@@ -157,7 +164,8 @@ function classifyClientSystem(raw: string): Classified {
      owns this content either way, so the classification only picks the tier
      its own directives land in; it never widens what a client may do. */
   const lastIsTemplateMarker = !isDataBlock && TEMPLATE_MARKER_REGEX.test(lines[lines.length - 1]);
-  const directiveIdx = trimmed.indexOf(PROJECT_INSTRUCTION_PREFIX);
+  const directiveLine = trimmed.indexOf('\n' + PROJECT_INSTRUCTION_PREFIX);
+  const directiveIdx = directiveLine < 0 ? -1 : directiveLine + 1;
   const isActiveProjectBlock = /^##\s+Active project\b/i.test(lines[0]) && directiveIdx >= 0;
 
   if ((firstIsAppMarker || lastIsTemplateMarker) && !isActiveProjectBlock) {
