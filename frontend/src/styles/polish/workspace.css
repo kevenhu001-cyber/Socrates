@@ -96,22 +96,30 @@
 #appShell .plugin-detail-view {
   display: flex;
   flex-direction: column;
-  max-width: 680px;
+  max-width: 760px;
   width: 100%;
   margin: 0 auto;
-  padding: 24px 24px 64px;
 }
 
-#appShell .plugin-detail-nav {
-  margin-bottom: 20px;
+#appShell .plugin-detail-page-header {
+  align-items: center;
+  padding-block: var(--ui-space-lg);
 }
 
-#appShell .plugin-detail-hero {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  margin-bottom: 24px;
+#appShell .plugin-detail-page-header .account-page-title {
+  flex: 1 1 180px;
 }
+
+#appShell .plugin-detail-page-header .account-page-actions {
+  flex: 0 1 42%;
+  min-width: 200px;
+}
+
+#appShell .plugin-detail-back-btn {
+  flex: 0 0 auto;
+  margin-inline-start: -8px;
+}
+
 
 #appShell .plugin-detail-logo-tile {
   flex: 0 0 64px;
@@ -142,30 +150,7 @@
   display: block;
 }
 
-#appShell .plugin-detail-hero-content {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-#appShell .plugin-detail-title-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-#appShell .plugin-detail-title-row h2 {
-  margin: 0;
-  font-size: 22px;
-  font-weight: var(--ui-font-weight-semibold);
-  color: var(--foreground);
-  line-height: 1.25;
-}
-
-#appShell .plugin-detail-badge-verified {
+ #appShell .plugin-detail-badge-verified {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -192,6 +177,8 @@
 #appShell .plugin-detail-status-row {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  gap: var(--ui-space-sm);
   margin-top: 2px;
 }
 
@@ -207,11 +194,7 @@
   font-weight: var(--ui-font-weight-medium);
 }
 
-#appShell .plugin-detail-cta-bar {
-  margin-bottom: 28px;
-}
-
-#appShell .plugin-detail-cta-group {
+ #appShell .plugin-detail-cta-group {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -796,7 +779,22 @@
   /* Plugins page refinements on mobile */
 
   #appShell .plugin-detail-view {
-    padding: 12px 16px calc(32px + var(--ui-safe-bottom));
+    max-width: none;
+  }
+
+  #appShell .plugin-detail-page-header {
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  #appShell .plugin-detail-page-header .account-page-actions {
+    flex: 1 0 100%;
+    min-width: 0;
+    margin-inline-start: calc(36px + 56px + 2 * var(--ui-space-sm));
+  }
+
+  #appShell .plugin-detail-cta-group {
+    width: 100%;
   }
 
   #appShell .plugin-detail-logo-tile {
@@ -839,9 +837,6 @@
     padding: 14px;
   }
 
-  #appShell .plugin-detail-title-row h2 {
-    font-size: var(--ui-font-size-xl);
-  }
 }
 
 /* Both directory headings live inside the page beneath the app header. */
