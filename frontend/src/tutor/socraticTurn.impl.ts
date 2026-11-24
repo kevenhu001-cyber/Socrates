@@ -29,7 +29,7 @@ import {
   TutorNode,
 } from './flow.ts';
 import { learningTurnOptions, type LearningTurnOptions } from './learningModeState.ts';
-import { BASELINE_LEVEL, fromBasicsDirective } from '../chat/socraticDirectives.ts';
+import { BASELINE_LEVEL } from '../chat/socraticDirectives.ts';
 import { appendClientContextMessages } from '../chat/promptSuffixes.ts';
 import { injectTemplateSystemPrompt } from '../chat/templateSystemPrompt.ts';
 import { _origGenerateSocraticQuestion, _origGetExplanation } from '../chat/mocks.ts';
