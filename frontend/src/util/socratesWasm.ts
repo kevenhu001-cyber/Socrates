@@ -40,6 +40,12 @@ export function initSocratesWasm(
 ): Promise<SocratesWasmModule | null> {
   const hasExplicitBytes = Boolean(opts && opts.bytes);
   if (wasmInitPromise) return wasmInitPromise;
+  // The generated loader uses fetch(), which cannot load file: URLs in Node.
+  // Keep ordinary source-based unit tests on the TS path (including jsdom);
+  // parity tests and other Node callers can explicitly supply the bytes.
+  if (!hasExplicitBytes && import.meta.url.startsWith('file:')) {
+    return Promise.resolve(null);
+  }
   // A browser/file-based load failure is terminal for this page instance. The
   // synchronous callers intentionally fall back to TypeScript, so retrying on
   // every tool event only creates a noisy, unbounded stream of rejected fetches.
@@ -76,7 +82,7 @@ export function initSocratesWasm(
  * Rust-backed code path once the load finishes.
  */
 export function getSocratesWasm(): SocratesWasmModule | null {
-  if (!wasmApi && !wasmInitPromise) {
+  if (!wasmApi && !wasmInitPromise && !wasmInitFailed && !import.meta.url.startsWith('file:')) {
     // Fire-and-forget: cache the promise so repeated calls don't re-import.
     initSocratesWasm();
   }

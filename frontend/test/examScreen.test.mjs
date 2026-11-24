@@ -86,13 +86,13 @@ test('footer actions follow the mode', () => {
   );
   assert.deepEqual(
     examActionsOf(snapshot({ submitted: true }), chrome).map((action) => action.command),
-    ['form', 'close'],
+    ['close', 'form'],
   );
   assert.deepEqual(
     examActionsOf(snapshot({ questions: [{ type: 'fill-blank', q: 'Q' }] }), chrome).map(
       (action) => action.command,
     ),
-    ['submit', 'close'],
+    ['close', 'submit'],
   );
   assert.deepEqual(
     examActionsOf(snapshot({ readOnly: true }), chrome).map((action) => action.command),

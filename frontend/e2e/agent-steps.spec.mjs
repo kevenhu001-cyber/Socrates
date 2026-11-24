@@ -64,9 +64,13 @@ test('the workspace agent streams its steps into the chat', async ({ page }) => 
   });
 
   const bubble = page.locator('.msg.assistant').last();
-  const surface = bubble.locator('.rn-turn-activity');
-  /* Agent steps render in their tool row's inline detail. */
-  await surface.locator('[data-testid="tool-row-agent-1"]').click();
+  // Tool runs now live directly in the transcript, not in the thinking summary.
+  const surface = bubble.locator('.rn-tool-row[data-tcid="agent-1"]');
+  await expect(surface).toHaveCount(1);
+  const trigger = surface.getByTestId('tool-row-agent-1');
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  await trigger.click();
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true');
   const steps = surface.locator('.agent-step');
   await expect(steps).toHaveCount(3);
   await expect(steps.nth(0).locator('.agent-step-label')).toHaveText('读取了文件');
@@ -83,7 +87,7 @@ test('the workspace agent streams its steps into the chat', async ({ page }) => 
   await expect(plan).toHaveAttribute('data-progress', '2/2');
   await expect(plan.locator('.agent-plan-item')).toHaveCount(2);
 
-  // The run reports its total duration and is collapsed once finished.
+  // The run reports its total duration after the tool row is expanded.
   const run = surface.locator('.agent-run');
   await expect(run).toHaveAttribute('data-state', 'done');
   await expect(run.locator('.agent-run-elapsed')).toHaveText('用时 1m 2s');

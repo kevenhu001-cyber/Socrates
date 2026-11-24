@@ -2,42 +2,59 @@ name: Agent & tool-calling checks
 
 # Focused signal for agent/tool-calling code. PR runs stay cheap and focused;
 # the main CI workflow already owns full frontend/server build coverage.
+# Use identical path coverage for main and PRs; feature-branch pushes are
+# already covered by their PR run. Paths below follow the current source owners.
 on:
   workflow_dispatch:
   push:
-    branches: [main, 'feat/*', 'p*/**']
+    branches: [main]
     paths:
-      - 'server/src/services/toolCallSafety.ts'
-      - 'server/src/services/toolTurnPolicy.ts'
-      - 'server/src/services/toolErrorFeedback.ts'
-      - 'server/src/services/agentStepProjection.ts'
-      - 'server/src/services/codexEvents.ts'
-      - 'server/src/services/codexHarness.ts'
-      - 'server/src/services/agentRuntime.ts'
+      - 'server/src/services/tools/**'
       - 'server/src/routes/chat/**'
       - 'server/src/routes/workspace/agentRuns.ts'
       - 'server/test/**'
+      - 'server/package*.json'
+      - 'prompts/**'
       - 'frontend/src/chat/**'
-      - 'frontend/src/ui/agentSteps.ts'
-      - 'frontend/src/ui/agentMode.js'
-      - 'frontend/src/ui/icons/**'
-      - 'frontend/src/ui/toolInline.ts'
-      - 'frontend/src/ui/toolCards.ts'
+      - 'frontend/src/react/tool-run/**'
+      - 'frontend/src/legacy/agentSteps.ts'
+      - 'frontend/src/legacy/turnActivityModel.ts'
+      - 'frontend/src/legacy/toolPresentationModel.ts'
+      - 'frontend/src/legacy/icons/**'
+      - 'frontend/src/react/intelligent-ui/**'
       - 'frontend/test/**'
       - 'frontend/e2e/agent-steps.spec.mjs'
+      - 'frontend/package*.json'
+      - 'packages/contracts/**'
+      - 'packages/core/**'
+      - 'packages/ui/**'
+      - 'packages/theme/**'
+      - 'tools-rust/**'
       - '.github/workflows/agent-tooling-ci.yml'
   pull_request:
     branches: [main]
     paths:
-      - 'server/src/services/tool*.ts'
-      - 'server/src/services/agentStepProjection.ts'
-      - 'server/src/services/codex*.ts'
+      - 'server/src/services/tools/**'
       - 'server/src/routes/chat/**'
       - 'server/src/routes/workspace/agentRuns.ts'
+      - 'server/test/**'
+      - 'server/package*.json'
+      - 'prompts/**'
       - 'frontend/src/chat/**'
-      - 'frontend/src/ui/agent*'
+      - 'frontend/src/react/tool-run/**'
+      - 'frontend/src/legacy/agentSteps.ts'
+      - 'frontend/src/legacy/turnActivityModel.ts'
+      - 'frontend/src/legacy/toolPresentationModel.ts'
+      - 'frontend/src/legacy/icons/**'
+      - 'frontend/src/react/intelligent-ui/**'
       - 'frontend/test/**'
       - 'frontend/e2e/agent-steps.spec.mjs'
+      - 'frontend/package*.json'
+      - 'packages/contracts/**'
+      - 'packages/core/**'
+      - 'packages/ui/**'
+      - 'packages/theme/**'
+      - 'tools-rust/**'
       - '.github/workflows/agent-tooling-ci.yml'
 
 concurrency:
