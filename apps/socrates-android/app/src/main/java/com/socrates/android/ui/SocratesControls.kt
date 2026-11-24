@@ -61,6 +61,7 @@ object SocratesDesign {
     // until all renderer and system-bar roles can switch together.
     val Surface = Color.White
     val ComposerSurface = Surface
+    val CodeSurface = Color(NativeReadingColors.codeSurface)
     val ComposerBorder = Color(0x1F000000)
     val UserBubble = Color(0xFFF4F4F4)
     val SidebarSurface = Surface
