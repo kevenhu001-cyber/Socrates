@@ -314,7 +314,8 @@
   border-radius: var(--ui-radius-sm);
   background: transparent;
   color: var(--ui-text-secondary);
-  font: inherit;
+  font-family: inherit;
+  font-weight: var(--ui-font-weight-regular);
   text-align: start;
 }
 .rn-tool-row button.tool-run-trigger:hover,
@@ -360,4 +361,37 @@
 .tool-run-trigger :is(.tool-site-marks, .is-connector-brand) {
   flex: none;
   filter: grayscale(1);
+}
+
+/* Completed activity bursts read like a quiet transcript caption, not a card. */
+.tool-activity-burst-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-xs);
+  min-height: var(--ui-control-sm);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ui-text-secondary);
+  font-family: inherit;
+  font-size: var(--ui-font-size-sm);
+  line-height: var(--ui-text-ui-line);
+  cursor: pointer;
+}
+.tool-activity-burst-toggle:hover,
+.tool-activity-burst-toggle:focus-visible {
+  color: var(--foreground);
+}
+.tool-activity-burst-toggle:focus-visible {
+  outline: 2px solid var(--ui-border-strong);
+  outline-offset: 2px;
+}
+.tool-run-prose + .tool-activity-burst,
+.tool-activity-burst + .tool-run-prose {
+  margin-block-start: var(--ui-space-xs);
+}
+@media (max-width: 768px) {
+  .tool-activity-burst-toggle {
+    min-height: var(--ui-control-touch);
+  }
 }
