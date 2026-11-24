@@ -45,6 +45,7 @@ interface NativeAndroidHost {
   performHaptic?(type: string): void;
   postMessage?(messageJson: string): void;
   notifyPageReady?(): void;
+  setThemeMode?(mode: 'light' | 'dark'): void;
 }
 
 function getAndroidHost(): NativeAndroidHost | null {
@@ -185,6 +186,31 @@ export function setSystemInsets(insets: SystemInsets): void {
   root.style.setProperty('--app-safe-right', `${Math.max(0, insets.right)}px`);
 }
 
+let themeObserver: MutationObserver | null = null;
+
+/** Android chrome follows the effective SPA mode, not an independent preference. */
+function watchNativeTheme(): void {
+  themeObserver?.disconnect();
+  themeObserver = null;
+  const host = getAndroidHost();
+  if (!host?.setThemeMode || typeof document === 'undefined') return;
+  let lastMode = '';
+  const sync = () => {
+    const mode = document.documentElement.getAttribute('data-mode');
+    if ((mode !== 'light' && mode !== 'dark') || mode === lastMode) return;
+    try {
+      host.setThemeMode?.(mode);
+      lastMode = mode;
+    } catch (error) {
+      reportSwallow(error, 'androidBridge.setThemeMode');
+    }
+  };
+  sync();
+  if (typeof window.MutationObserver !== 'function') return;
+  themeObserver = new window.MutationObserver(sync);
+  themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-mode'] });
+}
+
 /**
  * Initialize the native bridge on window.__socratesNative.
  */
@@ -200,6 +226,7 @@ export function initAndroidBridge(): void {
 
   (window as unknown as { __socratesNative: SocratesNativeInterface }).__socratesNative = bridge;
 
+  watchNativeTheme();
   if (isAndroidHybrid()) {
     document.documentElement.classList.add('is-android-hybrid');
     const host = getAndroidHost();
