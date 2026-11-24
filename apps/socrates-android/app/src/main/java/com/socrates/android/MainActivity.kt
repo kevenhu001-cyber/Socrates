@@ -6,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.core.view.WindowCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import com.socrates.android.data.ApiClient
@@ -22,11 +23,11 @@ import kotlinx.coroutines.withContext
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.light(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT),
-            navigationBarStyle = SystemBarStyle.light(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT),
-        )
         val useNativeCompose = intent.getBooleanExtra(EXTRA_USE_NATIVE_COMPOSE, false)
+        val transparent = android.graphics.Color.TRANSPARENT
+        val initialBarStyle = if (useNativeCompose) SystemBarStyle.light(transparent, transparent)
+            else SystemBarStyle.auto(transparent, transparent)
+        enableEdgeToEdge(statusBarStyle = initialBarStyle, navigationBarStyle = initialBarStyle)
         if (useNativeCompose) {
             val chatViewModel = ViewModelProvider(this)[ChatViewModel::class.java]
             setContent { SocratesTheme { SocratesApp(chatViewModel) } }
@@ -36,7 +37,13 @@ class MainActivity : ComponentActivity() {
             setContent {
                 SocratesTheme {
                     HybridWorkspace(
-                        onBackExit = { finish() }
+                        onBackExit = { finish() },
+                        onThemeMode = { dark ->
+                            WindowCompat.getInsetsController(window, window.decorView).apply {
+                                isAppearanceLightStatusBars = !dark
+                                isAppearanceLightNavigationBars = !dark
+                            }
+                        }
                     )
                 }
             }
