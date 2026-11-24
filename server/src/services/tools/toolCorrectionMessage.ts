@@ -72,7 +72,7 @@ const CANONICAL_EXAMPLES: Record<string, Record<string, unknown>> = {
     revision: 0,
     operations: [{ op: 'add', node: { id: 'note', type: 'text', text: 'Updated note' } }],
   },
-  read_attachment: { fileId: '00000000-0000-4000-8000-000000000000', offset: 0, limit: 12000 },
+  read_attachment: { fileId: '00000000-0000-4000-8000-000000000000', offset: 0, limit: 8000 },
   cite_sources: { claims: [{ quote: 'Exact sentence from the answer.', sourceIds: ['source-1'] }] },
   render_intelligent_ui: { nodes: [{ type: 'text', text: 'Summary' }] },
   get_ui_contract: { kind: 'visualization', template: 'function' },

@@ -22,15 +22,17 @@ import {
   insertProviderIdentity,
   insertResponseTypography,
   refreshServerPrompt,
+  refreshSnapshotBlock,
 } from '../../../lib/chatPolicy.js';
 import { appendTurnContext, splitPromptContext } from '../../../lib/chatPromptContext.js';
 import { resolveSessionPromptOrAssemble } from '../../../services/core/sessionPromptSnapshot.js';
 import type { ProviderMessage } from '../../../lib/providerMessageSchema.js';
-import { applyPolicyBlock, resolveAssistantInstructions, TEACHER_MODE_MARKER } from './prompts.js';
+import { resolveAssistantInstructions, TEACHER_MODE_MARKER } from './prompts.js';
 import {
   buildLearningModeTurn,
   estimateToolSchemaTokens,
   resolveMemoryContext,
+  MEMORY_CONTEXT_MARKER,
   resolveRagContext,
 } from './context.js';
 import {
@@ -57,6 +59,7 @@ export async function prepareChatRequest(
     /** Resolved tool context for this turn, used to budget the tool schemas. */
     toolCtxPromise?: Promise<{
       toolDefs?: Array<{ function?: { name?: string; parameters?: unknown } }>;
+      initialToolDefs?: Array<{ function?: { name?: string; parameters?: unknown } }>;
     }> | null;
   } = {},
 ): Promise<{
@@ -89,8 +92,8 @@ export async function prepareChatRequest(
   } = parsed;
 
   /* Provider lookup, per-turn recall and prompt hydration overlap. Prompt
-     initialization is lazy: later turns do not reread profile/memory/role
-     settings or inject a new clock. Windowing only touches conversation
+     initialization is lazy; current memory, mode and assistant state are resolved
+     independently and only change the outbound prefix when their content changes. Windowing only touches conversation
      messages and preserves the canonical persisted system prefix. */
   const projectId = typeof parsed.projectId === 'string' ? parsed.projectId : undefined;
   const querySessionId = req.query.sessionId;
@@ -114,39 +117,34 @@ export async function prepareChatRequest(
     mode === 'tutor' && parsed.learningMode
       ? buildLearningModeTurn(parsed.learningMode, parsed.learningFocus)
       : Promise.resolve(null);
-  // Only the first request reads and injects persona, user context and saved
-  // memories. Existing sessions hydrate lazily once after this release. The
-  // server-owned snapshot survives browser reloads and process restarts.
+  // Freeze only the base profile and context; refresh mutable instructions and
+  // memories on the outbound request, never by rewriting the snapshot.
+  const memoryPromise = resolveMemoryContext(req.userId ?? undefined, projectId, undefined, context.conversation);
+  const teacherPromise = mode === 'tutor' ? getTeacherModePrompt() : Promise.resolve(null);
+  const assistantPromise = resolveAssistantInstructions(parsed.assistantId, sessionId, req.userId ?? undefined);
   const promptPromise = resolveSessionPromptOrAssemble(
     req.userId ?? undefined,
     sessionId,
     async () => {
-      const [teacherBlock, assistantBlock, memoryBlock] = await Promise.all([
-        mode === 'tutor'
-          ? getTeacherModePrompt().then((prompt) => ({ marker: TEACHER_MODE_MARKER, prompt }))
-          : null,
-        resolveAssistantInstructions(parsed.assistantId, sessionId, req.userId ?? undefined),
-        resolveMemoryContext(req.userId ?? undefined, projectId),
-      ]);
       let initialized = enforceServerSystemBoundary(context.initialization);
       initialized = injectUserContext(initialized, req.user, { sessionSnapshot: !!sessionId });
-      initialized = applyPolicyBlock(initialized, teacherBlock);
-      initialized = applyPolicyBlock(initialized, assistantBlock);
-      initialized = applyPolicyBlock(initialized, memoryBlock);
       initialized = appendFinalOutputConstraints(initialized);
       return initialized[0].content as string;
     },
   );
-  for (const p of [providerPromise, ragPromise, promptPromise, learningPromise]) p.catch(() => {});
-  const [storedPrompt, ragBlock, learningTurn] = await Promise.all([
+  for (const p of [providerPromise, ragPromise, promptPromise, learningPromise, memoryPromise, teacherPromise, assistantPromise]) p.catch(() => {});
+  const [storedPrompt, ragBlock, learningTurn, memoryBlock, teacherPrompt, assistantBlock] = await Promise.all([
     promptPromise,
     ragPromise,
     learningPromise.catch(() => null),
+    memoryPromise,
+    teacherPromise,
+    assistantPromise,
   ]);
   let conversation = appendTurnContext(
     context.conversation,
     context.turnInstructions,
-    ragBlock?.prompt ?? null,
+    [ragBlock?.prompt, memoryBlock?.prompt].filter(Boolean).join('\n\n') || null,
     learningTurn,
   );
   /* the session prompt snapshot freezes turn 1's
@@ -159,15 +157,18 @@ export async function prepareChatRequest(
          re-sends them on every turn, so they are classified again here.
          Without this, switching a template in the middle of a session lit
          the chip but left the model's persona frozen in turn 1's prefix.
-     Everything else in the snapshot (user context, teacher mode, selected
-     assistant, saved memories) stays frozen, which is what it is for. */
+     The initial user context stays frozen. Mode, assistant and memories are
+     refreshed independently below. */
   const clientBlocks = hasClientSystemPrefix(context.initialization)
     ? renderClientBlocks(classifyClientSystemMessages(context.initialization))
     : undefined;
-  const systemPrompt = refreshServerPrompt(storedPrompt, {
+  let systemPrompt = refreshServerPrompt(storedPrompt, {
     clientBlocks,
     reasoningEffort: reasoning_effort,
   });
+  systemPrompt = refreshSnapshotBlock(systemPrompt, TEACHER_MODE_MARKER, teacherPrompt);
+  systemPrompt = refreshSnapshotBlock(systemPrompt, '[User-selected assistant]', assistantBlock?.prompt ?? null);
+  systemPrompt = refreshSnapshotBlock(systemPrompt, MEMORY_CONTEXT_MARKER, null);
   let finalMessages: ProviderMessage[] = [
     { role: 'system', content: insertResponseTypography(systemPrompt) },
     ...conversation,
@@ -188,7 +189,7 @@ export async function prepareChatRequest(
     const budgetProvider = await providerPromise.catch(() => null);
     const toolSchemaTokens = options.toolCtxPromise
       ? await options.toolCtxPromise
-          .then((ctx) => estimateToolSchemaTokens(ctx?.toolDefs))
+          .then((ctx) => estimateToolSchemaTokens(ctx?.initialToolDefs ?? ctx?.toolDefs))
           .catch(() => 0)
       : 0;
     const budget = resolveContextBudget(budgetProvider?.model ?? '', {
@@ -214,7 +215,10 @@ export async function prepareChatRequest(
         }),
       );
     }
-    if (estimateContextMessageTokens(finalMessages) > budget.budget) {
+    const softRaw = Number(process.env.CHAT_CONTEXT_SOFT_TOKENS ?? '24000');
+    const soft = Number.isFinite(softRaw) && softRaw > 0 ? Math.floor(softRaw) : budget.budget;
+    const trigger = Math.min(budget.budget, soft);
+    if (estimateContextMessageTokens(finalMessages) > trigger) {
       const { compressSessionMessages } =
         await import('../../../services/embeddings/sessionCompressor.js');
       const rawKeep = Number(process.env.CHAT_CONTEXT_KEEP_TURNS);
@@ -222,8 +226,9 @@ export async function prepareChatRequest(
         ...(req.userId && sessionId ? { cacheScope: `${req.userId}:${sessionId}` } : {}),
         triggerTokens: Math.max(
           1,
-          budget.budget - estimateContextMessageTokens([finalMessages[0]]),
+          trigger - estimateContextMessageTokens([finalMessages[0]]),
         ),
+        batchTurns: 4,
         ...(Number.isFinite(rawKeep) && rawKeep > 0 ? { keepTurns: Math.floor(rawKeep) } : {}),
       });
       if (compressed.didCompress && compressed.messages.length) {
@@ -240,7 +245,7 @@ export async function prepareChatRequest(
           JSON.stringify({
             droppedTurns: compressed.droppedTurns,
             summarizer: compressed.summarizer,
-            budget: budget.budget,
+            budget: trigger,
             budgetSource: budget.source,
             contextWindow: budget.contextWindow ?? null,
           }),

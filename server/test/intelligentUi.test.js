@@ -369,7 +369,7 @@ test('the prompt envelope example is valid JSON and an executable OpenUI program
   const example = OPENUI_TOOL_GUIDANCE.match(/Return tool arguments as (.*?)\. The source/)[1];
   assert.equal(validateIntelligentUi(JSON.parse(example)).ok, true);
   assert.match(OPENUI_TOOL_GUIDANCE, /50000 characters/);
-  assert.match(SERVER_SYSTEM_POLICY, /Never claim a failed tool succeeded/);
+  assert.match(SERVER_SYSTEM_POLICY, /never claim failed actions succeeded/i);
 });
 
 test('XML-style demonstration payloads are normalized into a valid program', () => {

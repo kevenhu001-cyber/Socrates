@@ -12,9 +12,9 @@ import { requireAuth } from '../../middleware/auth.js';
 import { chatLimiter } from '../../middleware/rateLimit.js';
 import { sanitizeExtraBody } from '../../lib/sanitize.js';
 import { trackSseConnection, startSseKeepalive } from '../../lib/sse.js';
-import { getBeagleSystemPrompt } from '../../lib/prompts.js';
-import { appendAssistantInstructions, prependTeacherModePrompt } from '../chat/prepare/prompts.js';
-import { appendMemoryContext } from '../chat/prepare/context.js';
+import { getBeagleSystemPrompt, getTeacherModePrompt } from '../../lib/prompts.js';
+import { resolveAssistantInstructions, TEACHER_MODE_MARKER } from '../chat/prepare/prompts.js';
+import { resolveMemoryContext, MEMORY_CONTEXT_MARKER } from '../chat/prepare/context.js';
 import {
   enforceServerSystemBoundary,
   classifyClientSystemMessages,
@@ -32,7 +32,13 @@ import {
   insertProviderIdentity,
   insertResponseTypography,
   refreshServerPrompt,
+  refreshSnapshotBlock,
 } from '../../lib/chatPolicy.js';
+import { resolveContextBudget } from '../../lib/modelCapabilities.js';
+import { estimateContextMessageTokens } from '../../services/core/usageTracker.js';
+import { compressSessionMessages } from '../../services/embeddings/sessionCompressor.js';
+import { DEFAULT_MAX_TOKENS } from '../../services/core/llm/types.js';
+import type { ProviderMessage } from '../../lib/providerMessageSchema.js';
 import { buildSseErrorFrame } from '../../lib/sseErrorFrame.js';
 
 const router = Router();
@@ -96,24 +102,16 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
      * to their own upstream on every subsequent turn. The snapshot keeps only
      * provider-independent session state; the identity is appended per
      * request, after the snapshot has been resolved. */
+    const memoryPromise = resolveMemoryContext(req.userId ?? undefined, isUuid(req.body.projectId) ? req.body.projectId : undefined, undefined, context.conversation);
+    const teacherPromise = mode === 'tutor' ? getTeacherModePrompt() : Promise.resolve(null);
+    const assistantPromise = resolveAssistantInstructions(assistantId, sessionId, req.userId ?? undefined);
+    for (const p of [memoryPromise, teacherPromise, assistantPromise]) p.catch(() => {});
     const storedPrompt = await resolveSessionPromptOrAssemble(
       req.userId ?? undefined,
       sessionId,
       async () => {
         let initialized = enforceServerSystemBoundary(context.initialization);
         initialized = injectUserContext(initialized, req.user, { sessionSnapshot: !!sessionId });
-        if (mode === 'tutor') initialized = await prependTeacherModePrompt(initialized);
-        initialized = await appendAssistantInstructions(
-          initialized,
-          assistantId,
-          sessionId,
-          req.userId ?? undefined,
-        );
-        initialized = await appendMemoryContext(
-          initialized,
-          req.userId ?? undefined,
-          isUuid(req.body.projectId) ? req.body.projectId : undefined,
-        );
         initialized = appendFinalOutputConstraints(initialized);
         return initialized[0].content as string;
       },
@@ -129,17 +127,39 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
     const clientBlocks = hasClientSystemPrefix(context.initialization)
       ? renderClientBlocks(classifyClientSystemMessages(context.initialization))
       : undefined;
+    const [memoryBlock, teacherPrompt, assistantBlock] = await Promise.all([memoryPromise, teacherPromise, assistantPromise]);
+    let refreshed = refreshServerPrompt(storedPrompt, { clientBlocks, reasoningEffort: reasoning_effort });
+    refreshed = refreshSnapshotBlock(refreshed, TEACHER_MODE_MARKER, teacherPrompt);
+    refreshed = refreshSnapshotBlock(refreshed, '[User-selected assistant]', assistantBlock?.prompt ?? null);
+    refreshed = refreshSnapshotBlock(refreshed, MEMORY_CONTEXT_MARKER, null);
     const systemPrompt = insertProviderIdentity(
-      insertResponseTypography(
-        refreshServerPrompt(storedPrompt, { clientBlocks, reasoningEffort: reasoning_effort }),
-      ),
+      insertResponseTypography(refreshed),
       await getBeagleSystemPrompt(),
     );
+    let conversation = appendTurnContext(context.conversation, context.turnInstructions, memoryBlock?.prompt ?? null);
+    const budget = resolveContextBudget(provider.model, {
+      overrideTokens: Number(process.env.CHAT_CONTEXT_MAX_TOKENS),
+      reserveTokens: typeof max_tokens === 'number' ? max_tokens : DEFAULT_MAX_TOKENS,
+    });
+    const softRaw = Number(process.env.CHAT_CONTEXT_SOFT_TOKENS ?? '24000');
+    const trigger = Math.min(budget.budget, Number.isFinite(softRaw) && softRaw > 0 ? Math.floor(softRaw) : budget.budget);
+    if (estimateContextMessageTokens([{ role: 'system', content: systemPrompt }, ...conversation]) > trigger) {
+      try {
+        const compressed = await compressSessionMessages(conversation, {
+          ...(req.userId && sessionId ? { cacheScope: req.userId + ':' + sessionId } : {}),
+          triggerTokens: Math.max(1, trigger - estimateContextMessageTokens([{ role: 'system', content: systemPrompt }])),
+          batchTurns: 4,
+        });
+        if (compressed.didCompress) {
+          const wire = compressed.messages.map(m => ({ ...m, content: m.content ?? m.rawText ?? '' })) as ProviderMessage[];
+          conversation = splitPromptContext(wire, mode).conversation;
+        }
+      } catch (error) {
+        console.warn('[minimax] history compression skipped:', (error as Error).message);
+      }
+    }
     let messages = transformMessagesForModel(
-      [
-        { role: 'system', content: systemPrompt },
-        ...appendTurnContext(context.conversation, context.turnInstructions, null),
-      ],
+      [{ role: 'system', content: systemPrompt }, ...conversation],
       provider,
     );
     /* the upstream model name is operator-configured
@@ -212,6 +232,8 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
           apiBase: provider.url,
           apiKey: provider.keyPlaintext,
           model: upstreamModel,
+          userId: req.userId,
+          cacheSessionId: sessionId,
           /* the operator's statement for
            * the built-in endpoint wins over the registry's host guess. */
           instantEncoding: provider.instantEncoding ?? null,
@@ -328,6 +350,8 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
         apiBase: provider.url,
         apiKey: provider.keyPlaintext,
         model: upstreamModel,
+        userId: req.userId,
+        cacheSessionId: sessionId,
         messages: messages,
         /* undefined → llm.js default (32 K) so a long response isn't
            silently truncated by a small per-model cap. */

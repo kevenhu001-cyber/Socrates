@@ -196,7 +196,7 @@ test('turn context preserves multimodal content and complete assistant/tool grou
   assert.equal(out[2], input[2]);
 });
 
-test('live tool budget changes only the suffix after stable tool routing', () => {
+test('tool iteration counters do not invalidate the system prefix', () => {
   const base = appendFinalOutputConstraints([{ role: 'system', content: 'frozen session prefix' }]);
   const stable = appendToolRoutingHints(base, ['render_intelligent_ui', 'web_search']);
   const first = appendNativeToolContract(stable, ['render_intelligent_ui', 'web_search'], {
@@ -209,7 +209,7 @@ test('live tool budget changes only the suffix after stable tool routing', () =>
   const prefix = (m) => m[0].content.split(marker)[0];
   assert.equal(prefix(first), prefix(second));
   assert.match(prefix(first), /Unified visual tool/);
-  assert.notEqual(first[0].content, second[0].content);
+  assert.equal(first[0].content, second[0].content);
   assert.equal(base[0].content.includes(marker), false);
 });
 

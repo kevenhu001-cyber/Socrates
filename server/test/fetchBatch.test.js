@@ -448,7 +448,7 @@ describe('fetchBatch — response handling', () => {
     assert.ok(out.results[0].content.length <= 200_000, 'body truncated to <=200KB');
   });
 
-  test('web_fetch continues beyond 20k and the ordinary 200 KB page limit', async () => {
+  test('web_fetch continues beyond the default page and ordinary 200 KB page limit', async () => {
     stubDns({ 'paged.test': [{ address: '8.8.8.8', family: 4 }] });
     const body = 'A'.repeat(220_000) + 'PAGED_MARKER' + 'B'.repeat(25_000);
     globalThis.fetch = mock.fn(async () =>
@@ -459,9 +459,9 @@ describe('fetchBatch — response handling', () => {
     const call = { id: 'fetch-page', function: { name: 'web_fetch' } };
     const url = 'https://paged.test/article';
     const first = await executeWebFetch({ url }, call, ctx, { activeToolNames: [] });
-    assert.match(first.result.output, /\[range: 0-20000 of \d+ available chars\]/);
+    assert.match(first.result.output, /\[range: 0-8000 of \d+ available chars\]/);
     assert.match(first.result.output, /\[has_more: yes\]/);
-    assert.match(first.result.output, /\[next_offset: 20000\]/);
+    assert.match(first.result.output, /\[next_offset: 8000\]/);
     const later = await executeWebFetch({ url, offset: 220_000, max_chars: 100 }, call, ctx, {
       activeToolNames: [],
     });
@@ -511,6 +511,28 @@ describe('fetchBatch — response handling', () => {
     );
     assert.equal(toolResult.truncated, true);
     assert.equal(globalThis.fetch.mock.calls.length, 2);
+  });
+
+  test('large batch reads preserve every page header and exact continuation offsets', async () => {
+    stubDns({ 'batch-budget.test': [{ address: '8.8.8.8', family: 4 }] });
+    globalThis.fetch = mock.fn(async () =>
+      makeResponse({ headers: { 'content-type': 'text/plain' }, body: 'x'.repeat(40000) }),
+    );
+    const events = [];
+    const ctx = { emitter: { event: (name, payload) => events.push({ name, payload }) } };
+    const call = { id: 'batch-budget', function: { name: 'web_fetch' } };
+    const urls = Array.from({ length: 4 }, (_, i) => 'https://batch-budget.test/' + i);
+    const { result } = await executeWebFetch({ urls, max_chars: 30000 }, call, ctx, { activeToolNames: [] });
+    assert.equal(result.status, 'completed');
+    assert.equal((result.output.match(/\[next_offset: 8000\]/g) || []).length, 4);
+    assert.match(result.output, /\[page 4\/4\]/);
+    assert.ok(result.output.length < 60000);
+    const emitted = events.find(e => e.name === 'tool_result').payload;
+    assert.equal(emitted.truncated, true);
+    assert.ok(emitted.pages.every(p => p.nextOffset === 8000 && p.hasMore));
+    const next = await executeWebFetch({ url: urls[3], offset: 8000, max_chars: 100 }, call, ctx, { activeToolNames: [] });
+    assert.match(next.result.output, /\[range: 8000-8100 of /);
+    assert.equal(globalThis.fetch.mock.calls.length, 4);
   });
 
   test('web_fetch batch limits requests to four URLs', async () => {

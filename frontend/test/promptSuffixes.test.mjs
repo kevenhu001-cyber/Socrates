@@ -15,7 +15,6 @@ globalThis.localStorage.setItem('socrates-reasoning-effort', 'high');
 
 const {
   appendClientContextMessages,
-  configurePromptSuffixes,
   memoriesSuffix,
   projectContextSuffix,
   thinkingSuffix,
@@ -27,7 +26,7 @@ const { dispatchSearch, dispatchSession, searchStore, sessionStore } =
   await import('../src/store/index.ts');
 const { getProjectCacheSnapshot, setCachedProjects } =
   await import('../src/projects/projectCache.ts');
-const { clearUserMemories, getUserMemories, setUserMemories } =
+const { clearUserMemories, setUserMemories } =
   await import('../src/app/lifecycle/userMemory.ts');
 
 test('toneVoiceSuffix is empty for the default preset', () => {
@@ -70,62 +69,25 @@ test('thinkingSuffix carries no effort directive in tutor mode either', () => {
   }
 });
 
-test('memoriesSuffix lists cached server memories', () => {
+test('profile cache is not injected again; unsynced local memory is retained', async () => {
+  const { setMemory, replaceMemoryId, clearAllMemories } = await import('../src/storage/memoryStore.ts');
   const previousProjectId = sessionStore.getState().currentProjectId;
   dispatchSession({ type: 'session/set', key: 'currentProjectId', value: null });
-  configurePromptSuffixes({ getUserMemories: () => ['likes tea', 5] });
+  clearAllMemories();
+  setUserMemories(['cached server fact']);
   try {
-    const suffix = memoriesSuffix();
-    assert.match(suffix, /## User's saved memories/);
-    assert.match(suffix, /- likes tea/);
-    assert.match(suffix, /- 5/);
-  } finally {
-    configurePromptSuffixes({ getUserMemories: () => [] });
-    dispatchSession({
-      type: 'session/set',
-      key: 'currentProjectId',
-      value: previousProjectId ?? null,
-    });
-  }
-});
-
-test('the profile memory cache is the source used by prompt suffixes and sign-out clears it', () => {
-  const previousMemories = getUserMemories();
-  const previousProjectId = sessionStore.getState().currentProjectId;
-  dispatchSession({ type: 'session/set', key: 'currentProjectId', value: null });
-  setUserMemories(['likes tea']);
-  configurePromptSuffixes({ getUserMemories });
-  try {
-    assert.match(memoriesSuffix(), /- likes tea/);
-    clearUserMemories();
-    assert.deepEqual(getUserMemories(), []);
+    const local = setMemory('preference', 'local fact');
+    const synced = setMemory('fact', 'synced fact');
+    replaceMemoryId(synced.id, '00000000-0000-4000-8000-000000000001');
+    assert.ok(local);
+    assert.match(memoriesSuffix(), /local fact/);
+    assert.doesNotMatch(memoriesSuffix(), /cached server fact|synced fact/);
+    dispatchSession({ type: 'session/set', key: 'currentProjectId', value: 'project-1' });
     assert.equal(memoriesSuffix(), '');
   } finally {
-    setUserMemories(previousMemories);
-    dispatchSession({
-      type: 'session/set',
-      key: 'currentProjectId',
-      value: previousProjectId ?? null,
-    });
-    configurePromptSuffixes({ getUserMemories: () => [] });
-  }
-});
-
-test('project chats leave memory selection to the server', () => {
-  const previousProjectId = sessionStore.getState().currentProjectId;
-  dispatchSession({ type: 'session/set', key: 'currentProjectId', value: 'project-1' });
-  configurePromptSuffixes({ getUserMemories: () => ['personal secret'] });
-  try {
-    const suffix = memoriesSuffix();
-    assert.equal(suffix, '');
-    assert.doesNotMatch(suffix, /personal secret|MEMORY/);
-  } finally {
-    configurePromptSuffixes({ getUserMemories: () => [] });
-    dispatchSession({
-      type: 'session/set',
-      key: 'currentProjectId',
-      value: previousProjectId ?? null,
-    });
+    clearAllMemories();
+    clearUserMemories();
+    dispatchSession({ type: 'session/set', key: 'currentProjectId', value: previousProjectId ?? null });
   }
 });
 
@@ -178,7 +140,6 @@ test('appendClientContextMessages composes project context and research without 
   const previousProjectId = sessionStore.getState().currentProjectId;
   const previousSearch = searchStore.getState().searchContext;
   const previousProjects = getProjectCacheSnapshot();
-  configurePromptSuffixes({ getUserMemories: () => ['likes tea'] });
   setCachedProjects([{ id: 'p1', name: 'Physics' }]);
   dispatchSession({ type: 'session/set', key: 'currentProjectId', value: 'p1' });
   dispatchSearch({ type: 'search/set', key: 'searchContext', value: 'evidence' });
@@ -194,7 +155,6 @@ test('appendClientContextMessages composes project context and research without 
     const withoutResearch = appendClientContextMessages(base);
     assert.equal(withoutResearch.length, 2);
   } finally {
-    configurePromptSuffixes({ getUserMemories: () => [] });
     dispatchSession({
       type: 'session/set',
       key: 'currentProjectId',

@@ -9,6 +9,12 @@ export function createSummaryMemo(
   const saved = new Map<string, { value: string; at: number }>();
   const pending = new Map<string, Promise<string>>();
   return {
+    peek(key: string): string | undefined {
+      const hit = saved.get(key);
+      if (!hit) return undefined;
+      if (now() - hit.at >= ttlMs) { saved.delete(key); return undefined; }
+      return hit.value;
+    },
     async get(key: string, produce: () => Promise<string>): Promise<string> {
       const hit = saved.get(key);
       if (hit && now() - hit.at < ttlMs) {

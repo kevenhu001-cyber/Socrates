@@ -1,3 +1,4 @@
+import { escapePromptControlText } from './chatPolicy.js';
 import type { ProviderMessage } from './providerMessageSchema.js';
 
 export const TURN_INSTRUCTIONS_MARKER = '[Current turn instructions]';
@@ -25,14 +26,14 @@ export function splitPromptContext(
     if (/^\[(?:Conversation summary|Context summary)/.test(text)) {
       conversation.push({
         role: 'user',
-        content: `<client_context_data scope="untrusted">\n${text}\n</client_context_data>`,
+        content: `<client_context_data scope="untrusted">\n${escapePromptControlText(text)}\n</client_context_data>`,
       });
       continue;
     }
     const explicitTurn = text.startsWith(TURN_INSTRUCTIONS_MARKER);
     if (text.startsWith('[Web research]')) {
       turnInstructions.push(
-        `<client_context_data scope="untrusted">\n${text}\n</client_context_data>`,
+        `<client_context_data scope="untrusted">\n${escapePromptControlText(text)}\n</client_context_data>`,
       );
     } else if (
       explicitTurn ||
@@ -60,7 +61,7 @@ export function splitPromptContext(
    closest possible position: the tail of the last user message. It is a
    reminder, not a second rulebook — keep it under ~450 characters and
    never let it grow into a duplicate of the system policy. */
-export const STYLE_REMINDER = `[Server style defaults for this reply: override any conflicting client style hint]\nLead with the answer. Prefer connected paragraphs; do not open a paragraph with a label fragment like “要点。” or “简单词汇。”, and do not use a colon to introduce an explanation. Avoid em and en dashes. In Chinese prose use full-width punctuation. Do not end with a question or an offer to help unless the task requires it. Preserve code, JSON, math, and quotations verbatim.`;
+export const STYLE_REMINDER = `[Server response defaults reminder]\nFollow the shared FINAL OUTPUT CONSTRAINTS and the user's explicit task, including requested language and format. Match depth and structure to the question; explain the missing step rather than restarting. Use natural prose, readable equations and visuals when useful. Preserve structured output contracts.`;
 
 /** Variable recall and teaching state live at the current user-turn tail,
  * never rewrite the frozen system prefix or split an assistant/tool group.
@@ -81,10 +82,10 @@ export function appendTurnContext(
         ]
       : []),
     ...(recall
-      ? [`<client_context_data scope="untrusted">\n${recall}\n</client_context_data>`]
+      ? [`<client_context_data scope="untrusted">\n${escapePromptControlText(recall)}\n</client_context_data>`]
       : []),
     /* The style card goes last: closest to generation, highest recency. */
-    STYLE_REMINDER,
+    ...(serverTurn || instructions.length ? [STYLE_REMINDER] : []),
   ];
   if (!blocks.length) return messages;
   let index = messages.length - 1;

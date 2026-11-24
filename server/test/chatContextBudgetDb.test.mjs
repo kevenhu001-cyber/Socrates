@@ -22,6 +22,7 @@ import { invalidateApiKeyCache } from '../src/services/core/apiKey.js';
 
 const enabled = Boolean(process.env.DATABASE_URL);
 let db, owner, provider, fetchBefore;
+const softBefore = process.env.CHAT_CONTEXT_SOFT_TOKENS;
 
 before(async () => {
   if (!enabled) return;
@@ -53,6 +54,8 @@ before(async () => {
 after(async () => {
   if (!enabled) return;
   globalThis.fetch = fetchBefore;
+  if (softBefore === undefined) delete process.env.CHAT_CONTEXT_SOFT_TOKENS;
+  else process.env.CHAT_CONTEXT_SOFT_TOKENS = softBefore;
   for (const u of [owner]) if (u) await db.delete(users).where(eq(users.id, u.id));
   await closeDb();
 });
@@ -103,6 +106,7 @@ test(
       return new Response(JSON.stringify({ choices: [{ message: { content: 'summary' } }] }));
     };
     const messages = oversizedConversation();
+    process.env.CHAT_CONTEXT_SOFT_TOKENS = '0';
     const result = await prepareWithModel('MiniMax-M3', messages);
     assert.equal(result.ok, true);
     /* No summariser call: the model's own window covers this conversation. */
@@ -122,6 +126,7 @@ test(
       return new Response(JSON.stringify({ choices: [{ message: { content: 'summary' } }] }));
     };
     const messages = oversizedConversation();
+    process.env.CHAT_CONTEXT_SOFT_TOKENS = '0';
     const result = await prepareWithModel('test-model', messages);
     assert.equal(result.ok, true);
     /* The conversation is over the fallback budget, so the history is
@@ -136,3 +141,13 @@ test(
     );
   },
 );
+
+ test('soft budget reduces long histories even for large-window models', { skip: !enabled }, async () => {
+    process.env.CHAT_CONTEXT_SOFT_TOKENS = '24000';
+    const messages = oversizedConversation();
+    const result = await prepareWithModel('MiniMax-M3', messages);
+    assert.equal(result.ok, true);
+    assert.ok(result.payload.messages.length < messages.length + 1);
+    assert.match(result.payload.messages.map(m => String(m.content ?? '')).join('\n'), /\[Context summary/);
+    assert.match(String(result.payload.messages.at(-1).content), /turn 29/);
+ });

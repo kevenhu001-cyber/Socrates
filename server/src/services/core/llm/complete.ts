@@ -7,6 +7,7 @@ import {
   providerHeaders,
   providerPayloadFailure,
 } from '../llmProtocol.js';
+import { observePromptCacheUsage } from '../../../lib/promptCacheUsage.js';
 import { createUpstreamRetryBudget } from '../../../lib/upstreamRetryBudget.js';
 import { getLlmDispatcher, markLlmActivity } from './dispatcher.js';
 import { LlmProviderError, type ChatCompletionRequestOptions } from './types.js';
@@ -140,6 +141,7 @@ export async function callChatCompletion(opts: ChatCompletionRequestOptions) {
       { retryable: false },
     );
   }
+  observePromptCacheUsage(json.usage);
   /* Preserve reasoning_content for the next tool/history request. */
   const message = json.choices?.[0]?.message || {};
   const finishReason = json.choices?.[0]?.finish_reason || null;

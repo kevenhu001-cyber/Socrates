@@ -164,6 +164,7 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
     } = toolCtx;
     const MAX_TOOL_ITERATIONS = toolCtx.MAX_TOOL_ITERATIONS;
     const executionResults = new Map<string, import('./types.js').ToolResult>();
+    const displayOutputs = new Map<string, string>();
     const runToolCall = createToolRunner({
       publicRuntime: {
         registerSources: turnEvents.registerSources,
@@ -179,6 +180,7 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
       toolPolicy,
       schemaForTool,
       onResult: (id, result) => executionResults.set(id, result),
+      onDisplayOutput: (id, content) => displayOutputs.set(id, content),
       connectorConnectionsByProvider,
       projectConnectorConnectionsByProvider,
       connectorCatalog,
@@ -284,6 +286,7 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
               apiKey: provider.keyPlaintext,
               model: provider.model,
               userId: req.userId,
+              cacheSessionId: sessionIdFromQuery ?? undefined,
               /* the operator's own statement
                * about their endpoint wins over the registry's host heuristic. */
               instantEncoding: provider.instantEncoding ?? null,
@@ -559,8 +562,10 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
           rejection = {
             code: 'tool_not_available',
             retryable: true,
-            hint: `Connector tools are discovered first. Call search_connectors, then get_connector_spec for \`${resolved.name}\`, before calling it.`,
+            hint: `Deferred tools are discovered first. Call search_connectors, then get_connector_spec for \`${resolved.name}\`, before calling it.`,
           };
+        } else if (!activeToolNames.includes(resolved.name)) {
+          rejection = { code: 'tool_not_available', retryable: false };
         } else if (!repaired.ok) {
           /* Distinct codes: an oversized payload needs a smaller call, a
              parse failure needs the arguments re-emitted as one JSON
@@ -694,7 +699,7 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
           id: prepCall.call.id,
           name: prepCall.toolName,
           input: prepCall.args,
-          output: toolMsg?.content || null,
+          output: displayOutputs.get(prepCall.call.id) ?? (toolMsg?.content || null),
           status: execution?.status,
           errorCode: execution?.errorCode,
           isError: execution
@@ -702,6 +707,9 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
             : !prepCall.registryEntry || prepCall.rejection != null,
         });
       }
+
+      displayOutputs.clear();
+      executionResults.clear();
 
       /* An exhausted call or time budget ends the tool phase deliberately:
          the next hop runs without tools so the turn still produces a

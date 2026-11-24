@@ -135,11 +135,11 @@ export const WEB_SEARCH_TOOL = {
         },
         count: {
           type: 'number',
-          default: 8,
+          default: 6,
           minimum: 1,
           maximum: 12,
           description:
-            'How many results to return. 8 is a good default; use 3-5 for a quick check, 10-12 for a thorough sweep.',
+            'How many results to return. 6 is a good default; use 3-5 for a quick check, 10-12 for a thorough sweep.',
         },
       },
       required: ['query'],

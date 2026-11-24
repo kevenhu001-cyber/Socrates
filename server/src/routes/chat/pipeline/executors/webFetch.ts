@@ -13,7 +13,9 @@ import type { ToolExecutionResult, ToolExecutor, ToolExecutorContext } from './t
 import type { ToolCall, ToolResult } from '../types.js';
 
 const MAX_PAGE_CHARS = 30_000;
-const DEFAULT_PAGE_CHARS = 20_000;
+const DEFAULT_PAGE_CHARS = 8_000;
+const DEFAULT_BATCH_PAGE_CHARS = 4_000;
+const MAX_BATCH_TEXT_CHARS = 32_000;
 const SOURCE_MAX_BYTES = 1_000_000;
 const PAGE_CACHE_TTL_MS = 15 * 60_000;
 const PAGE_CACHE_ENTRIES = 64;
@@ -81,7 +83,10 @@ function formatPageBlock(
   maxChars: number,
 ): { block: string; end: number; hasMore: boolean } {
   const rawContent = String(page.content || '');
-  const end = Math.min(rawContent.length, offset + maxChars);
+  let end = Math.min(rawContent.length, offset + maxChars);
+  if (end < rawContent.length && end > offset && /[\uD800-\uDBFF]/.test(rawContent[end - 1]) && /[\uDC00-\uDFFF]/.test(rawContent[end])) {
+    end = end - 1 === offset ? end + 1 : end - 1;
+  }
   const hasMore = end < rawContent.length;
   const sourceTruncated = Boolean(page.truncated);
   const body = rawContent.slice(offset, end);
@@ -134,7 +139,8 @@ export const executeWebFetch: ToolExecutor = async (
   }
 
   const offset = Number(args.offset ?? 0);
-  const maxChars = Number(args.max_chars ?? DEFAULT_PAGE_CHARS);
+  const batch = urls.length > 1;
+  const maxChars = Number(args.max_chars ?? (batch ? DEFAULT_BATCH_PAGE_CHARS : DEFAULT_PAGE_CHARS));
   if (
     !Number.isSafeInteger(offset) ||
     offset < 0 ||
@@ -145,7 +151,6 @@ export const executeWebFetch: ToolExecutor = async (
   ) {
     return failEmit(ctx, call, 'invalid_paging_arguments', false);
   }
-  const batch = urls.length > 1;
   if (batch && offset > 0) {
     return failEmit(
       ctx,
@@ -247,12 +252,15 @@ export const executeWebFetch: ToolExecutor = async (
   const blocks: string[] = [];
   const summary: Array<Record<string, unknown>> = [];
   let anyOk = false;
+  // Allocate fairly before formatting. Every source header and continuation
+  // survives the transport cap, even for four explicitly large reads.
+  const perPageChars = Math.min(maxChars, Math.floor(MAX_BATCH_TEXT_CHARS / urls.length));
   urls.forEach((url, i) => {
     const page = pages.get(url);
     const prefix = urls.length > 1 ? `[page ${i + 1}/${urls.length}]\n` : '';
     if (page && page.ok) {
       anyOk = true;
-      const { block } = formatPageBlock(page, url, 0, maxChars);
+      const { block, end, hasMore } = formatPageBlock(page, url, 0, perPageChars);
       const source = ctx.publicRuntime?.registerSources([
         {
           url: page.url || url,
@@ -266,6 +274,10 @@ export const executeWebFetch: ToolExecutor = async (
         title: page.title || '',
         ok: true,
         chars: String(page.content || '').length,
+        returnedChars: end,
+        hasMore,
+        nextOffset: hasMore ? end : undefined,
+        sourceTruncated: Boolean(page.truncated),
         ...(page.pageCount ? { pageCount: page.pageCount } : {}),
       });
     } else {
@@ -297,7 +309,7 @@ export const executeWebFetch: ToolExecutor = async (
     output,
     pages: summary,
     retryable: false,
-    truncated: summary.some((p) => p.ok === false),
+    truncated: summary.some((p) => p.ok === false || p.hasMore === true || p.sourceTruncated === true),
   });
   return { result };
 };

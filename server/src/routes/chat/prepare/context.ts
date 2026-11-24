@@ -10,6 +10,8 @@ import { getDb } from '../../../db/index.js';
 import { and, desc, eq, or, sql } from 'drizzle-orm';
 import { withTimeBudget } from '../../../lib/timeBudget.js';
 import { estimateTokens } from '../../../services/core/usageTracker.js';
+import { memoryQuery, rankMemoryTexts } from '../../../services/embeddings/memoryRanker.js';
+import { escapePromptControlText } from '../../../lib/chatPolicy.js';
 import type { ProviderMessage } from '../../../lib/providerMessageSchema.js';
 import { applyPolicyBlock, type PolicyBlock } from './prompts.js';
 
@@ -70,7 +72,7 @@ export async function resolveRagContext(
     }
   }
   query = query.trim().slice(0, 2000);
-  if (!query) return null;
+  if (!query || /^(?:hi|hello|hey|thanks|thank you|你好|您好|谢谢|嗨)[!！。,.，\s]*$/i.test(query)) return null;
 
   try {
     const { searchSessionChunksHybrid, sessionOwnedBy } =
@@ -109,11 +111,13 @@ export async function resolveRagContext(
     if (!hits.length) return null;
     const blocks: string[] = [];
     let total = 0;
+    const seen = new Set<string>();
     for (const hit of hits) {
       if (total >= RAG_MAX_TOTAL_CHARS) break;
-      const text = String(hit.text || '').slice(0, RAG_MAX_CHARS_PER_HIT);
-      if (!text) continue;
-      blocks.push(`- ${text}`);
+      const text = String(hit.text || '').trim().slice(0, Math.min(RAG_MAX_CHARS_PER_HIT, RAG_MAX_TOTAL_CHARS - total));
+      if (!text || seen.has(text) || query.includes(text)) continue;
+      seen.add(text);
+      blocks.push(`- ${escapePromptControlText(text)}`);
       total += text.length;
     }
     if (!blocks.length) return null;
@@ -134,7 +138,7 @@ export async function resolveRagContext(
  * the active project's scope, newest first, char-budgeted, and labelled
  * untrusted background exactly like the RAG block. Failures degrade to
  * no injection; the chat turn never fails because recall failed. */
-const MEMORY_CONTEXT_MARKER = '[Server context: saved-memories]';
+export const MEMORY_CONTEXT_MARKER = '[Server context: saved-memories]';
 const MEMORY_MAX_ENTRIES = 50;
 const MEMORY_MAX_CHARS_PER_ENTRY = 500;
 const MEMORY_MAX_TOTAL_CHARS = 6000;
@@ -152,8 +156,11 @@ export async function resolveMemoryContext(
   userId: string | undefined,
   projectId: string | undefined,
   db?: ReturnType<typeof getDb>,
+  messages?: readonly ProviderMessage[],
 ): Promise<PolicyBlock | null> {
   if (!userId) return null;
+  const query = messages ? memoryQuery(messages) : undefined;
+  if (query === '') return null;
   try {
     const { memories, projects } = await import('../../../db/schema/index.js');
     const database = db ?? getDb();
@@ -190,13 +197,17 @@ export async function resolveMemoryContext(
       .orderBy(desc(memories.createdAt))
       .limit(MEMORY_MAX_ENTRIES);
 
+    const selected = query === undefined ? rows : rankMemoryTexts(rows, query);
+    const maxChars = query === undefined ? MEMORY_MAX_TOTAL_CHARS : 2200;
     const blocks: string[] = [];
     let total = 0;
-    for (const row of rows) {
-      if (total >= MEMORY_MAX_TOTAL_CHARS) break;
-      const text = String(row.text || '').slice(0, MEMORY_MAX_CHARS_PER_ENTRY);
-      if (!text) continue;
-      blocks.push(`- ${text}`);
+    const seen = new Set<string>();
+    for (const row of selected) {
+      if (total >= maxChars) break;
+      const text = String(row.text || '').trim().slice(0, Math.min(MEMORY_MAX_CHARS_PER_ENTRY, maxChars - total));
+      if (!text || seen.has(text)) continue;
+      seen.add(text);
+      blocks.push(`- ${escapePromptControlText(text)}`);
       total += text.length;
     }
     if (!blocks.length) return null;
@@ -220,7 +231,7 @@ export async function buildLearningModeTurn(
   return (
     `[Learning mode: ${learningMode}; server-owned]\n${prompt}` +
     (focusText
-      ? `\n\n<client_context_data scope="untrusted">\nLearning focus: ${focusText}\n</client_context_data>`
+      ? `\n\n<client_context_data scope="untrusted">\nLearning focus: ${escapePromptControlText(focusText)}\n</client_context_data>`
       : '')
   );
 }

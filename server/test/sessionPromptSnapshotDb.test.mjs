@@ -60,7 +60,7 @@ async function prepare(s, custom, user = owner, extra = {}) {
       mode: 'chat',
       messages: [
         { role: 'system', content: `[User custom instructions]\n${custom}` },
-        { role: 'user', content: 'latest user question' },
+        { role: 'user', content: 'latest user question about durable fact' },
       ],
       ...extra,
     },
@@ -79,7 +79,7 @@ async function prepare(s, custom, user = owner, extra = {}) {
 }
 
 test(
-  'real prelude freezes user/memory context and refreshes client instructions per turn',
+  'real prelude freezes user context and refreshes memory and client instructions per turn',
   { skip: !enabled },
   async () => {
     const s = await session();
@@ -90,23 +90,31 @@ test(
     const first = await prepare(s, 'original custom instructions');
     assert.equal(first.ok, true);
     const frozen = first.payload.messages[0].content;
-    assert.match(frozen, /original durable fact/);
+    assert.doesNotMatch(frozen, /original durable fact/);
+    assert.match(first.payload.messages.at(-1).content, /original durable fact/);
     assert.match(frozen, /Original name/);
     await db.update(memories).set({ text: 'new durable fact' }).where(eq(memories.id, memory.id));
     const changedOwner = { ...owner, displayName: 'Changed name' };
     const second = await prepare(s, 'changed custom instructions', changedOwner);
-    /* User context and saved memories are session state; client application
-     instructions are turn state and refresh on every request. */
+    /* Keep the user prefix stable, but reflect edits and deletions to saved
+     memories and client instructions on the next request. */
     assert.match(second.payload.messages[0].content, /Original name/);
-    assert.match(second.payload.messages[0].content, /original durable fact/);
+    assert.match(second.payload.messages.at(-1).content, /new durable fact/);
+    assert.doesNotMatch(second.payload.messages.at(-1).content, /original durable fact/);
+    assert.doesNotMatch(second.payload.messages[0].content, /durable fact/);
     assert.match(second.payload.messages[0].content, /changed custom instructions/);
     assert.doesNotMatch(second.payload.messages[0].content, /original custom instructions/);
+    const unchanged = await prepare(s, 'changed custom instructions', changedOwner);
+    assert.equal(unchanged.payload.messages[0].content, second.payload.messages[0].content);
     assert.equal(second.payload.messages.filter((m) => m.role === 'system').length, 1);
     assert.match(second.payload.messages.at(-1).content, /^latest user question/);
     const fresh = await prepare(await session(), 'changed custom instructions', changedOwner);
     assert.match(fresh.payload.messages[0].content, /Changed name/);
-    assert.match(fresh.payload.messages[0].content, /new durable fact/);
+    assert.match(fresh.payload.messages.at(-1).content, /new durable fact/);
     assert.match(fresh.payload.messages[0].content, /changed custom instructions/);
+    await db.delete(memories).where(eq(memories.id, memory.id));
+    const deleted = await prepare(s, 'changed custom instructions', changedOwner);
+    assert.doesNotMatch(deleted.payload.messages.map(m => m.content).join('\n'), /new durable fact|original durable fact/);
     assert.equal(
       (
         await db

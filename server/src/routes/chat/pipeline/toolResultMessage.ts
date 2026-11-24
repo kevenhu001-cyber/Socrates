@@ -41,58 +41,23 @@ export function formatToolResultContent(toolName: string, result: ToolResult): s
           'This call is not retryable. STOP retrying this exact code. Do not repeat the error text in your answer; the tool card already shows it. Continue with a corrected approach in prose, or state the limitation in one plain sentence.',
         );
       }
-      // the structured header
-      // tells the model WHAT failed; this preamble tells it
-      // the most likely fix. Without it, models tend to
-      // re-emit the same code on retry, especially for the
-      // common `SyntaxError: 'await' outside function` case
-      // (model writes `await foo()` at top level, gets a
-      // SyntaxError, retries with the same code). The
-      // preamble is appended only on failure so it does
-      // not bloat the success path.
-      lines.push('');
-      lines.push('Likely fixes by error_code:');
-      lines.push('- `code_too_large` → split into multiple smaller runs.');
-      lines.push(
-        '- `execution_queue_timeout` → the runner was busy or still starting. The code never started. Do not retry during this turn.',
-      );
-      lines.push(
-        '- `daily_execution_limit_reached` → tell the user the per-day cap; do not retry.',
-      );
-      lines.push(
-        '- `execution_timeout` → the work exceeded the time budget. Split into smaller runs, or pre-compute in numpy/pandas instead of Python loops.',
-      );
-      lines.push(
-        '- `output_limit_exceeded` → stdout/stderr hit the 64 KB cap. Save the data to a file, print a summary, describe the summary in prose.',
-      );
-      lines.push(
-        '- `code_interpreter_unavailable` / `skipped` → the runner is off; do not retry. Tell the user.',
-      );
-      lines.push(
-        '- `illustration_not_supported` → you tried to draw an SVG / illustration via code_interpreter. Call render_intelligent_ui with a Visualization component using the svg_illustration template instead.',
-      );
-      lines.push(
-        "- `SyntaxError: 'await' outside function` → you wrote top-level `await`. Put the awaited statements inside `async def main():` and call `asyncio.run(main())` at the end.",
-      );
-      lines.push(
-        '- `SyntaxError` (other) / `IndentationError` → check module-level Python syntax and indentation. This is a synchronous module execution, not a Jupyter cell.',
-      );
-      lines.push(
-        '- `NameError` → the variable was from a previous call. Recompute it in this run.',
-      );
-      lines.push(
-        '- `python_dependency_unavailable` → dependency loading failed and Python could not import a module. Use the standard library or a dependency-free approach; do not keep installing the same package.',
-      );
-      lines.push(
-        '- `ModuleNotFoundError` → Pyodide-distribution packages are auto-loaded from imports. For a compatible pure-Python wheel only, use `import micropip, asyncio; asyncio.run(micropip.install("pkg"))` before the import. A bare `micropip.install(...)` does NOT install anything. Never use `pip install` or `subprocess` (no shell).',
-      );
-      lines.push(
-        '- `FileNotFoundError` → you guessed a path without reading the `[scratch]` header. Re-read the header; if the file is not listed, write it yourself in this run.',
-      );
-      lines.push(
-        '- Empty PNG / "figure not found" → forgot `plt.close()` from the previous run. Add `plt.close("all")` at the top of this run.',
-      );
-      lines.push('');
+      const diagnostic = [result.errorCode, result.errorMessage, result.error, result.stderr].filter(Boolean).join('\n');
+      const fixes: Array<[RegExp, string]> = [
+        [/code_too_large/i, 'Split into smaller runs.'],
+        [/execution_queue_timeout|daily_execution_limit_reached|code_interpreter_unavailable|skipped/i, 'Execution is unavailable; do not retry this turn.'],
+        [/execution_timeout/i, 'Split the work into smaller runs or use vectorized numpy/pandas operations.'],
+        [/output_limit_exceeded/i, 'Save the full data to a file and print a concise summary.'],
+        [/illustration_not_supported/i, 'Use render_intelligent_ui with svg_illustration when available.'],
+        [/SyntaxError:.*await.*outside function/i, 'Wrap awaited statements in async def main() and call asyncio.run(main()).'],
+        [/SyntaxError|IndentationError/i, 'Check Python module syntax and indentation.'],
+        [/NameError/i, 'Recompute variables in this run; previous calls do not share Python state.'],
+        [/python_dependency_unavailable/i, 'Use the standard library or a dependency-free approach; do not keep installing the same package.'],
+        [/ModuleNotFoundError/i, 'Pyodide packages auto-load from imports; for compatible pure-Python wheels use asyncio.run(micropip.install("pkg")). No shell or pip install.'],
+        [/FileNotFoundError/i, 'Use an existing path from the scratch header or create the file first.'],
+        [/Empty PNG|figure not found/i, 'Close old figures and save the new figure explicitly.'],
+      ];
+      const fix = fixes.find(([pattern]) => pattern.test(diagnostic));
+      if (fix) lines.push('Suggested fix: ' + fix[1]);
       lines.push('Do not repeat this error text in your answer; the tool card already shows it.');
     }
     lines.push('--- stdout ---');

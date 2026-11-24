@@ -75,7 +75,7 @@ test('research refinement focus reaches both planning and synthesis prompts', as
     ports,
     new AbortController().signal,
   );
-  assert.match(prompts[0][0].content, /Additional user focus: Compare primary sources/);
+  assert.doesNotMatch(prompts[0][0].content, /Compare primary sources/);
   assert.match(prompts[0][1].content, /Additional user focus: Compare primary sources/);
   assert.match(prompts.at(-1)[1].content, /Additional user focus: Compare primary sources/);
 });

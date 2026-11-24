@@ -224,8 +224,10 @@ function clearAllMemories(): void {
 
 /* Build a context string to inject into the system prompt.
    If there are no memories, returns an empty string. */
-function injectMemoryContext(): string {
-  const memories = loadMemories();
+function injectMemoryContext(localOnly = false): string {
+  const memories = localOnly
+    ? loadMemories().filter((m) => !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(m.id))
+    : loadMemories();
   if (!memories.length) return '';
   const lines = memories.map(function (m) {
     return '- ' + m.key + ': ' + m.value;

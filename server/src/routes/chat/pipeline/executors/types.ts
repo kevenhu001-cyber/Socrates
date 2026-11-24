@@ -25,6 +25,7 @@ type PersonalConnectorSnapshot = typeof connectorConnections.$inferSelect;
 type ProjectConnectorSnapshot = typeof projectConnectorConnections.$inferSelect;
 
 export interface ToolExecutorContext {
+  toolResultArchive?: import('../../../../services/tools/toolResultBudget.js').ToolResultArchive;
   publicRuntime?: Pick<
     ReturnType<typeof import('../../../../services/turnEvents.js').createTurnEventController>,
     'registerSources' | 'patchUi'

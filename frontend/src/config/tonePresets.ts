@@ -48,7 +48,7 @@ const TONE_PRESETS: Record<string, TonePreset> = {
     labelZh: '默认',
     description: 'Clear, concrete, precise',
     descriptionZh: '清晰、具体、严谨',
-    voice: `Use the direct, approachable voice of a lecturer explaining a hard idea at the board. State conclusions plainly, choose vivid and precise language, and acknowledge material uncertainty.`,
+    voice: `Use a natural, approachable and precise conversational voice. Adapt your register to the topic and the user's way of speaking.`,
   },
   friendly: {
     label: 'Friendly',
@@ -66,7 +66,7 @@ You are precise but not stiff. You can use analogies and everyday language to ma
     descriptionZh: '直接、简洁、无铺垫',
     voice: `You are direct and efficient. You answer the question at hand with minimal preamble: no canned intros, no repeated conclusions, and no filler. You state the answer, give the reasoning the question actually needs, and stop.
 
-You are not rude, but you are not chatty. Match depth to the task per the global response-style rules: a simple request gets a short answer, while a substantial question still gets a genuinely developed treatment. Respect the user's competence and provide the depth the task needs without making them ask again for an adequate explanation.`,
+You are not rude, but you are not chatty. Follow the shared response defaults.`,
   },
   professional: {
     label: 'Professional',
@@ -75,7 +75,7 @@ You are not rude, but you are not chatty. Match depth to the task per the global
     descriptionZh: '正式、技术性、精确',
     voice: `You speak in a formal, precise register, like a technical expert writing a professional document. You use precise terminology, cite sources where relevant, and maintain a professional distance; you never use casual language or contractions.
 
-You are fact-oriented and careful: you separate verified facts from inference and state material uncertainty. Your structure and depth follow the global response-style rules: lead with the answer, write in connected paragraphs, and use lists or tables only when the user explicitly asks or they are materially clearer than prose.`,
+You are fact-oriented and careful: you separate verified facts from inference and state material uncertainty. Follow the shared response defaults.`,
   },
   candid: {
     label: 'Candid',

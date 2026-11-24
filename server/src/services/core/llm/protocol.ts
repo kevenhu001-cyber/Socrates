@@ -2,6 +2,7 @@
  * OpenAI-compatible request variants and compatibility fallbacks.
  */
 import { applyProviderControls, permitsCompatibilityFallback } from '../llmProtocol.js';
+import { promptCacheFields } from './cachePolicy.js';
 import { DEFAULT_MAX_TOKENS, type ChatCompletionRequestOptions } from './types.js';
 
 function normalizeProviderMessages(messages: ChatCompletionRequestOptions['messages']) {
@@ -68,6 +69,8 @@ export function requestBodyVariants(opts: ChatCompletionRequestOptions, stream: 
     instantEncoding: opts.instantEncoding,
   });
   const protectedKeySet = new Set(protectedKeys);
+  const cacheFields = promptCacheFields(opts);
+  Object.assign(base, cacheFields);
   const hasTools = Array.isArray(tools) && tools.length > 0;
   const withTools: Record<string, unknown> = {
     ...base,
@@ -92,6 +95,13 @@ export function requestBodyVariants(opts: ChatCompletionRequestOptions, stream: 
     },
   ];
   let compatibilityBase = withTools;
+  // Only drop cache hints on a diagnosed cache-field rejection. This keeps
+  // the requested reasoning mode, tools, temperature and stream usage.
+  if (Object.keys(cacheFields).length) {
+    const withoutCache = { ...withTools };
+    for (const key of Object.keys(cacheFields)) delete withoutCache[key];
+    variants.push({ body: withoutCache, reason: 'provider-400-with-cache-options', speedApplied: variants[0].speedApplied });
+  }
 
   /* Usage reporting is optional; native tools and explicit Instant semantics
    * are not. Select a fallback only after a diagnosed unsupported field. */

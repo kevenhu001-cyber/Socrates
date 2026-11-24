@@ -20,6 +20,7 @@ import { executeCodeInterpreter } from './codeInterpreter.js';
 import { executeWebSearch } from './webSearch.js';
 import { executeImageSearch } from './imageSearch.js';
 import { executeWebFetch } from './webFetch.js';
+import { executeReadToolResult } from './readToolResult.js';
 import { executeReadAttachment } from './readAttachment.js';
 import { executeSaveMemory } from './saveMemory.js';
 import { executeDocumentTool } from './document.js';
@@ -45,6 +46,7 @@ export function createToolExecutorRegistry(): ToolExecutorRegistry {
     ['image_search', executeImageSearch],
     ['web_fetch', executeWebFetch],
     ['read_attachment', executeReadAttachment],
+    ['read_tool_result', executeReadToolResult],
     ['save_memory', executeSaveMemory],
     ['render_intelligent_ui', executeIntelligentUi],
     ['get_ui_contract', executeGetUiContract],
