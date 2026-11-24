@@ -304,9 +304,19 @@ test('all settings categories render their own pane and mobile search reaches hi
   await overlay.locator('#settingsMobileBack').click();
   await expect(overlay.locator('.settings-nav')).toBeVisible();
   const accountTab = overlay.locator('.settings-nav [data-section="account"]');
+  await expect(accountTab).toHaveCount(1);
+  await expect(accountTab).toHaveClass(/settings-index-identity/);
+  await expect(accountTab.locator('.settings-identity-avatar')).toBeVisible();
+  await expect(overlay.locator('.settings-index-group-label')).toHaveCount(3);
+  await expect(overlay.locator('.settings-index-group').first()).toHaveCSS(
+    'background-color',
+    'rgba(0, 0, 0, 0)',
+  );
+  await expect(overlay.locator('.settings-index-group .settings-category-description').first()).toBeHidden();
   await accountTab.click();
   await expect(overlay.locator('.settings-pane:visible h2')).toHaveText('Account');
   await overlay.locator('#settingsMobileBack').click();
+  await expect(accountTab).toBeFocused();
   await overlay.getByRole('button', { name: 'Search settings' }).click();
   await expect(search).toBeFocused();
   await search.pressSequentially('content width');

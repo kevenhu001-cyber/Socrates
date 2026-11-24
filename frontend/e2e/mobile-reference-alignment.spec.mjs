@@ -154,7 +154,7 @@ for (const mode of ['dark', 'light']) {
     const recent = page.locator('.recent-item').filter({ hasText: SESSION.title });
     await expect(recent).toBeVisible();
     expect((await recent.boundingBox()).height).toBe(44);
-    await expect(recent.locator('.recent-item-glyph')).toBeVisible();
+    await expect(recent.locator('.recent-item-glyph')).toBeHidden();
     await expect(page.locator('.sidebar-logo [data-part="brand-name"]')).toBeVisible();
     await expect(page.locator('#sidebarCloseBtn')).toBeVisible();
     await expect(page.locator('.sidebar-mobile-new-chat')).toBeInViewport();

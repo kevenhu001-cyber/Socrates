@@ -67,25 +67,10 @@
 [data-mode='light'] #appShell .composer-shell [data-composer-frame][data-focused='true']::before {
   border-color: var(--ui-border-strong);
 }
-/* ── Material: the sheet is lit from above ───────────────────────────────
-   A flat fill makes a 24px-radius panel read as a hole in the canvas; the
-   reference sheets read as an object because their top edge catches light
-   and the body falls away a few percent toward the bottom. The gradient is
-   painted on the frame's own background, so it never leaks past the radius
-   and costs no extra node. Light mode keeps its flat paper + ::before ring
-   (chat-light-palette pins that edge), so the lift is dark-mode only. */
+/* Both themes use a quiet, flat composer surface. Keep functional gradients
+ * for transcript edge fades, not decoration on the typing surface. */
 [data-mode='dark'] #appShell .composer-shell [data-composer-frame] {
-  background-image: linear-gradient(
-    to bottom,
-    color-mix(in srgb, var(--ui-card) 92%, white 8%) 0%,
-    var(--ui-card) 38%,
-    color-mix(in srgb, var(--ui-card) 94%, black 6%) 100%
-  );
-}
-@media (forced-colors: active) {
-  [data-mode='dark'] #appShell .composer-shell [data-composer-frame] {
-    background-image: none;
-  }
+  background-image: none;
 }
 /* ── Inline composition: one flat capsule ────────────────────────────────
    The desktop field is a single 52px row on the composer surface. Its edge

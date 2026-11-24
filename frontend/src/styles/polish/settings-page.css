@@ -429,12 +429,11 @@ html[data-main-view='settingsPage'] #settingsPage .settings-choice {
     border-color: transparent;
     background: transparent;
   }
-  .settings-page .settings-nav-item:not(:first-child) {
-    border-top-left-radius: 0;
-    border-top-right-radius: 0;
-  }
   .settings-page .settings-nav-item:not(:last-child) {
     border-bottom: 0;
+  }
+  .settings-index-identity:hover {
+    background: var(--ui-fill-hover);
   }
   .settings-page .settings-nav-item:hover {
     background: var(--ui-fill-hover);

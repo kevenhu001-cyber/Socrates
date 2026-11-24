@@ -176,6 +176,7 @@ function ToolActivityBurst({
   // Collapse settled bursts by default; preserve a reader's open row and
   // never hide approvals, failures, active tools or interactive attachments.
   const open = openOverride ?? members.some((call) => expandedIds?.has(call.id));
+  const folded = canFold && !open;
   return (
     <div className="tool-activity-burst">
       {canFold ? (
@@ -195,16 +196,23 @@ function ToolActivityBurst({
           {tf('think.summaryToolsTitle', 'Used {n} tools', { n: completedCount })}
         </div>
       ) : null}
-      <div id={bodyId} hidden={canFold && !open}>
-        {members.map((call) => (
-          <ToolRunRow
-            key={call.id}
-            call={call}
-            messageId={messageId}
-            readOnly={readOnly}
-            live={live}
-          />
-        ))}
+      <div
+        id={bodyId}
+        className={canFold ? `ui-collapse tool-burst-disclosure${folded ? ' collapsed' : ''}` : undefined}
+        aria-hidden={folded || undefined}
+        inert={folded}
+      >
+        <div className="ui-collapse-inner">
+          {members.map((call) => (
+            <ToolRunRow
+              key={call.id}
+              call={call}
+              messageId={messageId}
+              readOnly={readOnly}
+              live={live}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );

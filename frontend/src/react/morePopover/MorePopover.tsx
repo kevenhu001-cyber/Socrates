@@ -147,9 +147,28 @@ export function MorePopover() {
       useMorePopoverStore.getState().setOpen(false);
     };
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      event.stopPropagation();
-      useMorePopoverStore.getState().setOpen(false);
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+        useMorePopoverStore.getState().setOpen(false);
+        trigger.focus({ preventScroll: true });
+        return;
+      }
+      if (
+        !(event.target instanceof Node) ||
+        (!menu.contains(event.target) && !trigger.contains(event.target)) ||
+        !['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)
+      ) return;
+      const items = Array.from(menu.querySelectorAll<HTMLElement>('[role="menuitem"]'))
+        .filter((item) => item.getClientRects().length > 0);
+      if (!items.length) return;
+      event.preventDefault();
+      const current = items.indexOf(document.activeElement as HTMLElement);
+      let next = 0;
+      if (event.key === 'End') next = items.length - 1;
+      else if (event.key === 'ArrowDown') next = (current + 1) % items.length;
+      else if (event.key === 'ArrowUp') next = current <= 0 ? items.length - 1 : current - 1;
+      items[next]?.focus();
     };
 
     updatePosition();
@@ -177,6 +196,7 @@ export function MorePopover() {
       role="menu"
       aria-label="更多"
       aria-hidden={!isOpen}
+      inert={!isOpen}
       aria-orientation="vertical"
       aria-labelledby={TRIGGER_ID}
       data-open={String(isOpen)}
