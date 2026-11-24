@@ -328,12 +328,9 @@ test('answer prose keeps its recorded order around the rows, with no baked-in du
   const body = await loadFixtureSession(page);
   const layout = await body.locator('.turn-evidence').evaluate((el) => {
     const order = [];
-    for (const node of Array.from(el.children)) {
-      if (node.classList.contains('tool-inline-attachments')) continue;
+    for (const node of Array.from(el.querySelectorAll('.rn-tool-row, .tool-run-prose'))) {
       if (node.classList.contains('rn-tool-row')) order.push(`tool:${node.dataset.tcid}`);
-      else if (node.classList.contains('tool-run-prose'))
-        order.push(`text:${(node.textContent || '').trim()}`);
-      else order.push(`other:${node.className}`);
+      else order.push(`text:${(node.textContent || '').trim()}`);
     }
     return order;
   });
