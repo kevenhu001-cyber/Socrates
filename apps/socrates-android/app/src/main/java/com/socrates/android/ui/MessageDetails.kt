@@ -34,7 +34,7 @@ internal fun toolActivityPhase(call: JSONObject): String {
     val approval = call.optJSONObject("approval")?.optString("status")
     val progress = call.optString("progressPhase").lowercase()
     val status = call.optString("status").lowercase()
-    if (approval == "pending" || progress == "awaiting_approval" || status == "awaiting_approval") return "awaiting_approval"
+    if (approval == "pending" || progress in setOf("awaiting", "awaiting_approval") || status in setOf("awaiting", "awaiting_approval")) return "awaiting_approval"
     if (call.optBoolean("isError") || progress in setOf("failed", "error", "timed_out") || status in setOf("failed", "error", "timed_out")) return "failed"
     if (progress in setOf("stopped", "cancelled", "canceled") || status in setOf("stopped", "cancelled", "canceled")) return "stopped"
     if (progress in setOf("completed", "done", "succeeded", "success") || status in setOf("completed", "done", "succeeded", "success")) return "completed"
