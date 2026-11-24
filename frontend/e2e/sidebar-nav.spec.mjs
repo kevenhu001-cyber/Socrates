@@ -447,3 +447,20 @@ test('sidebar search opens the same global search as the keyboard shortcut', asy
   await page.keyboard.press('ControlOrMeta+k');
   await expect(field).toBeFocused();
 });
+
+
+test('More menu supports keyboard navigation and returns focus on dismissal', async ({ page }) => {
+  const trigger = page.locator('#navMore');
+  const menu = page.locator('#moreNavPopover');
+  await trigger.focus();
+  await page.keyboard.press('Enter');
+  await expect(menu).toBeVisible();
+  await page.keyboard.press('ArrowDown');
+  const items = menu.getByRole('menuitem');
+  await expect(items.first()).toBeFocused();
+  await page.keyboard.press('End');
+  await expect(items.last()).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(menu).toHaveAttribute('aria-hidden', 'true');
+  await expect(trigger).toBeFocused();
+});

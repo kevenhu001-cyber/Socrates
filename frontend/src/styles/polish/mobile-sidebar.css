@@ -650,8 +650,8 @@
     padding: 0 4px 0 10px;
   }
   #appShell .recents-title {
-    font-size: var(--ui-mobile-font-nav);
-    font-weight: var(--ui-font-weight-regular);
+    font-size: var(--ui-font-size-xs);
+    font-weight: var(--ui-font-weight-medium);
     line-height: 20px;
     letter-spacing: 0;
     color: var(--muted-foreground);
@@ -671,7 +671,7 @@
     align-items: center;
     height: var(--ui-control-touch);
     min-height: var(--ui-control-touch);
-    gap: 16px;
+    gap: var(--ui-space-sm);
     padding: 0 6px 0 10px;
     border-radius: var(--ui-radius-row);
     font-size: var(--ui-mobile-font-nav);
@@ -693,11 +693,7 @@
     color: var(--ui-text-nav);
   }
   #appShell .recent-item-glyph {
-    display: block;
-    width: 18px;
-    height: 18px;
-    flex: none;
-    color: var(--ui-text-secondary);
+    display: none;
   }
   #appShell .recents-search-all {
     display: inline-flex;

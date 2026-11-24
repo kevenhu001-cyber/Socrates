@@ -68,14 +68,14 @@ test('the transcript mask is enabled only while an edge is fading', () => {
   const middle = fadeList(400, 1000, 200);
   updateScrollFadeMask(middle);
   assert.equal(middle.dataset.scrollFade, 'true');
-  assert.equal(middle.style.getPropertyValue('--ui-scroll-fade-top'), '28px');
-  assert.equal(middle.style.getPropertyValue('--ui-scroll-fade-bottom'), '28px');
+  assert.equal(middle.style.getPropertyValue('--ui-scroll-fade-top'), '36px');
+  assert.equal(middle.style.getPropertyValue('--ui-scroll-fade-bottom'), '48px');
 
   const atTop = fadeList(0, 1000, 200);
   updateScrollFadeMask(atTop);
   assert.equal(atTop.dataset.scrollFade, 'true');
   assert.equal(atTop.style.getPropertyValue('--ui-scroll-fade-top'), '0px');
-  assert.equal(atTop.style.getPropertyValue('--ui-scroll-fade-bottom'), '28px');
+  assert.equal(atTop.style.getPropertyValue('--ui-scroll-fade-bottom'), '48px');
 });
 
 test('a pending history anchor cannot re-pin after new input or a host replacement', () => {
@@ -95,18 +95,25 @@ test('a pending history anchor cannot re-pin after new input or a host replaceme
 test('edge fading ramps smoothly as the transcript leaves the viewport', () => {
   const nearTop = fadeList(10, 1000, 200);
   updateScrollFadeMask(nearTop);
-  assert.equal(nearTop.style.getPropertyValue('--ui-scroll-fade-top'), '8px');
-  assert.equal(nearTop.style.getPropertyValue('--ui-scroll-fade-bottom'), '56px');
+  assert.equal(nearTop.style.getPropertyValue('--ui-scroll-fade-top'), '13px');
+  assert.equal(nearTop.style.getPropertyValue('--ui-scroll-fade-bottom'), '48px');
   const nearBottom = fadeList(790, 1000, 200);
   updateScrollFadeMask(nearBottom);
-  assert.equal(nearBottom.style.getPropertyValue('--ui-scroll-fade-top'), '32px');
-  assert.equal(nearBottom.style.getPropertyValue('--ui-scroll-fade-bottom'), '56px');
+  assert.equal(nearBottom.style.getPropertyValue('--ui-scroll-fade-top'), '36px');
+  assert.equal(nearBottom.style.getPropertyValue('--ui-scroll-fade-bottom'), '48px');
   const bottom = fadeList(800, 1000, 200);
   updateScrollFadeMask(bottom);
-  assert.equal(bottom.style.getPropertyValue('--ui-scroll-fade-bottom'), '56px');
+  assert.equal(bottom.style.getPropertyValue('--ui-scroll-fade-bottom'), '24px');
   assert.equal(bottom.dataset.scrollFade, 'true');
   const shortList = fadeList(0, 180, 200);
   updateScrollFadeMask(shortList);
   assert.equal(shortList.style.getPropertyValue('--ui-scroll-fade-bottom'), '0px');
   assert.equal(shortList.dataset.scrollFade, 'false');
+});
+
+test('edge fading is bounded in a keyboard-constrained viewport', () => {
+  const compact = fadeList(60, 500, 80);
+  updateScrollFadeMask(compact);
+  assert.equal(compact.style.getPropertyValue('--ui-scroll-fade-top'), '20px');
+  assert.equal(compact.style.getPropertyValue('--ui-scroll-fade-bottom'), '20px');
 });

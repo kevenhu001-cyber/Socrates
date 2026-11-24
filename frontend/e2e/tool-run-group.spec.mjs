@@ -689,4 +689,11 @@ test('completed activity burst starts collapsed without hiding failed or unknown
   await burst.focus();
   await page.keyboard.press('Enter');
   await expect(body.getByTestId('tool-row-w1')).toBeVisible();
+  const disclosure = body.locator('.tool-burst-disclosure').last();
+  await expect(disclosure).toHaveCSS('visibility', 'visible');
+  await expect(disclosure).not.toHaveAttribute('inert', '');
+  await burst.click();
+  await expect(disclosure).toHaveAttribute('inert', '');
+  await expect(body.getByTestId('tool-row-w1')).toBeHidden();
+  await expect(disclosure).toHaveCSS('visibility', 'hidden');
 });

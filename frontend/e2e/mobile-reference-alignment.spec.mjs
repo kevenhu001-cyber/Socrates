@@ -154,7 +154,7 @@ for (const mode of ['dark', 'light']) {
     const recent = page.locator('.recent-item').filter({ hasText: SESSION.title });
     await expect(recent).toBeVisible();
     expect((await recent.boundingBox()).height).toBe(44);
-    await expect(recent.locator('.recent-item-glyph')).toBeVisible();
+    await expect(recent.locator('.recent-item-glyph')).toBeHidden();
     await expect(page.locator('.sidebar-logo [data-part="brand-name"]')).toBeVisible();
     await expect(page.locator('#sidebarCloseBtn')).toBeVisible();
     await expect(page.locator('.sidebar-mobile-new-chat')).toBeInViewport();
@@ -223,9 +223,10 @@ for (const mode of ['dark', 'light']) {
     await expect(page.locator('.plugin-directory')).toBeVisible();
     await expect(page.locator('#topModelSwitcher')).toBeHidden();
     expect((await page.locator('.plugin-directory-search').boundingBox()).height).toBeCloseTo(
-      36,
+      44,
       1,
     );
+    await expect(page.locator('.plugin-directory-search input')).toHaveCSS('font-size', '16px');
     await page.screenshot({
       path: `test-results/reference-alignment-${encodeURIComponent(mode)}-plugins.png`,
     });

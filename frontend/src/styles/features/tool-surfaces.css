@@ -386,6 +386,23 @@
   }
 }
 
+/* Use the shared intrinsic-height disclosure; fade its contents without
+ * unmounting the tools or animating a guessed max-height. */
+.tool-burst-disclosure > .ui-collapse-inner {
+  opacity: 1;
+  transition: opacity var(--ui-duration-overlay) var(--ui-ease-out);
+}
+
+.tool-burst-disclosure.collapsed > .ui-collapse-inner {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce), (forced-colors: active) {
+  .tool-burst-disclosure > .ui-collapse-inner {
+    transition: none;
+  }
+}
+
 /* Completed activity bursts read like a quiet transcript caption, not a card. */
 .tool-activity-burst-caption {
   display: flex;

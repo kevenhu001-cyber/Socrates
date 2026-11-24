@@ -1,4 +1,11 @@
 import { Button as UiButton } from '../../ui/Button';
+import { Ellipsis, Pause, Play, Trash2 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '../../ui/shadcn/dropdown-menu';
 import type { ScheduledTask } from './types';
 import { formatScheduledTime, scheduledStatusLabel, scheduledText } from './scheduled.copy';
 
@@ -58,7 +65,7 @@ export function ScheduledTaskRow({
       </UiButton>
       <UiButton
         type="button"
-        className="workspace-row-action"
+        className="workspace-row-action task-inline-action"
         onClick={() => onRun(task.id)}
         aria-label={scheduledText('scheduled.runNowAria', 'Run task now')}
       >
@@ -66,7 +73,7 @@ export function ScheduledTaskRow({
       </UiButton>
       <UiButton
         type="button"
-        className="workspace-row-action"
+        className="workspace-row-action task-inline-action"
         onClick={() => onToggle(task.id, active)}
         aria-label={
           active
@@ -80,12 +87,45 @@ export function ScheduledTaskRow({
       </UiButton>
       <UiButton
         type="button"
-        className="workspace-row-action"
+        className="workspace-row-action task-inline-action"
         onClick={() => onRemove(task.id)}
         aria-label={scheduledText('scheduled.deleteAria', 'Delete task')}
       >
         {scheduledText('scheduled.delete', 'Delete')}
       </UiButton>
+      <div className="task-mobile-actions">
+        <DropdownMenu modal={false}>
+          <DropdownMenuTrigger
+            render={<UiButton type="button" className="task-more-btn" />}
+            aria-label={task.title + ' · ' + scheduledText('sidebar.nav.more', 'More')}
+          >
+            <Ellipsis aria-hidden="true" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="task-action-menu w-auto min-w-44">
+            <DropdownMenuItem className="min-h-(--ui-control-touch)" onClick={() => onRun(task.id)}>
+              <Play aria-hidden="true" />
+              {scheduledText('scheduled.runNow', 'Run now')}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="min-h-(--ui-control-touch)"
+              onClick={() => onToggle(task.id, active)}
+            >
+              {active ? <Pause aria-hidden="true" /> : <Play aria-hidden="true" />}
+              {active
+                ? scheduledText('scheduled.pause', 'Pause')
+                : scheduledText('scheduled.resume', 'Resume')}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="min-h-(--ui-control-touch)"
+              variant="destructive"
+              onClick={() => onRemove(task.id)}
+            >
+              <Trash2 aria-hidden="true" />
+              {scheduledText('scheduled.delete', 'Delete')}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </div>
   );
 }

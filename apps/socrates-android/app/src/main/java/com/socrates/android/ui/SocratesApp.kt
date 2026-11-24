@@ -36,6 +36,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -492,11 +493,19 @@ private fun Transcript(ui: ChatUiState, modifier: Modifier = Modifier, jumpId: S
             list.scrollToItem(ui.messages.lastIndex, Int.MAX_VALUE)
         }
     }
+    val edgeColor = MaterialTheme.colorScheme.background
     Box(modifier.fillMaxWidth()) {
-        LazyColumn(state = list, modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 22.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) {
+        LazyColumn(state = list, modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 36.dp, bottom = 36.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) {
             items(ui.messages, key = { it.id }, contentType = { it.role }) { message ->
                 MessageBubble(message, ui.streaming && message.id == ui.messages.lastOrNull()?.id, !ui.streaming && !ui.busy, speech, ui.feedbackRatings["${ui.current?.id}:${message.id}"] ?: message.wire?.optString("feedback")?.takeIf { it in setOf("up", "down") } ?: "none", onMessageAction)
             }
+        }
+        // Paint only the viewport boundaries, leaving the list's text and touch targets intact.
+        AnimatedVisibility(list.canScrollBackward, Modifier.align(Alignment.TopCenter), enter = fadeIn(), exit = fadeOut()) {
+            Box(Modifier.fillMaxWidth().height(36.dp).background(Brush.verticalGradient(listOf(edgeColor, Color.Transparent))))
+        }
+        AnimatedVisibility(list.canScrollBackward || list.canScrollForward, Modifier.align(Alignment.BottomCenter), enter = fadeIn(), exit = fadeOut()) {
+            Box(Modifier.fillMaxWidth().height(if (nearBottom) 24.dp else 48.dp).background(Brush.verticalGradient(listOf(Color.Transparent, edgeColor))))
         }
         if (ui.busy) SocratesSpinner(Modifier.align(Alignment.TopCenter).padding(12.dp).size(20.dp), strokeWidth = 2.dp)
         AnimatedVisibility(!nearBottom && ui.messages.isNotEmpty(), Modifier.align(Alignment.BottomCenter), enter = fadeIn() + slideInVertically { it / 2 }, exit = fadeOut()) {
@@ -713,7 +722,7 @@ internal fun NativeSidebar(ui: ChatUiState, onNew: () -> Unit, onSelect: (com.so
     val knownTags = remember(ui.sessions) { SessionHistory.knownTags(ui.sessions) }
     val visibleSessions = remember(ui.sessions, query, archived, tag) { SessionHistory.filter(ui.sessions, query, archived, tag) }
     val groups = remember(visibleSessions, now) { visibleSessions.groupBy { SessionHistory.groupLabel(it, now) } }
-    LazyColumn(Modifier.testTag("sidebar-list").fillMaxSize().windowInsetsPadding(AppSafeInsets).padding(horizontal = 24.dp),
+    LazyColumn(Modifier.testTag("sidebar-list").fillMaxSize().windowInsetsPadding(AppSafeInsets).padding(horizontal = 16.dp),
         contentPadding = PaddingValues(bottom = 8.dp), verticalArrangement = SidebarFooterArrangement) {
         item(key = "sidebar-header") {
             Row(Modifier.fillMaxWidth().heightIn(min = 78.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {

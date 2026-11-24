@@ -221,7 +221,19 @@ jobs:
             exit 1
           }
           npm run parity:check
+      - name: Mobile browser UX smoke tests
+        id: mobile-ux
+        run: npm run test:smoke:mobile
+      - name: Upload mobile browser UX report
+        if: always() && steps.mobile-ux.conclusion != 'skipped'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: playwright-mobile-report
+          path: frontend/playwright-mobile-report
+          if-no-files-found: ignore
+          retention-days: 14
       - name: End-to-end smoke, regression and theme invariants
+        if: ${{ !cancelled() && steps.mobile-ux.conclusion != 'skipped' }}
         run: npm run test:e2e:required
       - name: Visual reference advisory
         # Screenshot and golden-geometry drift is design feedback. Keep it
@@ -230,8 +242,6 @@ jobs:
         # catch palette and accessibility regressions.
         continue-on-error: true
         run: npm run test:e2e:visual
-      - name: Mobile composer UX smoke tests
-        run: npm run test:smoke:mobile
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
