@@ -764,9 +764,9 @@
   }
 
   #appShell .plugin-detail-page-header .account-page-actions {
-    flex: 1 0 100%;
+    flex: 1 0 calc(100% - 108px);
     min-width: 0;
-    margin-inline-start: calc(36px + 56px + 2 * var(--ui-space-sm));
+    margin-inline-start: 108px;
   }
 
   #appShell .plugin-detail-cta-group {
