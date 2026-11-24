@@ -150,30 +150,6 @@
   display: block;
 }
 
- #appShell .plugin-detail-badge-verified {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  border-radius: var(--ui-radius-pill);
-  background: var(--secondary);
-  font-size: var(--ui-font-size-xxs);
-  color: var(--muted-foreground);
-}
-
-#appShell .plugin-detail-meta-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: var(--ui-font-size-xs);
-  color: var(--ui-text-tertiary);
-  margin-top: 2px;
-}
-
-#appShell .plugin-detail-meta-dot {
-  opacity: 0.6;
-}
-
 #appShell .plugin-detail-status-row {
   display: flex;
   align-items: center;
@@ -194,7 +170,7 @@
   font-weight: var(--ui-font-weight-medium);
 }
 
- #appShell .plugin-detail-cta-group {
+#appShell .plugin-detail-cta-group {
   display: flex;
   align-items: center;
   gap: 10px;
