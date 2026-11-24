@@ -56,7 +56,7 @@ export const READ_ATTACHMENT_TOOL = {
       '## Paging\n' +
       'Each call returns at most `limit` characters starting at `offset`. The result header reports ' +
       'totalChars and hasMore; continue with offset = offset + returned characters until hasMore is false. ' +
-      'Default limit is 12000, maximum 30000.\n\n' +
+      'Default limit is 8000, maximum 30000.\n\n' +
       '## Images\n' +
       'For image attachments the tool returns a vision-model description instead of text. Pass a short ' +
       '`question` to focus the description (e.g. "what text appears in the screenshot?").',
@@ -77,7 +77,7 @@ export const READ_ATTACHMENT_TOOL = {
         },
         limit: {
           type: 'number',
-          default: 12000,
+          default: 8000,
           minimum: 1,
           maximum: 30000,
           description: 'Maximum characters to return in this page.',
@@ -240,7 +240,7 @@ export const TEXTUAL_APPLICATION_MIMES = new Set([
 
 const PARSER_MIMES = new Set(SUPPORTED_MIMES);
 
-export const READ_PAGE_DEFAULT = 12_000;
+export const READ_PAGE_DEFAULT = 8_000;
 export const READ_PAGE_MAX = 30_000;
 const EXTRACT_CACHE_MAX = 16;
 /* Skip caching extractions above ~8 M chars; a huge plain-text file is
