@@ -48,7 +48,7 @@ test('routing injection follows the offered tool and uses the unified envelope',
   const routed = appendToolRoutingHints(messages, ['create_document', 'render_intelligent_ui']);
   assert.match(routed[0].content, /create_document with \{kind:/);
   assert.doesNotMatch(routed[0].content, /When `create_plan`|When `create_spec`|one openui node/);
-  assert.match(routed[0].content, /EVERY displayed formula/);
+  assert.match(routed[0].content, /reader-facing mathematical expressions/);
   assert.deepEqual(
     appendToolRoutingHints(routed, ['create_document', 'render_intelligent_ui']),
     routed,
