@@ -56,6 +56,7 @@ object SocratesDesign {
     val Disabled = Color(0xFF8F8F8F)
     val Placeholder = Color(0xFF8F8F8F)
     val Avatar = Color(0xFF6B6B6B) // --ui-avatar-bg
+    val ActivityAccent = Color(0xFF0060CC) // semantic live-work cue; never used for ordinary text
     val Touch = 44.dp
     val PageGutter = 16.dp
     val HeaderHeight = 68.dp
