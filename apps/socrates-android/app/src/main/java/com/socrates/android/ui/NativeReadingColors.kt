@@ -13,4 +13,5 @@ internal object NativeReadingColors {
     val borderSubtle: Int = 0xFFEEEEEE.toInt() // --ui-border-subtle
     val borderDefault: Int = 0xFFE3E3E3.toInt() // --ui-border-default
     val borderStrong: Int = 0xFFDDDDDD.toInt() // --ui-border-strong
+    val codeSurface: Int = 0xFFF5F5F5.toInt() // --ui-bg-control
 }
