@@ -1,6 +1,7 @@
 package com.socrates.android.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -56,7 +57,7 @@ private data class PreparedMarkdown(
 fun NativeMarkdown(text: String, modifier: Modifier = Modifier, streaming: Boolean = false) {
     val context = LocalContext.current
     val density = LocalDensity.current
-    val textPx = with(density) { 17.sp.toPx() }
+    val textPx = with(density) { NativeReadingTypography.bodySizeSp.sp.toPx() }
     val markwon = remember(context, textPx) {
         Markwon.builder(context)
             // Registered before JLatexMathPlugin adds its general-purpose $$ processor.
@@ -96,7 +97,7 @@ fun NativeMarkdown(text: String, modifier: Modifier = Modifier, streaming: Boole
                         .blockMargin(with(density) { 20.dp.roundToPx() })
                         .bulletWidth(with(density) { 4.dp.roundToPx() })
                         .codeTextColor(SocratesDesign.Ink.toArgb())
-                        .codeBackgroundColor(0xFFF5F5F5.toInt())
+                        .codeBackgroundColor(NativeReadingColors.codeSurface)
                         .linkColor(SocratesDesign.Link.toArgb())
                         .isLinkUnderlined(false)
                 }
@@ -158,13 +159,16 @@ private fun PendingMathSource(source: String) {
 @Composable
 private fun CodePanel(source: String, language: String) {
     val clipboard = LocalClipboardManager.current
-    Column(Modifier.fillMaxWidth().background(SocratesDesign.Selected, RoundedCornerShape(16.dp))) {
+    val shape = RoundedCornerShape(SocratesDesign.DialogRadius)
+    Column(Modifier.fillMaxWidth().background(SocratesDesign.CodeSurface, shape)
+        .border(1.dp, SocratesDesign.LineSubtle, shape)) {
         Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(language.ifBlank { "代码" }, Modifier.weight(1f), fontSize = 12.sp, color = SocratesDesign.Muted)
             SocratesIconButton(onClick = { clipboard.setText(AnnotatedString(source)) }) { ReferenceIcon(ReferenceGlyph.Copy, "复制代码", Modifier.size(16.dp), SocratesDesign.Muted) }
         }
+        SocratesDivider()
         SelectionContainer {
-            Text(source, Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(start = 16.dp, end = 16.dp, bottom = 16.dp), fontFamily = FontFamily.Monospace, fontSize = 14.sp, lineHeight = 22.sp, color = SocratesDesign.Ink)
+            Text(source, Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(16.dp), fontFamily = FontFamily.Monospace, fontSize = 14.sp, lineHeight = 22.sp, color = SocratesDesign.Ink)
         }
     }
 }
