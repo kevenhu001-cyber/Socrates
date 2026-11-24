@@ -90,7 +90,7 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
   }
 
   html[data-main-view='settingsPage'] #settingsPage .settings-nav {
-    gap: var(--ui-space-md);
+    gap: var(--ui-space-sm);
     padding: var(--ui-space-lg) var(--ui-space-md);
     border-color: var(--ui-account-border);
     background: var(--ui-account-rail);
@@ -116,8 +116,8 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
   }
 
   html[data-main-view='settingsPage'] #settingsPage .settings-category-icon {
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
     color: inherit;
   }
 
@@ -374,7 +374,7 @@ html[data-main-view='settingsPage'] #settingsPage .settings-choice {
   }
   .settings-index-identity,
   .settings-index-group {
-    border: 1px solid var(--ui-account-border);
+    border: 0;
     border-radius: var(--ui-radius-lg);
     background: var(--ui-account-panel);
   }
@@ -395,7 +395,7 @@ html[data-main-view='settingsPage'] #settingsPage .settings-choice {
     text-overflow: ellipsis;
   }
   .settings-page .settings-nav-item {
-    min-height: calc(var(--ui-control-touch) + 12px);
+    min-height: calc(var(--ui-control-touch) + 8px);
     padding: var(--ui-space-xs) var(--ui-space-md);
     border-radius: var(--ui-radius-lg);
     border-color: transparent;
