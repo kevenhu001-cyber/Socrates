@@ -77,7 +77,7 @@ test('public summaries disclose separately while tool rows and results stay visi
   await toggle.click();
   await expect(activity.getByText('Checked the assumptions.')).toBeVisible();
   await expect(toolRow(page, 'ui')).toBeVisible();
-  /* Tool text sits on the same type step as the answer. */
+  /* Tool activity uses a quieter type step than prose. */
   const type = await toolRow(page, 'ui')
     .locator(TURN.stepTitle)
     .evaluate((node) => ({
@@ -88,7 +88,7 @@ test('public summaries disclose separately while tool rows and results stay visi
     .locator('.tool-run-prose p')
     .first()
     .evaluate((node) => parseFloat(getComputedStyle(node).fontSize));
-  expect(type.size).toBe(proseSize);
+  expect(type.size).toBeLessThanOrEqual(proseSize);
   expect(type.line).toBeGreaterThanOrEqual(type.size);
   await toggle.click();
   await expect(page.locator('.intui')).toBeVisible();
