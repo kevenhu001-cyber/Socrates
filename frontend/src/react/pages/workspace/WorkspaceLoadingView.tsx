@@ -4,6 +4,7 @@ import { cn } from 'cn';
 import { PageFrame } from '../../ui/page/PageFrame';
 import { PageHeader } from '../../ui/page/PageHeader';
 import { i18n } from './workspaceUi';
+import { getCurrentLang } from '../../../ui/legacyI18n.ts';
 
 export interface WorkspaceLoadingViewProps {
   page: string;
@@ -133,31 +134,45 @@ function ScheduledSkeleton() {
 }
 
 function loadingCopy(page: string): { title: string; description: string } {
+  const zh = getCurrentLang() === 'zh';
+  const fallback = (zhText: string, enText: string) => (zh ? zhText : enText);
   switch (page) {
     case 'plugins':
       return {
-        title: i18n('plugins.title', 'Plugins'),
-        description: i18n('plugins.loading', 'Loading apps and connection status…'),
+        title: i18n('plugins.title', fallback('插件', 'Plugins')),
+        description: i18n(
+          'plugins.loading',
+          fallback('正在同步插件生态与连接状态…', 'Loading apps and connection status…'),
+        ),
       };
     case 'projects':
       return {
-        title: i18n('projects.title', 'Projects'),
-        description: i18n('projects.loading', 'Loading project spaces and knowledge context…'),
+        title: i18n('projects.title', fallback('项目', 'Projects')),
+        description: i18n(
+          'projects.loading',
+          fallback('正在载入项目空间与知识上下文…', 'Loading project spaces and knowledge context…'),
+        ),
       };
     case 'library':
       return {
-        title: i18n('library.title', 'Library'),
-        description: i18n('library.loading', 'Loading documents and files…'),
+        title: i18n('library.title', fallback('资料库', 'Library')),
+        description: i18n(
+          'library.loading',
+          fallback('正在载入知识库文档与文件…', 'Loading documents and files…'),
+        ),
       };
     case 'scheduled':
       return {
-        title: i18n('scheduled.title', 'Scheduled'),
-        description: i18n('scheduled.loading', 'Loading tasks and schedules…'),
+        title: i18n('scheduled.title', fallback('定时任务', 'Scheduled')),
+        description: i18n(
+          'scheduled.loading',
+          fallback('正在载入任务与运行计划…', 'Loading tasks and schedules…'),
+        ),
       };
     default:
       return {
-        title: i18n('workspace.title', 'Workspace'),
-        description: i18n('workspace.loading', 'Loading workspace…'),
+        title: i18n('workspace.title', fallback('工作区', 'Workspace')),
+        description: i18n('workspace.loading', fallback('正在载入工作区…', 'Loading workspace…')),
       };
   }
 }
@@ -176,7 +191,9 @@ export function WorkspaceLoadingView({ page }: WorkspaceLoadingViewProps) {
         titleId={titleId}
         title={title}
         description={description}
-        actions={<SkeletonBlock className="workspace-skeleton-action workspace-skeleton-create" />}
+        actions={
+          <SkeletonBlock className="workspace-skeleton-action workspace-skeleton-create" />
+        }
       />
       {page === 'plugins' && <PluginSkeleton />}
       {page === 'projects' && <ProjectsSkeleton />}
