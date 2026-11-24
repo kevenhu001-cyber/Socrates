@@ -226,6 +226,7 @@ for (const mode of ['dark', 'light']) {
       36,
       1,
     );
+    await expect(page.locator('.plugin-directory-search input')).toHaveCSS('font-size', '16px');
     await page.screenshot({
       path: `test-results/reference-alignment-${encodeURIComponent(mode)}-plugins.png`,
     });

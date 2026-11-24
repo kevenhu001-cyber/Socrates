@@ -287,8 +287,7 @@ html:not([data-main-view='settingsPage']) #appShell .main-page .ui-page-frame,
   background: var(--ui-border-subtle);
 }
 
-/* Grid mode: the same rows become scannable preview cards. Desktop only —
- * the phone library is reference-pinned and always renders its flat list. */
+/* Desktop grid; the compact touch grid is owned by mobile-directories.css. */
 @media (min-width: 769px) {
   #appShell .library-list.view-grid {
     display: grid;
@@ -809,6 +808,43 @@ body.workspace-active #appShell .ui-page-card.project-card {
 /* ── Phone ──────────────────────────────────────────────────────────── */
 
 @media (max-width: 768px) {
+  html:not([data-main-view='settingsPage']) #appShell .main-page .ui-page-frame,
+  #appShell .ui-page-frame {
+    padding-top: var(--ui-space-lg);
+    padding-inline: max(var(--ui-mobile-page-gutter), env(safe-area-inset-left, 0px))
+      max(var(--ui-mobile-page-gutter), env(safe-area-inset-right, 0px));
+    padding-bottom: calc(var(--ui-space-xxl) + env(safe-area-inset-bottom, 0px));
+  }
+
+  #appShell .ui-page-search input {
+    font-size: max(1rem, var(--ui-font-size-md));
+  }
+
+  #appShell :is(.projects-directory, .scheduled-directory) .ui-page-search {
+    flex: 1 0 100%;
+    max-width: none;
+  }
+
+  #appShell :is(.projects-directory, .scheduled-directory) .ui-page-toolbar-end {
+    flex: 1 1 100%;
+    min-width: 0;
+    max-width: 100%;
+    margin-inline-start: 0;
+  }
+
+  #appShell .ui-page-tabs[data-slot='toggle-group'],
+  #appShell .ui-page-tabs[data-slot='tabs-list'] {
+    height: auto;
+    min-height: var(--ui-control-touch);
+    scrollbar-width: none;
+  }
+
+  #appShell .ui-page-tab[data-slot='toggle-group-item'],
+  #appShell .ui-page-tab[data-slot='tabs-trigger'] {
+    height: var(--ui-control-touch);
+    padding-inline: var(--ui-space-sm);
+  }
+
   #appShell .ui-page-header {
     align-items: flex-start;
     padding-bottom: var(--ui-space-md);
@@ -829,9 +865,29 @@ body.workspace-active #appShell .ui-page-card.project-card {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  #appShell .project-card,
+  body.workspace-active #appShell .ui-page-card.project-card,
   #appShell .scheduled-recommendation {
-    padding: var(--ui-space-md);
+    min-height: 72px;
+    padding: var(--ui-space-sm);
+    border: 0;
+    border-bottom: 1px solid var(--ui-border-subtle);
+    border-radius: 0;
+    background: transparent;
+  }
+
+  #appShell .project-card .project-main {
+    min-height: var(--ui-control-touch);
+  }
+
+  #appShell .project-card > .workspace-row-action {
+    width: var(--ui-control-touch);
+    min-height: var(--ui-control-touch);
+  }
+
+  #appShell .scheduled-task-list.ui-collection {
+    border: 0;
+    border-radius: 0;
+    overflow: visible;
   }
 
   #appShell .scheduled-task-list .task-row {
@@ -845,5 +901,11 @@ body.workspace-active #appShell .ui-page-card.project-card {
 
   #appShell .ui-page-empty[data-slot='empty'] {
     min-height: 180px;
+    border: 0;
+    background: transparent;
+  }
+
+  #appShell .creation-gallery {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 160px), 1fr));
   }
 }

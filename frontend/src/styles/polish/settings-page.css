@@ -362,6 +362,10 @@ html[data-main-view='settingsPage'] #settingsPage .settings-choice {
   .settings-page[data-mobile-index='false'] .settings-body {
     background: var(--ui-account-canvas);
   }
+  .settings-page .settings-search input,
+  .settings-page .settings-body :is(input:not([type='checkbox']):not([type='radio']), textarea) {
+    font-size: max(1rem, var(--ui-font-size-md));
+  }
   .settings-page .settings-search.hidden {
     display: none;
   }

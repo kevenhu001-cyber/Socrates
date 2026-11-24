@@ -16,14 +16,14 @@
   body.workspace-active #appShell .plugin-directory-search input {
     min-width: 0;
     width: 100%;
-    font-size: 15px;
+    font-size: max(1rem, var(--ui-font-size-md));
   }
   body.workspace-active #appShell .plugin-directory-add-btn {
     display: grid;
     place-items: center;
-    width: var(--ui-control-desktop);
-    height: var(--ui-control-desktop);
-    flex: 0 0 36px;
+    width: var(--ui-control-touch);
+    height: var(--ui-control-touch);
+    flex: 0 0 var(--ui-control-touch);
     padding: 0;
   }
   body.workspace-active #appShell .plugin-directory-add-btn svg {
@@ -34,8 +34,11 @@
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 8px;
-    margin: 0 0 36px;
+    gap: var(--ui-space-sm);
+    margin: 0 0 var(--ui-space-xl);
+    padding: 0;
+    border: 0;
+    background: transparent;
   }
   body.workspace-active #appShell .plugin-installed-label {
     display: inline-flex;
@@ -204,8 +207,8 @@
   body.workspace-active #appShell .library-view-btn {
     display: grid;
     place-items: center;
-    width: var(--ui-control-desktop);
-    height: var(--ui-control-desktop);
+    width: var(--ui-control-touch);
+    height: var(--ui-control-touch);
     padding: 0;
   }
   body.workspace-active #appShell .library-toolbar-divider {
@@ -238,7 +241,7 @@
   body.workspace-active #appShell .library-search-pill input {
     width: 100%;
     min-width: 0;
-    font-size: 15px;
+    font-size: max(1rem, var(--ui-font-size-md));
   }
   body.workspace-active #appShell .library-desktop-table-head {
     display: block;
@@ -254,7 +257,7 @@
   body.workspace-active #appShell .library-row {
     position: relative;
     display: grid;
-    grid-template-columns: 32px minmax(0, 1fr) 32px;
+    grid-template-columns: 32px minmax(0, 1fr) var(--ui-control-touch);
     align-items: center;
     gap: 12px;
     min-height: 60px;
@@ -331,15 +334,15 @@
   body.workspace-active #appShell .library-row-more-btn {
     display: grid;
     place-items: center;
-    width: var(--ui-control-sm);
-    height: var(--ui-control-md);
+    width: var(--ui-control-touch);
+    height: var(--ui-control-touch);
     padding: 0;
     border: 0;
     background: transparent;
     color: var(--ui-text-muted);
   }
 
-  /* The phone library is a reference-pinned flat list
+  /* The default phone library is a flat list
      (`docs/ref/mobile-reference-2026-10-04.md`): keep the Page Kit card from
      boxing it in; row and head geometry stay in this file above. */
   body.workspace-active #appShell .library-list.ui-collection {
@@ -358,11 +361,49 @@
   body.workspace-active #appShell .library-list .ui-collection-body > * + * {
     border-top: 0;
   }
+
+  /* The view switch must change the visible layout on touch screens too. */
+  body.workspace-active #appShell .library-list.view-grid .library-desktop-table-head {
+    display: none;
+  }
+  body.workspace-active #appShell .library-list.view-grid .ui-collection-body {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--ui-space-sm);
+  }
+  body.workspace-active #appShell .library-list.view-grid .library-row {
+    grid-template-columns: minmax(0, 1fr) var(--ui-control-touch);
+    grid-template-rows: auto auto;
+    gap: var(--ui-space-xs);
+    padding: var(--ui-space-sm);
+    border: 1px solid var(--ui-border-subtle);
+    border-radius: var(--ui-radius-lg);
+  }
+  body.workspace-active #appShell .library-list.view-grid .library-file-icon {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  body.workspace-active #appShell .library-list.view-grid .workspace-row-copy {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  body.workspace-active #appShell .library-list.view-grid .library-row-actions {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  body.workspace-active #appShell .library-list.view-grid .library-checkbox-label {
+    top: var(--ui-space-sm);
+    left: var(--ui-space-sm);
+    transform: none;
+  }
 }
 
 @media (max-width: 359px) {
-  /* Keep search usable beside all three toolbar actions at 320px. Do not
-     shrink the type or remove the view switch to make the row fit. */
+  /* At 320px give search its own line rather than shrinking the field or
+     stealing the 44px touch targets from the three toolbar actions. */
+  body.workspace-active #appShell .library-toolbar .library-search-pill {
+    flex: 1 0 100%;
+  }
   body.workspace-active #appShell .library-toolbar-controls {
     gap: 8px;
   }
