@@ -1,3 +1,4 @@
+import { READ_TOOL_RESULT_TOOL, toolResultBudgetEnabled } from './toolResultBudget.js';
 import { CITE_SOURCES_TOOL, PATCH_INTELLIGENT_UI_TOOL } from '../turnRuntimeTools.js';
 import { INTELLIGENT_UI_TOOL } from '../intelligentUi.js';
 import { GET_UI_CONTRACT_TOOL } from '../uiContract.js';
@@ -59,6 +60,13 @@ export function createToolRegistry({
    * - sessionSerial: `true` serializes same-named calls; a string shares
    *   a named lane across tools mutating the same state. */
   const entries = [
+    {
+      name: 'read_tool_result',
+      modelDefinition: READ_TOOL_RESULT_TOOL,
+      enabled: toolResultBudgetEnabled(),
+      pure: true,
+      sessionSerial: false,
+    },
     {
       name: 'code_interpreter',
       modelDefinition: codeInterpreterToolDef,
