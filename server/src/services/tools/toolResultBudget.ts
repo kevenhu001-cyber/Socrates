@@ -19,7 +19,8 @@ export const READ_TOOL_RESULT_TOOL = {
   },
 };
 
-const NATIVE_PAGED = new Set(['web_fetch', 'read_attachment', 'read_tool_result']);
+// Explicit page and schema reads must keep the complete requested contract.
+const NATIVE_PAGED = new Set(['web_fetch', 'read_attachment', 'read_tool_result', 'get_connector_spec', 'get_ui_contract']);
 const MAX_ARCHIVE_CHARS = 4_000_000;
 const MAX_ENTRY_CHARS = 120_000;
 const MAX_ENTRIES = 200;
