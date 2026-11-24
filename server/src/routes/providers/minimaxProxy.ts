@@ -34,6 +34,11 @@ import {
   refreshServerPrompt,
   refreshSnapshotBlock,
 } from '../../lib/chatPolicy.js';
+import { resolveContextBudget } from '../../lib/modelCapabilities.js';
+import { estimateContextMessageTokens } from '../../services/core/usageTracker.js';
+import { compressSessionMessages } from '../../services/embeddings/sessionCompressor.js';
+import { DEFAULT_MAX_TOKENS } from '../../services/core/llm/types.js';
+import type { ProviderMessage } from '../../lib/providerMessageSchema.js';
 import { buildSseErrorFrame } from '../../lib/sseErrorFrame.js';
 
 const router = Router();
@@ -131,11 +136,30 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
       insertResponseTypography(refreshed),
       await getBeagleSystemPrompt(),
     );
+    let conversation = appendTurnContext(context.conversation, context.turnInstructions, memoryBlock?.prompt ?? null);
+    const budget = resolveContextBudget(provider.model, {
+      overrideTokens: Number(process.env.CHAT_CONTEXT_MAX_TOKENS),
+      reserveTokens: typeof max_tokens === 'number' ? max_tokens : DEFAULT_MAX_TOKENS,
+    });
+    const softRaw = Number(process.env.CHAT_CONTEXT_SOFT_TOKENS ?? '24000');
+    const trigger = Math.min(budget.budget, Number.isFinite(softRaw) && softRaw > 0 ? Math.floor(softRaw) : budget.budget);
+    if (estimateContextMessageTokens([{ role: 'system', content: systemPrompt }, ...conversation]) > trigger) {
+      try {
+        const compressed = await compressSessionMessages(conversation, {
+          ...(req.userId && sessionId ? { cacheScope: req.userId + ':' + sessionId } : {}),
+          triggerTokens: Math.max(1, trigger - estimateContextMessageTokens([{ role: 'system', content: systemPrompt }])),
+          batchTurns: 4,
+        });
+        if (compressed.didCompress) {
+          const wire = compressed.messages.map(m => ({ ...m, content: m.content ?? m.rawText ?? '' })) as ProviderMessage[];
+          conversation = splitPromptContext(wire, mode).conversation;
+        }
+      } catch (error) {
+        console.warn('[minimax] history compression skipped:', (error as Error).message);
+      }
+    }
     let messages = transformMessagesForModel(
-      [
-        { role: 'system', content: systemPrompt },
-        ...appendTurnContext(context.conversation, context.turnInstructions, memoryBlock?.prompt ?? null),
-      ],
+      [{ role: 'system', content: systemPrompt }, ...conversation],
       provider,
     );
     /* the upstream model name is operator-configured
