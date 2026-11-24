@@ -26,6 +26,19 @@ export const SCRATCH_DIR =
     ? '/var/lib/socrates/exec'
     : path.join(os.tmpdir(), 'socrates-exec'));
 
+/* Pyodide downloads wheels with `loadPackagesFromImports` / `micropip` on the
+ * first run that imports a package. Its default cache is `indexURL`, i.e. the
+ * read-only node_modules tree in a production install, so every cold worker
+ * re-downloaded the same wheel. Keep the cache beside the CJK font in the
+ * writable state directory instead. */
+export const PYODIDE_PACKAGE_CACHE_DIR =
+  process.env.EXEC_PYODIDE_PACKAGE_CACHE_DIR ||
+  (process.env.NODE_ENV === 'production'
+    ? '/var/lib/socrates/pyodide-packages'
+    : path.join(os.tmpdir(), 'socrates-pyodide-packages'));
+
+export const SLOW_EXECUTION_LOG_MS = Math.max(0, Number(process.env.EXEC_SLOW_LOG_MS) || 5_000);
+
 export function sessionScratchPath(userId: string, sessionId: string) {
   return resolveInsideRoot(SCRATCH_DIR, path.join(userId, sessionId));
 }
@@ -58,8 +71,11 @@ export function resolvePyodideWorkerEntry(): PyodideWorkerEntry {
   throw new Error(`pyodide_worker_entry_missing: neither ${compiled} nor ${source} exists`);
 }
 
-/* Make sure the scratch root exists before any worker is spawned. */
+/* Make sure the scratch and package-cache roots exist before any worker is
+ * spawned. A failure here is non-fatal: the worker falls back to Pyodide's
+ * own cache location and logs once. */
 await fs.mkdir(SCRATCH_DIR, { recursive: true }).catch(() => {});
+await fs.mkdir(PYODIDE_PACKAGE_CACHE_DIR, { recursive: true }).catch(() => {});
 
 function timeoutSetting(raw: string | undefined, fallback: number) {
   const value = Number(raw);

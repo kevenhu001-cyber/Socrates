@@ -75,8 +75,11 @@ function PluginDirectoryBody({
         />
       ) : null}
       {popularPlugins.length > 0 ? (
-        <section className="plugin-directory-section">
-          <h3>{i18n('plugins.popular', 'Popular')}</h3>
+        <section className="ui-page-section plugin-directory-section">
+          <div className="ui-page-section-head">
+            <h2>{i18n('plugins.popular', 'Popular')}</h2>
+            <span>{popularPlugins.length}</span>
+          </div>
           <div className="plugin-directory-list">
             {popularPlugins.map((plugin) => (
               <PluginDirectoryCard
@@ -91,8 +94,11 @@ function PluginDirectoryBody({
         </section>
       ) : null}
       {newPlugins.length > 0 ? (
-        <section className="plugin-directory-section">
-          <h3>{i18n('plugins.new', 'New and notable')}</h3>
+        <section className="ui-page-section plugin-directory-section">
+          <div className="ui-page-section-head">
+            <h2>{i18n('plugins.new', 'New and notable')}</h2>
+            <span>{newPlugins.length}</span>
+          </div>
           <div className="plugin-directory-list">
             {newPlugins.map((plugin) => (
               <PluginDirectoryCard
@@ -152,6 +158,12 @@ export function PluginDirectory({
         actions={<PluginDirectoryAddAction setQuery={setQuery} setScope={setScope} />}
       />
 
+      <InstalledPluginStrip
+        plugins={installedPlugins}
+        onSelect={onSelectPlugin}
+        onShowPersonal={() => setScope('personal')}
+      />
+
       <PageToolbar>
         <PageSearchField
           className="plugin-directory-search"
@@ -159,24 +171,19 @@ export function PluginDirectory({
           query={query}
           onQuery={setQuery}
         />
+        <div className="ui-page-toolbar-end">
+          <PageTabs
+            className="plugin-directory-tabs"
+            items={[
+              { value: 'public', label: i18n('plugins.public', 'Public') },
+              { value: 'personal', label: i18n('plugins.personal', 'Personal') },
+            ]}
+            value={scope}
+            onChange={setScope}
+            ariaLabel={i18n('plugins.allPlugins', 'All plugins')}
+          />
+        </div>
       </PageToolbar>
-
-      <InstalledPluginStrip
-        plugins={installedPlugins}
-        onSelect={onSelectPlugin}
-        onShowPersonal={() => setScope('personal')}
-      />
-
-      <PageTabs
-        className="plugin-directory-tabs"
-        items={[
-          { value: 'public', label: i18n('plugins.public', 'Public') },
-          { value: 'personal', label: i18n('plugins.personal', 'Personal') },
-        ]}
-        value={scope}
-        onChange={setScope}
-        ariaLabel={i18n('plugins.allPlugins', 'All plugins')}
-      />
 
       <PluginDirectoryBody
         visiblePlugins={visiblePlugins}

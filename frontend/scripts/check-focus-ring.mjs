@@ -77,6 +77,10 @@ const SHADOW_EXEMPTIONS = [
     why: 'the search row owns the focus treatment (its hairline), like the sidebar search',
   },
   { match: /#settingsTitle/, why: 'programmatically focused heading; not a control' },
+  {
+    match: /(?:ui-page-heading|account-page-title) h1/,
+    why: 'page headings receive focus for screen-reader context; they are not controls',
+  },
   { match: /intui-slider input/, why: 'the range thumb carries the focus ring' },
 ];
 

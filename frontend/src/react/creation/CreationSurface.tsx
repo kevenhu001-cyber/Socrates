@@ -59,6 +59,7 @@ function CreationHeader({
         <PageHeader
           titleId="creation-sites-title"
           title={text.sites}
+          description={text.sitesDesc}
           actions={
             <Button className="creation-sites-new" onClick={onNew}>
               {text.create}
@@ -113,6 +114,7 @@ function CreationHeader({
       <PageHeader
         titleId={`creation-${name}-title`}
         title={text[name]}
+        description={name === 'images' ? text.imagesDesc : text.assistantsDesc}
         actions={<Button onClick={onNew}>{createLabel}</Button>}
       />
       <PageToolbar>

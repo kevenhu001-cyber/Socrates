@@ -93,24 +93,26 @@ function LibraryView({
           }
         />
       ) : (
-        <div className={`workspace-table library-list view-${viewMode}`}>
-          <div className="workspace-table-head library-desktop-table-head">
+        <div className={`ui-collection workspace-table library-list view-${viewMode}`}>
+          <div className="ui-collection-head workspace-table-head library-desktop-table-head">
             <span>{i18n('library.columnName', 'Name')}</span>
             <span>{i18n('library.columnModified', 'Modified')}</span>
             <span>{i18n('library.columnSize', 'Size')}</span>
             <span />
           </div>
-          {items.map((item) => (
-            <LibraryItemRow
-              key={item.id}
-              item={item}
-              itemKey={item.itemType || 'files'}
-              tab={item.itemType || 'files'}
-              selection={data.selection}
-              renameItem={data.renameItem}
-              dispatch={dispatch}
-            />
-          ))}
+          <div className="ui-collection-body">
+            {items.map((item) => (
+              <LibraryItemRow
+                key={item.id}
+                item={item}
+                itemKey={item.itemType || 'files'}
+                tab={item.itemType || 'files'}
+                selection={data.selection}
+                renameItem={data.renameItem}
+                dispatch={dispatch}
+              />
+            ))}
+          </div>
         </div>
       )}
     </PageFrame>

@@ -119,19 +119,28 @@ function MessageList({ readOnly = false }: { readOnly?: boolean }) {
     const onScroll = () => {
       if (!frame) frame = requestAnimationFrame(update);
     };
-    update();
+    onScroll();
     list.addEventListener('scroll', onScroll, { passive: true });
     let ro: ResizeObserver | null = null;
     if (typeof ResizeObserver === 'function') {
       ro = new ResizeObserver(onScroll);
       ro.observe(list);
     }
+    /* Rows mount and markdown expands after the list's own box is fixed, so
+       a ResizeObserver on the scroller cannot see the content grow. Watch the
+       subtree instead and re-read overflow once per frame. */
+    let content: MutationObserver | null = null;
+    if (typeof MutationObserver === 'function') {
+      content = new MutationObserver(onScroll);
+      content.observe(list, { childList: true, subtree: true, characterData: true });
+    }
     return () => {
       list.removeEventListener('scroll', onScroll);
       cancelAnimationFrame(frame);
       ro?.disconnect();
+      content?.disconnect();
     };
-  }, []);
+  }, [mounted.length]);
 
   if (mounted.length === 0) {
     return <div data-react-message-list-empty="1" data-react-owned="1" />;

@@ -363,6 +363,29 @@
   filter: grayscale(1);
 }
 
+/* Expanding a tool is a disclosure, not a page jump: the detail arrives on
+ * the same short opacity/offset clock as the other overlays. */
+.tool-run-detail-body {
+  animation: tool-detail-in var(--ui-duration-fast) var(--ui-ease-out);
+}
+
+@keyframes tool-detail-in {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tool-run-detail-body {
+    animation: none;
+  }
+}
+
 /* Completed activity bursts read like a quiet transcript caption, not a card. */
 .tool-activity-burst-caption {
   display: flex;
@@ -377,14 +400,22 @@
   align-items: center;
   gap: var(--ui-space-xs);
   min-height: var(--ui-control-sm);
-  padding: 0;
+  padding: 0 var(--ui-space-xs);
   border: 0;
+  border-radius: var(--ui-radius-sm);
   background: transparent;
   color: var(--ui-text-secondary);
   font-family: inherit;
   font-size: var(--ui-font-size-sm);
   line-height: var(--ui-text-ui-line);
   cursor: pointer;
+  transition:
+    background-color var(--ui-duration-hover) ease,
+    color var(--ui-duration-hover) ease;
+}
+
+.tool-activity-burst-toggle:hover {
+  background: var(--ui-bg-hover);
 }
 .tool-activity-burst-toggle:hover,
 .tool-activity-burst-toggle:focus-visible {

@@ -34,8 +34,11 @@ const DEFAULT_SITE_SOURCE =
 const copy: Record<'en' | 'zh', Record<string, string>> = {
   zh: {
     images: '图片',
+    imagesDesc: '用文字描述生成图片，并在这里管理你的创作。',
     assistants: '助手',
+    assistantsDesc: '创建带有专属指令与开场白的助手，用于重复性工作。',
     sites: '站点',
+    sitesDesc: '生成、预览并发布你的网页。',
     createImage: '创建图片',
     createAssistant: '创建助手',
     createSite: '创建网站',
@@ -80,8 +83,11 @@ const copy: Record<'en' | 'zh', Record<string, string>> = {
   },
   en: {
     images: 'Images',
+    imagesDesc: 'Generate images from a prompt and keep every creation here.',
     assistants: 'Assistants',
+    assistantsDesc: 'Build assistants with their own instructions and openers.',
     sites: 'Sites',
+    sitesDesc: 'Generate, preview, and publish your pages.',
     createImage: 'Create an image',
     createAssistant: 'Create assistant',
     createSite: 'Create site',

@@ -48,6 +48,11 @@ async function openConnectedPluginDetail(page) {
   await mockConnectedCatalog(page);
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
+  if (
+    await page.locator('#sidebar').evaluate((sidebar) => sidebar.classList.contains('collapsed'))
+  ) {
+    await page.locator('#sidebarOpenBtn').click();
+  }
   await page.locator('#navPlugins').click();
   await page.locator('[data-connector-id="github"]').click();
   await expect(page.locator('.plugin-detail-view')).toBeVisible();

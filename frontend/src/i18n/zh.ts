@@ -799,6 +799,7 @@ export const zh = {
   'projects.filter': '项目筛选',
   'projects.search': '搜索项目',
   'projects.all': '全部',
+  'projects.allProjects': '全部项目',
   'projects.owned': '由你创建',
   'projects.shared': '与你共享',
   'projects.name': '名称',

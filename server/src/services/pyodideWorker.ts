@@ -19,13 +19,13 @@
  * the user's Python code, which we translate to status:'timeout'.
  */
 import { parentPort } from 'node:worker_threads';
-import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import fsSync from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { loadPyodide, type PyodideInterface, type TypedArray } from 'pyodide';
 import { sanitizeLogValue } from '../lib/logRedaction.js';
+import { ensureCjkFontCached } from './codeInterpreter/cjkFontCache.js';
+import { PYODIDE_PACKAGE_CACHE_DIR } from './codeInterpreter/config.js';
 
 let pyodide: PyodideInterface | null = null;
 let bootError: Error | null = null;
@@ -66,162 +66,17 @@ function isRunCodeRequest(value: unknown): value is RunCodeRequest {
 /**
  * Boot Pyodide. ~3-5s on a warm cache; the parent warm-pool amortises this.
  */
-/* Pyodide's matplotlib ships only DejaVu Sans,
-   which has no CJK glyphs, so chart text in Chinese renders as tofu
-   on the first try. Download a CJK font on first use of matplotlib, cache it,
-   register it with font_manager, and put it first in
-   rcParams['font.sans-serif']. The model-facing tool description
-   tells the model not to override font.sans-serif so it can't undo
-   the fix. If the download fails we log a warning and fall through to
-   DejaVu — charts still work, just with tofu for CJK.
-
-   the notofonts/noto-cjk repo organizes Simplified
-   Chinese under `SC/`, not `CN/`. The previous `/CN/` URL 404'd
-   silently and burned the 8s download timeout on every worker boot,
-   which then ate into the first call's 30s user-code budget and
-   surfaced as a spurious "代码执行超时" error. */
-const CJK_FONT_HOST_DIR =
-  process.env.EXEC_CJK_FONT_DIR ||
-  path.join(
-    process.env.NODE_ENV === 'production' ? '/var/lib/socrates' : os.tmpdir(),
-    'socrates-cjk-fonts',
-  );
-const CJK_FONT_FILENAME = 'NotoSansSC-Regular.otf';
-const CJK_FONT_URL =
-  'https://cdn.jsdelivr.net/gh/notofonts/noto-cjk@f8d157532fbfaeda587e826d4cd5b21a49186f7c/Sans/SubsetOTF/SC/NotoSansSC-Regular.otf';
-/* Exact Git object metadata for the font at the pinned URL. */
-const CJK_FONT_EXPECTED_BYTES = 8_331_336;
-const CJK_FONT_GIT_BLOB_SHA1 = 'fc0fda9394367c16c1af7555a2ae4d5e2e6a6f02';
-const CJK_FONT_MIN_BYTES = 100_000;
-const CJK_FONT_MAX_BYTES = 24 * 1024 * 1024;
-const CJK_FONT_TIMEOUT_MS = parseInt(process.env.EXEC_CJK_FONT_TIMEOUT_MS || '8000', 10);
+/* Pyodide's matplotlib ships only DejaVu Sans, which has no CJK glyphs, so
+   chart text in Chinese renders as tofu on the first try. The font file is
+   fetched, pinned and validated by `./codeInterpreter/cjkFontCache.ts`; the
+   server boot sequence warms that cache so the fetch is not on the first
+   matplotlib run's critical path. Here we only register the cached file with
+   matplotlib's font_manager and put it first in rcParams['font.sans-serif'].
+   The model-facing tool description tells the model not to override
+   font.sans-serif so it can't undo the fix. If the cache is unavailable we
+   log a warning and fall through to DejaVu — charts still work, just with
+   tofu for CJK. */
 let _cjkFontPromise: Promise<string | null> | null = null;
-
-function _cjkFontPath(): string {
-  return path.join(CJK_FONT_HOST_DIR, CJK_FONT_FILENAME);
-}
-
-function _isCjkFontPayload(bytes: Buffer): boolean {
-  if (
-    bytes.length !== CJK_FONT_EXPECTED_BYTES ||
-    bytes.length < CJK_FONT_MIN_BYTES ||
-    bytes.length > CJK_FONT_MAX_BYTES ||
-    (bytes.toString('ascii', 0, 4) !== 'OTTO' &&
-      !bytes.subarray(0, 4).equals(Buffer.from([0, 1, 0, 0])))
-  )
-    return false;
-  const gitObject = crypto
-    .createHash('sha1')
-    .update(`blob ${bytes.length}\0`)
-    .update(bytes)
-    .digest('hex');
-  return gitObject === CJK_FONT_GIT_BLOB_SHA1;
-}
-
-async function _readBoundedFontResponse(response: Response): Promise<Buffer | null> {
-  if (!response.body) return null;
-  const reader = response.body.getReader();
-  const chunks: Uint8Array[] = [];
-  let size = 0;
-  try {
-    for (;;) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      size += value.byteLength;
-      if (size > CJK_FONT_MAX_BYTES) {
-        await reader.cancel();
-        return null;
-      }
-      chunks.push(value);
-    }
-  } finally {
-    reader.releaseLock();
-  }
-  return Buffer.concat(chunks, size);
-}
-
-async function _downloadCjkFontOnce(): Promise<string | null> {
-  const target = _cjkFontPath();
-  try {
-    /* Establish private ownership before inspecting a cache entry; in
-       development this path is below the shared OS temp directory. */
-    await fs.mkdir(CJK_FONT_HOST_DIR, { recursive: true, mode: 0o700 });
-    const dirInfo = await fs.lstat(CJK_FONT_HOST_DIR);
-    if (!dirInfo.isDirectory() || dirInfo.isSymbolicLink()) {
-      throw new Error('CJK font cache must be a real directory');
-    }
-    await fs.chmod(CJK_FONT_HOST_DIR, 0o700);
-  } catch (err) {
-    const detail = err instanceof Error ? err.message : String(err);
-    console.warn(
-      `[pyodide] CJK font cache directory unavailable: ${sanitizeLogValue(detail, 160)}`,
-    );
-    return null;
-  }
-  try {
-    const st = await fs.lstat(target);
-    if (
-      st.isFile() &&
-      !st.isSymbolicLink() &&
-      st.size >= CJK_FONT_MIN_BYTES &&
-      st.size <= CJK_FONT_MAX_BYTES
-    ) {
-      const cached = await fs.readFile(target);
-      if (_isCjkFontPayload(cached)) {
-        await fs.chmod(target, 0o600);
-        return target;
-      }
-    }
-  } catch (_) {
-    /* empty-catch: intentional — no validated cache entry yet; the download path below is the normal flow */
-  }
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), CJK_FONT_TIMEOUT_MS);
-  try {
-    const resp = await fetch(CJK_FONT_URL, { signal: controller.signal, redirect: 'error' });
-    if (!resp.ok || !resp.body) {
-      console.warn(`[pyodide] CJK font download returned HTTP ${resp.status}`);
-      return null;
-    }
-    const contentLength = Number(resp.headers.get('content-length'));
-    if (
-      Number.isFinite(contentLength) &&
-      contentLength > 0 &&
-      (contentLength < CJK_FONT_MIN_BYTES || contentLength > CJK_FONT_MAX_BYTES)
-    ) {
-      await resp.body.cancel();
-      console.warn('[pyodide] CJK font download size is outside the accepted range');
-      return null;
-    }
-    const buf = await _readBoundedFontResponse(resp);
-    if (!buf || !_isCjkFontPayload(buf)) {
-      console.warn('[pyodide] CJK font download failed size or font-signature validation');
-      return null;
-    }
-    /* Stage the download inside a private mkdtemp directory and rename it
-       into place. Writing straight to the cache path would follow a
-       symlink planted at that predictable /tmp location; rename replaces
-       the link itself instead of its target. */
-    const stagingDir = await fs.mkdtemp(path.join(os.tmpdir(), 'socrates-cjk-'));
-    const stagingPath = path.join(stagingDir, 'font.otf');
-    try {
-      // lgtm[js/http-to-file-access] -- This pinned font is size-, signature-, and Git-blob-verified before private staging.
-      await fs.writeFile(stagingPath, buf, { mode: 0o600 });
-      await fs.rename(stagingPath, target);
-    } finally {
-      await fs.rm(stagingDir, { recursive: true, force: true }).catch(() => {});
-    }
-    console.log(
-      `[pyodide] Cached CJK font (${(buf.length / 1024 / 1024).toFixed(1)} MB) at ${target}`,
-    );
-    return target;
-  } catch (err) {
-    console.warn(`[pyodide] CJK font download failed: ${(err && (err as Error).message) || err}`);
-    return null;
-  } finally {
-    clearTimeout(timer);
-  }
-}
 
 function _registerCjkFontInPyodide(fontPath: string): string | null {
   if (!pyodide) return null;
@@ -295,7 +150,7 @@ except Exception as _e:
 function _ensureCjkFontRegistered(): Promise<string | null> {
   if (!_cjkFontPromise) {
     _cjkFontPromise = (async () => {
-      const fontPath = await _downloadCjkFontOnce();
+      const fontPath = await ensureCjkFontCached();
       if (!fontPath) return null;
       return _registerCjkFontInPyodide(fontPath);
     })().catch((err) => {
@@ -308,10 +163,25 @@ function _ensureCjkFontRegistered(): Promise<string | null> {
 
 async function bootPyodide() {
   try {
+    // Pyodide caches downloaded wheels under packageCacheDir. Its default is
+    // the package directory (node_modules), which a production install may
+    // expose read-only; pass the writable state directory and fall back when
+    // it cannot be created so boot still succeeds.
+    let packageCacheDir: string | undefined;
+    try {
+      await fs.mkdir(PYODIDE_PACKAGE_CACHE_DIR, { recursive: true });
+      await fs.access(PYODIDE_PACKAGE_CACHE_DIR, fsSync.constants.W_OK);
+      packageCacheDir = PYODIDE_PACKAGE_CACHE_DIR;
+    } catch (err) {
+      console.warn(
+        `[pyodide] package cache unavailable, using the Pyodide default: ${(err && (err as Error).message) || err}`,
+      );
+    }
     pyodide = await loadPyodide({
       // Default indexURL auto-detects the pyodide package's own directory
       // in Node — the WASM blob lives next to pyodide.mjs in node_modules.
       fullStdLib: false,
+      ...(packageCacheDir ? { packageCacheDir } : {}),
       // Use explicit callbacks because Pyodide's default file-descriptor
       // bindings can raise an I/O error in a Node worker. These handle
       // startup diagnostics; runCode() installs capped Python streams.

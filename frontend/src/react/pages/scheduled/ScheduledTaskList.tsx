@@ -18,21 +18,23 @@ export function ScheduledTaskList({
   onRemove,
 }: ScheduledTaskListProps) {
   return (
-    <div className="scheduled-task-list">
-      <div className="scheduled-section-heading scheduled-task-heading">
+    <div className="ui-collection scheduled-task-list">
+      <div className="ui-collection-head scheduled-task-heading">
         <span>{scheduledText('scheduled.yourTasks', 'Your tasks')}</span>
         <span>{tasks.length}</span>
       </div>
-      {tasks.map((task) => (
-        <ScheduledTaskRow
-          key={task.id}
-          task={task}
-          onEdit={onEdit}
-          onRun={onRun}
-          onToggle={onToggle}
-          onRemove={onRemove}
-        />
-      ))}
+      <div className="ui-collection-body">
+        {tasks.map((task) => (
+          <ScheduledTaskRow
+            key={task.id}
+            task={task}
+            onEdit={onEdit}
+            onRun={onRun}
+            onToggle={onToggle}
+            onRemove={onRemove}
+          />
+        ))}
+      </div>
     </div>
   );
 }

@@ -52,8 +52,15 @@ export function isSticky(list: HTMLElement): boolean {
   return Boolean(sticky && sticky.list === list && performance.now() < sticky.until);
 }
 
-const TOP_FADE_SIZE_PX = 32;
-const BOTTOM_FADE_SIZE_PX = 56;
+const TOP_FADE_SIZE_PX = 56;
+const BOTTOM_FADE_SIZE_PX = 72;
+/* The final message meets the composer, so the mask narrows once the reader
+ * reaches the end instead of washing out the tail of the answer. */
+const BOTTOM_END_FADE_SIZE_PX = 56;
+/* Reach the full top fade by roughly the height of one message row, so the
+ * text leaving the viewport softens as it passes the edge instead of waiting
+ * for a deep scroll before the mask appears. */
+const TOP_FADE_RAMP_PX = 28;
 
 export function updateScrollFadeMask(list: HTMLElement | null): void {
   if (!list) return;
@@ -62,12 +69,16 @@ export function updateScrollFadeMask(list: HTMLElement | null): void {
   // from zero to the full fade on the first scroll pixel. Quantization keeps
   // style updates bounded during touch scrolling.
   const edgeFade = (distance: number) =>
-    `${Math.round(Math.min(TOP_FADE_SIZE_PX, Math.max(0, distance - 2)))}px`;
+    `${Math.round(
+      Math.min(TOP_FADE_SIZE_PX, (Math.max(0, distance) / TOP_FADE_RAMP_PX) * TOP_FADE_SIZE_PX),
+    )}px`;
   const topVal = edgeFade(scrollTop);
+  const overflow = scrollHeight > clientHeight + 1;
+  const atEnd = overflow && scrollHeight - scrollTop - clientHeight <= 1;
   // Keep the composer edge soft even when the reader reaches the final
   // message. The old clipped-distance rule removed the bottom fade at the
   // exact point where the last response met the composer.
-  const bottomVal = scrollHeight > clientHeight + 1 ? `${BOTTOM_FADE_SIZE_PX}px` : '0px';
+  const bottomVal = overflow ? `${atEnd ? BOTTOM_END_FADE_SIZE_PX : BOTTOM_FADE_SIZE_PX}px` : '0px';
   if (list.style.getPropertyValue('--ui-scroll-fade-top') !== topVal) {
     list.style.setProperty('--ui-scroll-fade-top', topVal);
   }

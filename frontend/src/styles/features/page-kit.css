@@ -475,7 +475,6 @@
   }
 }
 
-
 /* Exam setup is an AppPage; the runner remains a focused surface. The shared
    page frame owns the setup column while the shared header replaces the
    legacy hero embedded in the cross-platform exam form. */
@@ -485,7 +484,4 @@
 }
 .exam-view-body.is-setup > .exam-root-slot > .exam-setup-page {
   max-width: var(--ui-page-width);
-}
-.exam-setup-page [data-exam-hero] {
-  display: none;
 }

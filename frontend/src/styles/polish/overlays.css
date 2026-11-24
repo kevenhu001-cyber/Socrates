@@ -1055,11 +1055,6 @@ body.composer-tools-open.composer-tools-open::after {
   line-height: 1.5;
   letter-spacing: -0.02em;
 }
-.account-page-title h1:focus-visible {
-  outline: none;
-  box-shadow: var(--ui-focus-shadow);
-  border-radius: var(--ui-radius-sm);
-}
 .settings-page .settings-nav-item.active {
   background: var(--ui-fill-hover);
   box-shadow: inset 2px 0 var(--ui-ink);
@@ -1397,7 +1392,6 @@ body.composer-tools-open.composer-tools-open::after {
   font-style: italic;
   line-height: 1.4;
 }
-
 
 .admin-login-title {
   margin: 0;

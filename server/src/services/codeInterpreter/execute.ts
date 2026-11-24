@@ -16,6 +16,7 @@ import {
   MAX_ARTIFACT_BYTES,
   MAX_CODE_CHARS,
   MAX_OUTPUT_BYTES,
+  SLOW_EXECUTION_LOG_MS,
   executionScratchPath,
   sessionScratchPath,
 } from './config.js';
@@ -363,6 +364,19 @@ export async function executeCode(
     artifactCount: finalArtifactCount,
     errorMessage: result.errorMessage || null,
   }).catch(() => {});
+
+  // One line per slow execution, with the phases separated so a regression in
+  // package downloads or font setup is visible without querying the audit log.
+  const executionWallMs = Date.now() - requestStartedAt;
+  if (SLOW_EXECUTION_LOG_MS > 0 && executionWallMs >= SLOW_EXECUTION_LOG_MS) {
+    console.log(
+      `[code-interpreter] slow execution ${executionId}: total=${executionWallMs}ms ` +
+        `sessionLock=${sessionLockQueueMs}ms queue=${result.queueMs ?? 0}ms ` +
+        `boot=${result.workerBootMs ?? 0}ms deps=${result.dependencyMs ?? 0}ms ` +
+        `font=${result.fontMs ?? 0}ms packages=${result.packageMs ?? 0}ms ` +
+        `artifacts=${artifactPersistenceMs}ms status=${finalStatus}`,
+    );
+  }
 
   // files in the session scratch dir
   // outlive this run; they're reaped only when the session is

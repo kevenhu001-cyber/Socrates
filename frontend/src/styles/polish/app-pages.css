@@ -1,0 +1,844 @@
+/*
+ * polish/app-pages.css — one visual grammar for every non-chat page.
+ *
+ * Directory and account pages share the same quiet hierarchy as the chat
+ * surface: a capped page column, a title row, one search/filter row, then
+ * content that groups into a single collection card or a small card grid.
+ * This file is a page-surface owner; it must not introduce a second palette,
+ * a competing control size or a page-local header.
+ */
+
+/* ── Page column and header ──────────────────────────────────────────── */
+
+html:not([data-main-view='settingsPage']) #appShell .main-page .ui-page-frame,
+#appShell .ui-page-frame {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--ui-page-width);
+  margin-inline: auto;
+  padding-top: var(--ui-page-top-space);
+  padding-bottom: var(--ui-page-bottom-space);
+}
+
+#appShell .ui-page-header {
+  align-items: flex-start;
+  gap: var(--ui-space-lg);
+  margin-bottom: var(--ui-space-lg);
+  padding-bottom: var(--ui-space-sm);
+  border-bottom: 1px solid var(--ui-border-subtle);
+}
+
+#appShell .ui-page-heading h1 {
+  font-size: var(--ui-text-page);
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+}
+
+#appShell .ui-page-description {
+  max-width: 62ch;
+  margin-top: 6px;
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-sm);
+  line-height: 1.55;
+}
+
+#appShell .ui-page-actions {
+  gap: var(--ui-space-sm);
+}
+
+/* Page titles receive focus after navigation for screen-reader context, but
+ * a heading is not a control: do not paint a focus ring around the page name. */
+#appShell :is(.ui-page-heading h1, .account-page-title h1):focus,
+#appShell :is(.ui-page-heading h1, .account-page-title h1):focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+/* ── Toolbar, search and range tabs ─────────────────────────────────── */
+
+#appShell .ui-page-toolbar {
+  align-items: center;
+  gap: var(--ui-space-sm);
+  margin-bottom: var(--ui-space-lg);
+}
+
+#appShell .ui-page-search {
+  flex: 1 1 320px;
+  max-width: none;
+  min-width: 0;
+}
+
+/* Projects keeps a compact search field beside its filter rail instead of
+ * stretching the field across the whole page column. */
+#appShell .projects-directory .ui-page-search {
+  flex: 0 1 360px;
+  max-width: 420px;
+}
+
+#appShell .ui-page-toolbar-end {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--ui-space-sm);
+  margin-inline-start: auto;
+}
+
+#appShell .ui-page-toolbar .library-toolbar-controls {
+  margin-inline-start: auto;
+}
+
+#appShell .ui-page-tabs[data-slot='toggle-group'],
+#appShell .ui-page-tabs[data-slot='tabs-list'] {
+  height: var(--ui-control-desktop);
+  padding: 2px;
+  background: var(--ui-bg-raised);
+}
+
+#appShell .ui-page-tab[data-slot='toggle-group-item'],
+#appShell .ui-page-tab[data-slot='tabs-trigger'] {
+  height: var(--ui-control-sm);
+  padding-inline: var(--ui-space-md);
+}
+
+/* ── Section headings inside a page ─────────────────────────────────── */
+
+#appShell .ui-page-section {
+  margin: 0 0 var(--ui-space-xl);
+}
+
+#appShell .ui-page-section:last-child {
+  margin-bottom: 0;
+}
+
+#appShell .ui-page-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-start;
+  gap: var(--ui-space-sm);
+  margin: 0 0 var(--ui-space-sm);
+}
+
+#appShell .ui-page-section-head h2 {
+  margin: 0;
+  color: var(--ui-text-primary);
+  font-size: var(--ui-font-size-md);
+  font-weight: var(--ui-font-weight-semibold);
+  letter-spacing: -0.01em;
+}
+
+#appShell .ui-page-section-head > span {
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Collection card (list pages) ───────────────────────────────────── */
+
+#appShell .ui-collection {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-2xl);
+  background: var(--ui-bg-raised);
+}
+
+#appShell .ui-collection-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-md);
+  min-height: var(--ui-control-md);
+  padding: 0 var(--ui-space-lg);
+  border-bottom: 1px solid var(--ui-border-subtle);
+  background: color-mix(in srgb, var(--ui-bg-raised), var(--ui-bg-page) 36%);
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-font-weight-medium);
+}
+
+#appShell .ui-collection-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+#appShell .ui-collection-body > * {
+  min-width: 0;
+}
+
+#appShell .ui-collection-body > * + * {
+  border-top: 1px solid var(--ui-border-subtle);
+}
+
+/* ── Card grid (projects, plugins, scheduled templates) ─────────────── */
+
+#appShell .ui-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--ui-space-sm);
+  min-width: 0;
+}
+
+#appShell .ui-page-card {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-md);
+  min-width: 0;
+  min-height: 78px;
+  padding: var(--ui-space-lg);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-xl);
+  background: var(--ui-bg-raised);
+  transition:
+    background-color var(--ui-duration-hover) ease,
+    border-color var(--ui-duration-hover) ease;
+}
+
+#appShell .ui-page-card:hover {
+  border-color: var(--ui-border-default);
+  background: color-mix(in srgb, var(--ui-bg-raised), var(--ui-text-primary) 4%);
+}
+
+#appShell .ui-page-card-main {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--ui-space-md);
+  min-width: 0;
+  height: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: start;
+}
+
+#appShell .ui-page-card-main:hover {
+  background: transparent;
+}
+
+/* ── Library ────────────────────────────────────────────────────────── */
+
+#appShell .ui-collection.workspace-table {
+  padding: 0;
+}
+
+#appShell .ui-collection .workspace-table-head {
+  display: grid;
+  grid-template-columns:
+    24px 44px minmax(0, 1fr) 160px 100px
+    var(--ui-control-desktop);
+  gap: var(--ui-space-md);
+  min-height: var(--ui-control-md);
+  padding: 0 var(--ui-space-lg);
+  border-bottom: 1px solid var(--ui-border-subtle);
+  background: color-mix(in srgb, var(--ui-bg-raised), var(--ui-bg-page) 36%);
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xs);
+}
+
+/* The head omits the checkbox and icon columns; start its first label above
+ * the name column so header and row text share one rail. */
+#appShell .ui-collection .workspace-table-head > span:first-child {
+  grid-column: 3;
+}
+
+@media (min-width: 769px) {
+  /* The collection body draws the divider between rows, so the row's own
+     bottom border would double the hairline. The body-scoped selector is
+     needed to out-rank the compatibility row geometry; grid mode keeps its
+     own card layout below. */
+  body.workspace-active #appShell .ui-collection.library-list:not(.view-grid) .library-row {
+    display: grid;
+    grid-template-columns: 24px 44px minmax(0, 1fr) 160px 100px var(--ui-control-desktop);
+    gap: var(--ui-space-md);
+    min-height: 64px;
+    padding: var(--ui-space-sm) var(--ui-space-lg);
+    border: 0;
+    border-radius: 0;
+  }
+
+  body.workspace-active #appShell .ui-collection.library-list:not(.view-grid) .library-row:hover {
+    background: color-mix(in srgb, var(--ui-bg-raised), var(--ui-text-primary) 4%);
+  }
+}
+
+#appShell .ui-collection .library-row .library-file-icon {
+  width: 44px;
+  height: 44px;
+}
+
+#appShell .ui-collection .library-row .workspace-row-copy strong {
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-medium);
+}
+
+#appShell .ui-collection .library-row .library-updated,
+#appShell .ui-collection .library-row .library-size {
+  font-size: var(--ui-font-size-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+#appShell .library-toolbar-divider {
+  background: var(--ui-border-subtle);
+}
+
+/* Grid mode: the same rows become scannable preview cards. Desktop only —
+ * the phone library is reference-pinned and always renders its flat list. */
+@media (min-width: 769px) {
+  #appShell .library-list.view-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: var(--ui-space-sm);
+    padding: 0;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  #appShell .library-list.view-grid .library-desktop-table-head {
+    display: none;
+  }
+
+  #appShell .library-list.view-grid .ui-collection-body {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: var(--ui-space-sm);
+  }
+
+  #appShell .library-list.view-grid .library-row {
+    position: relative;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    align-items: center;
+    gap: var(--ui-space-xs) var(--ui-space-sm);
+    min-height: 92px;
+    padding: var(--ui-space-md);
+    border: 1px solid var(--ui-border-subtle);
+    border-radius: var(--ui-radius-xl);
+    background: var(--ui-bg-raised);
+  }
+
+  #appShell .library-list.view-grid .library-row:hover {
+    border-color: var(--ui-border-default);
+    background: color-mix(in srgb, var(--ui-bg-raised), var(--ui-text-primary) 4%);
+  }
+
+  #appShell .library-list.view-grid .library-checkbox-label {
+    position: absolute;
+    top: var(--ui-space-sm);
+    left: var(--ui-space-sm);
+    z-index: 1;
+  }
+
+  #appShell .library-list.view-grid .library-file-icon {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  #appShell .library-list.view-grid .workspace-row-copy {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+  }
+
+  #appShell .library-list.view-grid .library-updated,
+  #appShell .library-list.view-grid .library-size {
+    display: none;
+  }
+
+  #appShell .library-list.view-grid .library-mobile-meta {
+    display: block;
+    color: var(--ui-text-tertiary);
+    font-size: var(--ui-font-size-xs);
+  }
+
+  #appShell .library-list.view-grid .library-row-actions {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  #appShell .library-list.view-grid .library-row-actions .workspace-row-action {
+    opacity: 1;
+  }
+}
+
+/* ── Projects ───────────────────────────────────────────────────────── */
+
+#appShell .ui-project-grid {
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+
+/* The compatibility list painted a top rule when the rows were a plain
+   stack; the card grid owns its own borders now. */
+#appShell .ui-project-grid.projects-list {
+  border-top: 0;
+}
+
+#appShell .project-card {
+  align-items: flex-start;
+  min-height: 96px;
+}
+
+/* `.project-row` stays on the card for the mobile reference and the API
+   selectors; override the old row box with the card grammar. */
+body.workspace-active #appShell .ui-page-card.project-card {
+  min-height: 96px;
+  padding: var(--ui-space-lg);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-xl);
+  background: var(--ui-bg-raised);
+}
+
+#appShell .project-card .project-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--ui-radius-md);
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+
+#appShell .project-card .project-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+#appShell .project-card .workspace-row-copy {
+  gap: 4px;
+}
+
+#appShell .project-card .workspace-row-copy strong {
+  color: var(--ui-text-primary);
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-semibold);
+}
+
+#appShell .project-card .workspace-row-copy span {
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xs);
+}
+
+#appShell .project-card > .workspace-row-action {
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+}
+
+/* ── Plugins ────────────────────────────────────────────────────────── */
+
+#appShell .plugin-directory-section {
+  margin-bottom: var(--ui-space-xl);
+}
+
+#appShell .plugin-directory-section h3 {
+  margin: 0;
+  font-size: var(--ui-font-size-md);
+}
+
+#appShell .plugin-directory-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--ui-space-sm);
+}
+
+#appShell .plugin-directory-row {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--ui-space-xs) var(--ui-space-md);
+  min-width: 0;
+  min-height: 92px;
+  padding: var(--ui-space-md);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-xl);
+  background: var(--ui-bg-raised);
+}
+
+#appShell .plugin-directory-row:hover {
+  border-color: var(--ui-border-default);
+  background: color-mix(in srgb, var(--ui-bg-raised), var(--ui-text-primary) 4%);
+}
+
+#appShell .plugin-directory-row .connector-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-bg-surface);
+}
+
+#appShell .plugin-directory-row .connector-icon svg {
+  width: 23px;
+  height: 23px;
+}
+
+#appShell .plugin-directory-row .workspace-row-copy {
+  display: contents;
+}
+
+#appShell .plugin-directory-card-title-row {
+  grid-column: 2 / -1;
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-xs);
+  min-width: 0;
+}
+
+#appShell .plugin-directory-card-title-row strong {
+  overflow: hidden;
+  color: var(--ui-text-primary);
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-semibold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#appShell .plugin-directory-card-desc {
+  grid-column: 2;
+  grid-row: 2;
+  align-self: center;
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 0;
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xs);
+  line-height: 1.5;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+#appShell .plugin-directory-row-action {
+  grid-column: 3;
+  grid-row: 2;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+#appShell .plugin-directory-icon-action {
+  height: var(--ui-control-sm);
+  min-height: var(--ui-control-sm);
+  padding-inline: var(--ui-space-sm);
+  border-radius: var(--ui-radius-pill);
+  font-size: var(--ui-font-size-xs);
+}
+
+#appShell .plugin-installed-strip {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-md);
+  min-height: 52px;
+  margin-bottom: var(--ui-space-xl);
+  padding: 0 var(--ui-space-md);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-xl);
+  background: var(--ui-bg-raised);
+}
+
+#appShell .plugin-installed-icons .workspace-row-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--ui-radius-sm);
+}
+
+#appShell .plugin-directory-note {
+  margin-top: var(--ui-space-md);
+  padding: var(--ui-space-sm) var(--ui-space-md);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-bg-raised);
+}
+
+/* ── Scheduled ──────────────────────────────────────────────────────── */
+
+#appShell .scheduled-section-heading {
+  margin-bottom: var(--ui-space-sm);
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-font-weight-medium);
+}
+
+#appShell .scheduled-recommendations {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--ui-space-sm);
+  margin-bottom: var(--ui-space-xl);
+}
+
+#appShell .scheduled-recommendation {
+  min-height: 96px;
+  padding: var(--ui-space-lg);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-xl);
+  background: var(--ui-bg-raised);
+}
+
+#appShell .scheduled-recommendation:hover {
+  border-color: var(--ui-border-default);
+  background: color-mix(in srgb, var(--ui-bg-raised), var(--ui-text-primary) 4%);
+}
+
+#appShell .scheduled-recommendation-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-bg-surface);
+}
+
+#appShell .scheduled-recommendation-copy strong {
+  font-size: var(--ui-font-size-sm);
+}
+
+#appShell .scheduled-recommendation-copy small {
+  font-size: var(--ui-font-size-xs);
+  color: var(--ui-text-tertiary);
+}
+
+#appShell .scheduled-recommendation-add {
+  color: var(--ui-text-tertiary);
+}
+
+#appShell .scheduled-task-list.ui-collection {
+  gap: 0;
+}
+
+#appShell .scheduled-task-list .ui-collection-head {
+  justify-content: space-between;
+}
+
+#appShell .scheduled-task-list .task-row {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-md);
+  min-height: 68px;
+  padding: var(--ui-space-sm) var(--ui-space-lg);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+#appShell .scheduled-task-list .task-row:hover {
+  background: color-mix(in srgb, var(--ui-bg-raised), var(--ui-text-primary) 4%);
+}
+
+#appShell .scheduled-task-list .task-row .workspace-row-icon {
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-bg-surface);
+}
+
+#appShell .scheduled-task-list .task-row .task-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: start;
+}
+
+#appShell .scheduled-task-list .task-row .workspace-row-action {
+  flex: 0 0 auto;
+  min-height: var(--ui-control-sm);
+  padding-inline: var(--ui-space-sm);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-bg-surface);
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-xs);
+}
+
+#appShell .scheduled-task-list .task-row .workspace-row-action:hover {
+  border-color: var(--ui-border-default);
+  color: var(--ui-text-primary);
+}
+
+/* ── Creation pages (Images / Assistants / Sites) ───────────────────── */
+
+#appShell .creation-empty,
+#appShell .creation-empty[data-slot='empty'] {
+  padding: var(--ui-space-xxl) var(--ui-space-lg);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-2xl);
+  background: var(--ui-bg-raised);
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-sm);
+}
+
+#appShell .creation-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--ui-space-sm);
+}
+
+#appShell .creation-table {
+  overflow: hidden;
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-2xl);
+  background: var(--ui-bg-raised);
+}
+
+#appShell .creation-table .creation-table-head {
+  background: color-mix(in srgb, var(--ui-bg-raised), var(--ui-bg-page) 36%);
+}
+
+#appShell .creation-table .creation-row:last-child {
+  border-bottom: 0;
+}
+
+#appShell .creation-image-card {
+  overflow: hidden;
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-xl);
+  background: var(--ui-bg-raised);
+}
+
+#appShell .creation-image-card:hover {
+  border-color: var(--ui-border-default);
+}
+
+/* ── Account pages (Profile / Settings) ─────────────────────────────── */
+
+#appShell .account-page-content {
+  max-width: var(--ui-page-width);
+}
+
+#appShell .profile-page {
+  max-width: var(--ui-page-reading-width);
+}
+
+#appShell .profile-page .account-page-header {
+  padding-block: var(--ui-space-md);
+}
+
+#appShell .profile-page-body {
+  gap: var(--ui-space-lg);
+}
+
+#appShell .profile-header,
+#appShell .profile-section {
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-xl);
+  background: var(--ui-bg-raised);
+}
+
+#appShell .profile-header {
+  padding: var(--ui-space-lg);
+}
+
+#appShell .profile-section {
+  padding: var(--ui-space-lg);
+  border: 1px solid var(--ui-border-subtle);
+  background: var(--ui-bg-raised);
+}
+
+#appShell .profile-page .profile-row,
+#appShell .profile-page .profile-action-row {
+  padding-block: var(--ui-space-sm);
+}
+
+#appShell .profile-page .profile-row + .profile-row,
+#appShell .profile-page .profile-action-row + .profile-action-row {
+  border-top: 1px solid var(--ui-border-subtle);
+}
+
+#appShell .settings-page .settings-pane {
+  max-width: 760px;
+}
+
+/* ── Admin ──────────────────────────────────────────────────────────── */
+
+#appShell .admin-console {
+  max-width: var(--ui-page-form-width);
+}
+
+#appShell .admin-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--ui-space-lg);
+}
+
+#appShell .admin-console .ui-section-card {
+  border-radius: var(--ui-radius-xl);
+}
+
+/* ── Empty states ───────────────────────────────────────────────────── */
+
+#appShell .ui-page-empty[data-slot='empty'] {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  padding: var(--ui-space-xxl) var(--ui-space-lg);
+  border: 1px dashed var(--ui-border-subtle);
+  border-radius: var(--ui-radius-2xl);
+  background: color-mix(in srgb, var(--ui-bg-raised), transparent 30%);
+}
+
+#appShell .ui-page-empty [data-slot='empty-title'] {
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-md);
+  font-weight: var(--ui-font-weight-medium);
+}
+
+/* ── Phone ──────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  #appShell .ui-page-header {
+    align-items: flex-start;
+    padding-bottom: var(--ui-space-md);
+    margin-bottom: var(--ui-space-md);
+  }
+
+  #appShell .ui-page-toolbar {
+    flex-wrap: wrap;
+  }
+
+  #appShell .ui-collection-head {
+    padding-inline: var(--ui-space-md);
+  }
+
+  #appShell .ui-card-grid,
+  #appShell .ui-project-grid,
+  #appShell .scheduled-recommendations {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #appShell .project-card,
+  #appShell .scheduled-recommendation {
+    padding: var(--ui-space-md);
+  }
+
+  #appShell .scheduled-task-list .task-row {
+    flex-wrap: wrap;
+    padding: var(--ui-space-md);
+  }
+
+  #appShell .scheduled-task-list .task-row .workspace-row-action {
+    min-height: var(--ui-control-touch);
+  }
+
+  #appShell .ui-page-empty[data-slot='empty'] {
+    min-height: 180px;
+  }
+}

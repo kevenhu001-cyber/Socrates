@@ -844,6 +844,7 @@ export const en = {
   'projects.filter': 'Project filter',
   'projects.search': 'Search projects',
   'projects.all': 'All',
+  'projects.allProjects': 'All projects',
   'projects.owned': 'Created by you',
   'projects.shared': 'Shared with you',
   'projects.name': 'Name',

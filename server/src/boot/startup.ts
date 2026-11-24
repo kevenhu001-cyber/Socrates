@@ -12,8 +12,9 @@
  *                             the optional LLM warmup reads it.
  *   4. validateApiKeys      — detect corrupted ciphertext at boot.
  *   5. startBackgroundTasks — fire-and-forget warmers/sweeps/daemons
- *                             (workspaces, Pyodide, scratch TTL, optional
- *                             LLM warmup, scheduler, recovery, monitor).
+ *                             (workspaces, Pyodide, CJK font cache, scratch
+ *                             TTL, optional LLM warmup, scheduler, recovery,
+ *                             monitor).
  *   6. listen               — returns the HTTP server.
  */
 
@@ -111,6 +112,26 @@ function warmPyodidePool(): void {
       console.log('[code-interpreter] Pyodide pool warmed');
     } catch (err) {
       console.warn('[code-interpreter] warmup skipped:', (err as Error).message);
+    }
+  })();
+}
+
+/** Warm the CJK font cache for Pyodide's matplotlib.
+ * The 8.3 MB pinned Noto Sans SC download used to run inline on the first
+ * matplotlib execution, where it could burn the 8 s fetch budget on the
+ * user's own execution timeout. Fetching it here leaves only a local read +
+ * SHA-1 validation on that path. Non-blocking, and skipped when the
+ * interpreter runner is disabled. */
+function warmCjkFontCache(): void {
+  (async () => {
+    try {
+      const { EXEC_RUNNER } = await import('../services/codeInterpreter/config.js');
+      if (EXEC_RUNNER === 'disabled') return;
+      const { ensureCjkFontCached } = await import('../services/codeInterpreter/cjkFontCache.js');
+      const fontPath = await ensureCjkFontCached();
+      if (fontPath) console.log('[code-interpreter] CJK font cache ready');
+    } catch (err) {
+      console.warn('[code-interpreter] CJK font warmup skipped:', (err as Error).message);
     }
   })();
 }
@@ -267,6 +288,7 @@ export function startBackgroundTasks(): void {
     .catch((err) => console.warn('[chat-turns] recovery not started:', (err as Error).message));
   reconcileSessionWorkspaces();
   warmPyodidePool();
+  warmCjkFontCache();
   sweepStaleScratchDirs();
   if (envFlag('LLM_WARMUP_ENABLED')) warmLlmProvider();
   if (envFlag('LLM_KEEP_WARM_ENABLED')) startLlmKeepWarmWorker();

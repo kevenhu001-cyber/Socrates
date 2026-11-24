@@ -80,29 +80,30 @@ export function ScheduledPage() {
           query={query}
           onQuery={setQuery}
         />
+        <div className="ui-page-toolbar-end">
+          <Tabs value={scope} onValueChange={(value) => setScope(value as typeof scope)}>
+            <TabsList
+              className="ui-page-tabs scheduled-filter-tabs"
+              aria-label={scheduledText('scheduled.filter', 'Task filter')}
+            >
+              <TabsTrigger
+                type="button"
+                value="all"
+                className={cn('ui-page-tab', scope === 'all' && 'active')}
+              >
+                {scheduledText('scheduled.all', 'All')}
+              </TabsTrigger>
+              <TabsTrigger
+                type="button"
+                value="active"
+                className={cn('ui-page-tab', scope === 'active' && 'active')}
+              >
+                {scheduledText('scheduled.activeOnly', 'Active')}
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
       </PageToolbar>
-
-      <Tabs value={scope} onValueChange={(value) => setScope(value as typeof scope)}>
-        <TabsList
-          className="ui-page-tabs scheduled-filter-tabs"
-          aria-label={scheduledText('scheduled.filter', 'Task filter')}
-        >
-          <TabsTrigger
-            type="button"
-            value="all"
-            className={cn('ui-page-tab', scope === 'all' && 'active')}
-          >
-            {scheduledText('scheduled.all', 'All')}
-          </TabsTrigger>
-          <TabsTrigger
-            type="button"
-            value="active"
-            className={cn('ui-page-tab', scope === 'active' && 'active')}
-          >
-            {scheduledText('scheduled.activeOnly', 'Active')}
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
 
       {!searching && scope === 'all' ? (
         <ScheduledRecommendations onSelect={(prompt) => createTask(prompt)} />

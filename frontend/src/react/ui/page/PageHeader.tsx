@@ -32,13 +32,13 @@ export function PageHeader({
   return (
     <header
       className={cn(account ? 'account-page-header' : 'ui-page-header', className)}
-      data-page-header
+      data-page-header=""
       data-page-header-variant={variant}
     >
       {leading}
       <div className={account ? 'account-page-title' : 'ui-page-heading'}>
         {eyebrow ? <p className="ui-page-eyebrow">{eyebrow}</p> : null}
-        <h1 id={titleId} data-page-title tabIndex={titleTabIndex}>
+        <h1 id={titleId} data-page-title="" tabIndex={titleTabIndex}>
           {title}
         </h1>
         {description ? <p className="ui-page-description">{description}</p> : null}
@@ -46,7 +46,7 @@ export function PageHeader({
       {actions ? (
         <div
           className={account ? 'account-page-actions' : 'ui-page-actions'}
-          data-page-actions
+          data-page-actions=""
         >
           {actions}
         </div>

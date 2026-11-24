@@ -223,6 +223,7 @@ export function ExamView() {
       onDraftChange={onDraftChange}
       renderText={renderText}
       ids={EXAM_IDS}
+      showHero={false}
     />
   );
   const isSetup = screen.kind === 'form';

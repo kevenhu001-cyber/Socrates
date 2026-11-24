@@ -22,12 +22,14 @@ export function ExamSetup({
   strings,
   ids,
   onDraftChange,
+  showHero = true,
 }: {
   draft: ExamDraft;
   providers: readonly { id: string; label: string }[];
   strings: ExamStrings;
   ids?: ExamIds;
   onDraftChange(patch: ExamDraftPatch): void;
+  showHero?: boolean;
 }) {
   const t = strings.setup;
   const difficulties = EXAM_DIFFICULTIES.map((id) => ({
@@ -49,7 +51,11 @@ export function ExamSetup({
     >
       <div
         {...dataAttributes({ examHero: 1 })}
-        style={{ display: 'flex', flexDirection: 'column', gap: S[75] }}
+        style={{
+          display: showHero ? 'flex' : 'none',
+          flexDirection: 'column',
+          gap: S[75],
+        }}
       >
         <UiText variant="eyebrow" tone="tertiary">
           {t.eyebrow}

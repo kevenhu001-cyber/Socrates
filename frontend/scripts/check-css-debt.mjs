@@ -95,6 +95,7 @@ const ORDERED_MANIFESTS = {
     './mobile-sidebar.css',
     './mobile-directories.css',
     './settings-page.css',
+    './app-pages.css',
   ],
 };
 

@@ -338,6 +338,26 @@
     background: transparent;
     color: var(--ui-text-muted);
   }
+
+  /* The phone library is a reference-pinned flat list
+     (`docs/ref/mobile-reference-2026-10-04.md`): keep the Page Kit card from
+     boxing it in; row and head geometry stay in this file above. */
+  body.workspace-active #appShell .library-list.ui-collection {
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  body.workspace-active #appShell .library-list .ui-collection-head {
+    min-height: 0;
+    padding: 0 0 6px;
+    background: transparent;
+  }
+
+  body.workspace-active #appShell .library-list .ui-collection-body > * + * {
+    border-top: 0;
+  }
 }
 
 @media (max-width: 359px) {

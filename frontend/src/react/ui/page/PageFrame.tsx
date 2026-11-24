@@ -10,7 +10,7 @@ import { cn } from 'cn';
  */
 export function PageFrame({ className, children, ...props }: ComponentPropsWithRef<'section'>) {
   return (
-    <section className={cn('ui-page-frame', className)} data-page-frame {...props}>
+    <section className={cn('ui-page-frame', className)} data-page-frame="" {...props}>
       {children}
     </section>
   );

@@ -116,8 +116,14 @@ export function LibraryToolbar({
         actions={<LibraryNewAction />}
       />
 
-      <PageToolbar>
-        <div className="library-toolbar-controls">
+      <PageToolbar className="library-toolbar">
+        <PageSearchField
+          className="library-search-pill"
+          label={i18n('library.filterPlaceholder', '搜索资料库')}
+          query={query}
+          onQuery={dispatch.filter}
+        />
+        <div className="ui-page-toolbar-end library-toolbar-controls">
           <LibraryTypeFilter typeFilter={typeFilter} onTypeFilterChange={onTypeFilterChange} />
           <div className="library-toolbar-divider" />
           <ToggleGroup
@@ -148,12 +154,6 @@ export function LibraryToolbar({
             </ToggleGroupItem>
           </ToggleGroup>
         </div>
-        <PageSearchField
-          className="library-search-pill"
-          label={i18n('library.filterPlaceholder', '搜索资料库')}
-          query={query}
-          onQuery={dispatch.filter}
-        />
       </PageToolbar>
     </>
   );

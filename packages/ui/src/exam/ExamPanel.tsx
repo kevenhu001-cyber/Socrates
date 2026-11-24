@@ -20,6 +20,7 @@ export function ExamPanel({
   onDraftChange,
   renderText = plainText,
   ids,
+  showHero,
 }: {
   screen: ExamScreen;
   strings?: ExamStrings;
@@ -28,6 +29,7 @@ export function ExamPanel({
   onDraftChange?(patch: ExamDraftPatch): void;
   renderText?: RenderExamText;
   ids?: ExamIds;
+  showHero?: boolean;
 }): ReactNode {
   switch (screen.kind) {
     case 'form':
@@ -37,6 +39,7 @@ export function ExamPanel({
           providers={screen.providers}
           strings={strings}
           ids={ids}
+          showHero={showHero}
           onDraftChange={(patch) => onDraftChange?.(patch)}
         />
       );

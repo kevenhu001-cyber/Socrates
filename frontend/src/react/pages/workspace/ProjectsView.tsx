@@ -24,11 +24,11 @@ function ProjectRow({
     ? project.color!
     : 'hsl(var(--accent-000))';
   return (
-    <div className="workspace-row project-row" key={project.id}>
+    <div className="ui-page-card project-card project-row" key={project.id}>
       <Button
         variant="ghost"
         type="button"
-        className="project-main"
+        className="project-main ui-page-card-main"
         onClick={() => dispatch.openProject(project.id)}
       >
         <span className="project-icon" style={{ color }}>
@@ -126,13 +126,15 @@ function ProjectsView({
           query={query}
           onQuery={setQuery}
         />
+        <div className="ui-page-toolbar-end">
+          <PageTabs
+            items={scopeItems}
+            value={scope}
+            onChange={setScope}
+            ariaLabel={i18n('projects.filter', 'Project filter')}
+          />
+        </div>
       </PageToolbar>
-      <PageTabs
-        items={scopeItems}
-        value={scope}
-        onChange={setScope}
-        ariaLabel={i18n('projects.filter', 'Project filter')}
-      />
       {projects.length === 0 ? (
         <PageEmptyState
           title={i18n('projects.empty', 'Make space for ongoing work')}
@@ -146,19 +148,23 @@ function ProjectsView({
             </Button>
           }
         />
+      ) : visibleProjects.length === 0 ? (
+        <PageEmptyState
+          title={i18n('projects.noMatch', 'No matching projects')}
+          description={i18n('projects.noMatchDesc', 'Try a different search.')}
+        />
       ) : (
-        <div className="projects-list">
-          <div className="projects-list-heading">{i18n('projects.name', 'Name')}</div>
-          {visibleProjects.map((project) => (
-            <ProjectRow key={project.id} project={project} dispatch={dispatch} />
-          ))}
-          {visibleProjects.length === 0 ? (
-            <PageEmptyState
-              title={i18n('projects.noMatch', 'No matching projects')}
-              description={i18n('projects.noMatchDesc', 'Try a different search.')}
-            />
-          ) : null}
-        </div>
+        <>
+          <div className="ui-page-section-head projects-list-heading">
+            <h2>{i18n('projects.allProjects', 'All projects')}</h2>
+            <span>{visibleProjects.length}</span>
+          </div>
+          <div className="ui-card-grid ui-project-grid projects-list">
+            {visibleProjects.map((project) => (
+              <ProjectRow key={project.id} project={project} dispatch={dispatch} />
+            ))}
+          </div>
+        </>
       )}
     </PageFrame>
   );
