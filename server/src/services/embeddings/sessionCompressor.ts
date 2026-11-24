@@ -60,15 +60,19 @@ function numEnv(name: string, fallback: number): number {
 function textOf(m: CompressibleMessage): string {
   if (typeof m.rawText === 'string' && m.rawText) return m.rawText;
   if (typeof m.content === 'string' && m.content) return m.content;
+  if (Array.isArray(m.content)) return m.content.map(p => p?.type === 'text' && typeof p.text === 'string' ? p.text : '[non-text attachment]').join('\n');
   return '';
 }
 
 function asHistoryLine(m: CompressibleMessage): string | null {
   const text = textOf(m).trim();
-  if (!text) return null;
   const role = typeof m.role === 'string' && m.role ? m.role : 'user';
+  if (role === 'system' || role === 'developer') return /^\[(?:Context|Conversation) summary/.test(text) ? 'Prior summary: ' + text.slice(0, 4000) : null;
+  if (role === 'tool') return text ? 'Tool result (' + String(m.name || m.tool_call_id || 'unknown').slice(0,100) + ', untrusted): ' + text.slice(0, 3000) : null;
   if (role !== 'user' && role !== 'assistant') return null;
-  return `${role === 'user' ? 'User' : 'Assistant'}: ${text.slice(0, 4000)}`;
+  const calls = role === 'assistant' && Array.isArray(m.tool_calls)
+    ? ' Tool calls: ' + JSON.stringify(m.tool_calls).slice(0, 2000) : '';
+  return text || calls ? (role === 'user' ? 'User: ' : 'Assistant: ') + text.slice(0, 4000) + calls : null;
 }
 
 function stripHeavyPayloads(m: CompressibleMessage): CompressibleMessage {
@@ -105,7 +109,7 @@ const SUMMARY_SYSTEM_PROMPT =
    input, so a growing conversation still returns fresh recent turns.
    Bounded to a handful of entries and time-limited, so an edit to an old
    turn (new digest) re-summarizes. */
-const compressMemo = createSummaryMemo();
+const compressMemo = createSummaryMemo({ maxEntries: 48, ttlMs: 30 * 60 * 1000 });
 
 /* the clientId carried by the synthetic summary
    message. It is no longer persisted anywhere (see the scope note above),
@@ -122,7 +126,7 @@ export function __resetCompressMemo(): void {
 
 export async function compressSessionMessages(
   input: CompressibleMessage[],
-  opts: { keepTurns?: number; triggerTokens?: number; model?: string; cacheScope?: string } = {},
+  opts: { keepTurns?: number; triggerTokens?: number; model?: string; cacheScope?: string; batchTurns?: number } = {},
 ): Promise<CompressionResult> {
   const messages = Array.isArray(input) ? input.slice() : [];
   const keepTurns = opts.keepTurns ?? numEnv('SESSION_COMPRESS_KEEP_TURNS', 24);
@@ -182,6 +186,18 @@ export async function compressSessionMessages(
     if (nextUser === messages.length) break; // current interaction is indivisible
     for (let i = tailStart; i < nextUser; i++) tailTokens -= messageTokens[i];
     tailStart = nextUser;
+  }
+  // Advance a few complete older turns at once. This amortizes summary work
+  // and keeps the compressed prefix unchanged across several new turns.
+  if (opts.batchTurns && tailStart > 0) {
+    const boundaries = messages.map((m, i) => m.role === 'user' ? i : -1).filter(i => i >= 0);
+    const at = boundaries.indexOf(tailStart);
+    if (at >= 0) {
+      const batch = Math.max(1, Math.floor(opts.batchTurns));
+      const rounded = Math.ceil(at / batch) * batch;
+      const minimumRecentTurns = 4;
+      if (rounded < boundaries.length - minimumRecentTurns) tailStart = boundaries[rounded];
+    }
   }
   if (tailStart === 0) return none; // never split the current interaction
   const tail = messages.slice(tailStart).map(stripHeavyPayloads);
@@ -243,20 +259,30 @@ export async function compressSessionMessages(
   /* return the memoized summary for this exact head
      instead of paying for the LLM again. The tail is rebuilt below from
      the current input, so the caller still gets fresh recent turns. */
-  const digest = createHash('sha256')
-    .update(
-      JSON.stringify([
-        opts.cacheScope ?? null,
-        provider.id,
-        provider.url,
-        provider.model,
-        head.length,
-        headLines,
-      ]),
-    )
+  const keyFor = (length: number, lines: string[]) => createHash('sha256')
+    .update(JSON.stringify(['summary-v2', opts.cacheScope ?? null, provider.id, provider.url, provider.model, length, lines]))
     .digest('hex');
-
-  const transcript = headLines.join('\n\n').slice(0, 60000);
+  const digest = keyFor(head.length, headLines);
+  // Reuse an exact older checkpoint rather than resending the entire head.
+  // Editing an old message changes the digest, so stale summaries cannot match.
+  let checkpoint = '';
+  let delta = headLines;
+  if (opts.cacheScope) {
+    let examined = 0;
+    for (let i = head.length - 1; i > 0 && examined < 24; i--) {
+      if (head[i].role !== 'user') continue;
+      examined++;
+      const previousLines = head.slice(0,i).map(asHistoryLine).filter((l): l is string => !!l);
+      const previous = compressMemo.peek(keyFor(i, previousLines));
+      if (!previous) continue;
+      checkpoint = previous;
+      delta = head.slice(i).map(asHistoryLine).filter((l): l is string => !!l);
+      break;
+    }
+  }
+  const rawTranscript = (checkpoint ? 'Prior compressed context:\n' + checkpoint + '\n\nNew older turns:\n' : '') + delta.join('\n\n');
+  const transcript = rawTranscript.length <= 60000 ? rawTranscript :
+    rawTranscript.slice(0, 29000) + '\n[Middle of older transcript omitted for summarizer budget]\n' + rawTranscript.slice(-29000);
   const { url: apiBase, keyPlaintext: apiKey, model } = provider;
   const summarize = async () => {
     try {
@@ -298,6 +324,9 @@ export async function compressSessionMessages(
   } catch {
     summaryTokens = 0;
   }
+  // A verbose summary must not make compression larger than the original budget.
+  const available = triggerTokens - estimateContextMessageTokens(tail.map(m => ({ ...m, content: m.content || textOf(m) })));
+  if (summaryTokens + 64 > available) return tailOnly();
   return finishWithSummary(summary, summaryTokens);
 
   /* Shared tail assembly for both the freshly-summarised and the
