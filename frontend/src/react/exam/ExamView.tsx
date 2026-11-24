@@ -249,7 +249,7 @@ export function ExamView() {
         ) : null}
         <div className="exam-root-slot" id="examViewReactBody">
           {isSetup ? (
-            <PageFrame className="exam-setup-page">
+            <PageFrame className="exam-setup-page" aria-labelledby="examViewTitle">
               <PageHeader
                 titleId="examViewTitle"
                 title={strings.setup.heroTitle}
