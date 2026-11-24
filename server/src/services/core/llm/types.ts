@@ -12,6 +12,8 @@ export interface ChatCompletionRequestOptions {
   model: string;
   /** Server-owned identity, never accepted from extra_body. */
   userId?: string | null;
+  /** Owner-checked conversation scope, never a provider request parameter itself. */
+  cacheSessionId?: string | null;
   messages: Array<{ role: string; content: unknown; [key: string]: unknown }>;
   maxTokens?: number;
   temperature?: number;
