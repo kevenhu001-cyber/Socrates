@@ -254,7 +254,7 @@ const WEB_FETCH_ROUTING_HINT = `## Web fetch
 When \`web_fetch\` is supplied, call it to read the content of specific URLs discovered via search or provided by the user. Pass \`url\` (a single http/https URL string) or \`urls\` (an array of up to 4 URLs).`;
 
 const CONNECTOR_DISCOVERY_ROUTING_HINT = `## Connected app connectors
-When the request needs data or actions from a connected app (email, calendar, GitHub, Notion, Zotero, Todoist, and similar), call \`search_connectors\` with a short English query. Then call \`get_connector_spec\` with the exact tool name to read its arguments; that tool becomes callable on the next step. Never guess a connector tool name or call one before reading its spec. If no match appears, use the connected services list in the result to refine the query.`;
+When a request needs connected apps or a native capability not currently listed (computation, visuals, images, files/workspace, documents, sites, papers), call \`search_connectors\` with a short English query. Then call \`get_connector_spec\` with the exact tool name to read its arguments; that tool becomes callable on the next step. Never guess a connector tool name or call a deferred tool before reading its spec. If no match appears, use the connected services list in the result to refine the query.`;
 
 export function appendToolRoutingHints<T extends { role: string; content?: unknown }>(
   messages: T[],
