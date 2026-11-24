@@ -1193,7 +1193,8 @@ body.composer-tools-open.composer-tools-open::after {
     padding: env(safe-area-inset-top, 0px) 0 0;
     overflow: hidden;
   }
-  .profile-page .account-page-header > button {
+  .profile-page .account-page-header > button,
+  .profile-page .account-page-actions > button {
     min-height: var(--ui-control-touch);
   }
 }
