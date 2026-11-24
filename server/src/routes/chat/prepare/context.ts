@@ -135,7 +135,7 @@ export async function resolveRagContext(
  * the active project's scope, newest first, char-budgeted, and labelled
  * untrusted background exactly like the RAG block. Failures degrade to
  * no injection; the chat turn never fails because recall failed. */
-const MEMORY_CONTEXT_MARKER = '[Server context: saved-memories]';
+export const MEMORY_CONTEXT_MARKER = '[Server context: saved-memories]';
 const MEMORY_MAX_ENTRIES = 50;
 const MEMORY_MAX_CHARS_PER_ENTRY = 500;
 const MEMORY_MAX_TOTAL_CHARS = 6000;
@@ -193,10 +193,12 @@ export async function resolveMemoryContext(
 
     const blocks: string[] = [];
     let total = 0;
+    const seen = new Set<string>();
     for (const row of rows) {
       if (total >= MEMORY_MAX_TOTAL_CHARS) break;
-      const text = String(row.text || '').slice(0, MEMORY_MAX_CHARS_PER_ENTRY);
-      if (!text) continue;
+      const text = String(row.text || '').trim().slice(0, Math.min(MEMORY_MAX_CHARS_PER_ENTRY, MEMORY_MAX_TOTAL_CHARS - total));
+      if (!text || seen.has(text)) continue;
+      seen.add(text);
       blocks.push(`- ${escapePromptControlText(text)}`);
       total += text.length;
     }
