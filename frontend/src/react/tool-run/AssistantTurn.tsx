@@ -202,7 +202,7 @@ function ToolActivityBurst({
         aria-hidden={folded || undefined}
         inert={folded}
       >
-        <div className="ui-collapse-inner">
+        <div className={canFold ? "ui-collapse-inner" : undefined}>
           {members.map((call) => (
             <ToolRunRow
               key={call.id}

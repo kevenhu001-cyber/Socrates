@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
+test.use({ hasTouch: true, isMobile: true });
+
 const files = [
   { id: 'file-a', name: 'Very long research synthesis filename that must not push actions off the screen.md', kind: 'text', size: 1234, uploadedAt: '2026-10-01T12:00:00Z' },
   { id: 'file-b', name: 'chart.png', kind: 'image', size: 4567, uploadedAt: '2026-10-01T12:00:00Z' },
@@ -54,6 +56,8 @@ for (const width of [320, 390, 430]) {
     await expect(more).toHaveCSS('height', '44px');
     await more.tap();
     await expect(rows.first().getByRole('menu')).toBeVisible();
+    await more.tap();
+    await expect(rows.first().getByRole('menu')).toBeHidden();
 
     const projects = await open('#navProjects', '.projects-directory');
     await expect(projects.locator('.ui-page-search input')).toHaveCSS('font-size', '16px');
