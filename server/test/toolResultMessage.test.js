@@ -251,3 +251,13 @@ test('transient connector retries stop when the per-tool failure budget is exhau
   assert.equal(policy.remainingRetries('oomol_gmail_search_threads'), 0);
   assert.match(formatToolResultContent('oomol_gmail_search_threads', result), /\[retryable: no\]/);
 });
+
+test('code failure feedback only supplies the matching remedy', () => {
+  const output = formatToolResultContent('code_interpreter', {
+    status: 'failed', errorCode: 'execution_timeout', retryable: true,
+    stderr: 'Timed out', stdout: 'partial data',
+  });
+  assert.match(output, /Suggested fix:.*vectorized/);
+  assert.doesNotMatch(output, /micropip|NameError|svg_illustration/);
+  assert.match(output, /partial data/);
+});
