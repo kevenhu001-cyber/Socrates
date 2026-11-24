@@ -51,6 +51,11 @@ async function openConnectedPluginDetail(page) {
   await page.locator('#navPlugins').click();
   await page.locator('[data-connector-id="github"]').click();
   await expect(page.locator('.plugin-detail-view')).toBeVisible();
+  await expect(page.locator('.plugin-detail-page-header')).toHaveAttribute(
+    'data-page-header-variant',
+    'account',
+  );
+  await expect(page.locator('#plugin-detail-title')).toHaveAttribute('data-page-title', '');
 }
 
 test('using a connected plugin waits for the chat reset to succeed', async ({ page }) => {
