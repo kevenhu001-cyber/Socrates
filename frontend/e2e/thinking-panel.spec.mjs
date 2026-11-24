@@ -469,6 +469,9 @@ for (const theme of ['light', 'dark']) {
       expect(new URL(page.url()).pathname).toBe('/');
       const bubble = page.locator('.msg.assistant').last();
       await expect(bubble).not.toContainText('private reasoning');
+      const burstToggle = bubble.locator('.tool-activity-burst-toggle');
+      await expect(burstToggle).toHaveAttribute('aria-expanded', 'false');
+      await burstToggle.click();
       await expect(bubble.locator(TURN.row)).toHaveCount(3);
       await expect(bubble.locator(TURN.toggle)).toHaveCount(0);
       for (const row of await bubble.locator(`${TURN.row} button.tool-run-trigger`).all()) {
