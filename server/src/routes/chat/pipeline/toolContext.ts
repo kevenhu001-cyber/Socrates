@@ -138,11 +138,14 @@ export function selectDeferredCoreTools(body: unknown, mode: string): Set<string
   if (mode === 'tutor' || /图|示意|可视化|交互|仿真|推导|讲解|解释|diagram|chart|visual|plot|explain|derive|simulation/i.test(intent)) {
     enable('render_intelligent_ui', 'get_ui_contract', 'patch_intelligent_ui');
   }
-  // Do not offer the sandbox for ordinary calculations, explanations, coding
-  // questions or diagrams. Deferred discovery still covers uncommon tasks.
-  if (/\b(?:python|numpy|pandas|scipy|matplotlib|csv|xlsx)\b|数据分析|数据处理|数值模拟|数值仿真|数值积分|蒙特卡洛|批量计算|运行代码|执行代码|文件转换|导出(?:数据|文件|表格)|\b(?:data analysis|data processing|numerical simulation|numerical integration|monte carlo|batch calculation|run code|execute code|file conversion|export (?:data|file))\b/i.test(intent)) {
-    enable('code_interpreter');
-  }
+  // Mentioning Python, CSV or numerical methods is not itself an execution
+  // request. Prewarm only for clear run/process/export intent; deferred tool
+  // discovery remains available for less common tasks.
+  const needsCodeExecution =
+    /(?:用\s*python.{0,24}(?:运行|执行|计算|分析|绘制|处理|仿真)|(?:运行|执行).{0,16}python(?:代码|脚本)?|python.{0,24}(?:run|execute|calculate|analyze|plot|process|simulate)|(?:run|execute|perform|calculate|analyze|process|plot).{0,30}(?:python|numpy|pandas|scipy|matplotlib|dataset|csv|excel|spreadsheet|simulation|monte carlo)|(?:分析|处理|清洗|统计|绘制).{0,20}(?:这份|这些|给定|上传|提供的)?(?:数据|csv|excel|表格)|(?:运行|执行|进行|完成|帮我做|做一个).{0,16}(?:数值模拟|数值仿真|数值积分|蒙特卡洛|批量计算)|(?:导出|转换).{0,20}(?:csv|excel|数据|文件|表格)|\b(?:import\s+(?:numpy|pandas|scipy|matplotlib)|from\s+(?:numpy|pandas|scipy|matplotlib)\b|run (?:this )?(?:code|script|simulation)|execute (?:this )?(?:code|script|simulation)|export (?:this )?(?:data|file|table|csv)|convert (?:this )?file)\b)/i.test(
+      intent,
+    );
+  if (needsCodeExecution) enable('code_interpreter');
   if (/图片|照片|找图|image|photo|picture/i.test(intent)) enable('image_search');
   if (/仓库|编程|修改代码|修复|工作区|项目|实现|repo|github|coding|workspace|implement|refactor|debug|fix|edit files/i.test(intent)) enable('workspace_agent', 'initialize_workspace');
   if (/计划|需求|方案|文档|plan|specification|document/i.test(intent)) enable('create_document');
