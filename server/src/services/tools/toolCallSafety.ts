@@ -173,6 +173,13 @@ function extractTopLevelObjects(source: string): string[] {
   return found.sort((a, b) => b.length - a.length).slice(0, 4);
 }
 
+/** Strip only structural trailing commas, never commas inside JSON strings. */
+function stripJsonTrailingCommas(source: string): string {
+  return source.replace(/"(?:\\[\s\S]|[^"\\])*"|,\s*([}\]])/g, (match, closer) =>
+    closer === undefined ? match : closer,
+  );
+}
+
 export function parseToolArguments(
   raw: unknown,
 ): { ok: true; value: Record<string, unknown> } | { ok: false; error: ToolArgumentErrorCode } {
@@ -201,12 +208,11 @@ export function parseToolArguments(
     if (!prefix && !suffix) candidate = candidate.slice(firstObject, lastObject + 1);
   }
 
-  const withoutTrailingCommas = (text: string) => text.replace(/,\s*([}\]])/g, '$1');
-  const attempts = [candidate, withoutTrailingCommas(candidate)];
+  const attempts = [candidate, stripJsonTrailingCommas(candidate)];
   /* A placeholder in front of, or junk behind, a complete object. */
   for (const region of extractTopLevelObjects(candidate)) {
     if (region === candidate) continue;
-    attempts.push(region, withoutTrailingCommas(region));
+    attempts.push(region, stripJsonTrailingCommas(region));
   }
   for (const attempt of attempts) {
     try {
@@ -325,6 +331,9 @@ export function repairToolArguments(
   const strict = parseToolArguments(raw);
   if (strict.ok) {
     candidate = strict.value;
+  } else if (strict.error === TOOL_ARGUMENT_ERRORS.tooLarge) {
+    // Never let a tolerant parser bypass the raw transport cap by trimming.
+    return { ok: false, error: strict.error, repairs };
   } else if (
     (raw === null || raw === undefined || (typeof raw === 'string' && raw.trim() === '')) &&
     schema &&
@@ -343,13 +352,11 @@ export function repairToolArguments(
     }
   }
   if (!candidate) {
-    const error =
-      !strict.ok && strict.error === TOOL_ARGUMENT_ERRORS.tooLarge
-        ? TOOL_ARGUMENT_ERRORS.tooLarge
-        : isOversizedToolArguments(raw)
-          ? TOOL_ARGUMENT_ERRORS.tooLarge
-          : TOOL_ARGUMENT_ERRORS.parse;
-    return { ok: false, error, repairs };
+    return {
+      ok: false,
+      error: isOversizedToolArguments(raw) ? TOOL_ARGUMENT_ERRORS.tooLarge : TOOL_ARGUMENT_ERRORS.parse,
+      repairs,
+    };
   }
 
   candidate = normalizeToolArgumentAliases(candidate, options.toolName, repairs);
@@ -506,7 +513,7 @@ function parseLooseObjectLiteral(raw: string): Record<string, unknown> | null {
     }
     out += char;
   }
-  out = out.replace(/,\s*([}\]])/g, '$1');
+  out = stripJsonTrailingCommas(out);
   try {
     const parsed = JSON.parse(out) as unknown;
     if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {

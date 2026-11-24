@@ -14,7 +14,7 @@
  *      projection is what React Native paints, so a drift here means the
  *      Universal app and the Web app show different colours;
  *   2. the background ladder holds its shape — four rungs, evenly stepped in
- *      perceived lightness, and never a pure-black canvas;
+ *      perceived lightness, with explicit white-paper and black-canvas policies;
  *   3. the web palette in themes.css carries the same rungs, so the ladder
  *      is one ladder rather than one per surface.
  */
@@ -170,20 +170,19 @@ test('primary, secondary, and readable muted text meet WCAG AA for normal text',
   }
 });
 
-test('the background ladder follows the explicit paper-canvas and black-canvas policies', () => {
+test('the background ladder follows the explicit white-paper and black-canvas policies', () => {
   for (const mode of ['dark', 'light']) {
     const rungs = RUNGS[mode].map((rung) => sharedRungHex(mode, rung));
 
-    // Matches surface-ladder.baseline.json: the light canvas is the paper
-    // tint (paperTint #fcfcfc), strictly between the rail and the white
-    // paper; the remaining three light rungs and all four dark ones are the
-    // distinct ladder tones the step band applies to.
+    // Matches the paperCanvas policy in surface-ladder.baseline.json:
+    // page and elevated share white paper, while rail and panel are distinct.
     if (mode === 'light') {
-      assert.equal(rungs[0], '#fcfcfc', 'light canvas is the paper tint');
+      assert.equal(rungs[0], '#ffffff', 'light canvas is white paper');
+      assert.equal(rungs[0], rungs[3], 'canvas and elevated paper share a tone');
       assert.ok(
         lightnessPercent(rungs[0]) > lightnessPercent(rungs[1]) &&
-          lightnessPercent(rungs[0]) < lightnessPercent(rungs[3]),
-        'paper tint sits between rail and paper',
+          lightnessPercent(rungs[1]) > lightnessPercent(rungs[2]),
+        'rail and inset panel are progressively darker than paper',
       );
     }
     const banded = mode === 'light' ? rungs.slice(1) : rungs;

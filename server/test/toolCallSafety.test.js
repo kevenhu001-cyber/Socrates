@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  MAX_TOOL_ARGUMENT_CHARS,
   normalizeToolCalls,
   parseToolArguments,
   repairToolArguments,
@@ -54,6 +55,29 @@ test('parseToolArguments repairs conservative provider formatting variants', () 
     value: expected,
   });
   assert.equal(parseToolArguments("{'query':'unsafe-javascript'}").ok, false);
+});
+
+test('trailing-comma repair preserves literal code and text in both parsers', () => {
+  const query = 'array = [1, 2, ]; object = { a: 1, }';
+  const expected = { query };
+  assert.deepEqual(parseToolArguments(`{"query":${JSON.stringify(query)},}`), {
+    ok: true,
+    value: expected,
+  });
+  assert.deepEqual(repairToolArguments(`{query: '${query}',}`, SEARCH_SCHEMA).value, expected);
+  const escaped = 'quote " and slash \\ then , ]';
+  assert.deepEqual(parseToolArguments(`{"query":${JSON.stringify(escaped)},}`).value, {
+    query: escaped,
+  });
+});
+
+test('schema-aware repair cannot bypass the raw argument transport cap', () => {
+  const raw = ' '.repeat(MAX_TOOL_ARGUMENT_CHARS) + '{"query":"safe"}';
+  assert.deepEqual(repairToolArguments(raw, SEARCH_SCHEMA), {
+    ok: false,
+    error: 'arguments_too_large',
+    repairs: [],
+  });
 });
 
 test('normalizeToolCalls bounds the batch and makes IDs unique', () => {

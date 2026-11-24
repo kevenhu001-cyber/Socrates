@@ -24,6 +24,7 @@ import {
   summarizeToolRuns,
 } from '../src/chat/toolRunState.ts';
 import { truncateLines } from '../src/react/tool-run/toolRunDetails.ts';
+import { getSocratesWasm, initSocratesWasm } from '../src/util/socratesWasm.ts';
 import { toolCategory } from '../src/render/toolCategory.ts';
 import { createLiveOutputBuffer, renderLivePreview } from '../src/chat/liveOutput.ts';
 
@@ -49,6 +50,12 @@ async function loadWasm(t) {
     throw err;
   }
 }
+
+test('source-based Node tests stay on the TS fallback without fetching file URLs', async () => {
+  assert.equal(getSocratesWasm(), null);
+  assert.equal(await initSocratesWasm(), null);
+  assert.equal(getSocratesWasm(), null);
+});
 
 test('wasm phase mapping matches TS phaseFromProgress', async (t) => {
   const w = await loadWasm(t);
