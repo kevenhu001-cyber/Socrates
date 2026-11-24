@@ -83,9 +83,9 @@ class NativeControlsParityTest {
     @Test fun composerAndBubbleMatchTheWebSurfaces() {
         val app = uiSource("SocratesApp.kt")
         assertTrue(app.contains("val shape = RoundedCornerShape(SocratesDesign.ComposerRadius)"))
-        assertTrue(app.contains("border(1.dp, Color(0x1F000000), shape)"))
+        assertTrue(app.contains("border(1.dp, SocratesDesign.ComposerBorder, shape)"))
         assertTrue(app.contains("fontSize = 16.sp, lineHeight = 24.sp"))
-        assertTrue(app.contains("background(Color(0xFFF4F4F4), RoundedCornerShape(18.dp))"))
+        assertTrue(app.contains("background(SocratesDesign.UserBubble, RoundedCornerShape(SocratesDesign.UserBubbleRadius))"))
         assertTrue(app.contains("CircleAction(") && app.contains("accent = true"))
         assertFalse(app.contains("val Blue ="))
         assertFalse(app.contains("0xFFF0F1FB"))
