@@ -57,6 +57,15 @@ object SocratesDesign {
     val Placeholder = Color(0xFF8F8F8F)
     val Avatar = Color(0xFF6B6B6B) // --ui-avatar-bg
     val ActivityAccent = Color(0xFF0060CC) // semantic live-work cue; never used for ordinary text
+    // Named surfaces rather than per-screen literals. Native reading remains light
+    // until all renderer and system-bar roles can switch together.
+    val Surface = Color.White
+    val ComposerSurface = Surface
+    val ComposerBorder = Color(0x1F000000)
+    val UserBubble = Color(0xFFF4F4F4)
+    val SidebarSurface = Surface
+    val OnAccent = Color.White
+    val UserBubbleRadius = 18.dp
     val Touch = 44.dp
     val PageGutter = 16.dp
     val HeaderHeight = 68.dp
