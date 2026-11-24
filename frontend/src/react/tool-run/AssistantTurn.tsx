@@ -5,7 +5,9 @@
 import { TurnEvidence } from '../citations/TurnEvidence';
 import { TurnActivitySurface } from './TurnActivitySurface';
 import { deriveTurnPresentationState } from '../../legacy/turnActivityModel';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { Chevron } from '@socrates/ui/turn';
+import { tf } from '../../legacy/toolPresentationModel.ts';
 import {
   buildTurnLayout,
   groupOutputCalls,
@@ -141,6 +143,60 @@ function useStreamSettling(isLive: boolean): boolean {
   return isSettling;
 }
 
+/** Keep the rows mounted when a user folds the activity; attachments stay outside
+ * the disclosure so an interactive result never disappears with its log. */
+function ToolActivityBurst({
+  members,
+  messageId,
+  readOnly,
+  live,
+}: {
+  members: ToolCallRecord[];
+  messageId: string;
+  readOnly?: boolean;
+  live: boolean;
+}) {
+  const [open, setOpen] = useState(true);
+  const bodyId = useId();
+  const canFold =
+    !live &&
+    members.length >= 2 &&
+    members.every(
+      (call) =>
+        toolRunStateOf(call) === 'done' &&
+        !call.approval &&
+        call.name !== 'workspace_agent' &&
+        call.name !== 'render_intelligent_ui',
+    );
+  return (
+    <div className="tool-activity-burst">
+      {canFold ? (
+        <button
+          type="button"
+          className="tool-activity-burst-toggle"
+          aria-expanded={open}
+          aria-controls={bodyId}
+          onClick={() => setOpen((value) => !value)}
+        >
+          {tf('think.summaryToolsTitle', 'Used {n} tools', { n: members.length })}
+          <Chevron open={open} size={8} />
+        </button>
+      ) : null}
+      <div id={bodyId} hidden={canFold && !open}>
+        {members.map((call) => (
+          <ToolRunRow
+            key={call.id}
+            call={call}
+            messageId={messageId}
+            readOnly={readOnly}
+            live={live}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function TurnSegmentsView({
   segments,
   message,
@@ -168,15 +224,13 @@ function TurnSegmentsView({
           // Parallel tools can join a group after its first output has mounted.
           // Keep attachments keyed by call at the transcript level across regrouping.
           return [
-            ...members.map((call) => (
-              <ToolRunRow
-                key={`tool-${call.id}`}
-                call={call}
-                messageId={messageId}
-                readOnly={readOnly}
-                live={live}
-              />
-            )),
+            <ToolActivityBurst
+              key={`burst-${members[0]?.id}`}
+              members={members}
+              messageId={messageId}
+              readOnly={readOnly}
+              live={live}
+            />,
             ...members.map((call) => (
               <ToolRunAttachments
                 key={`output-${call.id}`}
