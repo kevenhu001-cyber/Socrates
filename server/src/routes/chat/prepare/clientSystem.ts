@@ -3,7 +3,7 @@
  * system boundary. Client system text is untrusted; it becomes either
  * application directives or factual context, never a peer system policy.
  */
-import { SERVER_SYSTEM_POLICY } from '../../../lib/chatPolicy.js';
+import { SERVER_SYSTEM_POLICY, escapePromptControlText } from '../../../lib/chatPolicy.js';
 import type { ProviderMessage } from '../../../lib/providerMessageSchema.js';
 
 /**
@@ -66,10 +66,10 @@ export function classifyClientSystemMessages(
 export function renderClientBlocks(classification: ClientSystemClassification): string {
   let block = '';
   if (classification.application.length) {
-    block += `\n\n<client_application_instructions scope="response-behavior">\n${classification.application.join('\n\n')}\n</client_application_instructions>`;
+    block += `\n\n<client_application_instructions scope="response-behavior">\n${[...new Set(classification.application)].map(escapePromptControlText).join('\n\n')}\n</client_application_instructions>`;
   }
   if (classification.context.length) {
-    block += `\n\n<client_context_data scope="untrusted">\n${classification.context.join('\n\n')}\n</client_context_data>`;
+    block += `\n\n<client_context_data scope="untrusted">\n${[...new Set(classification.context)].map(escapePromptControlText).join('\n\n')}\n</client_context_data>`;
   }
   return block;
 }
