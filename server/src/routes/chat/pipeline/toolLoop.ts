@@ -284,6 +284,7 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
               apiKey: provider.keyPlaintext,
               model: provider.model,
               userId: req.userId,
+              cacheSessionId: sessionIdFromQuery ?? undefined,
               /* the operator's own statement
                * about their endpoint wins over the registry's host heuristic. */
               instantEncoding: provider.instantEncoding ?? null,
