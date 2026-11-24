@@ -5,6 +5,7 @@ import {
   SELF_NORMALIZING_TOOLS,
   toolArgumentPolicy,
 } from '../src/services/tools/toolArgumentPolicy.js';
+import { toolResultBudgetEnabled } from '../src/services/tools/toolResultBudget.js';
 import { PI_AGENT_ENABLED } from '../src/services/tools/piAgent.js';
 
 test('the argument policy declares which validator owns each tool', () => {
@@ -40,6 +41,7 @@ test('tool registry exposes the same native search and visual tools in tutor mod
   assert.deepEqual(
     chat.definitions.map((tool) => tool.function.name),
     [
+      ...(toolResultBudgetEnabled() ? ['read_tool_result'] : []),
       'code_interpreter',
       ...workspaceTools,
       'web_search',
@@ -60,6 +62,7 @@ test('tool registry exposes the same native search and visual tools in tutor mod
   assert.deepEqual(
     tutor.definitions.map((tool) => tool.function.name),
     [
+      ...(toolResultBudgetEnabled() ? ['read_tool_result'] : []),
       ...workspaceTools,
       'web_search',
       'image_search',
