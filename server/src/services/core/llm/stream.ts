@@ -9,6 +9,7 @@ import {
   providerHeaders,
   providerPayloadFailure,
 } from '../llmProtocol.js';
+import { observePromptCacheUsage } from '../../../lib/promptCacheUsage.js';
 import { createUpstreamRetryBudget } from '../../../lib/upstreamRetryBudget.js';
 import { getLlmDispatcher, markLlmActivity } from './dispatcher.js';
 import { LlmProviderError, type ChatCompletionRequestOptions } from './types.js';
@@ -531,6 +532,7 @@ export async function streamChatCompletion(
       }
     }
 
+    observePromptCacheUsage(providerUsage);
     onDone({ finishReason, usage: providerUsage });
   } catch (err) {
     if ((signal && signal.aborted) || (err as Error | undefined)?.name === 'AbortError') {
