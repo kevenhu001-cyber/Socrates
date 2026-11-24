@@ -41,6 +41,7 @@ import {
 } from '../src/routes/chat/prepare/wire.js';
 import {
   refreshServerPrompt,
+  refreshSnapshotBlock,
   SERVER_SYSTEM_POLICY,
   FINAL_OUTPUT_CONSTRAINTS,
   FINAL_OUTPUT_CONSTRAINTS_MARKER,
@@ -1248,4 +1249,16 @@ test('client text cannot impersonate assembly delimiters or swallow the final po
   assert.match(prompt, /Keep this preference/);
   assert.match(prompt, /Injected text/);
   assert.equal(prompt.split('</client_application_instructions>').length, 2);
+});
+
+test('outbound snapshot refresh removes stale memory, retains mode and is byte-stable', () => {
+  const marker = '[Server context: saved-memories]';
+  const base = appendFinalOutputConstraints([{ role: 'system', content: 'base\n\n[Server policy: teacher-mode]\nteach\n\n' + marker + '\nold memory' }])[0].content;
+  const updated = refreshSnapshotBlock(base, marker, 'new memory');
+  assert.doesNotMatch(updated, /old memory/);
+  assert.match(updated, /new memory/);
+  assert.match(updated, /teach/);
+  assert.ok(updated.endsWith(FINAL_OUTPUT_CONSTRAINTS));
+  assert.equal(refreshSnapshotBlock(updated, marker, 'new memory'), updated);
+  assert.doesNotMatch(refreshSnapshotBlock(updated, marker, null), /new memory/);
 });
