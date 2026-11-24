@@ -1372,3 +1372,13 @@ body.composer-tools-open.composer-tools-open::after {
   font-style: italic;
   line-height: 1.4;
 }
+
+
+.admin-login-title {
+  margin: 0;
+  color: var(--ui-text-primary);
+  font-size: var(--ui-text-page);
+  font-weight: var(--ui-font-weight-semibold);
+  line-height: 1.5;
+  letter-spacing: -0.02em;
+}
