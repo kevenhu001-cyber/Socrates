@@ -48,7 +48,7 @@ export const executeWebSearch: ToolExecutor = async (
   const requestedCount = Number(args.count);
   const searchCount = Number.isFinite(requestedCount)
     ? Math.min(12, Math.max(1, Math.trunc(requestedCount)))
-    : 10;
+    : 6;
   let searchResults: SearchResult[] | null = null;
   let searchError: WebSearchError | null = null;
   emitter.event('tool_progress', { id: call.id, phase: 'searching', elapsedMs: 0 });
