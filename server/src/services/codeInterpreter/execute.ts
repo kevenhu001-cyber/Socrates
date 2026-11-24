@@ -288,7 +288,7 @@ export async function executeCode(
 
   // Persist artifacts. Each file in result.artifacts is something the
   // user's Python wrote into the artifacts/ subdir.
-  const artifactsStartedAt = Date.now();
+  const artifactPersistenceStartedAt = Date.now();
   const artifactFileIds: Array<{ id?: string; name?: string; mimeType?: string | null }> = [];
   const droppedArtifacts: string[] = [];
   for (const art of result.artifacts || []) {
@@ -318,7 +318,7 @@ export async function executeCode(
     );
   }
 
-  const artifactPersistenceMs = Date.now() - artifactsStartedAt;
+  const artifactPersistenceMs = Date.now() - artifactPersistenceStartedAt;
   const finalStatus = result.status || 'failed';
   const finalArtifactCount = artifactFileIds.length;
 
