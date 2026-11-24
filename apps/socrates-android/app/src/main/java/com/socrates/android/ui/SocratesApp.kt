@@ -202,7 +202,7 @@ fun SocratesApp(vm: ChatViewModel = viewModel()) {
         gesturesEnabled = !voice.active,
         scrimColor = Color.Black.copy(alpha = .48f),
         drawerContent = {
-            SocratesDrawerSheet(Modifier.fillMaxWidth(.80f), drawerContainerColor = Color.White, drawerShape = RoundedCornerShape(0.dp), windowInsets = WindowInsets(0, 0, 0, 0)) {
+            SocratesDrawerSheet(Modifier.fillMaxWidth(.80f), drawerContainerColor = SocratesDesign.SidebarSurface, drawerShape = RoundedCornerShape(0.dp), windowInsets = WindowInsets(0, 0, 0, 0)) {
                 NativeSidebar(ui, onNew = { vm.newChat(); work = false; scope.launch { drawer.close() } }, onSelect = { if (it.kind == "exam" || it.mode == "tutor") { learningId = it.id; learningKind = null; resource = "教学与测验" } else vm.selectSession(it); work = false; scope.launch { drawer.close() } }, onProfile = { profile = true }, onRefresh = vm::refresh, onSessionMenu = { sessionAction = it; sessionTitle = it.title; rename = false },
                     onRestore = vm::restoreSession, onImages = { openResource("图像", "/files?limit=50", "files") },
                     onLibrary = { openResource("资料库", "/files?limit=50", "files") },
@@ -299,16 +299,32 @@ fun SocratesApp(vm: ChatViewModel = viewModel()) {
     if (uploadedFiles) ConversationFiles(ui.messages, onDismiss = { uploadedFiles = false }, onUseFile = { id, name, mime -> vm.useLibraryFile(id, name, mime); uploadedFiles = false })
     if (ui.showAuth) AuthFlowSheet(onDismiss = { vm.showAuth(false) }, baseUrl = ui.baseUrl)
     if (settings) ConnectionSheet(ui.baseUrl, ui.authBusy, ui.sheetError, { vm.configure(it) { settings = false } }, { settings = false })
-    if (profile) SocratesSheet(onDismissRequest = { profile = false }, containerColor = Color.White) {
-        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(if (ui.loggedIn) ui.accountName else "Socrates", style = MaterialTheme.typography.headlineSmall)
-            Text(ui.baseUrl, style = MaterialTheme.typography.bodySmall, color = SocratesDesign.Muted)
-            if (ui.loggedIn) SocratesTextButton(onClick = { profile = false; account = true }) { ReferenceIcon(ReferenceGlyph.Person, null); Spacer(Modifier.width(12.dp)); Text("帐号资料与安全") }
-            if (ui.loggedIn) SocratesTextButton(onClick = { profile = false; resource = "模型与服务商" }) { Text("模型与服务商") }
-            if (ui.loggedIn) SocratesTextButton(onClick = { profile = false; resource = "记忆" }) { Text("记忆") }
-            if (ui.loggedIn) SocratesTextButton(onClick = { profile = false; voiceSettings = true; vm.voicePreferences.load() }) { ReferenceIcon(ReferenceGlyph.Mic, null); Spacer(Modifier.width(12.dp)); Text("语音输入偏好") }
-            SocratesTextButton(onClick = { profile = false; settings = true }) { ReferenceIcon(ReferenceGlyph.Settings, null); Spacer(Modifier.width(12.dp)); Text("连接设置") }
-            SocratesTextButton(onClick = { profile = false; if (ui.loggedIn) vm.logout() else vm.showAuth(true) }) { ReferenceIcon(if (ui.loggedIn) ReferenceGlyph.SignOut else ReferenceGlyph.Person, null); Spacer(Modifier.width(12.dp)); Text(if (ui.loggedIn) "退出登录" else "登录 Socrates") }
+    if (profile) SocratesSheet(onDismissRequest = { profile = false }, containerColor = SocratesDesign.Surface) {
+        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(44.dp).background(SocratesDesign.Avatar, CircleShape), contentAlignment = Alignment.Center) {
+                    Text(if (ui.loggedIn) ui.accountName.take(2).uppercase() else "S", color = SocratesDesign.OnAccent, style = MaterialTheme.typography.titleMedium)
+                }
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(if (ui.loggedIn) ui.accountName else "Socrates", style = MaterialTheme.typography.titleLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Text(ui.baseUrl, style = MaterialTheme.typography.bodySmall, color = SocratesDesign.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+            if (ui.loggedIn) {
+                SettingsGroupLabel("帐号")
+                NativeSettingsRow("帐号资料与安全", ReferenceGlyph.Person, onClick = { profile = false; account = true })
+                SocratesDivider()
+                SettingsGroupLabel("模型与个性化")
+                NativeSettingsRow("模型与服务商", ReferenceGlyph.Plugin, onClick = { profile = false; resource = "模型与服务商" })
+                NativeSettingsRow("记忆", ReferenceGlyph.Reasoning, onClick = { profile = false; resource = "记忆" })
+                NativeSettingsRow("语音输入偏好", ReferenceGlyph.Mic, onClick = { profile = false; voiceSettings = true; vm.voicePreferences.load() })
+                SocratesDivider()
+            }
+            SettingsGroupLabel("应用")
+            NativeSettingsRow("连接设置", ReferenceGlyph.Settings, onClick = { profile = false; settings = true })
+            NativeSettingsRow(if (ui.loggedIn) "退出登录" else "登录 Socrates", if (ui.loggedIn) ReferenceGlyph.SignOut else ReferenceGlyph.Person,
+                onClick = { profile = false; if (ui.loggedIn) vm.logout() else vm.showAuth(true) })
         }
     }
     if (voiceSettings && ui.loggedIn) VoicePreferencesSheet(voicePreferences, vm.voicePreferences::edit,
@@ -498,7 +514,7 @@ private fun MessageBubble(message: ChatMessage, streaming: Boolean, actionsEnabl
     Column(Modifier.fillMaxWidth(), horizontalAlignment = if (user) Alignment.End else Alignment.Start) {
         MessageAttachmentList(message)
         if (user) {
-            Column(Modifier.widthIn(max = 300.dp).background(Color(0xFFF4F4F4), RoundedCornerShape(18.dp)).padding(horizontal = 18.dp, vertical = 12.dp)) {
+            Column(Modifier.widthIn(max = 300.dp).background(SocratesDesign.UserBubble, RoundedCornerShape(SocratesDesign.UserBubbleRadius)).padding(horizontal = 18.dp, vertical = 12.dp)) {
                 SelectionContainer { Text(message.content.substringBefore("\n\n<资料"), fontSize = 16.sp, lineHeight = 24.sp) }
             }
         } else {
@@ -594,7 +610,7 @@ private fun Composer(ui: ChatUiState, voice: VoiceInput, draft: String, onDraftC
         Column(Modifier.fillMaxWidth().then(hiddenEditor).layout { measurable, constraints ->
             val editor = measurable.measure(constraints)
             layout(editor.width, if (recording) 0 else editor.height) { editor.placeRelative(0, 0) }
-        }.clip(shape).background(Color.White).border(1.dp, Color(0x1F000000), shape)
+        }.clip(shape).background(SocratesDesign.ComposerSurface).border(1.dp, SocratesDesign.ComposerBorder, shape)
             .animateContentSize(spring(stiffness = Spring.StiffnessMediumLow))
             .padding(horizontal = 8.dp, vertical = 2.dp)) {
             Row(Modifier.fillMaxWidth().heightIn(min = 40.dp), verticalAlignment = Alignment.CenterVertically) {
