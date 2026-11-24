@@ -107,28 +107,19 @@ export async function getExplanation(status: string) {
   if (hasUsableActive()) {
     const node = kbBridge.getSnapshot().kbNodes[kbBridge.getSnapshot().currentNode] as TutorNode;
     const domain = sessionBridge.getSnapshot().domain || '';
-    /* Depth hint — modulates how detailed the re-explain is, but still
-       mandates starting from the core definition per Principle 2. */
     const depthHint =
       status === 'internalized' || status === 'fuzzy'
-        ? 'The user has some surface familiarity with this topic, so you can move with less scaffolding and fewer examples, but you MUST still begin from the core definition.'
-        : 'The user is encountering this topic for the first time, so use more examples, more analogies, and more scaffolding, and you MUST still begin from the core definition.';
+        ? 'Use less scaffolding when the learner demonstrates familiarity.'
+        : 'Offer the essential prerequisite support if the learner needs it.';
     const history = promptHistory(extractHistory());
     const prompt = buildSocraticPrompt(
       domain,
       BASELINE_LEVEL,
-      fromBasicsDirective({ status: status }) +
-        "The user clicked 'Explain this' on: " +
+      "The user clicked 'Explain this' on: " +
         node.name +
         '. ' +
         depthHint +
-        '\n' +
-        'This is a RE-EXPLAIN of material the user has seen before — do not pad it with greetings or meta-commentary, ' +
-        'but DO re-ground the explanation in the most essential, foundational core definition before moving to anything advanced. ' +
-        'You may reference earlier examples from the chat history briefly, but the explanation itself must stand on its own ' +
-        'starting from the foundation.\n' +
-        'Write a textbook-quality explanation: systematic, formal, layer-by-layer. Use bold for key terms. Use LaTeX for math. ' +
-        'Build from foundation to advanced. Include 1-3 concrete examples inline, scaled by the depth hint above.',
+        ' Focus on the specific idea or gap the learner needs clarified, using the conversation as context. Revisit a definition only when it helps. Use a concrete example if it makes the explanation clearer. Follow the shared response defaults, and do not add a quiz unless requested.',
     );
     const msgs = injectTemplateSystemPrompt(
       appendClientContextMessages([{ role: 'system', content: prompt }], true)
