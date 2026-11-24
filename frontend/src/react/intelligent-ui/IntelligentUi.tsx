@@ -10,7 +10,8 @@ import type { ToolCallRecord } from '../tool-run/toolRunModel';
 import { IntelligentSurface, type IntelligentDisplayMode } from './IntelligentSurface';
 import { UiNode } from './IntelligentUiNodes';
 import { PendingBlock } from './BlockSkeleton';
-import { asProse, childMap, mergeDefaults, resolve, type RenderContext } from './renderRuntime';
+import { childMap, mergeDefaults, type RenderContext } from './renderRuntime';
+import { inferSurfaceMeta, surfacePlainText } from './surfaceMeta';
 
 interface IntelligentUiBlockProps {
   source: string;
@@ -19,16 +20,6 @@ interface IntelligentUiBlockProps {
   open?: boolean;
   showActivityCue?: boolean;
   readOnly?: boolean;
-}
-
-function resolveSurfaceMetadata(
-  roots: ReturnType<typeof parseIntelligentUiRecords>,
-  context: RenderContext,
-) {
-  const root = context.surfaceRootId ? roots[0] : undefined;
-  const title = root ? asProse(resolve(root.title, context)) : undefined;
-  const description = root ? asProse(resolve(root.description, context)) : undefined;
-  return { title, description };
 }
 
 export function IntelligentUiBlock({
@@ -60,7 +51,7 @@ export function IntelligentUiBlock({
     );
   }
 
-  const context: RenderContext = {
+  const baseContext: RenderContext = {
     state,
     setState,
     children,
@@ -69,11 +60,19 @@ export function IntelligentUiBlock({
     streaming: open,
     surfaceRootId: roots.length === 1 && roots[0].type === 'panel' ? roots[0].id : undefined,
   };
-  const { title, description } = resolveSurfaceMetadata(roots, context);
+  const meta = inferSurfaceMeta(roots, baseContext);
+  const context: RenderContext = { ...baseContext, surfaceTitle: meta.title };
+  const copyValue = surfacePlainText(roots, context, meta);
 
   return (
     <div className="intui" data-intui-streaming={open ? 'true' : 'false'}>
-      <IntelligentSurface displayMode={displayMode} title={title} description={description}>
+      <IntelligentSurface
+        displayMode={displayMode}
+        title={meta.title}
+        description={meta.description}
+        eyebrow={meta.eyebrow}
+        copyValue={copyValue}
+      >
         {roots.map((node) => (
           <UiNode key={node.id} node={node} context={context} />
         ))}

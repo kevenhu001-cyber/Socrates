@@ -98,7 +98,7 @@ The light neutral ramp is lifted for WCAG AA. The reference's secondary
 light surface). `--ui-text-muted` is an alias of `--ui-text-tertiary`: one
 de-emphasised text colour, not two near-identical ones — the dark theme has
 always aliased them. The semantic tones are lifted the same way because they
-are painted as *text* (tool-card error lines, callout titles, the approval
+are painted as *text* (tool-card error lines, note glyphs, the approval
 status, the settings "yes"): `--ui-danger` `rgb(176 45 28)`, `--ui-success`
 `rgb(12 110 51)`, `--ui-info` `rgb(0 92 184)`, `--ui-warning` `rgb(125 82 0)`
 — each clears 4.5:1 on the page *and* on the pale tint it is mixed into.
@@ -150,6 +150,10 @@ Headings 24/20/18px 600; lists 26px indent; quotes 2px left rule, not
 italic; inline code 0.875em on `--ui-bg-chip`; code blocks one 16px-radius
 card on `--ui-bg-raised` (light `#f9f9f9`, dark `#171717`) with a quiet 36px
 header; tables hairline rows only; toolbar 32px ghost buttons.
+Notes (callouts) are one quiet `--secondary` block with a 16px radius, no
+border and no left rule: the tone is carried by one 14px glyph before the
+heading, never by the fill or by a tinted heading, so a warning reads the
+same in prose, in an inline result and in a tool attachment.
 Row behaviour kept from components/chat.css: `flex-shrink: 0` and the
 desktop `content-visibility` perf rules.
 

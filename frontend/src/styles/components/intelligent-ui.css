@@ -12,7 +12,7 @@
 .intui {
   display: grid;
   position: relative;
-  gap: var(--ui-space-sm);
+  gap: var(--ui-space-md);
   min-width: 0;
   width: 100%;
   margin: var(--ui-space-md) 0;
@@ -124,16 +124,29 @@
   background: color-mix(in srgb, var(--destructive) 12%, transparent);
   color: var(--destructive);
 }
+/* A note is a soft block, not a margin rule. Manus never draws a rail beside
+   a note: the surface stays the same quiet grey for every tone, and one small
+   glyph carries the meaning. That keeps a warning from shouting in colour
+   while the prose around it stays calm. */
 .intui-callout {
-  --intui-tone: var(--ui-border-strong);
+  --intui-tone: var(--ui-text-tertiary);
   display: grid;
   gap: var(--ui-space-xs);
-  padding: var(--ui-space-md);
+  padding: var(--ui-space-md) var(--ui-space-lg);
   border: 0;
-  border-inline-start: 2px solid var(--intui-tone);
   border-radius: var(--ui-radius-md);
-  background: color-mix(in srgb, var(--intui-tone) 6%, transparent);
+  background: var(--secondary);
   color: var(--ui-text-secondary);
+}
+.intui-callout-title {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ui-space-xs);
+}
+.intui-callout-title > svg {
+  flex: none;
+  margin-block-start: 3px;
+  color: var(--intui-tone);
 }
 .intui-callout[data-tone='info'] {
   --intui-tone: var(--ui-info);
@@ -148,16 +161,11 @@
   --intui-tone: var(--destructive);
 }
 .intui-callout[data-tone='neutral'] {
-  border-color: transparent;
-  border-inline-start-color: var(--ui-border-strong);
-  background: var(--ui-bg-page);
+  --intui-tone: var(--ui-text-tertiary);
 }
-.msg.assistant
-  .msg-body.is-declarative
-  .intui-callout:not([data-tone='neutral'])
-  .intui-callout-title {
-  color: var(--intui-tone);
-}
+/* The glyph alone carries the tone. A tinted heading belonged to the old
+   callout: the same warning read as amber inside a declarative answer and as
+   ink everywhere else. `.intui-callout-title` keeps the primary ink now. */
 .intui-divider {
   width: 100%;
   margin: 0;
@@ -735,8 +743,9 @@
   }
 }
 
-/* The surface is a plain container in the answer: no frame, no toolbar, no
-   presentation modes. Nodes keep their state because nothing remounts. */
+/* The surface is one quiet card in the answer: a hairline, a 16px radius and a
+   lift you only notice when you look for it. No toolbar, no presentation
+   modes. Nodes keep their state because nothing remounts. */
 .intui-surface-shell {
   --intui-action-size: var(--ui-control-sm);
   position: relative;
@@ -749,7 +758,8 @@
   box-sizing: border-box;
   border: 0;
   border-radius: var(--ui-radius-lg);
-  background: transparent;
+  background: var(--card);
+  box-shadow: var(--ui-elevation-raised);
   color: var(--ui-text-primary);
   font: inherit;
   text-align: start;
@@ -757,24 +767,81 @@
 .intui-surface-header {
   display: flex;
   align-items: flex-start;
-  gap: var(--ui-space-md);
+  gap: var(--ui-space-sm);
+  padding: var(--ui-space-lg) var(--ui-space-lg) 0;
+}
+/* A card with no title keeps its actions in the corner instead of spending a
+   row on an empty header. */
+.intui-surface-header.is-actions-only {
+  position: absolute;
+  inset-block-start: var(--ui-space-xs);
+  inset-inline-end: var(--ui-space-xs);
+  z-index: 1;
   padding: 0;
 }
 .intui-surface-heading {
+  display: grid;
   flex: 1 1 auto;
+  gap: var(--ui-space-xxs);
   min-width: 0;
 }
-#appShell #msgList .msg-body .intui-surface-title {
+.intui-surface-eyebrow {
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xxs);
+  letter-spacing: 0.02em;
+  line-height: var(--ui-line-height-normal);
+}
+#appShell .intui-surface-title {
   margin: 0;
   color: var(--ui-text-primary);
-  font: var(--ui-font-weight-semibold) var(--ui-font-size-md) / var(--ui-line-height-normal)
-    var(--font-sans);
-  letter-spacing: normal;
+  font: var(--ui-font-weight-semibold) calc(var(--ui-font-size-sm) + 1px) /
+    var(--ui-line-height-normal) var(--font-sans);
+  letter-spacing: -0.01em;
   overflow-wrap: anywhere;
   text-wrap: pretty;
 }
 .intui-surface-description {
-  margin-top: var(--ui-space-xs);
+  margin: 0;
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xxs);
+  line-height: var(--ui-line-height-normal);
+}
+.intui-surface-actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--ui-space-xxs);
+  margin-block-start: calc(var(--ui-space-xxs) * -1);
+}
+.intui-surface-more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--intui-action-size);
+  min-height: var(--ui-control-md);
+  padding: 0;
+  border: 0;
+  border-radius: var(--ui-radius-control);
+  background: transparent;
+  color: var(--ui-text-tertiary);
+  cursor: pointer;
+}
+.intui-surface-more:hover,
+.intui-surface-more[data-state='open'] {
+  background: var(--accent);
+  color: var(--ui-text-primary);
+}
+/* Desktop keeps the card quiet: the menu appears when the reader reaches for
+   it. Touch and keyboard users always see it. */
+@media (hover: hover) and (pointer: fine) {
+  .intui-surface-more {
+    opacity: 0;
+  }
+  .intui-surface-shell:hover .intui-surface-more,
+  .intui-surface-shell:focus-within .intui-surface-more,
+  .intui-surface-more:focus-visible {
+    opacity: 1;
+  }
 }
 .intui-surface-menu {
   min-width: 10rem;
@@ -830,8 +897,11 @@
   align-content: start;
   gap: var(--ui-space-md);
   min-width: 0;
-  padding: var(--ui-space-sm) 0;
+  padding: var(--ui-space-lg);
   container-type: inline-size;
+}
+.intui-surface-header + .intui-surface-document {
+  padding-top: var(--ui-space-md);
 }
 .intui-surface-document > * {
   min-width: 0;
@@ -843,22 +913,63 @@
   border-radius: 0;
   background: transparent;
 }
+/* The card is the frame; a table inside it drops its own box and the prose
+   margins that used to separate it from the answer around it. */
+.intui-surface-document .intui-table-wrap {
+  margin-block: 0;
+  border: 0;
+  border-radius: 0;
+}
+.intui-surface-document .intui-table-wrap > table.intui-table {
+  width: 100%;
+}
+.intui-surface-document .intui-panel-head {
+  margin-bottom: 0;
+}
+/* Consecutive metrics read as one stat strip instead of a stack of rows. */
+.intui-metric-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr));
+  gap: var(--ui-space-md);
+  min-width: 0;
+}
+.intui-metric-row > .intui-metric {
+  padding: 0;
+}
+.intui-metric-row .intui-metric-value {
+  font-size: var(--ui-font-size-lg);
+}
 
 @media (max-width: 768px) {
   .intui-surface-shell {
     --intui-action-size: var(--ui-control-touch);
+    border-radius: var(--ui-radius-md);
   }
   .intui-surface-header {
-    padding-inline: 0;
+    padding: var(--ui-space-md) var(--ui-space-md) 0;
+  }
+  .intui-surface-header.is-actions-only {
+    padding: 0;
   }
   .intui-surface-document {
-    padding: var(--ui-space-xs) 0;
+    padding: var(--ui-space-md);
+  }
+  .intui-surface-header + .intui-surface-document {
+    padding-top: var(--ui-space-md);
   }
   .intui-surface-menu :is([role='menuitemradio'], [role='menuitem']) {
     min-height: var(--ui-control-touch);
   }
+  .intui-surface-more,
   .intui-panel-actions .intui-panel-more {
     min-height: var(--ui-control-touch);
+  }
+  .intui-metric-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--ui-space-sm) var(--ui-space-md);
+  }
+  .intui-metric-row > .intui-metric:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
   }
   .msg.assistant
     .msg-body.is-declarative
@@ -1141,6 +1252,18 @@
   [data-openui-visualization]
   :is(.visualization-header, .visualization-caption) {
   padding-inline: 0;
+}
+/* The card already names the visual; the engine's own heading would repeat it
+   one line below the card title. */
+#appShell .intui [data-openui-visualization][data-header-hidden] .visualization-header {
+  display: none;
+}
+/* An inline chart is a glance, not a page: it keeps a shorter stage than the
+   full-page visualizations that share the same engine. */
+.intui-surface-document
+  .visualization-card[data-visualization-renderer='echarts']
+  .visualization-stage {
+  height: 200px;
 }
 
 /* Preserve Markdown alignment; generated tables default to reading direction. */

@@ -230,7 +230,10 @@
   }
 
   /* Action buttons in assistant messages (e.g. "继续下一批" blue pill button) */
-  #appShell #msgList .msg-body button:not(.code-block-copy, .tool-run-trigger) {
+  #appShell
+    #msgList
+    .msg-body
+    button:not(.code-block-copy, .tool-run-trigger, .intui-surface-more, .intui-panel-more) {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -250,13 +253,27 @@
       background-color var(--ui-duration-fast) ease,
       transform var(--ui-duration-fast) ease;
   }
-  #appShell #msgList .msg-body button:not(.code-block-copy, .tool-run-trigger):hover {
+  #appShell
+    #msgList
+    .msg-body
+    button:not(.code-block-copy, .tool-run-trigger, .intui-surface-more, .intui-panel-more):hover {
     background: color-mix(in srgb, var(--ui-action) 88%, white);
   }
-  #appShell #msgList .msg-body button:not(.code-block-copy, .tool-run-trigger):active {
+  #appShell
+    #msgList
+    .msg-body
+    button:not(.code-block-copy, .tool-run-trigger, .intui-surface-more, .intui-panel-more):active {
     transform: scale(0.98);
   }
-  #appShell #msgList .msg-body button:not(.code-block-copy, .tool-run-trigger):focus-visible {
+  #appShell
+    #msgList
+    .msg-body
+    button:not(
+      .code-block-copy,
+      .tool-run-trigger,
+      .intui-surface-more,
+      .intui-panel-more
+    ):focus-visible {
     box-shadow: var(--ui-focus-shadow);
   }
 
