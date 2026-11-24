@@ -20,7 +20,7 @@ export function PageHeader({
 }: {
   titleId: string;
   title: string;
-  description?: string;
+  description?: ReactNode;
   eyebrow?: string;
   leading?: ReactNode;
   actions?: ReactNode;
