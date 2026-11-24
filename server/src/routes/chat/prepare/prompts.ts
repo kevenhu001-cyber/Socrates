@@ -5,7 +5,7 @@
  * tool contract, and routing hints. Context retrieval (RAG/memory) lives in
  * context.ts; the request orchestrator lives in request.ts.
  */
-import { appendServerPolicy, FINAL_OUTPUT_CONSTRAINTS_MARKER } from '../../../lib/chatPolicy.js';
+import { appendServerPolicy, escapePromptControlText, FINAL_OUTPUT_CONSTRAINTS_MARKER } from '../../../lib/chatPolicy.js';
 import { getCodeInterpreterPrompt, getTeacherModePrompt } from '../../../lib/prompts.js';
 import { MAX_VISUALIZATION_POINTS } from '../../../services/visualization.js';
 import { getDb } from '../../../db/index.js';
@@ -80,7 +80,7 @@ export async function resolveAssistantInstructions(
     const config = JSON.parse(assistant.source) as { instructions?: string };
     return {
       marker: '[User-selected assistant]',
-      prompt: String(config.instructions || '').slice(0, 12000),
+      prompt: escapePromptControlText(String(config.instructions || '').slice(0, 12000)),
     };
   } catch {
     return null;
@@ -180,9 +180,8 @@ export function appendNativeToolContract<T extends { role: string; content?: unk
   if (limits) {
     const budget: string[] = [];
     if (limits.maxIterations) {
-      const used = Math.max(0, Number(limits.iterationsUsed || 0));
       budget.push(
-        `This turn allows up to ${limits.maxIterations} tool rounds (${used} used so far).`,
+        `This turn allows up to ${limits.maxIterations} tool rounds.`,
       );
     }
     if (limits.maxCallsPerIteration)
