@@ -317,6 +317,7 @@ export async function executeCode(
     );
   }
 
+  const artifactPersistenceMs = Date.now() - artifactsStartedAt;
   const finalStatus = result.status || 'failed';
   const finalArtifactCount = artifactFileIds.length;
 
@@ -349,6 +350,8 @@ export async function executeCode(
     durationMs: result.durationMs,
     queueMs: result.queueMs,
     packageMs: result.packageMs,
+    artifactPersistenceMs,
+    wallMs: Date.now() - requestStartedAt,
     errorCode: result.errorCode,
     artifactCount: finalArtifactCount,
     errorMessage: result.errorMessage || null,
