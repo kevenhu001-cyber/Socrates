@@ -227,13 +227,13 @@ export function appendNativeToolContract<T extends { role: string; content?: unk
 const TOOL_ROUTING_HINTS_MARKER = '[Server policy: tool-routing-hints]';
 
 const INTELLIGENT_UI_VISUALIZATION_HINT = `## Unified visual tool
-Use \`render_intelligent_ui\` for every explicitly requested static or interactive chart, function graph, diagram, timeline, comparison, simulation, illustration, or learning card. Use \`code_interpreter\` first only when data must be calculated, read from files, transformed, or exported. Call with {"nodes":[{"type":"visualization","template":"bar","payload":{"categories":["A"],"series":[{"data":[1]}]}}]}. The server deterministically adds version=1 and stable IDs; both may be omitted. Advanced contracts are retrieved only when the get_ui_contract tool is available.
+Use \`render_intelligent_ui\` for every explicitly requested static or interactive chart, function graph, diagram, timeline, comparison, simulation, illustration, or learning card. If supplied, use \`code_interpreter\` first only when data must be calculated, read from files, transformed, or exported. Call with {"nodes":[{"type":"visualization","template":"bar","payload":{"categories":["A"],"series":[{"data":[1]}]}}]}. The server deterministically adds version=1 and stable IDs; both may be omitted. Advanced contracts are retrieved only when the get_ui_contract tool is available.
 
 Use a native visualization node with template "function" for ordinary Cartesian graphs. Put every related curve in the same payload.functions array. For "function" templates, expression must be pure ASCII math using lowercase x (e.g. "sin(x)", "x^2 - 2*x + 1"), NEVER an equation ("y = ...") and NEVER LaTeX commands ("\\frac", "\\sin"); put display labels in LaTeX instead (label: "$\\sin(x)$"). For category charts ("line", "bar", "area"), ensure each series.data length exactly matches the categories count. Use a demonstration node when changing parameters or time should recompute the curves, and "math_construction" when the reader needs editable GeoGebra objects. Intelligence UI can present read-only content or act like a regular UI with tabs, sliders, choices and other controls. A display-only panel or chart needs zero buttons.
 
-For local interaction, use {type:"openui",source:"root = Col([...])"} inside nodes. Use StepPlayer for discrete stages of a worked example: declare $step = 0, bind StepPlayer($step, ["Initial","After"], "Stages"), and derive a displayed result such as Metric("Value", [2,4][$step]). Use ViewSwitcher(label, [{id,label,children:[view]},...]) for 2 to 4 alternate views of the same subject, with unique stable IDs. Use Table(columns, rows, caption, true) for user-sortable data. Use NumberField for precise numeric edits, Slider for exploration, ComparisonBars for values on the same scale, Meter for a value within bounds, and Disclosure for optional explanation. Keep essential results visible and update them from local state.
+For stateful interaction use an OpenUI node. Use the native schema and available contract lookup for component signatures; keep essential results visible and bound to state.
 
-Common payload rules live in the render_intelligent_ui schema. Use LaTeX for EVERY displayed formula and mathematical symbol, including in prose, scene captions, control labels and tick marks, chart axes, legends, tooltips, annotations, diagram and flow-chart node labels, thinking summaries, and learning cards ($...$ inline, $$...$$ display). Keep executable expressions, construction commands and numeric data in their required machine syntax. Each series stays at or below ${MAX_VISUALIZATION_POINTS} points; downsample longer data first. Static rows of facts belong in Markdown tables; use interactive tables for local sorting or data bound to declared local state. If validation returns field errors, correct exactly those fields once and retry.`;
+Common payload rules live in the render_intelligent_ui schema. Use LaTeX for reader-facing mathematical expressions ($...$ inline, $...$ display), including chart and diagram labels when appropriate. Keep executable expressions, construction commands and numeric data in their required machine syntax. Each series stays at or below ${MAX_VISUALIZATION_POINTS} points; downsample longer data first. Static rows of facts belong in Markdown tables; use interactive tables for local sorting or data bound to declared local state. If validation returns field errors, correct exactly those fields once and retry.`;
 
 const GET_UI_CONTRACT_ROUTING_HINT =
   'Use get_ui_contract only for uncommon template payloads or advanced OpenUI, physics, learning and demonstration contracts. For OpenUI signatures and examples, start with get_ui_contract({kind:"openui",page:1}) and read further pages as needed.';
@@ -265,7 +265,9 @@ export function appendToolRoutingHints<T extends { role: string; content?: unkno
   if (nameSet.has('web_search')) blocks.push(WEB_SEARCH_ROUTING_HINT);
   if (nameSet.has('image_search')) blocks.push(IMAGE_SEARCH_ROUTING_HINT);
   if (nameSet.has('web_fetch')) blocks.push(WEB_FETCH_ROUTING_HINT);
-  if (nameSet.has('search_connectors')) blocks.push(CONNECTOR_DISCOVERY_ROUTING_HINT);
+  if (nameSet.has('search_connectors') && nameSet.has('get_connector_spec')) {
+    blocks.push(CONNECTOR_DISCOVERY_ROUTING_HINT);
+  }
   if (nameSet.has('render_intelligent_ui')) {
     blocks.push(INTELLIGENT_UI_VISUALIZATION_HINT);
     if (nameSet.has('get_ui_contract')) blocks.push(GET_UI_CONTRACT_ROUTING_HINT);
