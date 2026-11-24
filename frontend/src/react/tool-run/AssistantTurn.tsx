@@ -18,7 +18,7 @@ import {
   type ToolCallRecord,
   type TurnSegment,
 } from './toolRunModel.js';
-import { ToolRunDisclosureProvider } from './ToolRunDisclosure';
+import { ToolRunDisclosureProvider, useExpandedToolIds } from './ToolRunDisclosure';
 import { TurnStatus } from './TurnStatus.js';
 import { TurnSegmentContent } from './TurnSegmentContent';
 import { ToolRunAttachments } from './ToolRunAttachments';
@@ -158,7 +158,8 @@ function ToolActivityBurst({
   readOnly?: boolean;
   live: boolean;
 }) {
-  const [open, setOpen] = useState(true);
+  const [openOverride, setOpenOverride] = useState<boolean | null>(null);
+  const expandedIds = useExpandedToolIds();
   const bodyId = useId();
   const completedCount = members.filter((call) => toolRunStateOf(call) === 'done').length;
   const canFold =
@@ -172,6 +173,9 @@ function ToolActivityBurst({
         call.name !== 'workspace_agent' &&
         call.name !== 'render_intelligent_ui',
     );
+  // Collapse settled bursts by default; preserve a reader's open row and
+  // never hide approvals, failures, active tools or interactive attachments.
+  const open = openOverride ?? members.some((call) => expandedIds?.has(call.id));
   return (
     <div className="tool-activity-burst">
       {canFold ? (
@@ -181,7 +185,7 @@ function ToolActivityBurst({
           className="tool-activity-burst-toggle"
           aria-expanded={open}
           aria-controls={bodyId}
-          onClick={() => setOpen((value) => !value)}
+          onClick={() => setOpenOverride(!open)}
         >
           {tf('think.summaryToolsTitle', 'Used {n} tools', { n: members.length })}
           <Chevron open={open} size={8} />
