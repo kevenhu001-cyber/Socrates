@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react';
 import { ArrowLeftIcon, type LucideIcon } from 'lucide-react';
 import { Button } from '../ui/shadcn/button';
+import { PageHeader } from '../ui/page/PageHeader';
 
+/** Compatibility adapter: account pages share the PageHeader contract. */
 export function AccountPageHeader({
   title,
   titleId,
@@ -20,16 +22,17 @@ export function AccountPageHeader({
   children?: ReactNode;
 }) {
   return (
-    <header className="account-page-header">
-      <Button variant="ghost" size="icon-lg" id={backId} aria-label={backLabel} onClick={onBack}>
-        <BackIcon aria-hidden />
-      </Button>
-      <div className="account-page-title">
-        <h1 id={titleId} data-page-title tabIndex={-1}>
-          {title}
-        </h1>
-      </div>
-      {children}
-    </header>
+    <PageHeader
+      variant="account"
+      title={title}
+      titleId={titleId}
+      titleTabIndex={-1}
+      leading={
+        <Button variant="ghost" size="icon-lg" id={backId} aria-label={backLabel} onClick={onBack}>
+          <BackIcon aria-hidden />
+        </Button>
+      }
+      actions={children}
+    />
   );
 }
