@@ -138,7 +138,11 @@ export function selectDeferredCoreTools(body: unknown, mode: string): Set<string
   if (mode === 'tutor' || /图|示意|可视化|交互|仿真|推导|讲解|解释|diagram|chart|visual|plot|explain|derive|simulation/i.test(intent)) {
     enable('render_intelligent_ui', 'get_ui_contract', 'patch_intelligent_ui');
   }
-  if (/计算|数据|表格|统计|导出|文件|代码|仿真|python|calculate|compute|data|spreadsheet|csv|xlsx|export|attachment|simulation/i.test(intent)) enable('code_interpreter');
+  // Do not offer the sandbox for ordinary calculations, explanations, coding
+  // questions or diagrams. Deferred discovery still covers uncommon tasks.
+  if (/\b(?:python|numpy|pandas|scipy|matplotlib|csv|xlsx)\b|数据分析|数据处理|数值模拟|数值仿真|数值积分|蒙特卡洛|批量计算|运行代码|执行代码|文件转换|导出(?:数据|文件|表格)|\b(?:data analysis|data processing|numerical simulation|numerical integration|monte carlo|batch calculation|run code|execute code|file conversion|export (?:data|file))\b/i.test(intent)) {
+    enable('code_interpreter');
+  }
   if (/图片|照片|找图|image|photo|picture/i.test(intent)) enable('image_search');
   if (/仓库|编程|修改代码|修复|工作区|项目|实现|repo|github|coding|workspace|implement|refactor|debug|fix|edit files/i.test(intent)) enable('workspace_agent', 'initialize_workspace');
   if (/计划|需求|方案|文档|plan|specification|document/i.test(intent)) enable('create_document');
