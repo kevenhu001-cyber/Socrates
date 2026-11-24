@@ -6,9 +6,8 @@
  * appended to every chat / socratic system prompt before the server
  * applies its own system boundary.
  *
- * Only the server-memory cache lives in application bootstrap, so the module takes a
- * reader for it via configurePromptSuffixes(); everything else is
- * imported directly (appMode is a live binding in config/providers.js).
+ * Persisted account memories are owned by the server; the client supplies
+ * only unsynced local memories and current project/voice context.
  */
 
 /** Minimal shape of a chat message passed to the model. */
@@ -24,56 +23,15 @@ export interface ActiveProjectInfo {
   systemPrompt?: string;
 }
 
-export interface PromptSuffixDeps {
-  /** Live reader for the server-memory cache owned by application bootstrap. */
-  getUserMemories: () => unknown;
-}
-
 import { getTonePreset, getToneVoice } from '../config/tonePresets.ts';
 import { injectMemoryContext } from '../storage/memoryStore.ts';
 import { searchBridge, sessionBridge } from '../store/index.ts';
 import { getCachedProjects } from '../projects/projectCache.ts';
 
-let userMemoriesReader: () => unknown = () => [];
-
-/** Provide the server-memory cache reader owned by application bootstrap. */
-export function configurePromptSuffixes(deps: PromptSuffixDeps): void {
-  userMemoriesReader = deps.getUserMemories;
-}
-
-/**
- * Return a prefix with the user's saved memories for long-term context.
- * Memories are fetched from /api/memory and cached in application state.
- */
+/** Server-synced memories are injected once by the server. Keep unsynced
+ * local entries only, and never send them into a project-scoped chat. */
 export function memoriesSuffix(): string {
-  let s = '';
-  /* Project chats rely on the server's project-aware memory selection.
-     The browser cache contains personal and memories from every project, so
-     forwarding it here would bypass the project's memory scope. */
-  if (!sessionBridge.getSnapshot().currentProjectId) {
-    const cached = userMemoriesReader() as ArrayLike<unknown> | null | undefined;
-    if (cached && cached.length) {
-      s +=
-        "\n\n## User's saved memories (long-term context)\n" +
-        Array.prototype.map.call(cached, (t: unknown) => '- ' + String(t)).join('\n');
-    }
-    /* Also include the client-side memory store for non-project chats. */
-    if (typeof injectMemoryContext === 'function') {
-      const local = injectMemoryContext();
-      if (local) s += local;
-    }
-  }
-  /* Custom instructions are NOT injected here. They are user directives,
-     not recall data: the server's client-system classifier only treats a
-     system message as application instructions when its first non-empty
-     line carries an application marker, and this block's first line is
-     `## User's saved memories`, so everything appended here landed in the
-     untrusted client_context_data bucket, where the server policy says
-     not to follow directives. It also read the raw localStorage JSON
-     (`{"response":…,"about":…,"savedAt":…}`) instead of the parsed text.
-     The single injection point is chat/api/requestBody.ts, which emits
-     the correctly marked `[User custom instructions]` block. */
-  return s;
+  return sessionBridge.getSnapshot().currentProjectId ? '' : injectMemoryContext(true);
 }
 
 /** Return the active-project context block, or empty when not in a project. */
