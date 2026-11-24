@@ -5,6 +5,7 @@ import { Switch } from '../ui/shadcn/switch';
 import { Field, FieldLabel } from '../ui/shadcn/field';
 import { useCallback, useRef } from 'react';
 import { cn } from 'cn';
+import { SectionCard } from '../ui/page/SectionCard';
 import type { ProfileDispatch, ProfileSnapshot } from './types';
 import { profileText } from './profileText';
 
@@ -27,8 +28,7 @@ export function ProfilePreferencesSection({
   }, [dispatch]);
 
   return (
-    <div className="profile-section">
-      <h2 className="profile-section-title">{profileText('profile.preferences', 'Preferences')}</h2>
+    <SectionCard className="profile-section" title={profileText('profile.preferences', 'Preferences')}>
       <div className="profile-row">
         <span className="profile-row-label">{profileText('profile.language', 'Language')}</span>
         <ToggleGroup
@@ -112,6 +112,6 @@ export function ProfilePreferencesSection({
           </span>
         </div>
       </div>
-    </div>
+    </SectionCard>
   );
 }
