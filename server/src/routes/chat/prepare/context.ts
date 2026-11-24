@@ -10,6 +10,7 @@ import { getDb } from '../../../db/index.js';
 import { and, desc, eq, or, sql } from 'drizzle-orm';
 import { withTimeBudget } from '../../../lib/timeBudget.js';
 import { estimateTokens } from '../../../services/core/usageTracker.js';
+import { escapePromptControlText } from '../../../lib/chatPolicy.js';
 import type { ProviderMessage } from '../../../lib/providerMessageSchema.js';
 import { applyPolicyBlock, type PolicyBlock } from './prompts.js';
 
@@ -113,7 +114,7 @@ export async function resolveRagContext(
       if (total >= RAG_MAX_TOTAL_CHARS) break;
       const text = String(hit.text || '').slice(0, RAG_MAX_CHARS_PER_HIT);
       if (!text) continue;
-      blocks.push(`- ${text}`);
+      blocks.push(`- ${escapePromptControlText(text)}`);
       total += text.length;
     }
     if (!blocks.length) return null;
@@ -196,7 +197,7 @@ export async function resolveMemoryContext(
       if (total >= MEMORY_MAX_TOTAL_CHARS) break;
       const text = String(row.text || '').slice(0, MEMORY_MAX_CHARS_PER_ENTRY);
       if (!text) continue;
-      blocks.push(`- ${text}`);
+      blocks.push(`- ${escapePromptControlText(text)}`);
       total += text.length;
     }
     if (!blocks.length) return null;
@@ -220,7 +221,7 @@ export async function buildLearningModeTurn(
   return (
     `[Learning mode: ${learningMode}; server-owned]\n${prompt}` +
     (focusText
-      ? `\n\n<client_context_data scope="untrusted">\nLearning focus: ${focusText}\n</client_context_data>`
+      ? `\n\n<client_context_data scope="untrusted">\nLearning focus: ${escapePromptControlText(focusText)}\n</client_context_data>`
       : '')
   );
 }
