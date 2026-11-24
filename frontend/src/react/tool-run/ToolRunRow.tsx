@@ -1,7 +1,7 @@
 import { memo, useId, useRef } from 'react';
 import { Chevron, Spinner, ToolErrorNotice, toolTargetOf, toolVerbOf } from '@socrates/ui/turn';
 import { translate } from '../../legacy/toolPresentationModel.ts';
-import { agentStepLabel } from '../../legacy/agentSteps.ts';
+import { agentStepCommand, agentStepLabel } from '../../legacy/agentSteps.ts';
 import { Button } from '../ui/shadcn/button';
 import { useLocaleRefresh, WebUiTheme } from '../rn/WebUiTheme';
 import { ToolActivityIcon, toolActivitySites } from './ToolActivityIcon';
@@ -11,6 +11,7 @@ import { ToolRunDetail } from './ToolRunDetail';
 import { useToolRunDisclosure } from './ToolRunDisclosure';
 import {
   agentRunStateOf,
+  runStartedAt,
   toolRunView,
   type ToolCallRecord,
   type ToolRunView,
@@ -147,7 +148,8 @@ export const ToolRunRow = memo(function ToolRunRow({
               <ToolRunAgentSteps
                 run={view.agentRun}
                 live={running}
-                state={agentRunStateOf(view.state)}
+                state={view.state === 'awaiting' ? 'awaiting' : agentRunStateOf(view.state)}
+                startedAt={runStartedAt(call)}
               />
             ) : null}
           </div>
@@ -189,7 +191,9 @@ function AgentActivityPreview({ run }: { run: NonNullable<ToolRunView['agentRun'
   const latest = active || run.steps[run.steps.length - 1];
   if (!latest) return null;
   const completed = run.steps.filter((step) => step.status === 'done').length;
-  const label = agentStepLabel(latest, (key) => translate(key, key));
+  const label = latest.status === 'running'
+    ? [translate('tool.status.running', 'Running'), agentStepCommand(latest)].filter(Boolean).join(' · ')
+    : agentStepLabel(latest, (key) => translate(key, key));
   return (
     <div className="agent-activity-preview" data-state={latest.status} data-testid="agent-activity-preview">
       <span className="agent-activity-preview-label">{label}</span>

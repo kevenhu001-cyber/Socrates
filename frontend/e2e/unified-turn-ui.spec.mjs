@@ -299,3 +299,33 @@ test('live workspace preview follows observed steps and yields to expanded detai
   });
   await expect(preview).toHaveCount(0);
 });
+
+
+test('stopped workspace steps retain an unconfirmed outcome', async ({ page }) => {
+  await prepareChatWorkbench(page, {
+    messages: [{
+      clientId: 'cancelled-agent',
+      role: 'assistant',
+      rawText: 'Stopped.',
+      toolCalls: [{
+        id: 'cancelled',
+        name: 'workspace_agent',
+        textOffset: 0,
+        status: 'cancelled',
+        runId: 'cancelled-run',
+        steps: [
+          { stepId: 'read', kind: 'read', status: 'done' },
+          { stepId: 'command', kind: 'command', status: 'running', command: 'npm test' },
+        ],
+      }],
+    }],
+  });
+  await toolRow(page, 'cancelled').click();
+  const run = page.locator('.agent-run');
+  await expect(run).toHaveAttribute('data-state', 'cancelled');
+  await expect(run.locator('.agent-run-elapsed')).toHaveText('Stopped');
+  expect(await run.getAttribute('data-duration-ms')).toBeNull();
+  await expect(run.locator('[data-step-id="read"]')).toHaveAttribute('data-state', 'done');
+  await expect(run.locator('[data-step-id="command"]')).toHaveAttribute('data-state', 'stopped');
+  await expect(run.locator('[data-step-id="command"] .agent-step-meta')).toContainText('Stopped');
+});
