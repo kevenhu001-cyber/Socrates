@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.socrates.android.data.ChatSession
+import com.socrates.android.data.ProviderEntry
 import com.socrates.android.ui.*
 import org.junit.Assert.*
 import org.junit.Rule
@@ -188,6 +189,25 @@ class NavigationLayoutUiTest {
         }
         compose.onNodeWithText("连接设置").assertIsDisplayed().assertHasClickAction().performClick()
         compose.runOnIdle { assertEquals(1, opened) }
+    }
+
+    @Test fun providerDetailsAndActivationAreSeparateActions() {
+        var opened = 0
+        var activated = 0
+        compose.setContent {
+            SocratesTheme {
+                Box(Modifier.requiredSize(320.dp, 160.dp)) {
+                    NativeProviderRow(
+                        ProviderEntry("test", "Custom", "https://example.test", "model", null, true, false, false, false),
+                        busy = false, onOpen = { opened++ }, onActivate = { activated++ },
+                    )
+                }
+            }
+        }
+        compose.onNodeWithText("启用").performClick()
+        compose.runOnIdle { assertEquals(0, opened); assertEquals(1, activated) }
+        compose.onNodeWithText("Custom", substring = true).performClick()
+        compose.runOnIdle { assertEquals(1, opened); assertEquals(1, activated) }
     }
 
     @Composable
