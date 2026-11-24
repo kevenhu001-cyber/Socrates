@@ -192,6 +192,11 @@ test('a shared turn lays its tool rows out declaratively, read-only', async ({ p
      activity-row pass hides — without it the turn renders but reads inert. */
   await expect(body).toHaveClass(/is-declarative/);
 
+  // Completed tool bursts start compact; expand before inspecting their rows.
+  const burstToggle = body.locator('.tool-activity-burst-toggle');
+  await expect(burstToggle).toHaveAttribute('aria-expanded', 'false');
+  await burstToggle.click();
+
   // Each call is its own row in the shared transcript.
   await expect(body.locator('.rn-tool-row').first()).toBeVisible();
   await expect(body.locator('.rn-tool-row')).toHaveCount(2);
