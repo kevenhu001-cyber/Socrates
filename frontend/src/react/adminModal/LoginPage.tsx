@@ -1,6 +1,7 @@
 import { Field, FieldGroup, FieldLabel } from '../ui/shadcn/field';
 import { Input as ShadcnInput } from '../ui/shadcn/input';
 import { Button as UiButton } from '../ui/shadcn/button';
+import { AuthCard } from '../ui/page/AuthCard';
 import { useState, type FormEvent } from 'react';
 
 import { loginAdmin } from './adminApi';
@@ -25,8 +26,8 @@ export function LoginPage({ onReady }: { onReady: () => void }) {
   };
 
   return (
-    <div className="admin-login">
-      <h2>Admin console</h2>
+    <AuthCard className="admin-login">
+      <h1 className="admin-login-title" data-page-title>Admin console</h1>
       <p className="admin-hint">
         Enter the operator password to manage the system model and embedding provider.
       </p>
@@ -59,6 +60,6 @@ export function LoginPage({ onReady }: { onReady: () => void }) {
           </UiButton>
         </FieldGroup>
       </form>
-    </div>
+    </AuthCard>
   );
 }
