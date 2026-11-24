@@ -239,10 +239,12 @@ function findClientBlockSpan(text: string): BlockSpan | null {
     CLIENT_APPLICATION_BLOCK_CLOSE,
   );
   const context = findBlock(text, CLIENT_CONTEXT_BLOCK_OPEN, CLIENT_CONTEXT_BLOCK_CLOSE);
-  const first = application ?? context;
+  const first = application && context
+    ? (application.start < context.start ? application : context)
+    : (application ?? context);
   // Client blocks can only start immediately after the core policy.
   if (!first || (first.start !== 0 && first.start !== BLANK_LINE.length)) return null;
-  const adjacentContext = application && context &&
+  const adjacentContext = first === application && application && context &&
     context.start === application.end + BLANK_LINE.length ? context : null;
   const last = adjacentContext ?? first;
   if (!first || !last) return null;
@@ -305,6 +307,36 @@ function refreshReasoningEffortRule(
   const at = base.indexOf(FINAL_OUTPUT_CONSTRAINTS_MARKER);
   if (at === -1) return `${base}${BLANK_LINE}${wanted}`;
   return `${base.slice(0, at)}${wanted}${BLANK_LINE}${base.slice(at)}`;
+}
+
+/**
+ * Replace an owned, line-delimited snapshot block on the outbound request.
+ * The stored snapshot remains immutable; unchanged content produces identical
+ * bytes. Only callers that resolve current server state may supply these blocks.
+ */
+export function refreshSnapshotBlock(
+  systemPrompt: string,
+  marker: string,
+  prompt: string | null,
+): string {
+  const start = systemPrompt.indexOf('\n\n' + marker + '\n');
+  let base = systemPrompt;
+  if (start !== -1) {
+    const contentStart = start + 2 + marker.length + 1;
+    let end = systemPrompt.length;
+    for (const boundary of POLICY_REGION_TERMINATORS) {
+      const at = systemPrompt.indexOf(boundary, contentStart);
+      if (at !== -1 && at < end) end = at;
+    }
+    base = systemPrompt.slice(0, start) + systemPrompt.slice(end);
+  }
+  if (!prompt) return base;
+  const block = marker + '\n' + prompt;
+  const formattingAt = base.indexOf(RESPONSE_TYPOGRAPHY_MARKER);
+  const finalAt = base.indexOf(FINAL_OUTPUT_CONSTRAINTS_MARKER);
+  const insertionAt = formattingAt !== -1 ? formattingAt : finalAt;
+  if (insertionAt === -1) return base.trimEnd() + '\n\n' + block;
+  return base.slice(0, insertionAt).trimEnd() + '\n\n' + block + '\n\n' + base.slice(insertionAt);
 }
 
 export interface ServerPromptRefresh {
