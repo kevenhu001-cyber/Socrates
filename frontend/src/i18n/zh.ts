@@ -256,7 +256,7 @@ export const zh = {
   /* chrome.* — 静态外壳的 tooltip / aria 文案（侧栏 chrome、显示设置弹层、
        顶栏模型胶囊、输入框工具栏、浮层容器）。与功能面键分开，避免改词波及功能文案。 */
   'chrome.accountAccess': '账户访问',
-  'chrome.passwordHint': '至少 8 个字符',
+  'chrome.passwordHint': '至少 8 个字符', // NOSONAR: translation copy, not a credential.
   'chrome.repeatPassword': '再次输入密码',
   'chrome.closeSidebar': '关闭侧栏',
   'chrome.openSidebar': '打开侧栏',
@@ -317,8 +317,8 @@ export const zh = {
   /* auth.* — 登录/注册默认视图的静态文案（按钮运行时状态已由 src/auth/index.js 走 auth.*）。 */
   'auth.createAccount': '创建账户',
   'auth.email': '邮箱',
-  'auth.password': '密码',
-  'auth.forgotPassword': '忘记密码？',
+  'auth.password': '密码', // NOSONAR: translation copy, not a credential.
+  'auth.forgotPassword': '忘记密码？', // NOSONAR: translation copy, not a credential.
   'auth.or': '或',
   'auth.continueGithub': '使用 GitHub 继续',
   'auth.codeLoginLink': '使用验证码登录',
@@ -341,12 +341,12 @@ export const zh = {
   'auth.resetLede': '输入邮箱，我们会发送重置链接。',
   'auth.forgotSentPre': '如果该邮箱存在账户，我们已向 ',
   'auth.forgotSentPost': ' 发送了密码重置链接。链接 1 小时内有效。',
-  'auth.setNewPassword': '设置新密码',
-  'auth.setNewPasswordLede': '为你的账户设置新密码。',
-  'auth.newPassword': '新密码',
-  'auth.confirmPassword': '确认密码',
-  'auth.passwordUpdated': '密码已更新',
-  'auth.passwordUpdatedLede': '密码已重置成功。请使用新密码登录。',
+  'auth.setNewPassword': '设置新密码', // NOSONAR: translation copy, not a credential.
+  'auth.setNewPasswordLede': '为你的账户设置新密码。', // NOSONAR: translation copy, not a credential.
+  'auth.newPassword': '新密码', // NOSONAR: translation copy, not a credential.
+  'auth.confirmPassword': '确认密码', // NOSONAR: translation copy, not a credential.
+  'auth.passwordUpdated': '密码已更新', // NOSONAR: translation copy, not a credential.
+  'auth.passwordUpdatedLede': '密码已重置成功。请使用新密码登录。', // NOSONAR: translation copy, not a credential.
   'auth.codeLoginTitle': '邮箱验证码登录',
   'auth.codeLoginLede': '输入邮箱以获取 8 位登录验证码。',
   'auth.codeLabel': '8 位验证码',
@@ -1185,9 +1185,9 @@ export const zh = {
   'auth.signIn': '登录',
   'auth.sending': '发送中…',
   'auth.resetting': '重置中…',
-  'auth.resetPassword': '重置密码',
-  'auth.passwordTooShort': '密码至少需要 8 个字符。',
-  'auth.passwordsDontMatch': '两次输入的密码不一致。',
+  'auth.resetPassword': '重置密码', // NOSONAR: translation copy, not a credential.
+  'auth.passwordTooShort': '密码至少需要 8 个字符。', // NOSONAR: translation copy, not a credential.
+  'auth.passwordsDontMatch': '两次输入的密码不一致。', // NOSONAR: translation copy, not a credential.
   'auth.pleaseEnterEmail': '请输入您的邮箱。',
   'auth.wrongCredentials': '邮箱或密码错误。',
   'auth.loginFailedPrefix': '登录失败：',

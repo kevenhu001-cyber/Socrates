@@ -683,6 +683,11 @@ body.workspace-active #appShell .ui-page-card.project-card {
   color: var(--ui-text-tertiary);
   font-size: var(--ui-font-size-sm);
 }
+/* The loading row is an <output> (implicit role=status); keep the block
+   geometry the div it replaced had. */
+#appShell output.creation-empty {
+  display: block;
+}
 
 #appShell .creation-gallery {
   display: grid;

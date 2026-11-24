@@ -2,7 +2,7 @@ import {
   useEffect,
   useSyncExternalStore,
   type ComponentProps,
-  type FormEvent,
+  type SyntheticEvent,
   type KeyboardEvent,
   type MouseEvent as ReactMouseEvent,
 } from 'react';
@@ -82,7 +82,10 @@ function useAuthVisible(id: string, defaultVisible: boolean): boolean {
   return useAuthUi((state) => state.visibility[id] ?? defaultVisible);
 }
 
-function handleAuthSubmit(event: FormEvent<HTMLFormElement>, action: () => Promise<void>): void {
+function handleAuthSubmit(
+  event: SyntheticEvent<HTMLFormElement>,
+  action: () => Promise<void>,
+): void {
   event.preventDefault();
   void action();
 }

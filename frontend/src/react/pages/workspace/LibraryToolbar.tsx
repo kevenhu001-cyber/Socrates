@@ -27,12 +27,12 @@ const FILE_TYPE_FILTERS = [
 ] as const;
 
 export interface LibraryToolbarProps {
-  query: string;
-  dispatch: ReturnType<typeof useWorkspaceDispatch>;
-  viewMode: 'list' | 'grid';
-  onViewModeChange: (mode: 'list' | 'grid') => void;
-  typeFilter: string;
-  onTypeFilterChange: (filter: string) => void;
+  readonly query: string;
+  readonly dispatch: ReturnType<typeof useWorkspaceDispatch>;
+  readonly viewMode: 'list' | 'grid';
+  readonly onViewModeChange: (mode: 'list' | 'grid') => void;
+  readonly typeFilter: string;
+  readonly onTypeFilterChange: (filter: string) => void;
 }
 
 function LibraryNewAction() {
@@ -54,10 +54,10 @@ function LibraryNewAction() {
 function LibraryTypeFilter({
   typeFilter,
   onTypeFilterChange,
-}: {
+}: Readonly<{
   typeFilter: string;
   onTypeFilterChange: (type: string) => void;
-}) {
+}>) {
   const activeFilter =
     FILE_TYPE_FILTERS.find((filter) => filter.id === typeFilter) || FILE_TYPE_FILTERS[0];
   const filterLabel = i18n('library.filterByType', 'Filter by file type');

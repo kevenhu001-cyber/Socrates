@@ -23,7 +23,7 @@ export function SessionRenameField({
   onSaveTitle: (title: string) => void;
   onCancelRename: () => void;
 }) {
-  const handleRenameSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleRenameSubmit = (event: React.SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
     const nextTitle = new FormData(event.currentTarget).get('title')?.toString().trim();
     if (nextTitle) onSaveTitle(nextTitle);

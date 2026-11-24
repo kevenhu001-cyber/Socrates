@@ -84,7 +84,7 @@ function createExamHandlers(
       (document.getElementById('examTopic') as HTMLElement | null)?.focus();
       return;
     }
-    void runExamGeneration(draft);
+    runExamGeneration(draft);
   }
 
   function onCommand(command: ExamCommand, index?: number) {

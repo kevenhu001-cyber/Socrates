@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type Ref } from 'react';
+import { useState, type Ref, type SyntheticEvent } from 'react';
 import { LayoutGrid, PanelsTopLeft, Trash2, X } from 'lucide-react';
 import { Icon } from '../../legacy/Icon';
 import { nativeIslandFrameAttributes } from '../../ui/nativeIslandFrame';
@@ -44,14 +44,14 @@ function CreationHeader({
   onQueryChange,
   onNew,
   onSiteViewChange,
-}: {
+}: Readonly<{
   name: CreationName;
   query: string;
   siteView: 'grid' | 'list';
   onQueryChange: (value: string) => void;
   onNew: () => void;
   onSiteViewChange: (value: 'grid' | 'list') => void;
-}) {
+}>) {
   const text = currentCopy();
   if (name === 'sites') {
     return (
@@ -129,12 +129,15 @@ function CreationHeader({
   );
 }
 
-function CreationEmpty({ name }: { name: CreationName }) {
+const EMPTY_MESSAGE_KEY: Record<CreationName, 'emptyImages' | 'emptyAssistants' | 'emptySites'> = {
+  images: 'emptyImages',
+  assistants: 'emptyAssistants',
+  sites: 'emptySites',
+};
+
+function CreationEmpty({ name }: Readonly<{ name: CreationName }>) {
   const text = currentCopy();
-  const message =
-    text[
-      name === 'images' ? 'emptyImages' : name === 'assistants' ? 'emptyAssistants' : 'emptySites'
-    ];
+  const message = text[EMPTY_MESSAGE_KEY[name]];
   return <PageEmptyState className="creation-empty" title={message} />;
 }
 
@@ -151,11 +154,11 @@ function CreationImageGallery({
   items,
   onAction,
   text,
-}: {
+}: Readonly<{
   items: CreationItem[];
   onAction: (action: string, id?: string) => void;
   text: ReturnType<typeof currentCopy>;
-}) {
+}>) {
   return (
     <div className="creation-gallery">
       {items.map((item) => (
@@ -184,17 +187,23 @@ function CreationImageGallery({
   );
 }
 
+function visibilityLabel(item: CreationItem, text: ReturnType<typeof currentCopy>): string {
+  if (item.visibility === 'private') return text.private;
+  if (item.visibility === 'public') return text.public;
+  return text.unlisted;
+}
+
 function CreationSitesTable({
   items,
   siteView,
   onAction,
   text,
-}: {
+}: Readonly<{
   items: CreationItem[];
   siteView: 'grid' | 'list';
   onAction: (action: string, id?: string) => void;
   text: ReturnType<typeof currentCopy>;
-}) {
+}>) {
   const locale = getCurrentLanguage() === 'zh' ? 'zh-CN' : 'en-US';
   return (
     <div className={`creation-table creation-sites-table ${siteView === 'grid' ? 'is-grid' : ''}`}>
@@ -208,12 +217,7 @@ function CreationSitesTable({
           locale,
           { month: 'short', day: 'numeric' },
         );
-        const visibility =
-          item.visibility === 'private'
-            ? text.private
-            : item.visibility === 'public'
-              ? text.public
-              : text.unlisted;
+        const visibility = visibilityLabel(item, text);
         return (
           <div className="creation-row" key={item.id}>
             <Button
@@ -230,6 +234,7 @@ function CreationSitesTable({
                   html: item.source || '',
                   title: item.title || '',
                 })}
+                title={item.title || text.sites}
               />
               <span>
                 <strong>{item.title}</strong>
@@ -282,11 +287,11 @@ function CreationStandardTable({
   items,
   onAction,
   text,
-}: {
+}: Readonly<{
   items: CreationItem[];
   onAction: (action: string, id?: string) => void;
   text: ReturnType<typeof currentCopy>;
-}) {
+}>) {
   return (
     <div className="creation-table">
       <div className="creation-table-head">
@@ -341,7 +346,7 @@ function CreationList({
   siteView,
   onRetry,
   onAction,
-}: {
+}: Readonly<{
   name: CreationName;
   items: CreationItem[];
   loading: boolean;
@@ -350,14 +355,9 @@ function CreationList({
   siteView: 'grid' | 'list';
   onRetry: () => void;
   onAction: (action: string, id?: string) => void;
-}) {
+}>) {
   const text = currentCopy();
-  if (loading)
-    return (
-      <div className="creation-empty" role="status">
-        {text.loading}
-      </div>
-    );
+  if (loading) return <output className="creation-empty">{text.loading}</output>;
   if (error)
     return (
       <div className="creation-empty" role="alert">
@@ -402,7 +402,7 @@ function ImageComposer({
   onModelChange,
   onSubmit,
   onClose,
-}: {
+}: Readonly<{
   prompt: string;
   model: string;
   image: CreationItem | null;
@@ -410,9 +410,9 @@ function ImageComposer({
   inputRef: Ref<HTMLTextAreaElement>;
   onPromptChange: (value: string) => void;
   onModelChange: (value: string) => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onSubmit: (event: SyntheticEvent<HTMLFormElement>) => void;
   onClose: () => void;
-}) {
+}>) {
   const text = currentCopy();
   return (
     <form id="creationImageForm" className="creation-image-form" onSubmit={onSubmit}>
@@ -461,11 +461,11 @@ function EditorHeader({
   title,
   cancel,
   onClose,
-}: {
+}: Readonly<{
   title: string;
   cancel: string;
   onClose: () => void;
-}) {
+}>) {
   return (
     <header>
       <h2>{title}</h2>
@@ -483,14 +483,14 @@ function AssistantEditor({
   onDraftChange,
   onClose,
   onSubmit,
-}: {
+}: Readonly<{
   draft: EditorDraft;
   editing: boolean;
   busy: boolean;
   onDraftChange: (field: EditorField, value: string) => void;
   onClose: () => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-}) {
+  onSubmit: (event: SyntheticEvent<HTMLFormElement>) => void;
+}>) {
   const text = currentCopy();
   const titleId = 'creation-assistant-title';
   const descriptionId = 'creation-assistant-description';
@@ -571,7 +571,7 @@ function SiteEditor({
   onGenerate,
   onPreview,
   onSubmit,
-}: {
+}: Readonly<{
   draft: EditorDraft;
   editing: boolean;
   busy: boolean;
@@ -580,8 +580,8 @@ function SiteEditor({
   onClose: () => void;
   onGenerate: () => void;
   onPreview: () => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-}) {
+  onSubmit: (event: SyntheticEvent<HTMLFormElement>) => void;
+}>) {
   const text = currentCopy();
   const titleId = 'creation-site-title';
   const promptId = 'creation-site-prompt';
@@ -672,10 +672,10 @@ function SiteEditor({
 function CreationSurfaceContent({
   name,
   preferences,
-}: {
+}: Readonly<{
   name: CreationName;
   preferences: CreationSurfacePreferences;
-}) {
+}>) {
   const controller = useCreationSurfaceController(name, preferences);
 
   if (name === 'assistants' && controller.editor?.type === 'assistants') {
@@ -754,10 +754,10 @@ function CreationSurfaceContent({
 export function CreationSurfaceView({
   name,
   openRevision,
-}: {
+}: Readonly<{
   name: CreationName;
   openRevision: number;
-}) {
+}>) {
   const [siteView, setSiteView] = useState<'grid' | 'list'>('list');
   const [imagePrompt, setImagePrompt] = useState('');
   const [imageModel, setImageModel] = useState(readImageModel);

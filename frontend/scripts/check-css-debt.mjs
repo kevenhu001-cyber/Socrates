@@ -203,11 +203,70 @@ function walkCss(dir) {
   return out;
 }
 
+/* Palette families that belong to themes.css alone. The families are listed
+ * as data and joined into a RegExp so the rule stays reviewable: every entry
+ * here is a prefix that may end in any token segment. */
+const PALETTE_FAMILIES = [
+  'ui-bg',
+  'ui-text',
+  'ui-border',
+  'ui-shadow',
+  'ui-composer',
+  'ui-sidebar',
+  'ui-accent',
+  'ui-danger',
+  'ui-success',
+  'ui-link',
+  'ui-backdrop',
+  'ui-on-accent',
+  'cg-',
+  'cgv-',
+  'chatgpt-',
+  'conversation-',
+  'bg-',
+  'text-',
+  'border-',
+];
+const paletteDeclaration = new RegExp(
+  String.raw`--(?:${PALETTE_FAMILIES.join('|')})[\w-]*\s*:`,
+  'g',
+);
+
+/* shadcn semantic families, including the sidebar sub-family. Longest-first
+ * so the alternation is easy to read; the trailing `:` anchors the match. */
+const SEMANTIC_FAMILIES = [
+  'card-foreground',
+  'card',
+  'popover-foreground',
+  'popover',
+  'primary-foreground',
+  'primary',
+  'secondary-foreground',
+  'secondary',
+  'muted-foreground',
+  'muted',
+  'accent-foreground',
+  'accent',
+  'destructive-foreground',
+  'destructive',
+  'background',
+  'foreground',
+  'border',
+  'input',
+  'ring',
+  'sidebar-foreground',
+  'sidebar-primary-foreground',
+  'sidebar-primary',
+  'sidebar-accent-foreground',
+  'sidebar-accent',
+  'sidebar-border',
+  'sidebar-ring',
+  'sidebar',
+  'chart-[1-5]',
+];
+const semanticDeclaration = new RegExp(String.raw`--(?:${SEMANTIC_FAMILIES.join('|')})\s*:`, 'g');
+
 function themeOwnershipProblems() {
-  const paletteDeclaration =
-    /--(?:ui-(?:bg|text|border|shadow|composer|sidebar|accent|danger|success|link|backdrop|on-accent)|cg-|cgv-|chatgpt-|conversation-|bg-|text-|border-)[\w-]*\s*:/g;
-  const semanticDeclaration =
-    /--(?:background|foreground|card(?:-foreground)?|popover(?:-foreground)?|primary(?:-foreground)?|secondary(?:-foreground)?|muted(?:-foreground)?|accent(?:-foreground)?|destructive(?:-foreground)?|border|input|ring|sidebar(?:-(?:foreground|primary(?:-foreground)?|accent(?:-foreground)?|border|ring))?|chart-[1-5])\s*:/g;
   const problems = [];
   for (const file of walkCss(STYLES)) {
     const rel = relative(STYLES, file).split(sep).join('/');
@@ -250,16 +309,23 @@ function countMetric(re, text) {
  * like the other metrics so it can only shrink. */
 function countStackedIdSelectors(text) {
   let n = 0;
-  for (const m of text.matchAll(/([^{}]*)\{/g)) {
-    const ids = m[1].match(/#[A-Za-z][A-Za-z0-9_-]*/g);
+  let selectorStart = 0;
+  for (let i = 0; i < text.length; i += 1) {
+    if (text[i] === '}') {
+      selectorStart = i + 1;
+      continue;
+    }
+    if (text[i] !== '{') continue;
+    const ids = text.slice(selectorStart, i).match(/#[A-Za-z][A-Za-z0-9_-]*/g);
+    selectorStart = i + 1;
     if (!ids) continue;
     const counts = new Map();
     for (const raw of ids) {
       const id = raw.slice(1);
       counts.set(id, (counts.get(id) || 0) + 1);
     }
-    for (const c of counts.values()) {
-      if (c >= 3) {
+    for (const count of counts.values()) {
+      if (count >= 3) {
         n += 1;
         break;
       }
@@ -329,24 +395,43 @@ const METRICS = {
 };
 
 /* ---------- 1. cascade order ---------- */
+/* One import tier per cascade layer; index.css must import them in
+ * non-decreasing order. */
+function tierOf(spec) {
+  if (spec === './tokens.css') return 1;
+  if (spec.startsWith('./legacy/')) return 2;
+  if (
+    spec.startsWith('./foundations/') ||
+    spec.startsWith('./layout/') ||
+    spec.startsWith('./components/') ||
+    spec.startsWith('./features/')
+  )
+    return 3;
+  if (spec.startsWith('./restore/')) return 3.5;
+  if (spec.startsWith('./parity/')) return 4;
+  if (spec.startsWith('./polish/')) return 5;
+  if (spec === './themes.css') return 6;
+  return 3;
+}
+
+function compareManifest(manifest, expected, actual, label, problems) {
+  if (actual.length !== expected.length) {
+    problems.push(
+      `${manifest} ${label} count changed (expected ${expected.length}, found ${actual.length})`,
+    );
+  }
+  const length = Math.max(actual.length, expected.length);
+  for (let i = 0; i < length; i += 1) {
+    if (actual[i] !== expected[i]) {
+      problems.push(
+        `${manifest} ${label} #${i + 1} must be '${expected[i] ?? '(none)'}' (found '${actual[i] ?? '(none)'}')`,
+      );
+    }
+  }
+}
+
 function checkCascadeOrder() {
   const imports = importsIn(join(STYLES, 'index.css'));
-  const tierOf = (spec) => {
-    if (spec === './tokens.css') return 1;
-    if (spec.startsWith('./legacy/')) return 2;
-    if (
-      spec.startsWith('./foundations/') ||
-      spec.startsWith('./layout/') ||
-      spec.startsWith('./components/') ||
-      spec.startsWith('./features/')
-    )
-      return 3;
-    if (spec.startsWith('./restore/')) return 3.5;
-    if (spec.startsWith('./parity/')) return 4;
-    if (spec.startsWith('./polish/')) return 5;
-    if (spec === './themes.css') return 6;
-    return 3;
-  };
   const problems = [];
   const tiers = imports.map(tierOf);
   for (let i = 1; i < tiers.length; i += 1) {
@@ -363,26 +448,12 @@ function checkCascadeOrder() {
   const themeImports = imports.filter((spec) => spec === './themes.css');
   if (themeImports.length !== 1)
     problems.push(`themes.css must be imported exactly once (found ${themeImports.length})`);
-  if (imports[imports.length - 1] !== './themes.css')
-    problems.push('themes.css must be the final import');
+  if (imports.at(-1) !== './themes.css') problems.push('themes.css must be the final import');
   if (!imports.includes('./polish/index.css'))
     problems.push('polish/index.css missing from styles/index.css');
 
   for (const [manifest, expected] of Object.entries(ORDERED_MANIFESTS)) {
-    const actual = importsIn(join(STYLES, manifest));
-    if (actual.length !== expected.length) {
-      problems.push(
-        `${manifest} import count changed (expected ${expected.length}, found ${actual.length})`,
-      );
-    }
-    const length = Math.max(actual.length, expected.length);
-    for (let i = 0; i < length; i += 1) {
-      if (actual[i] !== expected[i]) {
-        problems.push(
-          `${manifest} import #${i + 1} must be '${expected[i] ?? '(none)'}' (found '${actual[i] ?? '(none)'}')`,
-        );
-      }
-    }
+    compareManifest(manifest, expected, importsIn(join(STYLES, manifest)), 'import', problems);
   }
 
   /* The nested manifests are pinned the same way: a stylesheet that is
@@ -391,20 +462,13 @@ function checkCascadeOrder() {
    * immediately before its importer), and that place is only reviewable if
    * it is written down. */
   for (const [manifest, expected] of Object.entries(NESTED_MANIFESTS)) {
-    const actual = importsIn(join(STYLES, manifest));
-    if (actual.length !== expected.length) {
-      problems.push(
-        `${manifest} nested import count changed (expected ${expected.length}, found ${actual.length})`,
-      );
-    }
-    const length = Math.max(actual.length, expected.length);
-    for (let i = 0; i < length; i += 1) {
-      if (actual[i] !== expected[i]) {
-        problems.push(
-          `${manifest} nested import #${i + 1} must be '${expected[i] ?? '(none)'}' (found '${actual[i] ?? '(none)'}')`,
-        );
-      }
-    }
+    compareManifest(
+      manifest,
+      expected,
+      importsIn(join(STYLES, manifest)),
+      'nested import',
+      problems,
+    );
   }
   return problems;
 }
@@ -416,6 +480,44 @@ function checkCascadeOrder() {
  * styles/index.css file-for-file: any shuffle silently flips cascade
  * winners. styles/index.css stays the canonical manifest (still checked
  * above); this check pins the HTML to it. */
+function flattenLinkedStylesheet(manifest, attrs, linkIndex, problems) {
+  /* A link is either a slice manifest (critical-*.css, expanded below)
+   * or a self-contained leaf (no @import — the below-fold files). Both
+   * contribute their files in document order. */
+  const isManifest = manifest !== 'themes.css' && importsIn(join(STYLES, manifest)).length > 0;
+  const isDeferred = (!isManifest && manifest !== 'themes.css') || manifest.startsWith('deferred-');
+  if (isDeferred) {
+    if (!/media="print"/.test(attrs) || !/onload="this\.media='all'"/.test(attrs)) {
+      problems.push(
+        `<link> #${linkIndex} (${manifest}) must load non-blocking via media="print" onload="this.media='all'"`,
+      );
+    }
+  } else if (/media=/.test(attrs)) {
+    problems.push(
+      `<link> #${linkIndex} (${manifest}) is a critical slice and must stay render-blocking (no media=)`,
+    );
+  }
+  if (manifest === 'themes.css') return { files: ['themes.css'], deferred: false };
+  const nested = importsIn(join(STYLES, manifest));
+  if (nested.length === 0) {
+    /* Self-contained leaf linked directly. A leaf must stay @import-free:
+     * Vite asset-handles non-entry stylesheet links instead of resolving
+     * their imports, which would ship raw @import text to the browser. */
+    const leafText = stripComments(readFileSync(join(STYLES, manifest), 'utf8'));
+    if (/@import\s+['"]/.test(leafText)) {
+      problems.push(
+        `${manifest} is linked directly but contains @import — only slice manifests may carry imports`,
+      );
+      return { files: [], deferred: isDeferred };
+    }
+    return { files: [manifest], deferred: isDeferred };
+  }
+  return {
+    files: flattenImports(manifest, (key) => importsIn(join(STYLES, key))),
+    deferred: isDeferred,
+  };
+}
+
 function checkHtmlLoadOrder() {
   const problems = [];
   /* The expected side comes from the pinned manifests; the actual side from
@@ -432,45 +534,9 @@ function checkHtmlLoadOrder() {
   let deferredCount = 0;
   while ((m = linkRe.exec(html)) !== null) {
     linkIndex += 1;
-    const manifest = m[1];
-    const attrs = m[2] || '';
-    /* A link is either a slice manifest (critical-*.css, expanded below)
-     * or a self-contained leaf (no @import — the below-fold files). Both
-     * contribute their files in document order. */
-    const isManifest = manifest !== 'themes.css' && importsIn(join(STYLES, manifest)).length > 0;
-    const isDeferred = (!isManifest && manifest !== 'themes.css') || /^deferred-/.test(manifest);
-    if (isDeferred) {
-      deferredCount += 1;
-      if (!/media="print"/.test(attrs) || !/onload="this\.media='all'"/.test(attrs)) {
-        problems.push(
-          `<link> #${linkIndex} (${manifest}) must load non-blocking via media="print" onload="this.media='all'"`,
-        );
-      }
-    } else if (/media=/.test(attrs)) {
-      problems.push(
-        `<link> #${linkIndex} (${manifest}) is a critical slice and must stay render-blocking (no media=)`,
-      );
-    }
-    if (manifest === 'themes.css') {
-      flatActual.push('themes.css');
-      continue;
-    }
-    const nested = importsIn(join(STYLES, manifest));
-    if (nested.length === 0) {
-      /* Self-contained leaf linked directly. A leaf must stay @import-free:
-       * Vite asset-handles non-entry stylesheet links instead of resolving
-       * their imports, which would ship raw @import text to the browser. */
-      const leafText = stripComments(readFileSync(join(STYLES, manifest), 'utf8'));
-      if (/@import\s+['"]/.test(leafText)) {
-        problems.push(
-          `${manifest} is linked directly but contains @import — only slice manifests may carry imports`,
-        );
-      } else {
-        flatActual.push(manifest);
-      }
-    } else {
-      flatActual.push(...flattenImports(manifest, (key) => importsIn(join(STYLES, key))));
-    }
+    const linked = flattenLinkedStylesheet(m[1], m[2] || '', linkIndex, problems);
+    if (linked.deferred) deferredCount += 1;
+    flatActual.push(...linked.files);
   }
   if (deferredCount === 0)
     problems.push(
@@ -478,7 +544,7 @@ function checkHtmlLoadOrder() {
     );
   if (flatActual.filter((f) => f === 'themes.css').length !== 1) {
     problems.push('themes.css must close the cascade exactly once as the final <link>');
-  } else if (flatActual[flatActual.length - 1] !== 'themes.css') {
+  } else if (flatActual.at(-1) !== 'themes.css') {
     problems.push('themes.css must be the final stylesheet <link>');
   }
   if (flatActual.length !== flatExpected.length) {
@@ -558,71 +624,76 @@ function checkImportLegality() {
   return problems;
 }
 
-function main() {
-  const orderProblems = checkCascadeOrder();
-  const { totals } = collectCounts();
+function writeInitialBaseline(totals) {
+  writeFileSync(
+    BASELINE,
+    JSON.stringify({ totals, generatedBy: 'check-css-debt.mjs --update' }, null, 2) + '\n',
+  );
+  console.log(
+    'css-debt: no baseline found — wrote scripts/css-debt.baseline.json from current counts.',
+  );
+  console.log(
+    'Review the numbers, commit the baseline, and re-run. Growth beyond it will now fail.',
+  );
+}
 
-  let baseline = null;
-  if (existsSync(BASELINE)) {
-    baseline = JSON.parse(readFileSync(BASELINE, 'utf8'));
+function writeShrunkBaseline(totals, baseline) {
+  const shrunk = {};
+  for (const zone of Object.keys(totals)) {
+    shrunk[zone] = {};
+    for (const metric of Object.keys(totals[zone])) {
+      const cur = totals[zone][metric];
+      const base = baseline?.totals?.[zone]?.[metric] ?? cur;
+      // ratchet: only ever record the smaller number, never grow the budget
+      shrunk[zone][metric] = Math.min(cur, base);
+    }
   }
+  writeFileSync(
+    BASELINE,
+    JSON.stringify({ totals: shrunk, generatedBy: 'check-css-debt.mjs --update' }, null, 2) + '\n',
+  );
+  console.log('css-debt: baseline updated (counts only ever shrink).');
+}
 
+function compareTotals(totals, baseline, failures) {
+  for (const zone of ['live', 'frozen']) {
+    for (const metric of Object.keys(METRICS)) {
+      const cur = totals[zone][metric];
+      const base = baseline?.totals?.[zone]?.[metric];
+      if (base == null) {
+        failures.push(`baseline missing ${zone}.${metric}`);
+        continue;
+      }
+      if (cur > base) {
+        failures.push(
+          `${zone}.${metric}: ${cur} > baseline ${base} (+${cur - base}). Design debt may only shrink — revert the additions or, if intentional, migrate the rule into an existing token/layer.`,
+        );
+      }
+    }
+  }
+}
+
+function main() {
   const failures = [
-    ...orderProblems.map((p) => `cascade: ${p}`),
-    ...checkHtmlLoadOrder().map((p) => `load order: ${p}`),
-    ...checkImportLegality().map((p) => `import legality: ${p}`),
-    ...themeOwnershipProblems().map((p) => `theme ownership: ${p}`),
+    ...checkCascadeOrder().map((problem) => `cascade: ${problem}`),
+    ...checkHtmlLoadOrder().map((problem) => `load order: ${problem}`),
+    ...checkImportLegality().map((problem) => `import legality: ${problem}`),
+    ...themeOwnershipProblems().map((problem) => `theme ownership: ${problem}`),
   ];
+  const { totals } = collectCounts();
+  const baseline = existsSync(BASELINE) ? JSON.parse(readFileSync(BASELINE, 'utf8')) : null;
 
   if (!baseline) {
-    writeFileSync(
-      BASELINE,
-      JSON.stringify({ totals, generatedBy: 'check-css-debt.mjs --update' }, null, 2) + '\n',
-    );
-    console.log(
-      'css-debt: no baseline found — wrote scripts/css-debt.baseline.json from current counts.',
-    );
-    console.log(
-      'Review the numbers, commit the baseline, and re-run. Growth beyond it will now fail.',
-    );
+    writeInitialBaseline(totals);
   } else if (UPDATE) {
-    const shrunk = {};
-    for (const zone of Object.keys(totals)) {
-      shrunk[zone] = {};
-      for (const metric of Object.keys(totals[zone])) {
-        const cur = totals[zone][metric];
-        const base = baseline?.totals?.[zone]?.[metric] ?? cur;
-        // ratchet: only ever record the smaller number, never grow the budget
-        shrunk[zone][metric] = Math.min(cur, base);
-      }
-    }
-    writeFileSync(
-      BASELINE,
-      JSON.stringify({ totals: shrunk, generatedBy: 'check-css-debt.mjs --update' }, null, 2) +
-        '\n',
-    );
-    console.log('css-debt: baseline updated (counts only ever shrink).');
+    writeShrunkBaseline(totals, baseline);
   } else {
-    for (const zone of ['live', 'frozen']) {
-      for (const metric of Object.keys(METRICS)) {
-        const cur = totals[zone][metric];
-        const base = baseline?.totals?.[zone]?.[metric];
-        if (base == null) {
-          failures.push(`baseline missing ${zone}.${metric}`);
-          continue;
-        }
-        if (cur > base) {
-          failures.push(
-            `${zone}.${metric}: ${cur} > baseline ${base} (+${cur - base}). Design debt may only shrink — revert the additions or, if intentional, migrate the rule into an existing token/layer.`,
-          );
-        }
-      }
-    }
+    compareTotals(totals, baseline, failures);
   }
 
   if (failures.length) {
     console.error('css-debt check FAILED:');
-    for (const f of failures) console.error('  - ' + f);
+    for (const failure of failures) console.error('  - ' + failure);
     process.exitCode = 1;
   } else if (!baseline || UPDATE) {
     // informational paths above already printed; exit 0

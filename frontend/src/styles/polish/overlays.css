@@ -29,11 +29,6 @@
 .tag-editor-popover {
   border-radius: var(--ui-radius-popover);
 }
-.chat-config-pop {
-  border-radius: var(--ui-radius-popover);
-  transform-origin: top left;
-}
-
 /* Generation-config popover — converge on the same density as the "+"
    tools menu: 14px type, 40px rows, quiet hairline divider. The card
    anchors to a 36px pill; 46px rows at 15px read oversized beside it.
@@ -41,6 +36,8 @@
    control fill (#e7e7e7 in light) — a popover is a raised white card like
    the other menus, with the ghost wash for rows. */
 .chat-config-pop {
+  border-radius: var(--ui-radius-popover);
+  transform-origin: top left;
   padding: 6px;
   background: var(--popover);
   color: var(--foreground);
@@ -70,6 +67,7 @@
   color: var(--ui-text-tertiary);
 }
 .chat-config-divider {
+  margin: 3px 8px;
   background: var(--border);
 }
 .chat-config-row strong {
@@ -85,9 +83,6 @@
 .chat-config-value svg {
   width: 15px;
   height: 15px;
-}
-.chat-config-divider {
-  margin: 3px 8px;
 }
 .chat-config-empty {
   padding: 16px 12px;

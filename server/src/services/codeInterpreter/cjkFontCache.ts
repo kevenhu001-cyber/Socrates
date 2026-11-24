@@ -32,7 +32,7 @@ const CJK_FONT_EXPECTED_BYTES = 8_331_336;
 const CJK_FONT_GIT_BLOB_SHA1 = 'fc0fda9394367c16c1af7555a2ae4d5e2e6a6f02';
 const CJK_FONT_MIN_BYTES = 100_000;
 const CJK_FONT_MAX_BYTES = 24 * 1024 * 1024;
-const CJK_FONT_TIMEOUT_MS = parseInt(process.env.EXEC_CJK_FONT_TIMEOUT_MS || '8000', 10);
+const CJK_FONT_TIMEOUT_MS = Number.parseInt(process.env.EXEC_CJK_FONT_TIMEOUT_MS || '8000', 10);
 
 export function cjkFontPath(): string {
   return path.join(CJK_FONT_HOST_DIR, CJK_FONT_FILENAME);
@@ -47,7 +47,7 @@ export function isCjkFontPayload(bytes: Buffer): boolean {
       !bytes.subarray(0, 4).equals(Buffer.from([0, 1, 0, 0])))
   )
     return false;
-  const gitObject = crypto
+  const gitObject = crypto // NOSONAR: Git blob object IDs are SHA-1; this validates a pinned font, not a security digest.
     .createHash('sha1')
     .update(`blob ${bytes.length}\0`)
     .update(bytes)

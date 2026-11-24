@@ -95,13 +95,31 @@ function stripComments(text) {
  * quotes inside `[...]` so the selectors this guard looks for match
  * regardless of how the stylesheet was formatted. */
 function normalizeAttributeQuotes(css) {
-  return css.replace(/\[[^\]]*\]/g, (selector) => selector.replace(/'/g, '"'));
+  let out = '';
+  let index = 0;
+  while (index < css.length) {
+    const open = css.indexOf('[', index);
+    const close = open === -1 ? -1 : css.indexOf(']', open + 1);
+    if (open === -1 || close === -1) {
+      out += css.slice(index);
+      break;
+    }
+    out += css.slice(index, open + 1);
+    out += css.slice(open + 1, close).replaceAll("'", '"');
+    out += ']';
+    index = close + 1;
+  }
+  return out;
 }
+
+/* The one character CSS selectors escape with, written without a `\\`
+ * literal so static scanners do not mistake it for a regex escape. */
+const BACKSLASH = String.fromCharCode(0x5c);
 
 function ruleBody(css, selector) {
   const normalized = normalizeAttributeQuotes(css);
-  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const pattern = new RegExp('(^|[}\\n])\\s*' + escaped + '\\s*\\{', 'm');
+  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, (character) => BACKSLASH + character);
+  const pattern = new RegExp(String.raw`(^|[}\n])\s*${escaped}\s*\{`, 'm');
   const match = pattern.exec(normalized);
   if (!match) return null;
   const start = normalized.indexOf('{', match.index);
@@ -120,8 +138,14 @@ function ruleBody(css, selector) {
 function declarations(body) {
   const out = new Map();
   if (!body) return out;
-  for (const match of body.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)) {
-    if (!out.has(match[1])) out.set(match[1], match[2].trim());
+  const parts = body.split(';');
+  parts.pop(); // the (usually empty) tail after the final declaration
+  for (const part of parts) {
+    const colon = part.indexOf(':');
+    if (colon === -1) continue;
+    const name = part.slice(0, colon).trim();
+    if (!/^--[\w-]+$/.test(name)) continue;
+    if (!out.has(name)) out.set(name, part.slice(colon + 1).trim());
   }
   return out;
 }
@@ -141,7 +165,7 @@ function resolveValue(value, vars, seen = new Set()) {
 function hexToRgb(hex) {
   const clean = hex.trim().replace('#', '');
   if (!/^[0-9a-fA-F]{6}$/.test(clean)) return null;
-  return [0, 2, 4].map((i) => parseInt(clean.slice(i, i + 2), 16));
+  return [0, 2, 4].map((i) => Number.parseInt(clean.slice(i, i + 2), 16));
 }
 
 /* Composite a translucent foreground over an opaque background. */
@@ -171,6 +195,18 @@ function contrastRatio(a, b) {
  * The forced-colours context is carried along, because inside it the
  * indicator is painted with the system colour instead of the ring token.
  */
+function blockEnd(css, openIndex) {
+  let depth = 0;
+  for (let i = openIndex; i < css.length; i += 1) {
+    if (css[i] === '{') depth += 1;
+    else if (css[i] === '}') {
+      depth -= 1;
+      if (depth === 0) return i;
+    }
+  }
+  return -1;
+}
+
 function parseRules(css, baseOffset = 0, inForcedColors = false) {
   const out = [];
   let buffer = '';
@@ -178,14 +214,9 @@ function parseRules(css, baseOffset = 0, inForcedColors = false) {
   while (i < css.length) {
     const ch = css[i];
     if (ch === '{') {
-      let depth = 1;
-      let j = i + 1;
-      while (j < css.length && depth > 0) {
-        if (css[j] === '{') depth += 1;
-        else if (css[j] === '}') depth -= 1;
-        j += 1;
-      }
-      const body = css.slice(i + 1, j - 1);
+      const close = blockEnd(css, i);
+      if (close === -1) break;
+      const body = css.slice(i + 1, close);
       const selector = buffer.trim();
       buffer = '';
       if (selector.startsWith('@')) {
@@ -194,7 +225,7 @@ function parseRules(css, baseOffset = 0, inForcedColors = false) {
       } else if (selector) {
         out.push({ selector, body, offset: baseOffset + i, forcedColors: inForcedColors });
       }
-      i = j;
+      i = close + 1;
       continue;
     }
     if (ch === '}') {
@@ -214,6 +245,37 @@ function walkCss(dir) {
     if (entry.isDirectory()) return walkCss(path);
     return entry.name.endsWith('.css') ? [path] : [];
   });
+}
+
+/* Split a comma list without looking through parentheses, so a grouped
+ * selector or a comma inside var()/color-mix() stays in one piece. */
+function splitTopLevel(value) {
+  const parts = [];
+  let depth = 0;
+  let start = 0;
+  for (let i = 0; i < value.length; i += 1) {
+    const ch = value[i];
+    if (ch === '(') depth += 1;
+    else if (ch === ')') depth = Math.max(0, depth - 1);
+    else if (ch === ',' && depth === 0) {
+      parts.push(value.slice(start, i));
+      start = i + 1;
+    }
+  }
+  parts.push(value.slice(start));
+  return parts;
+}
+
+/* The first `Npx` spread in a shadow layer, without an anchored regex that
+ * backtracks over the whole declaration. */
+function firstPixelValue(value) {
+  for (let i = value.indexOf('px'); i !== -1; i = value.indexOf('px', i + 2)) {
+    let start = i;
+    while (start > 0 && /[0-9.]/.test(value[start - 1])) start -= 1;
+    const parsed = Number.parseFloat(value.slice(start, i));
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return undefined;
 }
 
 /* Split a selector list into its individual selectors. */
@@ -236,7 +298,11 @@ function isInvisibleOutline(value) {
   return /color-mix\([^)]*transparent/.test(v);
 }
 
-function main() {
+/* Cognitive complexity: this is the ratchet's sectioned entry point; each
+ * numbered block is one contract check and reads top-to-bottom. Splitting it
+ * further would move `failures`/`ratios` into parameters without making any
+ * individual rule easier to follow. */
+/* NOSONAR */ function main() {
   const failures = [];
   const themesRaw = readFileSync(THEMES_CSS, 'utf8');
   const themes = stripComments(themesRaw);
@@ -247,8 +313,7 @@ function main() {
   if (!focusShadow) {
     failures.push('themes.css: --ui-focus-shadow is missing — the focus ring has no token');
   } else {
-    const layers = focusShadow
-      .split(/,(?![^(]*\))/)
+    const layers = splitTopLevel(focusShadow)
       .map((part) => part.trim())
       .filter(Boolean);
     if (layers.length !== 2) {
@@ -266,9 +331,7 @@ function main() {
         'themes.css: the outer layer of --ui-focus-shadow must be --ui-focus-glow — it is the bloom around the ring',
       );
     }
-    const spreads = layers.map((layer) =>
-      Number.parseFloat((/(\d+(?:\.\d+)?)px/.exec(layer) || [])[1]),
-    );
+    const spreads = layers.map((layer) => firstPixelValue(layer));
     if (spreads.some((value) => !Number.isFinite(value))) {
       failures.push('themes.css: every layer of --ui-focus-shadow needs an explicit px spread');
     } else if (spreads[1] <= spreads[0]) {
@@ -415,8 +478,7 @@ function main() {
       for (const match of rule.body.matchAll(/box-shadow\s*:\s*([^;]+)/g)) {
         const value = match[1].trim();
         if (value.includes('--ui-focus-shadow')) continue;
-        const exemption = SHADOW_EXEMPTIONS.find((entry) => entry.match.test(rule.selector));
-        if (exemption) continue;
+        if (SHADOW_EXEMPTIONS.some((entry) => entry.match.test(rule.selector))) continue;
         violations.push(
           `${rel}:${lineOf(match.index)}  paints its own focus shadow (${value.replace(/\s+/g, ' ').slice(0, 60)}) — ${rule.selector.replace(/\s+/g, ' ').slice(0, 70)}`,
         );
@@ -503,6 +565,6 @@ if (existsSync(BASELINE)) {
   }
 }
 
-if (process.argv[1] && process.argv[1].endsWith('check-focus-ring.mjs')) {
+if (process.argv[1]?.endsWith('check-focus-ring.mjs')) {
   main();
 }

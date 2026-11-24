@@ -1,4 +1,4 @@
-import type { FormEvent } from 'react';
+import type { SyntheticEvent } from 'react';
 
 import { removeEmbeddingProvider, saveEmbeddingProvider, saveSystemModel } from './adminApi';
 import { publishAdminPatch } from './adminSnapshot';
@@ -33,7 +33,7 @@ export function useAdminConfigActions({
   includeToken = true,
   includeKeyHint = false,
 }: AdminConfigActionsOptions) {
-  const submitSystem = async (event: FormEvent<HTMLFormElement>) => {
+  const submitSystem = async (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!systemForm) return;
     publishAdminPatch({ savingSystem: true, error: null });
@@ -47,7 +47,7 @@ export function useAdminConfigActions({
     }
   };
 
-  const submitEmbedding = async (event: FormEvent<HTMLFormElement>) => {
+  const submitEmbedding = async (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!embeddingForm) return;
     publishAdminPatch({ savingEmbedding: true, error: null });

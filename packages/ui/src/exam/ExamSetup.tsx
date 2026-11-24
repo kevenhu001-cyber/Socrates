@@ -23,14 +23,14 @@ export function ExamSetup({
   ids,
   onDraftChange,
   showHero = true,
-}: {
+}: Readonly<{
   draft: ExamDraft;
   providers: readonly { id: string; label: string }[];
   strings: ExamStrings;
   ids?: ExamIds;
   onDraftChange(patch: ExamDraftPatch): void;
   showHero?: boolean;
-}) {
+}>) {
   const t = strings.setup;
   const difficulties = EXAM_DIFFICULTIES.map((id) => ({
     id: id as string,

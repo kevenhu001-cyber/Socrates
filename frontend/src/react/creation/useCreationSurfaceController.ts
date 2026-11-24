@@ -5,7 +5,7 @@ import {
   useRef,
   useState,
   type Dispatch,
-  type FormEvent,
+  type SyntheticEvent,
   type SetStateAction,
 } from 'react';
 import { focusComposer, setComposerMarkdown } from '../../composer/controller.ts';
@@ -354,11 +354,11 @@ export function useCreationSurfaceController(
     handleAction,
     load,
     generateSite,
-    submitImageForm: (event: FormEvent<HTMLFormElement>) => {
+    submitImageForm: (event: SyntheticEvent<HTMLFormElement>) => {
       event.preventDefault();
       void submitImage();
     },
-    submitEditorForm: (event: FormEvent<HTMLFormElement>) => {
+    submitEditorForm: (event: SyntheticEvent<HTMLFormElement>) => {
       event.preventDefault();
       void submitEditor();
     },

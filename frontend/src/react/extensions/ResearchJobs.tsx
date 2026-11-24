@@ -2,7 +2,7 @@ import { Label as ShadcnLabel } from '../ui/shadcn/label';
 import { Textarea as ShadcnTextarea } from '../ui/shadcn/textarea';
 import { Button as UiButton } from '../ui/Button';
 import { useEffect, useReducer, useState, useSyncExternalStore } from 'react';
-import type { FormEvent } from 'react';
+import type { SyntheticEvent } from 'react';
 import type { AgentRunEvent } from '../../extensions/types';
 import { researchClient, installResearchTracking } from '../../agent/researchJobsClient.ts';
 import type { ResearchView } from '../../agent/researchController.ts';
@@ -193,7 +193,7 @@ function ResearchFocusForm({
   onSubmit: (instruction: string) => Promise<boolean>;
 }) {
   const [instruction, setInstruction] = useState('');
-  const submit = async (event: FormEvent<HTMLFormElement>) => {
+  const submit = async (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
     const value = instruction.trim();
     if (!value || busy) return;

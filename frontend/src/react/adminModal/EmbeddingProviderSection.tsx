@@ -2,7 +2,7 @@ import { Field, FieldGroup, FieldLabel } from '../ui/shadcn/field';
 import { Input as ShadcnInput } from '../ui/shadcn/input';
 import { Button as UiButton } from '../ui/shadcn/button';
 import { SectionCard } from '../ui/page/SectionCard';
-import type { FormEvent } from 'react';
+import type { SyntheticEvent } from 'react';
 
 import type { EmbeddingProviderConfig } from './types';
 
@@ -12,7 +12,7 @@ interface EmbeddingProviderSectionProps {
   saving: boolean;
   onFormChange: (form: EmbeddingProviderConfig) => void;
   onApiKeyChange: (key: string) => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onSubmit: (event: SyntheticEvent<HTMLFormElement>) => void;
   onRemove: () => void;
 }
 
@@ -22,7 +22,7 @@ interface EmbeddingProviderFormProps {
   saving: boolean;
   onFormChange: (form: EmbeddingProviderConfig) => void;
   onApiKeyChange: (key: string) => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onSubmit: (event: SyntheticEvent<HTMLFormElement>) => void;
   onRemove: () => void;
 }
 
