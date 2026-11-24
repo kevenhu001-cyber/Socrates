@@ -22,11 +22,7 @@ import { stripChatArtifacts } from '../../util/stripChatArtifacts.ts';
 import { readTurnMessage } from './runtimeState.ts';
 import type { TurnRuntimeState, TurnToolCall } from './runtimeState.ts';
 import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
-
-/** The composer template the send started from. */
-interface ActiveTemplateWindow extends Window {
-  _activeTemplate?: { outputMode?: string; icon?: string } | null;
-}
+import { getActiveTemplate, type ActiveTemplate } from '../templateSystemPrompt.ts';
 
 export interface FinishRenderResult {
   visibleFinal: string;
@@ -36,8 +32,8 @@ export interface FinishRender {
   run(): FinishRenderResult;
 }
 
-function seedCanvasPendingId(win: ActiveTemplateWindow): void {
-  if (!win._activeTemplate || win._activeTemplate.outputMode !== 'canvas') return;
+function seedCanvasPendingId(template: ActiveTemplate | null): void {
+  if (template?.outputMode !== 'canvas') return;
   dispatchUi({
     type: 'ui/set',
     key: '_canvasPendingId',
@@ -73,11 +69,11 @@ function finalizeThinkingStatus(state: TurnRuntimeState): void {
 
 function finalizeOwnedMessage(
   state: TurnRuntimeState,
-  win: ActiveTemplateWindow,
+  template: ActiveTemplate | null,
   finalHtml: string | null,
 ): void {
   if (!state.ownsMessageSlot()) return;
-  const outputMode = (win._activeTemplate && win._activeTemplate.outputMode) || 'chat';
+  const outputMode = template?.outputMode || 'chat';
   const current = readTurnMessage(state.msgIdx);
   const previousToolRunRevision = (current && current._toolRunRev) || 0;
   const patch: Record<string, unknown> = {
@@ -96,7 +92,7 @@ function finalizeOwnedMessage(
   if (outputMode === 'canvas') {
     patch.canvasId =
       uiStore.getState()._canvasPendingId || 'canvas-' + Math.random().toString(36).slice(2, 10);
-    patch._extensionIcon = (win._activeTemplate && win._activeTemplate.icon) || '';
+    patch._extensionIcon = template?.icon || '';
   }
   state.patchOwnedMessage(patch);
   dispatchUi({ type: 'ui/set', key: '_canvasPendingId', value: null });
@@ -110,11 +106,11 @@ function finalizeOwnedMessage(
  */
 export function createFinishRender(state: TurnRuntimeState): FinishRender {
   function run(): FinishRenderResult {
-    const win = window as ActiveTemplateWindow;
+    const template = getActiveTemplate();
     /* seed a stable canvasId on state BEFORE the
        buildAssistantHtml call so the canvas wrapper inside that
        function reuses the same id. */
-    seedCanvasPendingId(win);
+    seedCanvasPendingId(template);
     /* the finalized html carries prose only:
        react/tool-run splices the rows in from toolCalls[].textOffset,
        so a second copy baked into `html` would render each row twice.
@@ -132,12 +128,12 @@ export function createFinishRender(state: TurnRuntimeState): FinishRender {
     const visibleFinal = stripChatArtifacts(state.full)
       .replace(/<think>[\s\S]*?<\/think>/gi, '')
       .replace(/<think>[\s\S]*$/gi, '');
-    const canvasMode = win._activeTemplate && win._activeTemplate.outputMode === 'canvas';
+    const canvasMode = template?.outputMode === 'canvas';
     const finalHtml = canvasMode ? buildAssistantHtml(visibleFinal) : null;
     /* Finalize the thinking status BEFORE saving it so the spinner
        stops once the response is complete. */
     finalizeThinkingStatus(state);
-    finalizeOwnedMessage(state, win, finalHtml);
+    finalizeOwnedMessage(state, template, finalHtml);
     /* Return the render result so the caller can run the post-render
        wiring (memory / a11y / save / stats / stop-button restore) with
        the same `visibleFinal` value used to build the html. */

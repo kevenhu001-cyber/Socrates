@@ -359,7 +359,7 @@ test('Create image requires Jimeng and activates only after the connection is av
     .click();
   await expect(page.locator('#composerToolsMenu')).toBeHidden();
   await expect(page.locator('.plugin-directory')).toBeVisible();
-  expect(await page.evaluate(() => window._activeTemplate?.extensionKey || null)).toBeNull();
+  expect(await page.evaluate(() => window.__socratesTestState.activeTemplate()?.extensionKey || null)).toBeNull();
   await expect(page.locator('body')).toContainText('请先在插件页连接即梦 AI');
 });
 
@@ -404,9 +404,9 @@ test('Create image waits for a user prompt before submitting the image-generatio
     .locator('#composerToolsMenu .composer-tools-mobile-items [data-composer-action="createImage"]')
     .click();
   await expect
-    .poll(async () => page.evaluate(() => window._activeTemplate?.extensionKey || null))
+    .poll(async () => page.evaluate(() => window.__socratesTestState.activeTemplate()?.extensionKey || null))
     .toBe('createImage');
-  expect(await page.evaluate(() => window._activeTemplate?.systemPrompt || '')).toContain(
+  expect(await page.evaluate(() => window.__socratesTestState.activeTemplate()?.systemPrompt || '')).toContain(
     'You are in image creation mode',
   );
   expect(chatRequests).toEqual([]);
@@ -414,7 +414,7 @@ test('Create image waits for a user prompt before submitting the image-generatio
   await page
     .locator('#composerRoot .rich-composer-editor')
     .fill('A tiny blue fox under the northern lights.');
-  expect(await page.evaluate(() => window._activeTemplate?.extensionKey || null)).toBe(
+  expect(await page.evaluate(() => window.__socratesTestState.activeTemplate()?.extensionKey || null)).toBe(
     'createImage',
   );
   await page.locator('#composerPrimaryBtn').click();

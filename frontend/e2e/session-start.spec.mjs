@@ -408,7 +408,7 @@ test('Deep Research extension: Start on landing enters chat and runs research', 
     )
     .click();
   await expect
-    .poll(() => page.evaluate(() => window._activeTemplate?.extensionKey))
+    .poll(() => page.evaluate(() => window.__socratesTestState.activeTemplate()?.extensionKey))
     .toBe('deepResearch');
   expect(await page.evaluate(() => typeof window.deepResearchOn)).toBe('undefined');
 

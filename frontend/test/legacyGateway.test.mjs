@@ -1,22 +1,30 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { setDeepResearchEnabled } from '../src/config/deepResearchMode.ts';
+import { setWebSearchOn, setExtensiveThinkingOn } from '../src/config/providers.ts';
+import { configureTemplateSystemPrompt } from '../src/chat/templateSystemPrompt.ts';
 
 globalThis.window = {
-  _activeTemplate: null,
+  _activeTemplate: { extensionKey: 'stale' },
   webSearchOn: false,
   deepResearchOn: false,
-  extensiveThinkingOn: false,
+  extensiveThinkingOn: true,
 };
 
 const { getActiveTemplateExtensionKey, isDeepResearchOn, isExtensiveThinkingOn, isWebSearchOn } =
   await import('../src/react/legacy/gateway.ts');
 
-test('typed legacy accessors read active composer mode and toggle flags', () => {
-  window._activeTemplate = { extensionKey: 'write' };
-  window.webSearchOn = true;
+test('composer accessors use canonical module state, not stale browser globals', (t) => {
+  t.after(() => {
+    configureTemplateSystemPrompt({ getActiveTemplate: () => null });
+    setWebSearchOn(false);
+    setDeepResearchEnabled(false);
+    setExtensiveThinkingOn(false);
+  });
+  configureTemplateSystemPrompt({ getActiveTemplate: () => ({ extensionKey: 'write' }) });
+  setWebSearchOn(true);
   setDeepResearchEnabled(true);
-  window.extensiveThinkingOn = false;
+  setExtensiveThinkingOn(false);
 
   assert.equal(getActiveTemplateExtensionKey(), 'write');
   assert.equal(isWebSearchOn(), true);
@@ -24,10 +32,11 @@ test('typed legacy accessors read active composer mode and toggle flags', () => 
   assert.equal(isExtensiveThinkingOn(), false);
 });
 
-test('active template accessor safely handles absent or malformed legacy data', () => {
-  window._activeTemplate = { extensionKey: 42 };
+test('active template accessor safely handles absent or malformed template data', (t) => {
+  t.after(() => configureTemplateSystemPrompt({ getActiveTemplate: () => null }));
+  configureTemplateSystemPrompt({ getActiveTemplate: () => ({ extensionKey: 42 }) });
   assert.equal(getActiveTemplateExtensionKey(), null);
 
-  window._activeTemplate = null;
+  configureTemplateSystemPrompt({ getActiveTemplate: () => null });
   assert.equal(getActiveTemplateExtensionKey(), null);
 });

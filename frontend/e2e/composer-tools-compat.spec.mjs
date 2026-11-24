@@ -70,9 +70,14 @@ test('Composer tools menu highlights the active template ahead of mode flags', a
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
-  await page.evaluate(() => {
-    window._activeTemplate = { extensionKey: 'write' };
-  });
+  await page.locator('#composerToolsBtn').click();
+  await page
+    .locator('#composerToolsMenu .composer-tools-desktop-items [data-composer-action="write"]')
+    .click();
+  await expect
+    .poll(() => page.evaluate(() => window.__socratesTestState.activeTemplate()?.extensionKey))
+    .toBe('write');
+  expect(await page.evaluate(() => '_activeTemplate' in window)).toBe(false);
   await page.locator('#composerToolsBtn').click();
 
   const menu = page.locator('#composerToolsMenu .composer-tools-desktop-items');
@@ -177,7 +182,9 @@ test('React composer selection activates the registered extension', async ({ pag
     .locator('#composerToolsMenu .composer-tools-desktop-items [data-composer-action="write"]')
     .click();
   await expect(menu).toHaveClass(/hidden/);
-  await expect.poll(() => page.evaluate(() => window._activeTemplate?.extensionKey)).toBe('write');
+  await expect
+    .poll(() => page.evaluate(() => window.__socratesTestState.activeTemplate()?.extensionKey))
+    .toBe('write');
 });
 
 test('Composer tools menu React mode always loads (no ?react=1 flag needed)', async ({ page }) => {

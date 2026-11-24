@@ -19,14 +19,12 @@ import { apiFetch } from '../../util/api/index.ts';
 import { isDeepResearchEnabled } from '../../config/deepResearchMode.ts';
 import { webSearchOn, extensiveThinkingOn } from '../../config/providers.ts';
 import { getCurrentUser as getAppCurrentUser } from '../../app/lifecycle/index.ts';
+import { getActiveTemplate } from '../../chat/templateSystemPrompt.ts';
 
 /** Standalone globals retained by the legacy shell. Keep their
  * compatibility shapes local to this boundary instead of bypassing types. */
 interface StandaloneGlobals {
   getConnectorIconMarkup?: (id: string) => string;
-  _activeTemplate?: { extensionKey?: unknown } | null;
-  webSearchOn?: boolean;
-  extensiveThinkingOn?: boolean;
 }
 
 function standaloneWindow(): Window & StandaloneGlobals {
@@ -111,24 +109,20 @@ export function getConnectorIconMarkupFn(): ((id: string) => string) | null {
   return typeof fn === 'function' ? fn : null;
 }
 
-// ─── Typed reads of standalone legacy globals ───────────────────────────────
-// A few mutable legacy values and caches still have window-backed owners.
-// Name each supported read here so React callers avoid unbounded global lookup.
+// ─── Module-owned composer preferences ──────────────────────────────────────
+// Keep existing callers while reading the canonical module state.
 
 /**
  * Legacy web-search toggle. config/providers.js owns the flag and broadcasts
  * `socrates:websearchchange`; callers subscribe to that event for updates.
  */
 export function isWebSearchOn(): boolean {
-  if (typeof standaloneWindow().webSearchOn === 'boolean') {
-    return standaloneWindow().webSearchOn!;
-  }
   return webSearchOn;
 }
 
 /** Active extension mode selected in the legacy template system, if any. */
 export function getActiveTemplateExtensionKey(): string | null {
-  const template = standaloneWindow()._activeTemplate;
+  const template = getActiveTemplate();
   return template && typeof template.extensionKey === 'string' ? template.extensionKey : null;
 }
 
@@ -139,9 +133,6 @@ export function isDeepResearchOn(): boolean {
 
 /** Legacy extensive-thinking toggle used by the composer tools menu. */
 export function isExtensiveThinkingOn(): boolean {
-  if (typeof standaloneWindow().extensiveThinkingOn === 'boolean') {
-    return standaloneWindow().extensiveThinkingOn!;
-  }
   return extensiveThinkingOn;
 }
 
