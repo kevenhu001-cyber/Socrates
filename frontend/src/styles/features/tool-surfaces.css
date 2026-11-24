@@ -391,8 +391,8 @@
   color: var(--foreground);
 }
 .tool-activity-burst-toggle:focus-visible {
-  outline: 2px solid var(--ui-border-strong);
-  outline-offset: 2px;
+  outline: none;
+  box-shadow: var(--ui-focus-shadow);
 }
 .tool-run-prose + .tool-activity-burst,
 .tool-activity-burst + .tool-run-prose {
