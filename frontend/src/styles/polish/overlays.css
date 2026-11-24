@@ -1038,7 +1038,14 @@ body.composer-tools-open.composer-tools-open::after {
 }
 .account-page-title {
   flex: 1;
+  min-width: 0;
   margin: 0;
+}
+.account-page-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--ui-space-sm);
 }
 .account-page-title h1 {
   margin: 0;
@@ -1130,13 +1137,6 @@ body.composer-tools-open.composer-tools-open::after {
   gap: var(--ui-space-xs);
   font-size: var(--ui-font-size-sm);
   color: var(--ui-text-secondary);
-}
-.profile-section-title {
-  margin: 0;
-  padding-block-end: var(--ui-space-sm);
-  border-bottom: 1px solid var(--ui-border-subtle);
-  font-size: var(--ui-font-size-md);
-  font-weight: var(--ui-font-weight-semibold);
 }
 .profile-row,
 .profile-action-row {
