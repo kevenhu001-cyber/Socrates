@@ -1,6 +1,7 @@
 import { memo, useId, useRef } from 'react';
 import { Chevron, Spinner, ToolErrorNotice, toolTargetOf, toolVerbOf } from '@socrates/ui/turn';
 import { translate } from '../../legacy/toolPresentationModel.ts';
+import { agentStepLabel } from '../../legacy/agentSteps.ts';
 import { Button } from '../ui/shadcn/button';
 import { useLocaleRefresh, WebUiTheme } from '../rn/WebUiTheme';
 import { ToolActivityIcon, toolActivitySites } from './ToolActivityIcon';
@@ -131,6 +132,9 @@ export const ToolRunRow = memo(function ToolRunRow({
             {rowContent}
           </div>
         )}
+        {running && !disclosure.open && view.agentRun ? (
+          <AgentActivityPreview run={view.agentRun} />
+        ) : null}
         {disclosure.open && expandable ? (
           <div id={detailId} className="tool-run-detail-body" data-testid="tool-detail">
             <ToolRunDetail
@@ -176,4 +180,20 @@ function toolActionLabel(call: ToolCallRecord): string {
   const verb = toolVerbOf(call.name);
   const target = toolTargetOf(call.name, call.input);
   return [translate(verb.key, verb.fallback), target].filter(Boolean).join(' · ');
+}
+
+/** A live, compact preview of the recorded workspace activity. Raw terminal
+ * output and approval controls stay in their existing, explicit surfaces. */
+function AgentActivityPreview({ run }: { run: NonNullable<ToolRunView['agentRun']> }) {
+  const active = [...run.steps].reverse().find((step) => step.status === 'running');
+  const latest = active || run.steps[run.steps.length - 1];
+  if (!latest) return null;
+  const completed = run.steps.filter((step) => step.status === 'done').length;
+  const label = agentStepLabel(latest, (key) => translate(key, key));
+  return (
+    <div className="agent-activity-preview" data-state={latest.status} data-testid="agent-activity-preview">
+      <span className="agent-activity-preview-label">{label}</span>
+      <span className="agent-activity-preview-count">{completed}/{run.steps.length}</span>
+    </div>
+  );
 }
