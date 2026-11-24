@@ -54,7 +54,7 @@ fun SocratesTheme(content: @Composable () -> Unit) {
             tertiary = Color(0xFF6B6B6B), onTertiary = Color.White,
             tertiaryContainer = Color(0xFFF1F3FA), onTertiaryContainer = Color(0xFF202020),
             background = Color(0xFFF8F8F8), onBackground = Color(NativeReadingColors.textPrimary),
-            surface = Color.White, onSurface = Color(NativeReadingColors.textPrimary),
+            surface = SocratesDesign.Surface, onSurface = Color(NativeReadingColors.textPrimary),
             surfaceVariant = Color(0xFFF5F5F5), onSurfaceVariant = Color(NativeReadingColors.textTertiary), surfaceTint = Color.Transparent,
             inverseSurface = Color(0xFF161616), inverseOnSurface = Color.White,
             surfaceBright = Color.White, surfaceDim = Color(0xFFFBFBFB),
