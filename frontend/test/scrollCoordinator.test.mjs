@@ -104,6 +104,7 @@ test('edge fading ramps smoothly as the transcript leaves the viewport', () => {
   const bottom = fadeList(800, 1000, 200);
   updateScrollFadeMask(bottom);
   assert.equal(bottom.style.getPropertyValue('--ui-scroll-fade-bottom'), '56px');
+  assert.equal(bottom.dataset.scrollFade, 'true');
   const shortList = fadeList(0, 180, 200);
   updateScrollFadeMask(shortList);
   assert.equal(shortList.style.getPropertyValue('--ui-scroll-fade-bottom'), '0px');
