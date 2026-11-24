@@ -12,6 +12,9 @@ test('starting a new chat from exam mode reveals the topic composer', async ({ p
   await page.evaluate(() => window.__socratesLegacy.navigation.openNav('exam'));
   await expect(page.locator('#examView')).toBeVisible();
   await expect(page.locator('#examViewReactRoot #examViewBody')).toBeVisible();
+  await expect(page.locator('#examViewReactBody .ui-page-header')).toBeVisible();
+  await expect(page.locator('#examViewReactBody [data-page-title]')).toHaveCount(1);
+  await expect(page.locator('#examViewReactBody [data-exam-hero]')).toBeHidden();
 
   await page.locator('#navNew').click();
   await expect(page.locator('#confirmDialog')).toBeVisible();
