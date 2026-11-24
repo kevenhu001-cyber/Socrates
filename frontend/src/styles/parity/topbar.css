@@ -245,3 +245,24 @@ html[data-main-view$='Panel'] #appShell .mobile-newchat-btn {
   vector-effect: non-scaling-stroke;
   stroke-width: 1.5px;
 }
+
+
+@media (max-width: 768px) {
+  #appShell .top-bar {
+    position: relative;
+  }
+  #appShell .top-bar::after {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    bottom: calc(-1 * var(--ui-transcript-fade-top, 32px));
+    height: var(--ui-transcript-fade-top, 32px);
+    background: linear-gradient(to bottom, var(--conversation-page) 0%, transparent 100%);
+    opacity: 0;
+    transition: opacity var(--ui-duration-fast) var(--ui-ease-out);
+    pointer-events: none;
+  }
+  body[data-transcript-scrolled='true'] #appShell .top-bar::after {
+    opacity: 1;
+  }
+}
