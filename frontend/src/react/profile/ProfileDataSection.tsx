@@ -1,7 +1,7 @@
 import { Button as UiButton } from '../ui/shadcn/button';
+import { SectionCard } from '../ui/page/SectionCard';
 import type { ProfileDispatch } from './types';
 import { profileText } from './profileText';
-import { SectionCard } from '../ui/page/SectionCard';
 
 function ProfileActionRow({
   title,
@@ -25,7 +25,7 @@ function ProfileActionRow({
       <UiButton type="button" variant={warning ? 'destructive' : 'outline'} onClick={onAction}>
         {actionLabel}
       </UiButton>
-    </SectionCard>
+    </div>
   );
 }
 
@@ -79,6 +79,6 @@ export function ProfileDataSection({ dispatch }: { dispatch: ProfileDispatch }) 
         onAction={dispatch.clearSettings}
         warning
       />
-    </div>
+    </SectionCard>
   );
 }
