@@ -11,8 +11,11 @@ import {
 
 function assertProseDefaults(prompt) {
   assert.match(prompt, /em dashes, en dashes, double hyphens, and colons as prose transitions/);
-  assert.match(prompt, /one to three short, connected paragraphs/);
-  assert.match(prompt, /decisive mechanism or evidence/);
+  assert.match(prompt, /one thought per short paragraph/);
+  assert.match(prompt, /For explanations in any mode/);
+  assert.match(prompt, /Do not compress essential reasoning merely to be brief/);
+  assert.match(prompt, /important equations on their own display lines/i);
+  assert.match(prompt, /make the decisive idea tangible/);
   assert.match(prompt, /one concrete example, a small thought experiment, or a precise analogy/);
   assert.match(prompt, /Use a short list when the user requests one/);
   assert.match(prompt, /Follow explicit requests for length, depth, format, or punctuation/);
