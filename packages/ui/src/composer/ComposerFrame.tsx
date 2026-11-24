@@ -24,6 +24,16 @@ export interface ComposerFrameProps {
   focused: boolean;
   /** Phone layout: tighter sheet padding. */
   compact?: boolean;
+  /**
+   * `inline` puts the tools, the editor and the send controls on one row —
+   * the reference's composition, where the field is a single 52px capsule
+   * that grows upward with the text. `stacked` (default) keeps the two
+   * storeys used by the phone composition.
+   */
+  layout?: 'stacked' | 'inline';
+  /** Sheet fill. Web passes the mode's composer surface; native defaults to
+   *  the card paper. */
+  surface?: string;
   /** Shadow recipe; the web passes `var(--ui-elevation-field*)` so the
    * active mode decides. Defaults to the light recipe. */
   shadows?: { field: string; fieldHover: string; fieldFocus: string };
@@ -39,6 +49,8 @@ export interface ComposerFrameProps {
 export function ComposerFrame({
   focused,
   compact = false,
+  layout = 'stacked',
+  surface,
   shadows,
   top,
   topVisible = false,
@@ -49,22 +61,47 @@ export function ComposerFrame({
   const { colors } = useUiTheme();
   const [hovered, setHovered] = useState(false);
   const shadow = shadows ?? uiShadow.light;
+  const inline = layout === 'inline';
+  /* The phone inline row has no space for the effort chip; the model chip's
+     dialog already owns that setting, so the field keeps plus · text · mic ·
+     send, exactly as the reference's phone composer does. */
+  const inlineControls =
+    inline && compact ? { ...controls, effort: { ...controls.effort, visible: false } } : controls;
   return (
     <div
-      {...dataAttributes({ composerFrame: '', focused: focused ? 'true' : 'false' })}
+      {...dataAttributes({
+        composerFrame: '',
+        focused: focused ? 'true' : 'false',
+        layout: inline ? 'inline' : 'stacked',
+      })}
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
       style={domStyle({
         width: '100%',
-        /* Phones: the reference box's corner measures 26px (circle fit). */
-        borderRadius: compact ? uiRadius.card + uiStep[25] : uiRadius.card,
-        backgroundColor: colors.card,
-        boxShadow: focused ? shadow.fieldFocus : hovered ? shadow.fieldHover : shadow.field,
+        /* Inline: the reference box's corner is 28px on desktop and 26px on
+           the phone composition; the stacked phone sheet keeps 24px. */
+        borderRadius: inline
+          ? compact
+            ? uiRadius.composer - 2
+            : uiRadius.composer
+          : compact
+            ? uiRadius.card + uiStep[25]
+            : uiRadius.card,
+        backgroundColor: surface ?? colors.card,
+        /* The inline sheet is flat: its edge is a fill step, not a ring. The
+           web layer draws the focus hairline so the frame keeps no shadow. */
+        boxShadow: inline
+          ? undefined
+          : focused
+            ? shadow.fieldFocus
+            : hovered
+              ? shadow.fieldHover
+              : shadow.field,
         transitionProperty: 'box-shadow, background-color',
         transitionDuration: `${uiMotion.slow - 100}ms`,
         transitionTimingFunction: uiMotion.easeOut,
-        paddingTop: compact ? uiStep[75] : uiStep[200],
-        paddingBottom: uiStep[75],
+        paddingTop: inline ? uiStep[75] : compact ? uiStep[75] : uiStep[200],
+        paddingBottom: inline ? uiStep[75] : uiStep[75],
         paddingHorizontal: uiStep[75],
       })}
     >
@@ -79,30 +116,60 @@ export function ComposerFrame({
           {top}
         </div>
       ) : null}
-      <div
-        {...dataAttributes({ composerSlot: 'body' })}
-        style={domStyle({
-          paddingHorizontal: compact ? uiStep[75] : uiStep[100],
-          minHeight: 26,
-          marginBottom: uiStep[75],
-        })}
-      >
-        {body}
-      </div>
-      <div
-        {...dataAttributes({ composerSlot: 'rail' })}
-        style={{
-          display: 'flex',
-          flexDirection: 'row',
-          alignItems: 'center',
-          /* The phone reference keeps an 8px gap between the rail controls;
+      {inline ? (
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'flex-end',
+            gap: uiStep[25],
+            minHeight: 36,
+          }}
+        >
+          <ComposerControls {...inlineControls} compact={compact} part="leading" />
+          <div
+            {...dataAttributes({ composerSlot: 'body' })}
+            style={{
+              flexGrow: 1,
+              flexShrink: 1,
+              minWidth: 0,
+              paddingTop: 3,
+              paddingBottom: 3,
+              paddingLeft: uiStep[50],
+            }}
+          >
+            {body}
+          </div>
+          <ComposerControls {...inlineControls} compact={compact} part="trailing" />
+        </div>
+      ) : (
+        <>
+          <div
+            {...dataAttributes({ composerSlot: 'body' })}
+            style={domStyle({
+              paddingHorizontal: compact ? uiStep[75] : uiStep[100],
+              minHeight: 26,
+              marginBottom: uiStep[75],
+            })}
+          >
+            {body}
+          </div>
+          <div
+            {...dataAttributes({ composerSlot: 'rail' })}
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              /* The phone reference keeps an 8px gap between the rail controls;
              desktop uses the quieter 4px rhythm. */
-          gap: compact ? uiStep[100] : uiStep[50],
-          minHeight: 36,
-        }}
-      >
-        <ComposerControls {...controls} compact={compact} />
-      </div>
+              gap: compact ? uiStep[100] : uiStep[50],
+              minHeight: 36,
+            }}
+          >
+            <ComposerControls {...controls} compact={compact} />
+          </div>
+        </>
+      )}
       {hidden}
     </div>
   );

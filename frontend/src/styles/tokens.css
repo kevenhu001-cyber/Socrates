@@ -51,12 +51,11 @@
   /* Desktop composer capsule (chatgpt.com: 28px on a 52px single row). */
   --ui-radius-composer-desktop: 28px;
   /* chatgpt.com row radius: sidebar rows, menu items. */
-  --ui-radius-row: 12px;
+  --ui-radius-row: 8px;
   --ui-radius-bubble: 20px;
   --ui-radius-pill: 999px;
-  /* R1 restyle: menus and popovers share the 16px card corner of the
-     marketing site; dialogs keep the larger 24px sheet corner. */
-  --ui-radius-popover: var(--ui-radius-lg);
+  /* Menus take the reference's 12px corner; dialogs keep the 24px sheet. */
+  --ui-radius-popover: var(--ui-radius-md);
   --ui-radius-dialog: var(--ui-radius-2xl);
   /* Chat Demo menu geometry; covered by composer-tools visual snapshots. */
   --ui-radius-tools-card: 12px;

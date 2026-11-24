@@ -178,7 +178,7 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
       color var(--ui-duration-hover) ease;
   }
   #appShell #sidebarCloseBtn:hover {
-    background: var(--ui-fill);
+    background: var(--ui-bg-hover);
     color: var(--foreground);
   }
   #appShell #sidebarCloseBtn svg {
@@ -255,14 +255,15 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
   }
   #appShell #sidebar .recent-item:hover,
   #appShell #sidebar .recent-item:focus-within {
-    background: var(--ui-fill);
+    background: var(--ui-bg-hover);
     color: var(--foreground);
   }
-  /* Selected is a solid step of the ladder, not the hover wash, so the
-     current chat stays marked while the pointer moves over its neighbours. */
+  /* Selected is one step stronger than the hover wash (8% ink over the rail),
+     so the current chat stays marked while the pointer moves over its
+     neighbours. */
   #appShell #sidebar .recent-item.active,
   #appShell #sidebar .recent-item[aria-current='true'] {
-    background: var(--ui-bg-selected);
+    background: color-mix(in srgb, var(--ui-ink) 8%, transparent);
     color: var(--foreground);
   }
   /* Secondary destinations remain available from More. */
@@ -307,18 +308,19 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     padding: 0 10px;
     border: 0;
     border-radius: var(--ui-radius-pill);
-    background: var(--ui-card);
+    background: transparent;
     transition:
       background-color var(--ui-duration-hover) ease,
       border-color var(--ui-duration-hover) ease;
   }
   #appShell #sidebar .sidebar-search:hover {
-    border-color: var(--ui-border-strong);
-    background: var(--ui-card);
+    border-color: transparent;
+    background: var(--ui-bg-hover);
   }
   #appShell #sidebar .sidebar-search:focus-within {
-    border-color: var(--ui-border-strong);
-    background: var(--ui-card);
+    border-color: transparent;
+    background: transparent;
+    box-shadow: inset 0 0 0 1px var(--ui-hairline-strong);
   }
   #appShell #sidebar .sidebar-search svg {
     flex: 0 0 20px;
@@ -387,6 +389,9 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     font-size: var(--ui-text-ui);
     font-weight: var(--ui-font-weight-regular);
     line-height: var(--ui-text-ui-line);
+    /* A quiet group label in sentence case, not a tracked-out eyebrow. */
+    text-transform: none;
+    letter-spacing: 0;
   }
   #appShell #sidebar .recents-list-content {
     display: flex;
@@ -860,36 +865,34 @@ html[data-detail-open='true'][data-detail-layout='docked'] #appShell .main {
   stroke-width: 1.5px;
 }
 
-/* ── RN-7 — site shell: a grey frame with the white canvas as a card ─────
-   The marketing site sets white cards on a grey sheet (public.css
-   --site-color-surface behind --site-color-raised, shadow-1). The app
-   takes the same frame on desktop: the rail sits on the grey, and the
-   conversation is one white 16px card inset 8px, its edge a hairline
-   folded into the soft shadow. Rows round to 12; the current row is a
-   small white card of its own, hover is the 4% fill. */
+/* ── Shell: one canvas, one rail ─────────────────────────────────────────
+   The conversation is the page, not a card inside the page. The rail is a
+   single tone step below the canvas and draws no border; the canvas runs
+   flush from the rail's edge to the window edge, with square corners. This
+   is the reference's structure: tone separates the two regions, and every
+   frame, radius and shadow that used to sit between them is gone. */
 @media (min-width: 769px) {
   body #appShell {
-    background: var(--ui-surface);
+    background: var(--ui-bg-rail);
   }
   body #appShell .main {
     background: transparent;
-    padding-top: var(--ui-step-75);
-    padding-right: var(--ui-step-75);
-    padding-bottom: var(--ui-step-75);
+    padding: 0;
+    padding-left: var(--app-sidebar-width, 260px);
   }
   /* The card stays opaque on the empty home too: layoutStateMirror's
      topic-setup rule dims `.main-bg` to 0.1 at (1,3,0) specificity. */
   body #appShell .main:not(#_n) .main-bg {
-    inset: var(--ui-step-75) var(--ui-step-75) var(--ui-step-75) var(--app-sidebar-width, 260px);
-    border-radius: var(--ui-round-lg);
+    inset: 0 0 0 var(--app-sidebar-width, 260px);
+    border-radius: 0;
     background: var(--ui-canvas);
     background-image: none;
     opacity: 1;
-    box-shadow: var(--ui-elevation-raised);
+    box-shadow: none;
   }
   body #appShell .main-content {
     background: transparent;
-    border-radius: 0 0 var(--ui-round-lg) var(--ui-round-lg);
+    border-radius: 0;
   }
 
   #appShell #sidebar {
@@ -897,42 +900,27 @@ html[data-detail-open='true'][data-detail-layout='docked'] #appShell .main {
     border-right: 0;
   }
 
+  /* Rows are 36px pills of neutral wash. Nothing in the rail is a card:
+     hover is the 4–6% wash, selection is 8% ink, and selection never grows a
+     shadow. */
   #appShell #sidebar .recent-item,
   #appShell #sidebarNav .sidebar-nav-btn {
-    border-radius: var(--ui-round-md);
+    border-radius: var(--ui-round-sm);
   }
   #appShell #sidebar .recent-item:hover,
   #appShell #sidebar .recent-item:focus-within,
   #appShell #sidebarNav .sidebar-nav-btn:hover {
-    background: var(--ui-fill);
+    background: var(--ui-bg-hover);
   }
-  #appShell #sidebar .recent-item.active,
-  #appShell #sidebar .recent-item[aria-current='true'],
   #appShell #sidebarNav .sidebar-nav-btn[aria-current='page'] {
-    background: var(--ui-card);
-    box-shadow: var(--ui-elevation-raised);
+    background: color-mix(in srgb, var(--ui-ink) 8%, transparent);
+    box-shadow: none;
     color: var(--ui-ink);
   }
 
-  /* Search: a white pill with a hairline ring, deepening on focus. */
-  #appShell #sidebar .sidebar-search,
-  #appShell #sidebar .sidebar-search:hover {
-    border: 0;
-    background: var(--ui-card);
-    box-shadow: var(--ui-elevation-ring);
-  }
-  #appShell #sidebar .sidebar-search:focus-within {
-    border: 0;
-    background: var(--ui-card);
-    box-shadow: 0 0 0 1px var(--ui-hairline-focus);
-  }
-
-  /* Header icon controls: 4% fill on hover, pill-round. */
+  /* Header icon controls are pill-round; the wash is owned above. */
   #appShell #sidebarCloseBtn {
     border-radius: var(--ui-round-pill);
-  }
-  #appShell #sidebarCloseBtn:hover {
-    background: var(--ui-fill);
   }
 }
 

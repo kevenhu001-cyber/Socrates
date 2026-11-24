@@ -15,26 +15,12 @@
     .topic-title.greeting {
     font-family: var(--cg-font);
     /* Brand typography has one live owner; the old restore pins are retired. */
-    margin: 0 auto 36px;
+    margin: 0 auto 28px;
     /* R1 restyle: the marketing site sets every heading in Geist medium with
      slightly tightened tracking; the landing line follows it at 28px. */
-    font-weight: var(--ui-font-weight-medium);
-    line-height: 1.25;
-    letter-spacing: -0.015em;
-  }
-}
-
-/* RN-9 — the hero is set in the theme's display face (Newsreader on
-   `socrates`), so the landing line is written language rather than a UI
-   label. The rule above owns the interface face for the surfaces that still
-   ask for `--cg-font`; this one re-faces only the landing hero. The
-   shared RN component passes `var(--font-display)` inline, which the
-   composer stylesheet's `--cg-font` pin would otherwise win over on
-   specificity, so the display face is re-declared at the same weight. */
-@media (min-width: 769px) {
-  :root:not(#_composer-a):not(#_composer-b) #appShell #topicSetup #homeHero .topic-title.greeting {
-    font-family: var(--font-display);
-    letter-spacing: -0.01em;
+    font-weight: var(--ui-font-weight-normal, 400);
+    line-height: 1.3;
+    letter-spacing: -0.02em;
   }
 }
 

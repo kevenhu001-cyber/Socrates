@@ -61,15 +61,11 @@ export function HomeHero({
   titleFontFamily,
 }: HomeHeroProps) {
   const { typeScale } = useUiTheme();
-  /* The landing line is the page's display moment: it is allowed to breathe
-     to the widest step the column affords instead of sitting at one fixed
-     size on every desktop. Both clamp bounds and the fluid middle follow the
-     reader's text-size preference, so this stays a scale, not a pin. */
-  const fluidTitleSize = compact
-    ? undefined
-    : `clamp(${Math.round(32 * typeScale)}px, ${(3.1 * typeScale).toFixed(2)}vw, ${Math.round(
-        40 * typeScale,
-      )}px)`;
+  /* One size, not a fluid ramp. The reference holds the landing line at 28px
+     on every desktop width: a line of written language above the field, not a
+     hero headline whose size tracks the viewport. Only the reader's text-size
+     preference is allowed to move it. */
+  const titleSize = `${Math.round((compact ? 24 : 28) * typeScale)}px`;
   return (
     <div
       style={{
@@ -85,9 +81,8 @@ export function HomeHero({
         aria-level={1}
         variant={compact ? 'greetingCompact' : 'greeting'}
         style={{
-          ...(compact ? { fontWeight: '400' } : null),
           ...(titleFontFamily ? { fontFamily: titleFontFamily } : null),
-          ...(fluidTitleSize ? { fontSize: fluidTitleSize } : null),
+          fontSize: titleSize,
         }}
         align="center"
       >

@@ -76,18 +76,18 @@ html[data-main-view='settingsPage'] #appShell .top-bar {
     justify-content: space-between;
     gap: 8px;
     box-sizing: border-box;
-    height: 52px;
-    min-height: 52px;
+    height: 48px;
+    min-height: 48px;
     margin: 0;
     padding: 0 var(--ui-space-md);
     border: 0;
-    /* No standing rule under the header. The bar is the top of the canvas
-       card, and a full-width hairline cut that card in two; the separator is
-       drawn by ::after below, and only while there is content to separate. */
+    /* No standing rule under the header, and no glass: the bar is simply the
+       top of the canvas. The separator is drawn by ::after below, and only
+       while there is content to separate. */
     border-bottom: 0;
-    background: var(--ui-bg-header-glass);
-    -webkit-backdrop-filter: blur(16px);
-    backdrop-filter: blur(16px);
+    background: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
     color: var(--foreground);
     font-family: var(--font-sans);
     font-size: var(--ui-text-ui);
@@ -97,35 +97,20 @@ html[data-main-view='settingsPage'] #appShell .top-bar {
 
   /* The separator exists only when it separates something: while the
      transcript is scrolled under the header (body[data-transcript-scrolled],
-     set by the message list). Transparent ends keep it off the card's
-     rounded corners, so the header reads as part of the card. */
+     set by the message list). */
   #appShell .top-bar::after {
     content: '';
     position: absolute;
     inset-inline: 0;
     bottom: 0;
     height: 1px;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      var(--ui-hairline) 14%,
-      var(--ui-hairline) 86%,
-      transparent
-    );
+    background: var(--ui-hairline);
     opacity: 0;
     transition: opacity var(--ui-duration-fast) var(--ui-ease-out);
     pointer-events: none;
   }
   body[data-transcript-scrolled='true'] #appShell .top-bar::after {
     opacity: 1;
-  }
-  [data-mode='light'] #appShell .top-bar {
-    background: var(--ui-bg-page);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
-  [data-mode='light'] #appShell .top-bar::after {
-    background: var(--ui-hairline);
   }
 
   #appShell .top-bar-left,
@@ -136,13 +121,16 @@ html[data-main-view='settingsPage'] #appShell .top-bar {
     flex: 0 0 auto;
     align-items: center;
     gap: 4px;
-    height: 52px;
+    height: 48px;
     min-width: 0;
     margin: 0;
     padding: 0;
   }
+  /* The reference header names the model, not the conversation: the
+     transcript already says what this is, and a second title in the chrome
+     competes with it. Phones keep the title as their page heading. */
   #appShell .top-conversation-title {
-    display: inline-flex;
+    display: none;
     align-items: center;
     gap: var(--ui-space-xxs);
     max-width: 320px;
@@ -212,31 +200,6 @@ html[data-main-view='settingsPage'] #appShell .top-bar {
   }
 }
 
-/* RN-7 — desktop: the bar is the top of the white canvas card
-   (parity/sidebar.css draws the card); no glass, no fill of its own. */
-@media (min-width: 769px) {
-  body #appShell .top-bar {
-    border-radius: var(--ui-round-lg) var(--ui-round-lg) 0 0;
-    background: transparent;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
-}
-
-/* Workspace pages own their context; the chat model selector stays in chat. */
-
-/* RN-7 — desktop: the bar is the top of the white canvas card
-   (parity/sidebar.css draws the card); no glass, no fill of its own. */
-@media (min-width: 769px) {
-  body #appShell .top-bar {
-    border-radius: var(--ui-round-lg) var(--ui-round-lg) 0 0;
-    background: transparent;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
-}
-
-/* Workspace pages own their context; the chat model selector stays in chat. */
 html[data-main-view$='Panel'] #appShell .top-model-slot,
 html[data-main-view$='Panel'] #appShell .mobile-newchat-btn {
   display: none;

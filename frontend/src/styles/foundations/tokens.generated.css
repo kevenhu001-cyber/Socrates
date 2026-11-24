@@ -62,13 +62,13 @@
   --ui-type-display-compact-line: 40px;
   --ui-type-display-compact-weight: 500;
   --ui-type-display-compact-tracking: -0.85px;
-  --ui-type-greeting-size: 40px;
-  --ui-type-greeting-line: 48px;
-  --ui-type-greeting-weight: 500;
-  --ui-type-greeting-tracking: -0.9px;
+  --ui-type-greeting-size: 28px;
+  --ui-type-greeting-line: 36px;
+  --ui-type-greeting-weight: 400;
+  --ui-type-greeting-tracking: -0.56px;
   --ui-type-greeting-compact-size: 24px;
   --ui-type-greeting-compact-line: 32px;
-  --ui-type-greeting-compact-weight: 500;
+  --ui-type-greeting-compact-weight: 400;
   --ui-type-greeting-compact-tracking: -0.36px;
   --ui-type-title-size: 20px;
   --ui-type-title-line: 28px;
@@ -79,13 +79,13 @@
   --ui-type-title-sm-weight: 500;
   --ui-type-title-sm-tracking: -0.17px;
   --ui-type-body-size: 16px;
-  --ui-type-body-line: 26px;
+  --ui-type-body-line: 28px;
   --ui-type-body-weight: 400;
-  --ui-type-body-tracking: 0;
+  --ui-type-body-tracking: -0.1px;
   --ui-type-body-sm-size: 14px;
   --ui-type-body-sm-line: 22px;
   --ui-type-body-sm-weight: 400;
-  --ui-type-body-sm-tracking: 0;
+  --ui-type-body-sm-tracking: -0.06px;
   --ui-type-label-size: 15px;
   --ui-type-label-line: 22px;
   --ui-type-label-weight: 500;
@@ -104,6 +104,7 @@
   --ui-round-lg: 16px;
   --ui-round-xl: 20px;
   --ui-radius-card: 24px;
+  --ui-round-composer: 28px;
   --ui-round-pill: 999px;
   --ui-gap-1: 4px;
   --ui-gap-2: 8px;
@@ -143,7 +144,7 @@
 }
 
 [data-mode="light"] {
-  --ui-canvas: #fcfcfc;
+  --ui-canvas: #ffffff;
   --ui-card: #ffffff;
   --ui-fill: rgba(0, 0, 0, 0.04);
   --ui-fill-hover: rgba(0, 0, 0, 0.07);

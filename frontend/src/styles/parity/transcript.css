@@ -18,7 +18,7 @@
     /* --ui-text-body already carries --app-type-scale (tokens.css), so
        multiplying here would scale the prose twice. */
     --prose-size: var(--ui-text-body);
-    --prose-line: calc(30px * var(--app-type-scale));
+    --prose-line: calc(28px * var(--app-type-scale));
     --msg-para-gap: var(--ui-foundation-space-md);
     box-sizing: border-box;
     width: 100%;
@@ -94,7 +94,7 @@
     font-family: var(--font-sans);
     font-size: var(--prose-size);
     line-height: var(--prose-line);
-    letter-spacing: normal;
+    letter-spacing: var(--ui-type-body-tracking);
     overflow-wrap: anywhere;
   }
 
@@ -102,7 +102,7 @@
   #appShell #msgList .msg.user .msg-body {
     color: var(--foreground);
     max-width: 70%;
-    padding: 10px 16px;
+    padding: 10px 20px;
     border: 0;
     border-radius: var(--ui-radius-bubble);
     /* The blue reference bubble is a themes.css role, shared with the phone. */

@@ -337,6 +337,8 @@ export function ComposerShell({
         <ComposerFrame
           focused={focused}
           compact={phone}
+          layout="inline"
+          surface="var(--ui-bg-ask)"
           shadows={FIELD_SHADOWS}
           topVisible={attachments.length > 0}
           top={

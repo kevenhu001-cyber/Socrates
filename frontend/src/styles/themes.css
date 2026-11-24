@@ -147,6 +147,10 @@ html[data-theme='socrates'][data-mode]:lang(zh) {
   --ui-bg-surface: var(--ui-bg-elevated);
   --ui-bg-overlay: var(--popover);
   --ui-bg-composer: var(--ui-bg-elevated);
+  /* The question box is a field tone, not a ladder rung: #303030 in dark
+     sits just above the rail and below a menu, exactly as the reference
+     measures, so the field reads as an object without a shadow. */
+  --ui-bg-ask: rgb(48 48 48);
   --ui-bg-control: var(--secondary);
   --ui-bg-hover: var(--accent);
   --ui-bg-selected: var(--ui-bg-control);
@@ -233,7 +237,7 @@ html[data-theme='socrates'][data-mode]:lang(zh) {
   --ui-tool-chip-text: var(--ui-text-secondary);
   --ui-tool-chip-hover-bg: var(--ui-bg-hover);
   --ui-tool-chip-hover-text: var(--ui-text-primary);
-  --ui-bg-code: var(--ui-bg-raised);
+  --ui-bg-code: var(--geist-background-100);
   --ui-bg-code-header: var(--ui-bg-code);
   --ui-border-code: var(--ui-border-default);
   --ui-bg-dialog: var(--ui-bg-surface);
@@ -253,10 +257,10 @@ html[data-theme='socrates'][data-mode]:lang(zh) {
 [data-mode='light'] {
   color-scheme: light;
 
-  /* Phone reference (light home, measured): the canvas is a one-percent
-     tint under the paper; the question box, the selected mode segment,
-     cards and menus stay the white paper (background-100) above it. */
-  --background: #fcfcfc;
+  /* The light canvas is the paper itself (#ffffff). The rail sits one Geist
+     step below it (background-200), so the two regions are separated by tone
+     alone — no border, no frame. Cards and menus are the same paper. */
+  --background: #ffffff;
   --foreground: var(--geist-gray-1000);
   --card: var(--geist-background-100);
   --card-foreground: var(--foreground);
@@ -415,13 +419,17 @@ html[data-theme='socrates'][data-mode]:lang(zh) {
 
   --ui-avatar-bg: var(--ui-brand-accent);
   --ui-bg-composer: var(--ui-bg-elevated);
+  /* One flat field tone in both modes: #f4f4f4 on paper, #303030 on black. */
+  --ui-bg-ask: rgb(244 244 244);
   --ui-bg-chip: var(--ui-bg-hover);
   --ui-bg-chip-hover: var(--geist-gray-alpha-200);
   --ui-bg-segment-active: var(--ui-bg-surface);
   /* A zero-blur edge keeps floating surfaces visible on near-white paper
      and still composes with the keyboard focus ring. */
   --ui-shadow-control: var(--ui-elevation-ring);
-  --ui-shadow-popover: 0 0 0 1px var(--ui-border-default);
+  --ui-shadow-popover:
+    0 0 0 1px var(--ui-border-default), 0 2px 6px rgb(0 0 0 / 5%),
+    0 12px 28px -12px rgb(0 0 0 / 18%);
   --ui-shadow-dialog: var(--ui-shadow-popover);
   --ui-elevation-raised: var(--ui-elevation-ring);
   /* The composer is a hairline capsule on a near-white page, so its resting
@@ -434,7 +442,7 @@ html[data-theme='socrates'][data-mode]:lang(zh) {
   --ui-tool-chip-text: var(--ui-text-secondary);
   --ui-tool-chip-hover-bg: var(--ui-bg-hover);
   --ui-tool-chip-hover-text: var(--ui-text-primary);
-  --ui-bg-code: var(--ui-bg-surface);
+  --ui-bg-code: var(--ui-bg-panel);
   --ui-bg-code-header: var(--ui-bg-code);
   --ui-border-code: var(--ui-border-default);
   --ui-bg-dialog: var(--ui-bg-surface);
@@ -672,9 +680,9 @@ html[data-theme='socrates'][data-mode='light'] {
   --ui-account-rail: var(--geist-gray-100);
   --ui-account-field: var(--geist-background-200);
   --ui-account-selection: var(--geist-gray-300);
-  /* Light twin of the blue user bubble: a pale action tint on the paper, the
-     primary ink on top. */
-  --conversation-user: color-mix(in srgb, var(--ui-accent-action) 12%, var(--ui-bg-page));
+  /* The user's turn is a neutral grey sheet (#f2f2f2), one step under the
+     paper. Colour is reserved for links and status, never for identity. */
+  --conversation-user: var(--ui-bg-bubble);
   --conversation-user-text: var(--ui-text-primary);
   /* Phone reference fields (light): white question box / selected segment
      on a #f4f4f4 mode track. */

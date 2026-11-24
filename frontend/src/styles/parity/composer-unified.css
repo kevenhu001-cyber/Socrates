@@ -87,6 +87,20 @@
     background-image: none;
   }
 }
+/* ── Inline composition: one flat capsule ────────────────────────────────
+   The desktop field is a single 52px row on the composer surface. Its edge
+   is the fill step itself — no ring, no gradient, no resting shadow; focus
+   adds one hairline inside the radius. Phones keep the stacked sheet. */
+#appShell .composer-shell [data-composer-frame][data-layout='inline'] {
+  background-image: none;
+  box-shadow: none;
+}
+#appShell .composer-shell [data-composer-frame][data-layout='inline']::before {
+  display: none;
+}
+#appShell .composer-shell [data-composer-frame][data-layout='inline'][data-focused='true'] {
+  box-shadow: inset 0 0 0 1px var(--ui-hairline-strong);
+}
 #appShell .composer-shell .composer-editor-root {
   display: block;
   min-width: 0;

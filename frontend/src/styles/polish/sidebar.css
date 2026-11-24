@@ -45,7 +45,7 @@
   }
   #appShell #sidebarCloseBtn:hover,
   #appShell #sidebarCloseBtn:focus-visible {
-    background: var(--ui-fill);
+    background: var(--ui-bg-hover);
     color: var(--foreground);
   }
   #appShell #sidebarCloseBtn:active {
@@ -61,7 +61,7 @@
     padding: 2px 8px 8px;
   }
   #appShell #sidebarNav .sidebar-nav-btn {
-    border-radius: var(--ui-radius-control);
+    border-radius: var(--ui-radius-row);
     transition:
       background-color var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1),
       color var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1),
@@ -104,9 +104,9 @@
       box-shadow var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1);
   }
   #appShell #sidebar .sidebar-search:hover {
-    border-color: var(--ui-border-strong);
+    border-color: transparent;
     color: var(--foreground);
-    box-shadow: 0 0 0 1px var(--ui-hairline-strong);
+    box-shadow: none;
   }
   /* The pill carries the focus treatment for its bare input (the input has
      no frame of its own, so a ring around it read as a box drawn around the
@@ -116,8 +116,8 @@
      around a text field. parity/sidebar.css owns that hairline for desktop;
      this layer only keeps the surface and the glyph emphasis. */
   #appShell #sidebar .sidebar-search:focus-within {
-    border-color: var(--ui-border-strong);
-    background: var(--ui-card);
+    border-color: transparent;
+    background: transparent;
     color: var(--foreground);
   }
   #appShell #sidebar .sidebar-search svg {
@@ -199,12 +199,12 @@
   }
   #appShell #sidebar .recent-item:hover,
   #appShell #sidebar .recent-item:focus-within {
-    background: var(--ui-fill);
+    background: var(--ui-bg-hover);
     color: var(--foreground);
   }
   #appShell #sidebar .recent-item.active,
   #appShell #sidebar .recent-item[aria-current='true'] {
-    background: var(--ui-bg-selected);
+    background: color-mix(in srgb, var(--ui-ink) 8%, transparent);
     color: var(--foreground);
   }
   #appShell #sidebar .recent-item.active .recent-item-text,
