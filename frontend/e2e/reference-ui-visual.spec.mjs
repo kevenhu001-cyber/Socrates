@@ -2,6 +2,10 @@ import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
+function readActiveTemplate(page) {
+  return page.evaluate(() => window.__socratesTestState.activeTemplate());
+}
+
 /* These screenshots are written to gitignored test-results/. The spec checks the
    app-owned surfaces at the same mobile and desktop sizes as the supplied
    references without committing generated artefacts to the repository. */
@@ -359,7 +363,7 @@ test('Create image requires Jimeng and activates only after the connection is av
     .click();
   await expect(page.locator('#composerToolsMenu')).toBeHidden();
   await expect(page.locator('.plugin-directory')).toBeVisible();
-  expect(await page.evaluate(() => window.__socratesTestState.activeTemplate()?.extensionKey || null)).toBeNull();
+  expect((await readActiveTemplate(page))?.extensionKey || null).toBeNull();
   await expect(page.locator('body')).toContainText('请先在插件页连接即梦 AI');
 });
 
@@ -404,19 +408,15 @@ test('Create image waits for a user prompt before submitting the image-generatio
     .locator('#composerToolsMenu .composer-tools-mobile-items [data-composer-action="createImage"]')
     .click();
   await expect
-    .poll(async () => page.evaluate(() => window.__socratesTestState.activeTemplate()?.extensionKey || null))
+    .poll(async () => (await readActiveTemplate(page))?.extensionKey || null)
     .toBe('createImage');
-  expect(await page.evaluate(() => window.__socratesTestState.activeTemplate()?.systemPrompt || '')).toContain(
-    'You are in image creation mode',
-  );
+  expect((await readActiveTemplate(page))?.systemPrompt || '').toContain('You are in image creation mode');
   expect(chatRequests).toEqual([]);
 
   await page
     .locator('#composerRoot .rich-composer-editor')
     .fill('A tiny blue fox under the northern lights.');
-  expect(await page.evaluate(() => window.__socratesTestState.activeTemplate()?.extensionKey || null)).toBe(
-    'createImage',
-  );
+  expect((await readActiveTemplate(page))?.extensionKey || null).toBe('createImage');
   await page.locator('#composerPrimaryBtn').click();
   await expect.poll(() => chatRequests.length).toBe(1);
   const requestBody = chatRequests[0].postData() || '';
