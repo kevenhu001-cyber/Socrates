@@ -164,6 +164,7 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
     } = toolCtx;
     const MAX_TOOL_ITERATIONS = toolCtx.MAX_TOOL_ITERATIONS;
     const executionResults = new Map<string, import('./types.js').ToolResult>();
+    const displayOutputs = new Map<string, string>();
     const runToolCall = createToolRunner({
       publicRuntime: {
         registerSources: turnEvents.registerSources,
@@ -179,6 +180,7 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
       toolPolicy,
       schemaForTool,
       onResult: (id, result) => executionResults.set(id, result),
+      onDisplayOutput: (id, content) => displayOutputs.set(id, content),
       connectorConnectionsByProvider,
       projectConnectorConnectionsByProvider,
       connectorCatalog,
@@ -697,7 +699,7 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
           id: prepCall.call.id,
           name: prepCall.toolName,
           input: prepCall.args,
-          output: toolMsg?.content || null,
+          output: displayOutputs.get(prepCall.call.id) ?? (toolMsg?.content || null),
           status: execution?.status,
           errorCode: execution?.errorCode,
           isError: execution
@@ -705,6 +707,9 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
             : !prepCall.registryEntry || prepCall.rejection != null,
         });
       }
+
+      displayOutputs.clear();
+      executionResults.clear();
 
       /* An exhausted call or time budget ends the tool phase deliberately:
          the next hop runs without tools so the turn still produces a
