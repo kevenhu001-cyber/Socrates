@@ -28,7 +28,10 @@ export function ProfilePreferencesSection({
   }, [dispatch]);
 
   return (
-    <SectionCard className="profile-section" title={profileText('profile.preferences', 'Preferences')}>
+    <SectionCard
+      className="profile-section"
+      title={profileText('profile.preferences', 'Preferences')}
+    >
       <div className="profile-row">
         <span className="profile-row-label">{profileText('profile.language', 'Language')}</span>
         <ToggleGroup
