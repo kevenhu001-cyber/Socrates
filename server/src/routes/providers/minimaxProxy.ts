@@ -97,7 +97,7 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
      * to their own upstream on every subsequent turn. The snapshot keeps only
      * provider-independent session state; the identity is appended per
      * request, after the snapshot has been resolved. */
-    const memoryPromise = resolveMemoryContext(req.userId ?? undefined, isUuid(req.body.projectId) ? req.body.projectId : undefined);
+    const memoryPromise = resolveMemoryContext(req.userId ?? undefined, isUuid(req.body.projectId) ? req.body.projectId : undefined, undefined, context.conversation);
     const teacherPromise = mode === 'tutor' ? getTeacherModePrompt() : Promise.resolve(null);
     const assistantPromise = resolveAssistantInstructions(assistantId, sessionId, req.userId ?? undefined);
     for (const p of [memoryPromise, teacherPromise, assistantPromise]) p.catch(() => {});
@@ -126,7 +126,7 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
     let refreshed = refreshServerPrompt(storedPrompt, { clientBlocks, reasoningEffort: reasoning_effort });
     refreshed = refreshSnapshotBlock(refreshed, TEACHER_MODE_MARKER, teacherPrompt);
     refreshed = refreshSnapshotBlock(refreshed, '[User-selected assistant]', assistantBlock?.prompt ?? null);
-    refreshed = refreshSnapshotBlock(refreshed, MEMORY_CONTEXT_MARKER, memoryBlock?.prompt ?? null);
+    refreshed = refreshSnapshotBlock(refreshed, MEMORY_CONTEXT_MARKER, null);
     const systemPrompt = insertProviderIdentity(
       insertResponseTypography(refreshed),
       await getBeagleSystemPrompt(),
@@ -134,7 +134,7 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
     let messages = transformMessagesForModel(
       [
         { role: 'system', content: systemPrompt },
-        ...appendTurnContext(context.conversation, context.turnInstructions, null),
+        ...appendTurnContext(context.conversation, context.turnInstructions, memoryBlock?.prompt ?? null),
       ],
       provider,
     );
