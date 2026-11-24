@@ -40,8 +40,11 @@ export function projectContextSuffix(): string {
   if (typeof currentProjectId !== 'string') return '';
   const project = getCachedProjects().find((candidate) => candidate.id === currentProjectId);
   if (!project) return '';
-  let suffix = '\n\n## Active project\nProject: ' + String(project.name || 'Untitled');
-  if (project.description) suffix += '\nPurpose: ' + String(project.description);
+  // Keep metadata on its own lines so multiline descriptions cannot be
+  // reclassified as the legacy Project instructions section.
+  const scalar = (value: unknown) => String(value).replace(/[\r\n]+/g, ' ');
+  let suffix = '\n\n## Active project\nProject: ' + scalar(project.name || 'Untitled');
+  if (project.description) suffix += '\nPurpose: ' + scalar(project.description);
   if (project.systemPrompt) suffix += '\nProject instructions: ' + String(project.systemPrompt);
   return suffix;
 }
