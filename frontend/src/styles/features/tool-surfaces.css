@@ -364,6 +364,14 @@
 }
 
 /* Completed activity bursts read like a quiet transcript caption, not a card. */
+.tool-activity-burst-caption {
+  display: flex;
+  align-items: center;
+  min-height: var(--ui-control-sm);
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-sm);
+  line-height: var(--ui-text-ui-line);
+}
 .tool-activity-burst-toggle {
   display: inline-flex;
   align-items: center;
