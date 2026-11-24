@@ -71,7 +71,7 @@ export async function resolveRagContext(
     }
   }
   query = query.trim().slice(0, 2000);
-  if (!query) return null;
+  if (!query || /^(?:hi|hello|hey|thanks|thank you|你好|您好|谢谢|嗨)[!！。,.，\s]*$/i.test(query)) return null;
 
   try {
     const { searchSessionChunksHybrid, sessionOwnedBy } =
@@ -110,10 +110,12 @@ export async function resolveRagContext(
     if (!hits.length) return null;
     const blocks: string[] = [];
     let total = 0;
+    const seen = new Set<string>();
     for (const hit of hits) {
       if (total >= RAG_MAX_TOTAL_CHARS) break;
-      const text = String(hit.text || '').slice(0, RAG_MAX_CHARS_PER_HIT);
-      if (!text) continue;
+      const text = String(hit.text || '').trim().slice(0, Math.min(RAG_MAX_CHARS_PER_HIT, RAG_MAX_TOTAL_CHARS - total));
+      if (!text || seen.has(text) || query.includes(text)) continue;
+      seen.add(text);
       blocks.push(`- ${escapePromptControlText(text)}`);
       total += text.length;
     }
