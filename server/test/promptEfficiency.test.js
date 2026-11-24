@@ -60,6 +60,7 @@ test('routine questions keep Python deferred while execution-heavy requests prew
     '推导这个方程',
     '解释代码',
     '解释如何执行代码',
+    '执行代码是什么意思',
     'what does executing code mean',
     '画一个函数图像',
     'calculate 2 + 3',

@@ -47,7 +47,10 @@ describe('codeInterpreter.execute — input guard rails', () => {
     const workerSource = await fsPromises.readFile(source, 'utf8');
     assert.doesNotMatch(workerSource, /require\s*\(/);
     assert.match(workerSource, /import \{ parentPort \} from 'node:worker_threads'/);
-    assert.match(workerSource, /import \{ PYODIDE_PACKAGE_CACHE_DIR \} from '\.\/codeInterpreter\/config\.js'/);
+    assert.match(
+      workerSource,
+      /import \{ PYODIDE_PACKAGE_CACHE_DIR \} from '\.\/codeInterpreter\/config\.js'/,
+    );
   });
 
   /* Pyodide's default file-descriptor bindings can raise an I/O error
