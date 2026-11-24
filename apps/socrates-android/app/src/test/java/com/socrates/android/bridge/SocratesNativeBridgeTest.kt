@@ -20,6 +20,7 @@ class SocratesNativeBridgeTest {
         assertTrue("performHaptic must be annotated with @JavascriptInterface", jsMethods.contains("performHaptic"))
         assertTrue("notifyPageReady must be annotated with @JavascriptInterface", jsMethods.contains("notifyPageReady"))
         assertTrue("postMessage must be annotated with @JavascriptInterface", jsMethods.contains("postMessage"))
+        assertTrue("setThemeMode must be annotated with @JavascriptInterface", jsMethods.contains("setThemeMode"))
     }
 
     @Test
