@@ -1073,6 +1073,30 @@ body.composer-tools-open.composer-tools-open::after {
 .profile-page {
   max-width: var(--ui-page-reading-width);
 }
+.profile-page .profile-section {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.profile-page .profile-section + .profile-section {
+  padding-top: var(--ui-space-lg);
+  border-top: 1px solid var(--ui-border-subtle);
+}
+.profile-page .profile-section .ui-section-card-header {
+  align-items: center;
+  margin-bottom: var(--ui-space-sm);
+}
+.profile-page .profile-section .ui-section-card-title {
+  font-size: var(--ui-font-size-md);
+  font-weight: var(--ui-font-weight-semibold);
+}
+.profile-page .profile-section .ui-section-card-content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
 .profile-page .account-page-header {
   flex: 0 0 auto;
   padding-block: var(--ui-space-sm);
