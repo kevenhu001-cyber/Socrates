@@ -177,8 +177,7 @@ function ToolActivityBurst({
       {canFold ? (
         <Button
           type="button"
-          variant="ghost"
-          size="surface"
+          variant="surface"
           className="tool-activity-burst-toggle"
           aria-expanded={open}
           aria-controls={bodyId}
