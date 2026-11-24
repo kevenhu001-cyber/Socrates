@@ -403,3 +403,33 @@
     min-height: var(--ui-control-touch);
   }
 }
+
+/* Live workspace activity is secondary to the tool row and never replaces
+ * the actual command, output, or approval disclosure. */
+.agent-activity-preview {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-sm);
+  min-width: 0;
+  padding: var(--ui-space-xs) var(--ui-space-sm);
+  margin-block: var(--ui-space-xs);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-bg-raised);
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-xs);
+  line-height: var(--ui-text-ui-line);
+}
+.agent-activity-preview-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.agent-activity-preview-count {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+.agent-activity-preview[data-state='failed'] {
+  color: var(--destructive);
+}
