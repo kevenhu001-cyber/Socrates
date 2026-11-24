@@ -95,15 +95,15 @@ html[data-main-view='settingsPage'] #appShell .top-bar {
     box-shadow: none;
   }
 
-  /* Soften the transcript/header boundary only when content moves beneath
-     it. This replaces a hard separator with a theme-aware edge fade. */
+  /* Keep a one-pixel separator only while transcript content passes under
+     the header. The actual text fade is owned by the transcript mask. */
   #appShell .top-bar::after {
     content: '';
     position: absolute;
     inset-inline: 0;
-    bottom: calc(-1 * var(--ui-transcript-fade-top, 32px));
-    height: var(--ui-transcript-fade-top, 32px);
-    background: linear-gradient(to bottom, var(--conversation-page) 0%, transparent 100%);
+    bottom: 0;
+    height: 1px;
+    background: var(--ui-hairline);
     opacity: 0;
     transition: opacity var(--ui-duration-fast) var(--ui-ease-out);
     pointer-events: none;
@@ -247,22 +247,3 @@ html[data-main-view$='Panel'] #appShell .mobile-newchat-btn {
 }
 
 
-@media (max-width: 768px) {
-  #appShell .top-bar {
-    position: relative;
-  }
-  #appShell .top-bar::after {
-    content: '';
-    position: absolute;
-    inset-inline: 0;
-    bottom: calc(-1 * var(--ui-transcript-fade-top, 32px));
-    height: var(--ui-transcript-fade-top, 32px);
-    background: linear-gradient(to bottom, var(--conversation-page) 0%, transparent 100%);
-    opacity: 0;
-    transition: opacity var(--ui-duration-fast) var(--ui-ease-out);
-    pointer-events: none;
-  }
-  body[data-transcript-scrolled='true'] #appShell .top-bar::after {
-    opacity: 1;
-  }
-}
