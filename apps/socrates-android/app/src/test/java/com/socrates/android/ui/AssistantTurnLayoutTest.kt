@@ -57,4 +57,20 @@ class AssistantTurnLayoutTest {
         assertEquals(false, AssistantTurnLayout.isLiveTextTail(rows, 1, true))
         assertEquals(false, AssistantTurnLayout.isLiveTextTail(emptyList(), -1, true))
     }
+    @Test fun activityCountsOnlyRecordedSuccessfulCalls() {
+        val completed = JSONObject().put("status", "running").put("progressPhase", "completed")
+        val failed = JSONObject().put("status", "completed").put("isError", true)
+        val pending = JSONObject().put("status", "running").put("approval", JSONObject().put("status", "pending"))
+        val stopped = JSONObject().put("progressPhase", "cancelled")
+        val unknown = JSONObject()
+        assertEquals("completed", toolActivityPhase(completed))
+        assertEquals("failed", toolActivityPhase(failed))
+        assertEquals("awaiting_approval", toolActivityPhase(pending))
+        assertEquals("stopped", toolActivityPhase(stopped))
+        assertEquals("unknown", toolActivityPhase(unknown))
+        assertEquals("running", toolActivityPhase(JSONObject().put("status", "running")))
+        val wire = JSONObject().put("toolCalls", JSONArray().put(completed).put(failed).put(pending).put(stopped).put(unknown))
+        assertEquals(1, completedToolCount(wire))
+        assertEquals(0, completedToolCount(null))
+    }
 }
