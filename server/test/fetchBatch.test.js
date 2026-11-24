@@ -448,7 +448,7 @@ describe('fetchBatch — response handling', () => {
     assert.ok(out.results[0].content.length <= 200_000, 'body truncated to <=200KB');
   });
 
-  test('web_fetch continues beyond 20k and the ordinary 200 KB page limit', async () => {
+  test('web_fetch continues beyond the default page and ordinary 200 KB page limit', async () => {
     stubDns({ 'paged.test': [{ address: '8.8.8.8', family: 4 }] });
     const body = 'A'.repeat(220_000) + 'PAGED_MARKER' + 'B'.repeat(25_000);
     globalThis.fetch = mock.fn(async () =>
@@ -459,9 +459,9 @@ describe('fetchBatch — response handling', () => {
     const call = { id: 'fetch-page', function: { name: 'web_fetch' } };
     const url = 'https://paged.test/article';
     const first = await executeWebFetch({ url }, call, ctx, { activeToolNames: [] });
-    assert.match(first.result.output, /\[range: 0-20000 of \d+ available chars\]/);
+    assert.match(first.result.output, /\[range: 0-8000 of \d+ available chars\]/);
     assert.match(first.result.output, /\[has_more: yes\]/);
-    assert.match(first.result.output, /\[next_offset: 20000\]/);
+    assert.match(first.result.output, /\[next_offset: 8000\]/);
     const later = await executeWebFetch({ url, offset: 220_000, max_chars: 100 }, call, ctx, {
       activeToolNames: [],
     });
