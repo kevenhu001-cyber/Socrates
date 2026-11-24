@@ -14,6 +14,7 @@ class NativeReadingColorsTest {
         assertEquals(0xFFEEEEEE.toInt(), NativeReadingColors.borderSubtle)
         assertEquals(0xFFE3E3E3.toInt(), NativeReadingColors.borderDefault)
         assertEquals(0xFFDDDDDD.toInt(), NativeReadingColors.borderStrong)
+        assertEquals(0xFFF5F5F5.toInt(), NativeReadingColors.codeSurface)
         listOf(
             NativeReadingColors.textPrimary, NativeReadingColors.textSecondary,
             NativeReadingColors.textTertiary, NativeReadingColors.borderSubtle,
@@ -30,7 +31,7 @@ class NativeReadingColorsTest {
         )
         assertTrue(luminance(text[0]) < luminance(text[1]))
         assertTrue(luminance(text[1]) < luminance(text[2]))
-        listOf(0xFFFFFFFF.toInt(), 0xFFF8F8F8.toInt(), 0xFFF4F4F4.toInt()).forEach { background ->
+        listOf(0xFFFFFFFF.toInt(), 0xFFF8F8F8.toInt(), 0xFFF4F4F4.toInt(), NativeReadingColors.codeSurface).forEach { background ->
             text.forEach { foreground ->
                 assertTrue(
                     "contrast ${contrast(foreground, background)} below 4.5 for #${foreground.toUInt().toString(16)} on #${background.toUInt().toString(16)}",
