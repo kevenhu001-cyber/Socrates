@@ -20,7 +20,8 @@ import org.json.JSONObject
 class SocratesNativeBridge(
     private val context: Context,
     private val webViewProvider: () -> WebView?,
-    private val onPageReady: () -> Unit = {}
+    private val onPageReady: () -> Unit = {},
+    private val onThemeMode: (Boolean) -> Unit = {}
 ) {
     private val scope = CoroutineScope(Dispatchers.Main)
 
@@ -85,6 +86,17 @@ class SocratesNativeBridge(
     fun notifyPageReady() {
         scope.launch {
             onPageReady()
+        }
+    }
+
+    /** Only the bundled SPA can request a change to the system-bar appearance. */
+    @JavascriptInterface
+    fun setThemeMode(mode: String) {
+        if (mode != "light" && mode != "dark") return
+        scope.launch {
+            val url = webViewProvider()?.url?.let(android.net.Uri::parse) ?: return@launch
+            if (url.scheme != "https" || url.host != "appassets.androidplatform.net") return@launch
+            onThemeMode(mode == "dark")
         }
     }
 
