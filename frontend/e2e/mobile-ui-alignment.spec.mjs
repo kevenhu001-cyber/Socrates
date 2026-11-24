@@ -84,9 +84,7 @@ for (const theme of ['light', 'dark']) {
     await page.screenshot({
       path: `test-results/ui-alignment-${encodeURIComponent(theme)}-home.png`,
     });
-    await page.locator('#topModelSwitcher').click();
-    await expect(page.locator('.chat-config-pop')).toBeInViewport();
-    await page.keyboard.press('Escape');
+    await expect(page.locator('#topModelSwitcher')).toBeHidden();
     await page.locator('#sidebarOpenBtn').click();
     await expect
       .poll(async () => Math.round((await page.locator('#sidebar').boundingBox()).width))
@@ -213,13 +211,6 @@ test('compact phone menus and enlarged text stay inside the viewport', async ({ 
   await page.locator('#sidebarCloseBtn').click();
   await page.evaluate(() => document.documentElement.style.setProperty('--app-font-scale', '1.5'));
   await expect(page.locator('#topModeSwitch')).toBeInViewport();
-  const overlap = await page.evaluate(() => {
-    const tabs = document.getElementById('topModeSwitch').getBoundingClientRect();
-    const model = document.getElementById('topModelSwitcher').getBoundingClientRect();
-    return {
-      overlaps: tabs.right > model.left,
-      overflow: document.documentElement.scrollWidth - innerWidth,
-    };
-  });
-  expect(overlap).toEqual({ overlaps: false, overflow: 0 });
+  await expect(page.locator('#topModelSwitcher')).toBeHidden();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBe(0);
 });

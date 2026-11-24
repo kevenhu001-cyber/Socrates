@@ -44,9 +44,8 @@ for (const [label, model, viewport, lang] of [
           .getByRole('button', { name: lang === 'zh' ? /思考强度/ : /Reasoning effort/ })
           .click();
       } else {
-        /* Phones follow the reference: no model chip in the header; the
-           composer's always-visible effort pill opens the effort view directly. */
-        await page.locator('#effortTrigger:visible').first().click();
+        await page.locator('#composerRoot .rich-composer-editor').focus();
+        await page.locator('#effortTrigger').click();
         await expect(pop.getByRole('slider')).toBeVisible();
       }
       return pop;

@@ -101,27 +101,22 @@ test('React model selection updates the top-bar label', async ({ page }) => {
   await expect(switcher).toHaveAttribute('aria-label', /Second model/);
 });
 
-test('phones name the model in a chip instead of an unlabelled settings glyph', async ({
-  page,
-}) => {
+test('phones switch models from the composer and keep the mode tabs centred', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(page.locator('#topModelSwitcher')).toBeVisible();
-  /* The chip carries the resolved model name; the brand lockup and the
-     settings glyph are desktop/empty-state fallbacks. */
-  await expect(page.locator('#topModelSwitcher [data-part="model-name"]')).toBeVisible();
-  await expect(page.locator('#topModelSwitcher [data-part="model-name"]')).toHaveText(/\S/);
-  await expect(page.locator('#topModelSwitcher [data-part="model-brand"]')).toBeHidden();
-  await expect(page.locator('#topModelSwitcher [data-part="model-settings"]')).toBeHidden();
-  await expect(page.locator('#topModeSwitch')).toBeVisible();
-  /* The chip must clear the centred mode switch rather than run under it. */
-  const gap = await page.evaluate(() => {
-    const tabs = document.getElementById('topModeSwitch').getBoundingClientRect();
-    const model = document.getElementById('topModelSwitcher').getBoundingClientRect();
-    return Math.round(model.left - tabs.right);
-  });
-  expect(gap).toBeGreaterThan(0);
-  await page.locator('#topModelSwitcher').click();
-  await expect(page.locator('.chat-config-pop')).toBeInViewport();
+  await expect(page.locator('#topModelSwitcher')).toBeHidden();
+  const modes = page.locator('#topModeSwitch');
+  await expect(modes).toBeVisible();
+  const tabs = await modes.boundingBox();
+  expect(tabs.x + tabs.width / 2).toBeCloseTo(195, 0);
+
+  await page.locator('#composerRoot .rich-composer-editor').focus();
+  const effort = page.locator('#effortTrigger');
+  await effort.click();
+  const pop = page.locator('.chat-config-pop');
+  await pop.getByRole('button', { name: /返回模型列表/ }).click();
+  await pop.getByRole('option', { name: /Second model/ }).click();
+  await expect(pop).toBeHidden();
+  await expect(effort).toHaveAccessibleName(/Second model/);
 });
 
 test('switcher exposes the React model label and composer effort stays in sync', async ({
@@ -147,6 +142,7 @@ test('switcher exposes the React model label and composer effort stays in sync',
   await page.setViewportSize({ width: 390, height: 844 });
   const effort = page.locator('#composerInputWrap [data-composer-control=effort]');
   await expect(effort).toHaveAttribute('data-effort', 'high');
+  await page.locator('#composerRoot .rich-composer-editor').focus();
   await expect(effort).toBeVisible();
   await expect(effort.locator('[data-effort-value]')).not.toBeEmpty();
   expect(await page.evaluate(() => typeof window.syncEffortUI)).toBe('undefined');

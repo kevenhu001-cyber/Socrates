@@ -13,26 +13,21 @@ test('reference home keeps its bottom composer and phone configuration usable', 
   await waitForAppShell(page);
   await page.evaluate(() => document.fonts.ready);
   const composer = page.locator('#composerInputWrap');
-  /* The phone composer's dark surface is the ladder's top rung (#292929) —
-     the Geist elevated step the composer has always been cut from. ADR 0023
-     moved the whole ladder onto the Geist scale, so the pinned value moved
-     with it (#181818 → #292929); the composer is still one rung above the
-     phone canvas, which is the contract this reference actually pins. The
-     outer host is a transparent moving container; the RN frame paints. */
-  const composerBackground = await composer
-    .locator('[data-composer-frame]')
-    .evaluate((el) => getComputedStyle(el).backgroundColor);
-  expect(rgbChannels(composerBackground)).toEqual([41, 41, 41]);
+  const frame = composer.locator('[data-composer-frame]');
+  const composerBackground = await frame.evaluate((el) => getComputedStyle(el).backgroundColor);
+  expect(rgbChannels(composerBackground)).toEqual([48, 48, 48]);
   await expect(page.locator('#composerPrimaryBtn [data-ui-icon=arrow-up]')).toBeVisible();
   const rect = await composer.boundingBox();
   expect(rect.x).toBe(16);
   expect(rect.width).toBe(358);
-  expect(rect.height).toBe(86);
+  expect(rect.height).toBe(52);
   expect(769 - rect.y - rect.height).toBe(24);
-  const greeting = await page.locator('#topicTitle').boundingBox();
-  expect(Math.abs(greeting.y + greeting.height / 2 - 344.765)).toBeLessThan(1);
-  await page.locator('#topModelSwitcher').click();
+  await expect(page.locator('#topicTitle')).toBeInViewport();
+  await expect(page.locator('#topModelSwitcher')).toBeHidden();
+  await composer.locator('.rich-composer-editor').focus();
+  await composer.locator('#effortTrigger').click();
   await expect(page.locator('.chat-config-pop')).toBeVisible();
+  await page.keyboard.press('Escape');
   await page.keyboard.press('Escape');
   await page.setViewportSize({ width: 320, height: 568 });
   const compact = await composer.boundingBox();

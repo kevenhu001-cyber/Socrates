@@ -90,10 +90,11 @@
 /* ── Inline composition: one flat capsule ────────────────────────────────
    The desktop field is a single 52px row on the composer surface. Its edge
    is the fill step itself — no ring, no gradient, no resting shadow; focus
-   adds one hairline inside the radius. Phones keep the stacked sheet. */
+   adds one hairline inside the radius. */
 #appShell .composer-shell [data-composer-frame][data-layout='inline'] {
   background-image: none;
   box-shadow: none;
+  transition: box-shadow var(--ui-duration-fast) var(--ui-ease-out);
 }
 #appShell .composer-shell [data-composer-frame][data-layout='inline']::before {
   display: none;
@@ -307,11 +308,10 @@
   opacity: 0.65;
 }
 
-/* ── Phone: same sheet, full width, 44px hit areas ──────────────────────── */
+/* ── Phone: compact at rest, with room for a separate input row ────────── */
 @media (max-width: 768px) {
   /* Project shared RN card/fill roles onto the canonical phone palette.
      All colour values still come from themes.css; this is surface wiring. */
-  /* Keep the phone focus cue on the field edge, with no change in geometry. */
   #appShell .composer-shell {
     --ui-card: var(--ui-bg-field);
     --ui-fill: var(--ui-bg-control);
@@ -335,10 +335,88 @@
     width: 100%;
     max-width: none;
   }
+  #appShell .composer-shell [data-composer-frame][data-layout='inline'] {
+    --composer-frame-radius: calc(var(--ui-radius-composer-desktop) - 2px);
+    --composer-control-size: 36px;
+    --composer-collapsed-inset: min(5vw, var(--ui-step-200));
+    --composer-motion: var(--ui-duration-normal) var(--ui-ease-content);
+    --composer-editor-inset-start: calc(var(--composer-control-size) + var(--ui-step-75));
+    --composer-editor-inset-end: calc(2 * var(--composer-control-size) + var(--ui-step-200));
+    --composer-toolbar-space: 0px;
+    position: relative;
+    max-width: calc(100% - 2 * var(--composer-collapsed-inset));
+    margin-inline: auto;
+    transition:
+      max-width var(--composer-motion),
+      border-radius var(--composer-motion),
+      box-shadow var(--ui-duration-fast) var(--ui-ease-out);
+  }
+  #appShell .composer-shell [data-composer-frame][data-layout='inline'][data-expanded='true'],
+  #appShell .composer-shell:is(.has-plugin-chips, .has-queue) [data-layout='inline'] {
+    --composer-frame-radius: var(--ui-radius-composer);
+    --composer-editor-inset-start: var(--ui-step-75);
+    --composer-editor-inset-end: var(--ui-step-75);
+    --composer-toolbar-space: calc(var(--composer-control-size) + var(--ui-step-50));
+    max-width: 100%;
+  }
+  #appShell .composer-shell [data-composer-slot='inline'] {
+    position: relative;
+  }
+  /* Both groups stay pinned to the lower edge while the editor gains room
+     above them. The contenteditable and its controls keep their DOM nodes. */
+  #appShell .composer-shell [data-composer-slot='inline'] > [data-composer-slot='body'] {
+    --composer-body-padding: 5px var(--composer-editor-inset-end)
+      calc(5px + var(--composer-toolbar-space)) var(--composer-editor-inset-start);
+    flex-basis: 100%;
+    transition: padding var(--composer-motion);
+  }
+  #appShell .composer-shell [data-composer-slot='inline'] > [data-composer-control='tools'],
+  #appShell .composer-shell [data-composer-slot='trailing'] {
+    position: absolute;
+    inset-block-end: 0;
+  }
+  #appShell .composer-shell [data-composer-slot='inline'] > [data-composer-control='tools'] {
+    inset-inline-start: 0;
+  }
+  #appShell .composer-shell [data-composer-slot='trailing'] {
+    inset-inline-end: 0;
+    pointer-events: none;
+  }
+  #appShell .composer-shell [data-composer-slot='trailing'] button {
+    pointer-events: auto;
+  }
+  #appShell .composer-shell [data-composer-slot='trailing'] [data-composer-control='effort'] {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity var(--ui-duration-fast) var(--ui-ease-out);
+  }
+  #appShell
+    .composer-shell:not(.has-plugin-chips, .has-queue)
+    [data-expanded='false']
+    [data-composer-control='effort'] {
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity var(--ui-duration-fast) var(--ui-ease-out),
+      visibility 0s var(--ui-duration-fast);
+  }
+  #appShell
+    .composer-shell:not(.has-plugin-chips, .has-queue)
+    [data-expanded='false']
+    [data-composer-control='effort']
+    button {
+    pointer-events: none;
+  }
   /* Reference phone question box: draft and placeholder at 16px. */
   #appShell .composer-shell .rich-composer-editor {
     max-height: 220px;
     font-size: var(--ui-font-size-md);
+  }
+  #appShell .composer-shell .rich-composer-editor p.is-editor-empty:first-child::before {
+    max-inline-size: 100%;
+    height: auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   /* Add to the shared rail's 4px gap so the two 4px hit slop edges meet
      without overlapping. The painted discs stay 36px. */
@@ -376,6 +454,19 @@
     position: absolute;
     inset: -4px;
     pointer-events: auto;
+  }
+}
+
+@media (max-width: 768px) and (prefers-reduced-motion: reduce) {
+  #appShell .composer-shell [data-composer-frame][data-layout='inline'] {
+    --composer-motion: 0s;
+  }
+  #appShell .composer-shell [data-composer-slot='trailing'] [data-composer-control='effort'],
+  #appShell
+    .composer-shell:not(.has-plugin-chips, .has-queue)
+    [data-expanded='false']
+    [data-composer-control='effort'] {
+    transition: none;
   }
 }
 

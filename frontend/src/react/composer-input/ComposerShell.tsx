@@ -71,21 +71,33 @@ const FIELD_SHADOWS = {
   fieldFocus: 'var(--ui-elevation-lit-field-focus)',
 };
 
-/* Focus inside the editor deepens the sheet's hairline (site ask-box). */
-function useEditorFocus(): boolean {
+/* On phones, moving from the editor to a control keeps the control in place. */
+function useEditorFocus(keepControlsInPlace: boolean): boolean {
   const [focused, setFocused] = useState(false);
   useEffect(() => {
     const host = document.getElementById('composerInputWrap');
     if (!host) return undefined;
-    const sync = () => setFocused(Boolean(host.querySelector('.rich-composer-editor:focus')));
-    const later = () => requestAnimationFrame(sync);
-    host.addEventListener('focusin', sync);
-    host.addEventListener('focusout', later);
-    return () => {
-      host.removeEventListener('focusin', sync);
-      host.removeEventListener('focusout', later);
+    const onFocusIn = (event: FocusEvent) => {
+      const target = event.target;
+      if (
+        target instanceof Element &&
+        (target.matches('.rich-composer-editor') ||
+          (keepControlsInPlace && target.id === 'effortTrigger'))
+      ) {
+        setFocused(true);
+      }
     };
-  }, []);
+    const onFocusOut = (event: FocusEvent) => {
+      if (keepControlsInPlace && host.contains(event.relatedTarget as Node | null)) return;
+      setFocused(false);
+    };
+    host.addEventListener('focusin', onFocusIn);
+    host.addEventListener('focusout', onFocusOut);
+    return () => {
+      host.removeEventListener('focusin', onFocusIn);
+      host.removeEventListener('focusout', onFocusOut);
+    };
+  }, [keepControlsInPlace]);
   return focused;
 }
 
@@ -274,8 +286,10 @@ export function ComposerShell({
     voiceAnalyser,
   } = useComposerVoiceState();
   const phone = useComposerPhone();
-  const focused = useEditorFocus();
+  const focused = useEditorFocus(phone);
   const configuration = useChatConfigurationSnapshot();
+  const effortOpen = configuration.open && configuration.triggerId === 'effortTrigger';
+  const expanded = focused || hasDraft || attachments.length > 0 || voiceActive || effortOpen;
   const modelLabel = useActiveModelLabel();
   const effort = useStoredReasoningEffort();
   const effortValue = effortLabel(effort);
@@ -336,6 +350,7 @@ export function ComposerShell({
       <WebUiTheme>
         <ComposerFrame
           focused={focused}
+          expanded={expanded}
           compact={phone}
           layout="inline"
           surface="var(--ui-bg-ask)"

@@ -2,7 +2,7 @@
  * RN-7 — the question box, drawn in the marketing site's component language
  * (site home-refresh.css `.ask-box`): one white sheet, 24px radius, no
  * border — the edge is a 1px hairline ring folded into a soft shadow that
- * deepens on hover and focus (never a colour). Two storeys, always:
+ * deepens on hover and focus. The stacked layout uses three slots:
  *
  *   [top]       attachments (optional)
  *   [body]      the host's editor (web: the rich editor, kept as is)
@@ -22,13 +22,13 @@ import { ComposerControls, type ComposerControlsProps } from './ComposerControls
 export interface ComposerFrameProps {
   /** Keyboard focus is inside the editor (host-tracked). */
   focused: boolean;
+  /** The host can expand the inline layout without replacing its slots. */
+  expanded?: boolean;
   /** Phone layout: tighter sheet padding. */
   compact?: boolean;
   /**
-   * `inline` puts the tools, the editor and the send controls on one row —
-   * the reference's composition, where the field is a single 52px capsule
-   * that grows upward with the text. `stacked` (default) keeps the two
-   * storeys used by the phone composition.
+   * `inline` places the tools and send controls around the editor.
+   * `stacked` (default) gives the editor and controls their own rows.
    */
   layout?: 'stacked' | 'inline';
   /** Sheet fill. Web passes the mode's composer surface; native defaults to
@@ -48,6 +48,7 @@ export interface ComposerFrameProps {
 
 export function ComposerFrame({
   focused,
+  expanded = false,
   compact = false,
   layout = 'stacked',
   surface,
@@ -62,28 +63,20 @@ export function ComposerFrame({
   const [hovered, setHovered] = useState(false);
   const shadow = shadows ?? uiShadow.light;
   const inline = layout === 'inline';
-  /* The phone inline row has no space for the effort chip; the model chip's
-     dialog already owns that setting, so the field keeps plus · text · mic ·
-     send, exactly as the reference's phone composer does. */
-  const inlineControls =
-    inline && compact ? { ...controls, effort: { ...controls.effort, visible: false } } : controls;
   return (
     <div
       {...dataAttributes({
         composerFrame: '',
         focused: focused ? 'true' : 'false',
+        expanded: expanded ? 'true' : 'false',
         layout: inline ? 'inline' : 'stacked',
       })}
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
       style={domStyle({
         width: '100%',
-        /* Inline: the reference box's corner is 28px on desktop and 26px on
-           the phone composition; the stacked phone sheet keeps 24px. */
         borderRadius: inline
-          ? compact
-            ? uiRadius.composer - 2
-            : uiRadius.composer
+          ? `var(--composer-frame-radius, ${uiRadius.composer}px)`
           : compact
             ? uiRadius.card + uiStep[25]
             : uiRadius.card,
@@ -97,9 +90,9 @@ export function ComposerFrame({
             : hovered
               ? shadow.fieldHover
               : shadow.field,
-        transitionProperty: 'box-shadow, background-color',
-        transitionDuration: `${uiMotion.slow - 100}ms`,
-        transitionTimingFunction: uiMotion.easeOut,
+        transitionProperty: inline ? undefined : 'box-shadow, background-color',
+        transitionDuration: inline ? undefined : `${uiMotion.slow - 100}ms`,
+        transitionTimingFunction: inline ? undefined : uiMotion.easeOut,
         paddingTop: inline ? uiStep[75] : compact ? uiStep[75] : uiStep[200],
         paddingBottom: inline ? uiStep[75] : uiStep[75],
         paddingHorizontal: uiStep[75],
@@ -118,6 +111,7 @@ export function ComposerFrame({
       ) : null}
       {inline ? (
         <div
+          {...dataAttributes({ composerSlot: 'inline' })}
           style={{
             display: 'flex',
             flexDirection: 'row',
@@ -126,21 +120,24 @@ export function ComposerFrame({
             minHeight: 36,
           }}
         >
-          <ComposerControls {...inlineControls} compact={compact} part="leading" />
+          <ComposerControls {...controls} compact={compact} part="leading" />
           <div
             {...dataAttributes({ composerSlot: 'body' })}
             style={{
               flexGrow: 1,
               flexShrink: 1,
               minWidth: 0,
-              paddingTop: 3,
-              paddingBottom: 3,
-              paddingLeft: uiStep[50],
+              padding: `var(--composer-body-padding, 3px 0 3px ${uiStep[50]}px)`,
             }}
           >
             {body}
           </div>
-          <ComposerControls {...inlineControls} compact={compact} part="trailing" />
+          <div
+            {...dataAttributes({ composerSlot: 'trailing' })}
+            style={{ display: 'flex', alignItems: 'flex-end', gap: uiStep[25], flexShrink: 0 }}
+          >
+            <ComposerControls {...controls} compact={compact} part="trailing" />
+          </div>
         </div>
       ) : (
         <>

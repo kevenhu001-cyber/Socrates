@@ -42,7 +42,7 @@
 #appShell .mobile-newchat-btn {
   display: none;
 }
-/* 模型 chip 的布局槽位不参与排版；手机对话中由 mobile-shell.css 隐藏。 */
+/* 模型槽位由 parity/topbar.css 在移动端隐藏。 */
 #appShell .top-model-slot {
   display: contents;
 }

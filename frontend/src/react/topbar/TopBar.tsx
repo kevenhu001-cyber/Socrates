@@ -167,10 +167,8 @@ function SidebarToggle() {
 /**
  * The top-left model switcher opens the shared chat-configuration popover
  * (model · reasoning effort · speed). The visible model name is part of the
- * accessible name (WCAG 2.5.3). Phones show the compact model chip on the
- * new-chat screen. During a conversation the header has no room beside the
- * centred mode switch and session actions, so the composer effort pill stays
- * the model-settings path.
+ * accessible name (WCAG 2.5.3). On phones, the composer effort pill opens
+ * the configuration popover.
  */
 function ModelSwitcher({
   phone,
@@ -326,9 +324,6 @@ function TopBarLeft({
             }}
           />
         </span>
-        {/* 新聊天页显示模型 chip；手机对话中隐藏它以给标题和会话操作留空间。
-            样式槽位按 body[data-conversation-active] 同步隐藏，不必等待
-            store 推导后的下一次 React 渲染。 */}
         <span className="top-model-slot" data-topbar-slot="model">
           <ModelSwitcher phone={phone} conversationActive={conversationActive} />
         </span>

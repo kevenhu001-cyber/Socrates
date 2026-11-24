@@ -226,14 +226,9 @@ html[data-main-view$='Panel'] #appShell .mobile-newchat-btn {
   }
 }
 
-/* Phones: the model chip sits at the trailing edge of the landing header.
-   The RN chip sizes itself; only its placement is the page's. */
 @media (max-width: 768px) {
-  #appShell #topModelSwitcher {
-    position: absolute;
-    right: 8px;
-    top: calc(50% + env(safe-area-inset-top, 0px) / 2);
-    transform: translateY(-50%);
+  #appShell .top-model-slot {
+    display: none;
   }
   #appShell .top-mode-switch {
     top: calc(50% + env(safe-area-inset-top, 0px) / 2);

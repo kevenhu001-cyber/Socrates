@@ -49,18 +49,12 @@
   #appShell #sidebarOpenBtn .glyph-hamburger {
     display: none;
   }
-  /* Directories own their heading/actions; chat configuration has no
-     context here, even before the main-view attribute catches up. */
-  body.workspace-active #appShell .top-model-slot {
-    display: none;
-  }
   #appShell .mobile-newchat-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
   }
-  /* The same React mode control serves desktop and phone. The compact model
-     chip is a separate, labelled action at the trailing edge. */
+  /* The same React mode control serves desktop and phone. */
   #appShell .top-mode-switch {
     display: inline-flex;
     top: calc(50% + env(safe-area-inset-top, 0px) / 2);
@@ -78,23 +72,9 @@
   body:not([data-conversation-active='true']) #appShell .mobile-newchat-btn {
     display: none;
   }
-  /* 手机对话中不显示模型 chip（RN-7 前的行为）；模型设置仍可从提问框的强度胶囊打开。 */
-  body[data-conversation-active='true'] #appShell .top-model-slot {
-    display: none;
-  }
   body[data-conversation-active='true'] #appShell .top-bar {
     background: var(--ui-bg-header-glass);
   }
-  /* Phone model control: a compact chip that names the model. The desktop
-     lockup ("Socrates <model>") is 278px wide, which painted through the
-     centred mode switch on a 390px bar; phones drop the brand and cap the
-     chip at 76px so it clears the tabs and keeps the model name discoverable.
-     With no resolved model the settings glyph stands in, not an empty pill. */
-  /* In a conversation the right side already carries new-chat plus find and
-     share once the session is shareable (128px of controls), and the centred
-     mode switch takes another 152px — a 390px bar has nothing left for a chip.
-     The composer's effort pill opens the same configuration popover, so the
-     phone header keeps only navigation there. */
   #appShell .main-content,
   #appShell .main-inner {
     padding: 0;
