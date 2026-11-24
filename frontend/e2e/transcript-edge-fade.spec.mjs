@@ -8,6 +8,7 @@ const longAnswer = Array.from(
 
 for (const [label, viewport] of Object.entries(WORKBENCH_VIEWPORTS)) {
   test(`one transcript mask softens the header and composer edges on ${label}`, async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
     await prepareChatWorkbench(page, {
       viewport,
       messages: [
