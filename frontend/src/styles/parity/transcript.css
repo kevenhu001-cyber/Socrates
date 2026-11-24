@@ -479,7 +479,7 @@ html[data-mode='dark'] #appShell .msg-body .hljs :is(.hljs-comment, .hljs-quote)
 /* One mask owns both transcript boundaries on desktop and touch layouts.
  * The top edge ramps only after scrolling; the bottom edge remains soft while
  * the list overflows so the final response blends into the composer at bottom. */
-@media (prefers-reduced-motion: no-preference) and (forced-colors: none) {
+@media (forced-colors: none) {
   /* The fade mask is a separate composited layer. Do not pay for it while the
      transcript rests at the top or the bottom; messageScroll.ts sets this
      attribute only when one of the two fades is non-zero. */
