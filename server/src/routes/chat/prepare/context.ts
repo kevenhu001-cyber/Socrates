@@ -10,6 +10,7 @@ import { getDb } from '../../../db/index.js';
 import { and, desc, eq, or, sql } from 'drizzle-orm';
 import { withTimeBudget } from '../../../lib/timeBudget.js';
 import { estimateTokens } from '../../../services/core/usageTracker.js';
+import { memoryQuery, rankMemoryTexts } from '../../../services/embeddings/memoryRanker.js';
 import { escapePromptControlText } from '../../../lib/chatPolicy.js';
 import type { ProviderMessage } from '../../../lib/providerMessageSchema.js';
 import { applyPolicyBlock, type PolicyBlock } from './prompts.js';
@@ -155,8 +156,11 @@ export async function resolveMemoryContext(
   userId: string | undefined,
   projectId: string | undefined,
   db?: ReturnType<typeof getDb>,
+  messages?: readonly ProviderMessage[],
 ): Promise<PolicyBlock | null> {
   if (!userId) return null;
+  const query = messages ? memoryQuery(messages) : undefined;
+  if (query === '') return null;
   try {
     const { memories, projects } = await import('../../../db/schema/index.js');
     const database = db ?? getDb();
@@ -193,12 +197,14 @@ export async function resolveMemoryContext(
       .orderBy(desc(memories.createdAt))
       .limit(MEMORY_MAX_ENTRIES);
 
+    const selected = query === undefined ? rows : rankMemoryTexts(rows, query);
+    const maxChars = query === undefined ? MEMORY_MAX_TOTAL_CHARS : 2200;
     const blocks: string[] = [];
     let total = 0;
     const seen = new Set<string>();
-    for (const row of rows) {
-      if (total >= MEMORY_MAX_TOTAL_CHARS) break;
-      const text = String(row.text || '').trim().slice(0, Math.min(MEMORY_MAX_CHARS_PER_ENTRY, MEMORY_MAX_TOTAL_CHARS - total));
+    for (const row of selected) {
+      if (total >= maxChars) break;
+      const text = String(row.text || '').trim().slice(0, Math.min(MEMORY_MAX_CHARS_PER_ENTRY, maxChars - total));
       if (!text || seen.has(text)) continue;
       seen.add(text);
       blocks.push(`- ${escapePromptControlText(text)}`);
