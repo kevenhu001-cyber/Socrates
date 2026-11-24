@@ -1,5 +1,5 @@
 import { Button } from '../ui/shadcn/button';
-import { getApiFetch } from '../legacy/gateway.ts';
+import { apiFetch } from '../../util/api/index.ts';
 import {
   clearAllMemories,
   getAllMemories,
@@ -28,19 +28,16 @@ export function PersonalizationMemorySection({
   reportSaveError: (message: string) => void;
 }) {
   const refreshMemories = () => onChange(getAllMemories());
-  const syncMemoryChange = (request: () => Promise<unknown> | undefined) => {
+  const syncMemoryChange = (request: () => Promise<unknown>) => {
     try {
-      const result = request();
-      if (result) {
-        void result.catch(() => {
-          reportSaveError(
-            label(
-              '记忆已保存在此设备；账户同步暂不可用。',
-              'Memory saved on this device; account sync is unavailable.',
-            ),
-          );
-        });
-      }
+      void request().catch(() => {
+        reportSaveError(
+          label(
+            '记忆已保存在此设备；账户同步暂不可用。',
+            'Memory saved on this device; account sync is unavailable.',
+          ),
+        );
+      });
     } catch {
       reportSaveError(
         label(
@@ -55,28 +52,27 @@ export function PersonalizationMemorySection({
     removeMemory(id);
     refreshMemories();
     if (isServerMemoryId(id)) {
-      syncMemoryChange(() => getApiFetch()?.('/api/memory/' + id, { method: 'DELETE' }));
+      syncMemoryChange(() => apiFetch('/api/memory/' + id, { method: 'DELETE' }));
     }
   };
 
   const addMemory = (key: string, value: string) => {
     const memory = setMemory(key, value);
     refreshMemories();
-    const api = getApiFetch();
-    if (!memory || !api) return;
+    if (!memory) return;
     const localId = memory.id;
     syncMemoryChange(async () => {
       const text = key + ': ' + value;
       if (isServerMemoryId(localId)) {
-        await api('/api/memory/' + localId, { method: 'PATCH', body: { text } });
+        await apiFetch('/api/memory/' + localId, { method: 'PATCH', body: { text } });
         return;
       }
-      const result = await api<{ id?: string }>('/api/memory', { method: 'POST', body: { text } });
+      const result = await apiFetch<{ id?: string }>('/api/memory', { method: 'POST', body: { text } });
       if (result.id && isServerMemoryId(result.id)) {
         const wasStillPresent = replaceMemoryId(localId, result.id);
         refreshMemories();
         // A user can remove a local draft while its first server write is in flight.
-        if (!wasStillPresent) await api('/api/memory/' + result.id, { method: 'DELETE' });
+        if (!wasStillPresent) await apiFetch('/api/memory/' + result.id, { method: 'DELETE' });
       }
     });
   };
@@ -85,13 +81,12 @@ export function PersonalizationMemorySection({
     const current = getAllMemories();
     clearAllMemories();
     onChange([]);
-    const api = getApiFetch();
     const serverIds = current
       .filter((memory) => isServerMemoryId(memory.id))
       .map((memory) => memory.id);
-    if (api && serverIds.length > 0) {
+    if (serverIds.length > 0) {
       syncMemoryChange(() =>
-        Promise.all(serverIds.map((id) => api('/api/memory/' + id, { method: 'DELETE' }))),
+        Promise.all(serverIds.map((id) => apiFetch('/api/memory/' + id, { method: 'DELETE' }))),
       );
     }
   };

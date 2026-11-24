@@ -1,15 +1,8 @@
-import { getApiFetch, getLegacyActions } from '../../legacy/gateway.ts';
+import { getLegacyActions } from '../../legacy/gateway.ts';
+import { apiFetch } from '../../../util/api/index.ts';
 import { patchScheduledState, replaceScheduledTasks, useScheduledStore } from './scheduled.store';
 import type { ScheduledTask } from './types';
 import { reportSwallow as reportEmptyCatch } from '../../../util/reportSwallow.ts';
-
-type Api = NonNullable<ReturnType<typeof getApiFetch>>;
-
-function api(): Api {
-  const request = getApiFetch();
-  if (!request) throw new Error('The API client is not ready.');
-  return request;
-}
 
 function toast(message: string): void {
   getLegacyActions().messages.showToast?.(message);
@@ -19,7 +12,7 @@ export async function loadScheduledTasks(): Promise<void> {
   if (!useScheduledStore.getState().tasks.length)
     patchScheduledState({ loading: true, error: null });
   try {
-    const result = (await api()('/api/scheduled-tasks')) as { tasks?: ScheduledTask[] };
+    const result = (await apiFetch('/api/scheduled-tasks')) as { tasks?: ScheduledTask[] };
     replaceScheduledTasks(result?.tasks || []);
     patchScheduledState({ loading: false, error: null });
   } catch (error) {
@@ -39,7 +32,7 @@ export async function saveScheduledTask(
   body: Record<string, unknown>,
 ): Promise<void> {
   try {
-    await api()(
+    await apiFetch(
       taskId ? '/api/scheduled-tasks/' + encodeURIComponent(taskId) : '/api/scheduled-tasks',
       {
         method: taskId ? 'PATCH' : 'POST',
@@ -56,7 +49,7 @@ export async function saveScheduledTask(
 
 export async function toggleScheduledTask(id: string, pause: boolean): Promise<void> {
   try {
-    await api()('/api/scheduled-tasks/' + encodeURIComponent(id), {
+    await apiFetch('/api/scheduled-tasks/' + encodeURIComponent(id), {
       method: 'PATCH',
       body: { status: pause ? 'paused' : 'active' },
     });
@@ -70,7 +63,7 @@ export async function toggleScheduledTask(id: string, pause: boolean): Promise<v
 export async function runScheduledTask(id: string): Promise<void> {
   toast('Running task…');
   try {
-    await api()('/api/scheduled-tasks/' + encodeURIComponent(id) + '/run', { method: 'POST' });
+    await apiFetch('/api/scheduled-tasks/' + encodeURIComponent(id) + '/run', { method: 'POST' });
     await loadScheduledTasks();
     try {
       void getLegacyActions().sessions.flushRecentsReconcile();
@@ -97,7 +90,7 @@ export async function deleteScheduledTask(id: string, closeDialog?: () => void):
       true,
     );
     if (confirmed === false) return;
-    await api()('/api/scheduled-tasks/' + encodeURIComponent(id), { method: 'DELETE' });
+    await apiFetch('/api/scheduled-tasks/' + encodeURIComponent(id), { method: 'DELETE' });
     await loadScheduledTasks();
     closeDialog?.();
     toast('Task deleted');

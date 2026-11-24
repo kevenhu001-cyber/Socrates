@@ -1,4 +1,5 @@
-import { getApiFetch, getLegacyActions } from '../../legacy/gateway.ts';
+import { getLegacyActions } from '../../legacy/gateway.ts';
+import { apiFetch } from '../../../util/api/index.ts';
 import {
   getCachedProjects,
   hasCachedProjects,
@@ -18,14 +19,6 @@ import {
 import type { LibraryItem, PluginItem } from './types';
 
 type ApiResponse<T> = T & { error?: string };
-type JsonApi = NonNullable<ReturnType<typeof getApiFetch>>;
-
-function api(): JsonApi {
-  const request = getApiFetch();
-  if (!request) throw new Error('The API client is not ready.');
-  return request;
-}
-
 function toast(message: string): void {
   getLegacyActions().messages.showToast?.(message);
 }
@@ -35,7 +28,7 @@ export async function loadLibraryData(): Promise<void> {
   if (!state.libraryData.files.length && !state.libraryData.artifacts.length)
     setWorkspaceLoading('library', true);
   try {
-    const request = api();
+    const request = apiFetch;
     const [files, artifacts] = await Promise.all([
       request('/api/files?limit=100') as Promise<ApiResponse<{ files?: LibraryItem[] }>>,
       request('/api/artifacts?limit=100') as Promise<ApiResponse<{ artifacts?: LibraryItem[] }>>,
@@ -58,7 +51,7 @@ export async function loadLibraryData(): Promise<void> {
 export async function loadProjectsData(): Promise<void> {
   if (!hasCachedProjects()) setWorkspaceLoading('projects', true);
   try {
-    await refreshCachedProjects(() => api()('/api/projects'));
+    await refreshCachedProjects(() => apiFetch('/api/projects'));
     setWorkspaceProjects(getCachedProjects());
     setWorkspaceLoading('projects', false);
   } catch (error) {
@@ -76,7 +69,7 @@ export async function loadProjectsData(): Promise<void> {
 export async function loadPluginsData(): Promise<void> {
   if (!useWorkspaceStore.getState().pluginsData.length) setWorkspaceLoading('plugins', true);
   try {
-    const result = (await api()('/api/project-connectors')) as ApiResponse<{
+    const result = (await apiFetch('/api/project-connectors')) as ApiResponse<{
       connectors?: PluginItem[];
       configured?: boolean;
       openConnector?: { available?: boolean; cloud?: boolean };
@@ -140,7 +133,7 @@ export async function removeLibraryItems(
   const label = collection;
   try {
     await Promise.all(
-      ids.map((id) => api()(`/api/${label}/${encodeURIComponent(id)}`, { method: 'DELETE' })),
+      ids.map((id) => apiFetch(`/api/${label}/${encodeURIComponent(id)}`, { method: 'DELETE' })),
     );
     patchLibraryData({ selection: {} });
     toast(ids.length + ' ' + label + ' deleted');
@@ -162,7 +155,7 @@ export async function saveLibraryItemRename(
   updateLibraryRename(null);
   if (!newName || newName === oldName) return;
   try {
-    await api()('/api/' + collection + '/' + encodeURIComponent(id), {
+    await apiFetch('/api/' + collection + '/' + encodeURIComponent(id), {
       method: 'PATCH',
       body: collection === 'files' ? { name: newName } : { title: newName },
     });
@@ -187,7 +180,7 @@ export async function uploadLibraryFiles(files: FileList | File[]): Promise<void
     for (const file of selected) {
       const body = new FormData();
       body.append('file', file);
-      await api()('/api/files', { method: 'POST', body });
+      await apiFetch('/api/files', { method: 'POST', body });
     }
     toast(
       selected.length === 1 ? 'File added to Library' : selected.length + ' files added to Library',
@@ -200,7 +193,7 @@ export async function uploadLibraryFiles(files: FileList | File[]): Promise<void
 
 export async function deleteLibraryFile(id: string): Promise<void> {
   try {
-    await api()('/api/files/' + encodeURIComponent(id), { method: 'DELETE' });
+    await apiFetch('/api/files/' + encodeURIComponent(id), { method: 'DELETE' });
     await loadLibraryData();
     toast('File deleted');
   } catch {
@@ -213,7 +206,7 @@ export async function saveProjectRecord(
   data: Record<string, unknown>,
 ): Promise<void> {
   try {
-    const request = api();
+    const request = apiFetch;
     const saved = projectId
       ? await request<CachedProject | { project: CachedProject }>(
           '/api/projects/' + encodeURIComponent(projectId),
@@ -243,7 +236,7 @@ export async function saveProjectRecord(
 
 export async function deleteProjectRecord(id: string): Promise<void> {
   try {
-    await api()('/api/projects/' + encodeURIComponent(id), { method: 'DELETE' });
+    await apiFetch('/api/projects/' + encodeURIComponent(id), { method: 'DELETE' });
     setCachedProjects(getCachedProjects().filter((project) => project.id !== id));
     setWorkspaceProjects(getCachedProjects());
     toast('Project deleted');
@@ -254,7 +247,7 @@ export async function deleteProjectRecord(id: string): Promise<void> {
 
 export async function connectProjectPlugin(id: string): Promise<void> {
   try {
-    const request = api();
+    const request = apiFetch;
     const result = await request<{ status?: string; authorizationUrl?: string }>(
       '/api/project-connectors/' + encodeURIComponent(id) + '/connect',
       { method: 'POST' },
@@ -274,7 +267,7 @@ export async function connectProjectPlugin(id: string): Promise<void> {
 
 export async function refreshProjectPlugin(id: string): Promise<void> {
   try {
-    await api()('/api/project-connectors/' + encodeURIComponent(id) + '/status');
+    await apiFetch('/api/project-connectors/' + encodeURIComponent(id) + '/status');
     await loadPluginsData();
   } catch (error) {
     toast(error instanceof Error ? error.message : 'Could not refresh authorization status');
@@ -286,7 +279,7 @@ export async function submitProjectPluginCredentials(
   body: Record<string, unknown>,
 ): Promise<void> {
   try {
-    const request = api();
+    const request = apiFetch;
     const result = await request<{ status?: string; error?: string }>(
       '/api/project-connectors/' + encodeURIComponent(id) + '/connect',
       { method: 'POST', body },
@@ -308,7 +301,7 @@ export async function disconnectProjectPlugin(id: string, closeDialog?: () => vo
   );
   if (confirmed === false) return;
   try {
-    await api()('/api/project-connectors/' + encodeURIComponent(id) + '/connection', {
+    await apiFetch('/api/project-connectors/' + encodeURIComponent(id) + '/connection', {
       method: 'DELETE',
     });
     await loadPluginsData();

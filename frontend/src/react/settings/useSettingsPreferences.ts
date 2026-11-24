@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { getApiFetch, getCurrentUser, getLegacyActions } from '../legacy/gateway.ts';
+import { getCurrentUser, getLegacyActions } from '../legacy/gateway.ts';
+import { apiFetch } from '../../util/api/index.ts';
 import { getCurrentLang } from '../../ui/legacyI18n.ts';
 import { setThemePreference } from '../../displayPrefs.ts';
 import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
@@ -68,8 +69,6 @@ export function useSettingsPreferences() {
   const savePreference = useCallback<SaveSettingsPreference>(
     async (patch: SettingsPreferencePatch) => {
       try {
-        const api = getApiFetch();
-        if (!api) throw new Error('apiFetch unavailable');
         const savesCustomInstructions = Object.prototype.hasOwnProperty.call(
           patch,
           'customInstructions',
@@ -78,7 +77,7 @@ export function useSettingsPreferences() {
         const body = savesCustomInstructions
           ? { customInstructions: patch.customInstructions }
           : patch;
-        const result = await api<{ preferences?: unknown; customInstructions?: unknown }>(
+        const result = await apiFetch<{ preferences?: unknown; customInstructions?: unknown }>(
           endpoint,
           { method: 'PATCH', body },
         );

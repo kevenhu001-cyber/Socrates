@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
-import { getApiFetch } from '../legacy/gateway.ts';
+import { apiFetch } from '../../util/api/index.ts';
 import { i18n } from '../../ui/legacyI18n.ts';
 import { Button } from '../ui/Button';
 import type {
@@ -161,9 +161,7 @@ function PreviewStatus({ phase, statusText }: { phase: PreviewPhase; statusText:
 
 /** Server-extracted text for the formats no engine renders (.doc/.ppt/.rtf…). */
 async function loadServerText(fileId: string): Promise<TextPayload> {
-  const request = getApiFetch();
-  if (!request) throw new Error('unavailable');
-  const result = await request<{
+  const result = await apiFetch<{
     ok?: boolean;
     error?: string;
     text?: string;

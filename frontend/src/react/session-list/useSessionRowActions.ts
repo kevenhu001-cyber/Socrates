@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { getApiFetch, getLegacyActions } from '../legacy/gateway.ts';
+import { getLegacyActions } from '../legacy/gateway.ts';
+import { apiFetch } from '../../util/api/index.ts';
 import { getCurrentLang } from '../../ui/legacyI18n.ts';
 import { refreshCachedProjects } from '../../projects/projectCache.ts';
 
@@ -69,13 +70,7 @@ export function useSessionRowActions(sessionId: string, onClose: () => void) {
     setProjects([]);
     setProjectError('');
     setLoadingProjects(true);
-    const fetchApi = getApiFetch();
-    if (!fetchApi) {
-      setProjectError(copy('项目加载失败，请重试', 'Could not load projects. Try again.'));
-      setLoadingProjects(false);
-      return;
-    }
-    void refreshCachedProjects(() => fetchApi('/api/projects'))
+    void refreshCachedProjects(() => apiFetch('/api/projects'))
       .then((rows) => {
         if (projectRequest.current === request) setProjects([...rows]);
       })
