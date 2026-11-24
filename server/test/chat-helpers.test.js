@@ -525,7 +525,7 @@ describe('appendFinalOutputConstraints', () => {
     assert.equal(out.filter((m) => m.role === 'system').length, 1);
     assert.match(
       out[0].content,
-      /Avoid em dashes, en dashes, double hyphens, and colons as prose transitions/,
+      /Avoid unnecessary em dashes, en dashes, double hyphens, and colons as prose transitions/,
     );
     assert.match(out[0].content, /Chinese/);
     assert.ok(out[0].content.endsWith(FINAL_OUTPUT_CONSTRAINTS));
@@ -539,7 +539,7 @@ describe('appendFinalOutputConstraints', () => {
 
   test('keeps raw tool errors out of the answer body while disclosing material limitations', () => {
     const out = appendFinalOutputConstraints([{ role: 'system', content: 'base' }]);
-    assert.match(out[0].content, /Keep raw tool errors, codes, and stack traces in the tool card/);
+    assert.match(out[0].content, /keep raw errors in the tool card/);
     assert.match(out[0].content, /Mention the limitation briefly only if it affects the outcome/);
   });
 
@@ -996,9 +996,8 @@ describe('appendToolRoutingHints', () => {
       out[0].content,
       /Use `render_intelligent_ui` for every explicitly requested static or interactive/,
     );
-    assert.match(out[0].content, /declare \$step = 0, bind StepPlayer/);
-    assert.match(out[0].content, /Use ViewSwitcher/);
-    assert.match(out[0].content, /Table\(columns, rows, caption, true\)/);
+    assert.match(out[0].content, /stateful interaction use an OpenUI node/);
+    assert.doesNotMatch(out[0].content, /declare \$step = 0|Table\(columns, rows, caption, true\)/);
     /* Advanced docs are no longer shipped on every ordinary visual call.
        The lookup tool is referenced only when it is available. */
     assert.doesNotMatch(out[0].content, /Query get_ui_contract/);
