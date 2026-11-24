@@ -244,3 +244,30 @@ test('pending approvals remain visible with activity collapsed', async ({ page }
       .evaluate((node) => Boolean(node.closest('[data-testid="turn-activity"]'))),
   ).toBe(false);
 });
+
+
+test('live activity counts completed tools without hiding the active row', async ({ page }) => {
+  await prepareChatWorkbench(page);
+  await page.evaluate(async () => {
+    const ctl = await window.addStreamingMessage({ userPrompt: 'Check sources.' });
+    for (const id of ['first', 'second', 'third']) {
+      ctl.recordToolUse({ id, name: 'web_search', input: { query: id } });
+      if (id !== 'third') {
+        ctl.recordToolResult({ id, name: 'web_search', ok: true, status: 'completed', output: 'Checked.' });
+      }
+    }
+    window.__unifiedController = ctl;
+  });
+  await expect(page.locator('.tool-activity-burst-caption')).toBeVisible();
+  await expect(page.locator('.tool-activity-burst-toggle')).toHaveCount(0);
+  await expect(toolRow(page, 'third')).toBeVisible();
+  await expect(toolRow(page, 'third').locator(TURN.spinner)).toHaveCount(1);
+  await page.evaluate(() => {
+    const ctl = window.__unifiedController;
+    ctl.recordToolResult({ id: 'third', name: 'web_search', ok: true, status: 'completed', output: 'Checked.' });
+    ctl.append('The answer.');
+    ctl.finish();
+  });
+  await expect(page.locator('.tool-activity-burst-caption')).toHaveCount(0);
+  await expect(page.locator('.tool-activity-burst-toggle')).toBeVisible();
+});
