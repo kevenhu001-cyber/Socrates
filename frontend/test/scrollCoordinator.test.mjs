@@ -91,3 +91,15 @@ test('a pending history anchor cannot re-pin after new input or a host replaceme
   correctScrollAnchor(captured, host);
   assert.equal(host.scrollTop, 20);
 });
+
+test('edge fading ramps smoothly as the transcript leaves the viewport', () => {
+  const nearTop = fadeList(10, 1000, 200);
+  updateScrollFadeMask(nearTop);
+  assert.equal(nearTop.style.getPropertyValue('--ui-scroll-fade-top'), '8px');
+  const nearBottom = fadeList(790, 1000, 200);
+  updateScrollFadeMask(nearBottom);
+  assert.equal(nearBottom.style.getPropertyValue('--ui-scroll-fade-bottom'), '8px');
+  const bottom = fadeList(800, 1000, 200);
+  updateScrollFadeMask(bottom);
+  assert.equal(bottom.style.getPropertyValue('--ui-scroll-fade-bottom'), '0px');
+});
