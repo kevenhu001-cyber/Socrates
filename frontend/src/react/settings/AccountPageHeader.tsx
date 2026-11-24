@@ -28,7 +28,13 @@ export function AccountPageHeader({
       titleId={titleId}
       titleTabIndex={-1}
       leading={
-        <Button variant="ghost" size="icon-lg" id={backId} aria-label={backLabel} onClick={onBack}>
+        <Button
+          variant="ghost"
+          size="icon-lg"
+          id={backId}
+          aria-label={backLabel}
+          onClick={onBack}
+        >
           <BackIcon aria-hidden />
         </Button>
       }
