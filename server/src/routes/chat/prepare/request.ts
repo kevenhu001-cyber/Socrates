@@ -119,7 +119,7 @@ export async function prepareChatRequest(
       : Promise.resolve(null);
   // Freeze only the base profile and context; refresh mutable instructions and
   // memories on the outbound request, never by rewriting the snapshot.
-  const memoryPromise = resolveMemoryContext(req.userId ?? undefined, projectId);
+  const memoryPromise = resolveMemoryContext(req.userId ?? undefined, projectId, undefined, context.conversation);
   const teacherPromise = mode === 'tutor' ? getTeacherModePrompt() : Promise.resolve(null);
   const assistantPromise = resolveAssistantInstructions(parsed.assistantId, sessionId, req.userId ?? undefined);
   const promptPromise = resolveSessionPromptOrAssemble(
@@ -144,7 +144,7 @@ export async function prepareChatRequest(
   let conversation = appendTurnContext(
     context.conversation,
     context.turnInstructions,
-    ragBlock?.prompt ?? null,
+    [ragBlock?.prompt, memoryBlock?.prompt].filter(Boolean).join('\n\n') || null,
     learningTurn,
   );
   /* the session prompt snapshot freezes turn 1's
@@ -168,7 +168,7 @@ export async function prepareChatRequest(
   });
   systemPrompt = refreshSnapshotBlock(systemPrompt, TEACHER_MODE_MARKER, teacherPrompt);
   systemPrompt = refreshSnapshotBlock(systemPrompt, '[User-selected assistant]', assistantBlock?.prompt ?? null);
-  systemPrompt = refreshSnapshotBlock(systemPrompt, MEMORY_CONTEXT_MARKER, memoryBlock?.prompt ?? null);
+  systemPrompt = refreshSnapshotBlock(systemPrompt, MEMORY_CONTEXT_MARKER, null);
   let finalMessages: ProviderMessage[] = [
     { role: 'system', content: insertResponseTypography(systemPrompt) },
     ...conversation,
