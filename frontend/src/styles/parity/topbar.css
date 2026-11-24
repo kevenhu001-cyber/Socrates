@@ -233,6 +233,37 @@ html[data-main-view$='Panel'] #appShell .mobile-newchat-btn {
 }
 
 @media (max-width: 768px) {
+  /* The phone header also sits above the scrolling transcript. Blend its
+     lower edge into the first visible line instead of drawing a hard rule. */
+  #appShell .top-bar {
+    position: relative;
+    z-index: var(--ui-z-header);
+  }
+  #appShell .top-bar::after {
+    content: '';
+    position: absolute;
+    z-index: 0;
+    inset-inline: 0;
+    bottom: -20px;
+    height: 20px;
+    background: linear-gradient(
+      to bottom,
+      var(--ui-bg-page) 0%,
+      color-mix(in srgb, var(--ui-bg-page) 82%, transparent) 38%,
+      transparent 100%
+    );
+    opacity: 0;
+    transition: opacity var(--ui-duration-normal) var(--ui-ease-out);
+    pointer-events: none;
+  }
+  body[data-transcript-scrolled='true'] #appShell .top-bar::after {
+    opacity: 1;
+  }
+  #appShell .top-bar-left,
+  #appShell .top-bar-right {
+    position: relative;
+    z-index: 1;
+  }
   #appShell .top-model-slot {
     display: none;
   }
