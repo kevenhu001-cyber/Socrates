@@ -4,10 +4,10 @@ import { prepareChatWorkbench, WORKBENCH_VIEWPORTS } from './_chat-workbench.mjs
 const longAnswer = Array.from(
   { length: 36 },
   (_, index) => `Paragraph ${index + 1}: the transcript remains readable while the page edges blend softly into the surrounding interface.`,
-).join('\n\n');
+).join('\\n\\n');
 
 for (const [label, viewport] of Object.entries(WORKBENCH_VIEWPORTS)) {
-  test(`transcript edge fades blend the header and composer on ${label}`, async ({ page }) => {
+  test(`one transcript mask softens the header and composer edges on ${label}`, async ({ page }) => {
     await prepareChatWorkbench(page, {
       viewport,
       messages: [
@@ -16,28 +16,21 @@ for (const [label, viewport] of Object.entries(WORKBENCH_VIEWPORTS)) {
       ],
     });
 
-    const initial = await page.evaluate(() => {
-      const top = getComputedStyle(document.querySelector('#topBar'), '::after');
-      const bottom = getComputedStyle(document.querySelector('#chatView'), '::before');
-      const list = document.getElementById('msgList');
+    const initial = await page.locator('#msgList').evaluate((list) => {
+      const style = getComputedStyle(list);
       return {
         scrollable: list.scrollHeight > list.clientHeight,
-        topHeight: top.height,
-        topOpacity: top.opacity,
-        bottomHeight: bottom.height,
-        bottomGradient: bottom.backgroundImage,
-        bottomPointerEvents: bottom.pointerEvents,
-        composerPosition: getComputedStyle(document.getElementById('chatView')).position,
+        top: list.style.getPropertyValue('--ui-scroll-fade-top'),
+        bottom: list.style.getPropertyValue('--ui-scroll-fade-bottom'),
+        active: list.dataset.scrollFade,
+        mask: style.maskImage || style.webkitMaskImage,
       };
     });
-
     expect(initial.scrollable).toBe(true);
-    expect(initial.topHeight).toBe('32px');
-    expect(initial.topOpacity).toBe('0');
-    expect(initial.bottomHeight).toBe('56px');
-    expect(initial.bottomGradient).toContain('linear-gradient');
-    expect(initial.bottomPointerEvents).toBe('none');
-    expect(initial.composerPosition).toBe('relative');
+    expect(initial.top).toBe('0px');
+    expect(initial.bottom).toBe('56px');
+    expect(initial.active).toBe('true');
+    expect(initial.mask).toContain('linear-gradient');
 
     await page.locator('#msgList').evaluate((list) => {
       list.scrollTop = 80;
@@ -47,18 +40,27 @@ for (const [label, viewport] of Object.entries(WORKBENCH_VIEWPORTS)) {
       page.evaluate(() => document.body.dataset.transcriptScrolled),
     ).toBe('true');
     await expect.poll(() =>
-      page.evaluate(() => getComputedStyle(document.querySelector('#topBar'), '::after').opacity),
-    ).toBe('1');
+      page.locator('#msgList').evaluate((list) =>
+        list.style.getPropertyValue('--ui-scroll-fade-top'),
+      ),
+    ).toBe('32px');
+    await expect.poll(() =>
+      page.locator('#msgList').evaluate((list) =>
+        list.style.getPropertyValue('--ui-scroll-fade-bottom'),
+      ),
+    ).toBe('56px');
 
     await page.locator('#msgList').evaluate((list) => {
-      list.scrollTop = 0;
+      list.scrollTop = list.scrollHeight;
       list.dispatchEvent(new Event('scroll', { bubbles: true }));
     });
     await expect.poll(() =>
-      page.evaluate(() => document.body.dataset.transcriptScrolled),
-    ).toBe('false');
+      page.locator('#msgList').evaluate((list) =>
+        list.style.getPropertyValue('--ui-scroll-fade-bottom'),
+      ),
+    ).toBe('56px');
     await expect.poll(() =>
-      page.evaluate(() => getComputedStyle(document.querySelector('#topBar'), '::after').opacity),
-    ).toBe('0');
+      page.evaluate(() => document.body.dataset.transcriptScrolled),
+    ).toBe('true');
   });
 }
