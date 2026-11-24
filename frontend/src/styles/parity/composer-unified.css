@@ -871,3 +871,27 @@
   vector-effect: non-scaling-stroke;
   stroke-width: 1.5px;
 }
+
+
+/* ChatGPT-style transcript/composer boundary. The composer remains in normal
+   flow; its pseudo-element reaches upward into the final transcript pixels
+   and softly blends text into the page surface without intercepting input. */
+#appShell {
+  --ui-transcript-fade-top: 32px;
+  --ui-transcript-fade-bottom: 56px;
+}
+@media (forced-colors: none) {
+  #appShell #chatView {
+    z-index: 2;
+  }
+  #appShell #chatView::before {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    top: calc(-1 * var(--ui-transcript-fade-bottom));
+    height: var(--ui-transcript-fade-bottom);
+    background: linear-gradient(to bottom, transparent 0%, var(--conversation-page) 100%);
+    pointer-events: none;
+    z-index: 0;
+  }
+}
