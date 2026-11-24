@@ -1,6 +1,7 @@
 import { Button as UiButton } from '../ui/shadcn/button';
 import type { ProfileDispatch } from './types';
 import { profileText } from './profileText';
+import { SectionCard } from '../ui/page/SectionCard';
 
 function ProfileActionRow({
   title,
@@ -24,14 +25,13 @@ function ProfileActionRow({
       <UiButton type="button" variant={warning ? 'destructive' : 'outline'} onClick={onAction}>
         {actionLabel}
       </UiButton>
-    </div>
+    </SectionCard>
   );
 }
 
 export function ProfileDataSection({ dispatch }: { dispatch: ProfileDispatch }) {
   return (
-    <div className="profile-section">
-      <h2 className="profile-section-title">{profileText('profile.data', 'Data')}</h2>
+    <SectionCard className="profile-section" title={profileText('profile.data', 'Data')}>
       <ProfileActionRow
         title={profileText('profile.usage', 'Token usage')}
         description={profileText(
