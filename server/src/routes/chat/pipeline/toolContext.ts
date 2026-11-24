@@ -17,6 +17,7 @@ import { canonicalToolExampleJson } from '../../../services/tools/toolCorrection
 import { createToolTurnPolicy } from '../../../services/tools/toolTurnPolicy.js';
 import {
   buildConnectorCatalog,
+  addDeferredCoreTools,
   createConnectorActivation,
   splitInitialToolNames,
   type ConnectorActivation,
@@ -24,6 +25,7 @@ import {
 } from '../../../services/integrations/connectorCatalog.js';
 import type { JsonSchemaNode } from '../../../services/tools/toolCallSafety.js';
 import type { Request } from 'express';
+import { contentText, requestMessages } from './requestBody.js';
 
 type PersonalConnectorSnapshot = typeof connectorConnections.$inferSelect;
 type ProjectConnectorSnapshot = typeof projectConnectorConnections.$inferSelect;
@@ -31,6 +33,7 @@ type ProjectConnectorSnapshot = typeof projectConnectorConnections.$inferSelect;
 interface RuntimeToolDefinition {
   function?: {
     name?: string;
+    description?: string;
     parameters?: JsonSchemaNode;
   };
 }
@@ -44,6 +47,7 @@ export interface StreamToolContext {
   /** Tools offered on the first hop: core tools plus the discovery tools.
    * Connected connector tools are activated by get_connector_spec. */
   initialToolNames: string[];
+  initialToolDefs: RuntimeToolDefinition[];
   schemaForTool: (name: string) => JsonSchemaNode | null;
   toolExamples: Record<string, string>;
   FUZZY_SAFE: (name: string) => boolean;
@@ -113,6 +117,36 @@ async function loadConnectorSnapshots(userId?: string): Promise<{
   return { connectorConnectionsByProvider, projectConnectorConnectionsByProvider };
 }
 
+/**
+ * No classifier model call: prewarm clearly relevant capabilities, defer
+ * the rest to the existing schema discovery path. Unknown intents retain
+ * access to every enabled tool through discovery. Environment opt-out.
+ */
+export function selectDeferredCoreTools(body: unknown, mode: string): Set<string> {
+  if (process.env.CHAT_DEFER_CORE_TOOLS === '0') return new Set();
+  const messages = requestMessages(body);
+  const users = messages.filter((m) => m.role === 'user');
+  const latest = users.at(-1);
+  const text = contentText(latest?.content).slice(0, 16000);
+  // A short follow-up may refer to the preceding task.
+  const prior = users.length > 1 && text.length < 80 ? contentText(users.at(-2)?.content).slice(0, 3000) : '';
+  const intent = text + '\n' + prior;
+  const deferred = new Set(['code_interpreter', 'render_intelligent_ui', 'get_ui_contract',
+    'patch_intelligent_ui', 'image_search', 'workspace_agent', 'initialize_workspace',
+    'create_document', 'create_site', 'arxiv_search']);
+  const enable = (...names: string[]) => names.forEach((name) => deferred.delete(name));
+  if (mode === 'tutor' || /图|示意|可视化|交互|仿真|推导|讲解|解释|diagram|chart|visual|plot|explain|derive|simulation/i.test(intent)) {
+    enable('render_intelligent_ui', 'get_ui_contract', 'patch_intelligent_ui');
+  }
+  if (/计算|数据|表格|统计|导出|文件|代码|仿真|python|calculate|compute|data|spreadsheet|csv|xlsx|export|attachment|simulation/i.test(intent)) enable('code_interpreter');
+  if (/图片|照片|找图|image|photo|picture/i.test(intent)) enable('image_search');
+  if (/仓库|编程|修改代码|修复|工作区|项目|实现|repo|github|coding|workspace|implement|refactor|debug|fix|edit files/i.test(intent)) enable('workspace_agent', 'initialize_workspace');
+  if (/计划|需求|方案|文档|plan|specification|document/i.test(intent)) enable('create_document');
+  if (/网页|网站|website|web page|html/i.test(intent)) enable('create_site');
+  if (/论文|文献|arxiv|paper|literature/i.test(intent)) enable('arxiv_search');
+  return deferred;
+}
+
 export async function createStreamToolContext(
   req: Request & { userId?: string },
   mode: string,
@@ -127,7 +161,8 @@ export async function createStreamToolContext(
      snapshots. The registry still knows every connected tool so an activated
      tool can execute; the first hop only offers the core tools plus the two
      discovery tools. */
-  const connectorCatalog = buildConnectorCatalog({
+  const deferredCore = selectDeferredCoreTools(req.body, mode);
+  let connectorCatalog = buildConnectorCatalog({
     connectorConnectionsByProvider,
     projectConnectorConnectionsByProvider,
   });
@@ -138,9 +173,10 @@ export async function createStreamToolContext(
     mode,
     connectorConnectionsByProvider,
     projectConnectorConnectionsByProvider,
-    connectorDiscoveryEnabled: connectorCatalog.entries.length > 0,
+    connectorDiscoveryEnabled: connectorCatalog.entries.length > 0 || deferredCore.size > 0,
   });
   const toolDefs = toolRegistry.definitions as RuntimeToolDefinition[];
+  connectorCatalog = addDeferredCoreTools(connectorCatalog, toolDefs, deferredCore);
 
   /* derive the prompt appendix from the same
    * definitions sent in the request. This keeps the injected system
@@ -174,13 +210,16 @@ export async function createStreamToolContext(
    * fails closed: unknown or unmarked names are not fuzzy-safe. */
   const FUZZY_SAFE = (name: string) => toolRegistry.get(name)?.pure === true;
 
+  const initialToolNames = splitInitialToolNames(toolNames, connectorCatalog).sort();
+  const initialToolDefs = toolDefs.filter((tool) => initialToolNames.includes(tool.function?.name || ''));
   return {
     toolPolicy,
     MAX_TOOL_ITERATIONS: toolPolicy.maxIterations,
     toolRegistry,
     toolDefs,
     toolNames,
-    initialToolNames: splitInitialToolNames(toolNames, connectorCatalog),
+    initialToolNames,
+    initialToolDefs,
     schemaForTool,
     toolExamples,
     FUZZY_SAFE,
