@@ -1,6 +1,14 @@
 import type { User } from '../types/http.js';
 import type { ProviderMessage } from './providerMessageSchema.js';
 
+/** Neutralize reserved assembly delimiters in external text before embedding it.
+ * This protects the string parser, not a guarantee against model manipulation. */
+export function escapePromptControlText(text: string): string {
+  return text
+    .replace(/\[(?=Server (?:policy|context):|System context \(auto-injected\)|User-selected assistant\])/g, '［')
+    .replace(/<(?=\/?client_(?:application_instructions|context_data)\b|!-- @beagle-system-prompt -->)/g, '＜');
+}
+
 export function appendServerPolicy(
   messages: ProviderMessage[],
   marker: string,
@@ -199,6 +207,8 @@ const POLICY_REGION_TERMINATORS = [
   '\n\n<client_context_data',
   '\n\n[System context (auto-injected)]',
   '\n\n[Server policy:',
+  '\n\n[Server context:',
+  '\n\n[User-selected assistant]',
   '\n\n<!-- @beagle-system-prompt -->',
 ];
 
@@ -230,7 +240,11 @@ function findClientBlockSpan(text: string): BlockSpan | null {
   );
   const context = findBlock(text, CLIENT_CONTEXT_BLOCK_OPEN, CLIENT_CONTEXT_BLOCK_CLOSE);
   const first = application ?? context;
-  const last = application && context ? context : (application ?? context);
+  // Client blocks can only start immediately after the core policy.
+  if (!first || (first.start !== 0 && first.start !== BLANK_LINE.length)) return null;
+  const adjacentContext = application && context &&
+    context.start === application.end + BLANK_LINE.length ? context : null;
+  const last = adjacentContext ?? first;
   if (!first || !last) return null;
   let start = first.start;
   /* Absorb the blank line in front of the first block, so the refreshed
