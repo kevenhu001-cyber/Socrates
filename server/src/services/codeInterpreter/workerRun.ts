@@ -74,6 +74,9 @@ export interface WorkerResult {
   durationMs?: number;
   queueMs?: number;
   packageMs?: number;
+  dependencyMs?: number;
+  fontMs?: number;
+  workerBootMs?: number;
   errorMessage?: string;
   errorCode?: string;
   artifacts?: Artifact[];
@@ -131,8 +134,11 @@ export async function runOnWorker(
   const timeout = Number.isFinite(requestedTimeout)
     ? Math.min(2_147_482_647, Math.max(100, requestedTimeout))
     : 120_000;
+  const workerBootMs = slot.bootMs;
   let dependencyStartedAt: number | undefined;
   let packageMs: number | undefined;
+  let dependencyMs: number | undefined;
+  let fontMs: number | undefined;
   let stopReason: 'timeout' | 'cancelled' | undefined;
   let killTimer: NodeJS.Timeout | undefined;
   const stop = (reason: typeof stopReason) => {
@@ -173,8 +179,15 @@ export async function runOnWorker(
         if (!isRecord(msg) || msg.id !== id) return;
         if (msg.type === 'phase' && typeof msg.elapsedMs === 'number') {
           if (msg.phase === 'preparing') dependencyStartedAt = msg.elapsedMs;
-          if (msg.phase === 'running' && dependencyStartedAt !== undefined) {
-            packageMs = msg.elapsedMs - dependencyStartedAt;
+          if (msg.phase === 'running') {
+            packageMs =
+              typeof msg.packageMs === 'number'
+                ? msg.packageMs
+                : dependencyStartedAt === undefined
+                  ? undefined
+                  : msg.elapsedMs - dependencyStartedAt;
+            dependencyMs = typeof msg.dependencyMs === 'number' ? msg.dependencyMs : undefined;
+            fontMs = typeof msg.fontMs === 'number' ? msg.fontMs : undefined;
             dependencyStartedAt = undefined;
           }
         }
@@ -218,6 +231,10 @@ export async function runOnWorker(
       return {
         ...result,
         queueMs,
+        workerBootMs,
+        packageMs: packageMs ?? result.packageMs,
+        dependencyMs,
+        fontMs,
         status: 'cancelled',
         errorCode: 'execution_cancelled',
         errorMessage: 'cancelled_by_caller',
@@ -228,6 +245,10 @@ export async function runOnWorker(
       return {
         ...result,
         queueMs,
+        workerBootMs,
+        packageMs: packageMs ?? result.packageMs,
+        dependencyMs,
+        fontMs,
         status: 'timeout',
         errorCode: 'execution_timeout',
         errorMessage: 'execution_timeout',
@@ -238,21 +259,35 @@ export async function runOnWorker(
       return {
         ...result,
         queueMs,
+        workerBootMs,
+        packageMs: packageMs ?? result.packageMs,
+        dependencyMs,
+        fontMs,
         status: 'failed',
         errorMessage: 'worker_interrupt',
         exitCode: 130,
       };
     }
-    return { ...result, queueMs };
+    return {
+      ...result,
+      queueMs,
+      workerBootMs,
+      packageMs: packageMs ?? result.packageMs,
+      dependencyMs,
+      fontMs,
+    };
   } catch (err) {
     const incoming = err as Error & { code?: string; status?: string };
     const durationMs = Date.now() - startedAt;
     const timing = {
       queueMs,
+      workerBootMs,
       durationMs,
       packageMs:
         packageMs ??
         (dependencyStartedAt === undefined ? undefined : durationMs - dependencyStartedAt),
+      dependencyMs,
+      fontMs,
     };
     if (stopReason === 'cancelled') {
       throw Object.assign(executionWaitError(signal), timing);
