@@ -215,7 +215,10 @@ export async function prepareChatRequest(
         }),
       );
     }
-    if (estimateContextMessageTokens(finalMessages) > budget.budget) {
+    const softRaw = Number(process.env.CHAT_CONTEXT_SOFT_TOKENS ?? '24000');
+    const soft = Number.isFinite(softRaw) && softRaw > 0 ? Math.floor(softRaw) : budget.budget;
+    const trigger = Math.min(budget.budget, soft);
+    if (estimateContextMessageTokens(finalMessages) > trigger) {
       const { compressSessionMessages } =
         await import('../../../services/embeddings/sessionCompressor.js');
       const rawKeep = Number(process.env.CHAT_CONTEXT_KEEP_TURNS);
@@ -223,8 +226,9 @@ export async function prepareChatRequest(
         ...(req.userId && sessionId ? { cacheScope: `${req.userId}:${sessionId}` } : {}),
         triggerTokens: Math.max(
           1,
-          budget.budget - estimateContextMessageTokens([finalMessages[0]]),
+          trigger - estimateContextMessageTokens([finalMessages[0]]),
         ),
+        batchTurns: 4,
         ...(Number.isFinite(rawKeep) && rawKeep > 0 ? { keepTurns: Math.floor(rawKeep) } : {}),
       });
       if (compressed.didCompress && compressed.messages.length) {
@@ -241,7 +245,7 @@ export async function prepareChatRequest(
           JSON.stringify({
             droppedTurns: compressed.droppedTurns,
             summarizer: compressed.summarizer,
-            budget: budget.budget,
+            budget: trigger,
             budgetSource: budget.source,
             contextWindow: budget.contextWindow ?? null,
           }),
