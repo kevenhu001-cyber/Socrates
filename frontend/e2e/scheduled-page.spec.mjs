@@ -139,13 +139,12 @@ test('scheduled page uses shimmer skeletons while tasks are loading', async ({ p
 
   const loading = page.locator('.workspace-loading-scheduled');
   await expect(loading).toBeVisible();
-  await expect(loading.locator('.workspace-loading-spinner-ring')).toBeVisible();
-  await expect(loading.locator('.workspace-loading-spinner-ring')).toHaveCSS(
-    'animation-name',
-    'workspaceLoadingSpin',
+  await expect(loading.locator('.ui-page-header h1')).toHaveText('Scheduled');
+  await expect(loading.locator('.ui-page-description')).toContainText(
+    'Loading tasks and schedules…',
   );
-  await expect(loading.locator('.workspace-skeleton-shimmer')).toHaveCount(30);
-  await expect(loading.locator('.shimmer-text')).toHaveCount(2);
+  await expect(loading.locator('.workspace-skeleton-create')).toBeVisible();
+  await expect(loading.locator('.workspace-skeleton-shimmer')).toHaveCount(27);
 
   releaseTasks();
   await expect(page.locator('.scheduled-directory')).toBeVisible();
