@@ -59,6 +59,7 @@ export async function prepareChatRequest(
     /** Resolved tool context for this turn, used to budget the tool schemas. */
     toolCtxPromise?: Promise<{
       toolDefs?: Array<{ function?: { name?: string; parameters?: unknown } }>;
+      initialToolDefs?: Array<{ function?: { name?: string; parameters?: unknown } }>;
     }> | null;
   } = {},
 ): Promise<{
@@ -188,7 +189,7 @@ export async function prepareChatRequest(
     const budgetProvider = await providerPromise.catch(() => null);
     const toolSchemaTokens = options.toolCtxPromise
       ? await options.toolCtxPromise
-          .then((ctx) => estimateToolSchemaTokens(ctx?.toolDefs))
+          .then((ctx) => estimateToolSchemaTokens(ctx?.initialToolDefs ?? ctx?.toolDefs))
           .catch(() => 0)
       : 0;
     const budget = resolveContextBudget(budgetProvider?.model ?? '', {
