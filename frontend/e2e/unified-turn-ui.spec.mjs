@@ -271,3 +271,31 @@ test('live activity counts completed tools without hiding the active row', async
   await expect(page.locator('.tool-activity-burst-caption')).toHaveCount(0);
   await expect(page.locator('.tool-activity-burst-toggle')).toBeVisible();
 });
+
+
+test('live workspace preview follows observed steps and yields to expanded details', async ({ page }) => {
+  await prepareChatWorkbench(page);
+  await page.evaluate(async () => {
+    const ctl = await window.addStreamingMessage({ userPrompt: 'Read project files.' });
+    window.__unifiedController = ctl;
+    ctl.recordToolUse({ id: 'agent', name: 'workspace_agent', input: { task: 'Read project files.' } });
+    ctl.recordAgentStep({ type: 'step', id: 'agent', runId: 'run-preview', stepId: 'read', kind: 'read', status: 'done' });
+    ctl.recordAgentStep({ type: 'step', id: 'agent', runId: 'run-preview', stepId: 'command', kind: 'command', status: 'running', command: 'npm test' });
+  });
+  const preview = page.getByTestId('agent-activity-preview');
+  await expect(preview).toBeVisible();
+  await expect(preview).toHaveAttribute('data-state', 'running');
+  await expect(preview).toContainText('1/2');
+  await toolRow(page, 'agent').click();
+  await expect(preview).toHaveCount(0);
+  await expect(page.locator('.agent-step')).toHaveCount(2);
+  await toolRow(page, 'agent').click();
+  await expect(preview).toBeVisible();
+  await page.evaluate(() => {
+    const ctl = window.__unifiedController;
+    ctl.recordToolResult({ id: 'agent', name: 'workspace_agent', status: 'completed', ok: true, output: 'Done.' });
+    ctl.append('Finished.');
+    ctl.finish();
+  });
+  await expect(preview).toHaveCount(0);
+});
