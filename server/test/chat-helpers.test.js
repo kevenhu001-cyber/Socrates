@@ -177,14 +177,14 @@ describe('enforceServerSystemBoundary', () => {
       out[0].content,
       /Style preferences apply within the response defaults and exceptions below/i,
     );
-    assert.match(out[0].content, /write clearly and naturally/i);
-    assert.match(out[0].content, /Avoid emoji and decorative symbols/i);
+    assert.match(out[0].content, /Follow FINAL OUTPUT CONSTRAINTS for language, tone, depth, teaching and layout/i);
+    assert.match(FINAL_OUTPUT_CONSTRAINTS, /Avoid label fragments and decorative symbols or emoji/i);
     assert.match(
       out[0].content,
       /never invent facts, citations, sources, URLs, files, tool results, or completed actions/i,
     );
     assert.match(out[0].content, /Do not reveal private chain-of-thought/i);
-    assert.match(out[0].content, /closing FINAL OUTPUT CONSTRAINTS for depth/i);
+    assert.match(FINAL_OUTPUT_CONSTRAINTS, /Match the user's language and register/i);
     /* Global defaults allow task-specific formats and explicit user preferences. */
     assert.match(out[0].content, /Output style never overrides these requirements/i);
     assert.match(out[0].content, /user.s current explicit request sets the task/i);
@@ -205,7 +205,7 @@ describe('enforceServerSystemBoundary', () => {
        nodes only. */
     assert.doesNotMatch(out[0].content, /Visualization\(template/);
     assert.match(out[0].content, /Never encode a list as \{"item": \[\.\.\.\]\}/);
-    assert.match(out[0].content, /use LaTeX for every reader-facing formula .* visual UI/);
+    assert.match(out[0].content, /Use LaTeX for reader-facing mathematical expressions, including in prose, tables, learning cards, and visual UI/);
     /* The new client-system classifier (P_client_system_classifier)
        routes unstyled client strings like "Call [web_search: query]"
        into the untrusted-data block, not the application-instructions
