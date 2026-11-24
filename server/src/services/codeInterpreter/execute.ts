@@ -51,6 +51,7 @@ export type ExecutionResponse = {
 export async function executeCode(
   opts: ExecuteOpts,
   waitSignal?: AbortSignal,
+  sessionLockQueueMs = 0,
 ): Promise<ExecutionResponse> {
   const requestStartedAt = Date.now();
   if (EXEC_RUNNER === 'disabled') {
@@ -349,10 +350,15 @@ export async function executeCode(
     status: finalStatus,
     exitCode: result.exitCode,
     durationMs: result.durationMs,
+    sessionLockQueueMs,
     queueMs: result.queueMs,
+    workerBootMs: result.workerBootMs,
+    dependencyMs: result.dependencyMs,
+    fontMs: result.fontMs,
     packageMs: result.packageMs,
     artifactPersistenceMs,
-    wallMs: Date.now() - requestStartedAt,
+    executionWallMs: Date.now() - requestStartedAt,
+    wallMs: Date.now() - requestStartedAt + sessionLockQueueMs,
     errorCode: result.errorCode,
     artifactCount: finalArtifactCount,
     errorMessage: result.errorMessage || null,
