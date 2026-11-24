@@ -39,9 +39,19 @@ export function ScheduledPage() {
 
   if (snap.error) {
     return (
-      <Alert variant="destructive" className="scheduled-empty">
-        <AlertDescription>{snap.error}</AlertDescription>
-      </Alert>
+      <PageFrame className="scheduled-directory" aria-labelledby="scheduled-directory-title">
+        <PageHeader
+          titleId="scheduled-directory-title"
+          title={scheduledText('scheduled.title', 'Scheduled')}
+          description={scheduledText(
+            'scheduled.subtitle',
+            'Let Socrates plan follow-ups, reminders, and recurring updates for you.',
+          )}
+        />
+        <Alert variant="destructive" className="scheduled-empty">
+          <AlertDescription>{snap.error}</AlertDescription>
+        </Alert>
+      </PageFrame>
     );
   }
 
