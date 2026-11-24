@@ -13,7 +13,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 
-enum class ReferenceGlyph { Menu, Plus, Close, Mic, Wave, ArrowUp, ArrowDown, Back, Search, Compose, More, MoreHorizontal, Copy, Share, Folder, Image, Camera, Paperclip, Clock, Plugin, Reasoning, Pin, Archive, Trash, Check, ThumbUp, ThumbDown, Speaker, Document, Globe, Refresh, Person, Settings, SignOut, Eye, EyeOff }
+enum class ReferenceGlyph { Menu, Plus, Close, Mic, Wave, ArrowUp, ArrowDown, Back, Search, Compose, More, MoreHorizontal, Copy, Share, Folder, Image, Camera, Paperclip, Clock, Plugin, Reasoning, Pin, Archive, Trash, Check, ThumbUp, ThumbDown, Speaker, Document, Globe, Refresh, Person, Settings, SignOut, Eye, EyeOff, ChevronRight }
 
 /** Hand-drawn round-cap, round-join glyph family. The canvas is a 24-unit grid. */
 @Composable
@@ -28,6 +28,7 @@ fun ReferenceIcon(glyph: ReferenceGlyph, description: String? = null, modifier: 
                 ReferenceGlyph.Menu -> { line(4f, 7f, 20f, 7f); line(4f, 15f, 14f, 15f) }
                 ReferenceGlyph.Plus -> { line(12f, 3f, 12f, 21f); line(3f, 12f, 21f, 12f) }
                 ReferenceGlyph.Close -> { line(5f, 5f, 19f, 19f); line(19f, 5f, 5f, 19f) }
+                ReferenceGlyph.ChevronRight -> path { moveTo(9f, 5f); lineTo(16f, 12f); lineTo(9f, 19f) }
                 ReferenceGlyph.Back -> { line(4f, 12f, 21f, 12f); path { moveTo(11f, 4f); lineTo(3f, 12f); lineTo(11f, 20f) } }
                 ReferenceGlyph.ArrowUp -> { line(12f, 3f, 12f, 21f); path { moveTo(5f, 10f); lineTo(12f, 3f); lineTo(19f, 10f) } }
                 ReferenceGlyph.ArrowDown -> { line(12f, 3f, 12f, 21f); path { moveTo(5f, 14f); lineTo(12f, 21f); lineTo(19f, 14f) } }
