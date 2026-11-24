@@ -1261,3 +1261,14 @@ test('outbound snapshot refresh removes stale memory, retains mode and is byte-s
   assert.equal(refreshSnapshotBlock(updated, marker, 'new memory'), updated);
   assert.doesNotMatch(refreshSnapshotBlock(updated, marker, null), /new memory/);
 });
+
+test('project description containing an instruction-like phrase remains context', () => {
+  const out = enforceServerSystemBoundary([{ role: 'system', content: '## Active project\nProject: Example\nPurpose: example text Project instructions: not a directive' }]);
+  assert.doesNotMatch(out[0].content, /<client_application_instructions scope=/);
+  assert.match(out[0].content, /example text Project instructions: not a directive/);
+});
+
+test('legacy mirrored account memories are omitted from the client prefix', () => {
+  const result = classifyClientSystemMessages([{ role: 'system', content: "## User's saved memories (long-term context)\n- stale mirror\n\n## MEMORY (things I know about the user)\n- local note" }]);
+  assert.deepEqual(result.context, ['## MEMORY (things I know about the user)\n- local note']);
+});
