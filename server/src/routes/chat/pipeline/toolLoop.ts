@@ -559,8 +559,10 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
           rejection = {
             code: 'tool_not_available',
             retryable: true,
-            hint: `Connector tools are discovered first. Call search_connectors, then get_connector_spec for \`${resolved.name}\`, before calling it.`,
+            hint: `Deferred tools are discovered first. Call search_connectors, then get_connector_spec for \`${resolved.name}\`, before calling it.`,
           };
+        } else if (!activeToolNames.includes(resolved.name)) {
+          rejection = { code: 'tool_not_available', retryable: false };
         } else if (!repaired.ok) {
           /* Distinct codes: an oversized payload needs a smaller call, a
              parse failure needs the arguments re-emitted as one JSON
