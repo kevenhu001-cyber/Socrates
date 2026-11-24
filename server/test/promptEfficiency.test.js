@@ -64,6 +64,7 @@ test('routine questions keep Python deferred while execution-heavy requests prew
     'explain this code',
     'Python 执行为什么慢',
     '什么是数据分析',
+    'what is data analysis',
     'what is Python',
     'explain numerical simulation',
     'what is a CSV file',
@@ -72,6 +73,8 @@ test('routine questions keep Python deferred while execution-heavy requests prew
   }
   for (const content of [
     '用 Python 计算这组数据',
+    '进行数据分析',
+    'perform data analysis',
     '分析这份 CSV 数据',
     '执行代码',
     '运行数值仿真',
