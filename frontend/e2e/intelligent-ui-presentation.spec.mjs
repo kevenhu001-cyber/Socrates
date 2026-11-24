@@ -106,10 +106,11 @@ for (const format of ['native', 'openui']) {
       } else {
         await expect(slider).toHaveCSS('outline-style', 'none');
       }
-      /* The result is part of the answer: no card frame and no presentation
-         toolbar, so nothing competes with the prose around it. */
+      /* The result is one quiet card in the answer: the card fill and the
+         16px radius, but no presentation toolbar competing with the prose. */
       await expect(shell).toHaveCSS('border-top-width', '0px');
-      await expect(shell).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+      await expect(shell).toHaveCSS('border-radius', mode === 'mobile' ? '12px' : '16px');
+      await expect(shell).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
       await expect(shell).toHaveAttribute('data-display-mode', 'inline');
       await expect(shell.locator('.intui-surface-toolbar')).toHaveCount(0);
       await expect(shell.locator('.intui-surface-expand')).toHaveCount(0);

@@ -56,7 +56,33 @@ function UiPanel({ node, context }: { node: IntelligentUiNode; context: RenderCo
     (child) =>
       child.type === 'button' && asProse(resolve(child.label, context)) && isRecord(child.action),
   );
-  const content = children.filter((child) => child.type !== 'button');
+  const content: ReactNode[] = [];
+  let metricRun: IntelligentUiNode[] = [];
+  const flushMetrics = () => {
+    if (!metricRun.length) return;
+    if (metricRun.length === 1) {
+      content.push(<UiNode key={metricRun[0].id} node={metricRun[0]} context={context} />);
+    } else {
+      content.push(
+        <div className="intui-metric-row" key={`metrics-${metricRun[0].id}`}>
+          {metricRun.map((child) => (
+            <UiNode key={child.id} node={child} context={context} />
+          ))}
+        </div>,
+      );
+    }
+    metricRun = [];
+  };
+  for (const child of children) {
+    if (child.type === 'button') continue;
+    if (child.type === 'metric') {
+      metricRun.push(child);
+      continue;
+    }
+    flushMetrics();
+    content.push(<UiNode key={child.id} node={child} context={context} />);
+  }
+  flushMetrics();
   const primary = actions.find((child) => child.primary === true);
   const secondary =
     actions.find((child) => child !== primary && child.primary !== true) ||
@@ -81,11 +107,7 @@ function UiPanel({ node, context }: { node: IntelligentUiNode; context: RenderCo
           ) : null}
         </header>
       ) : null}
-      <div className="intui-panel-body">
-        {content.map((child) => (
-          <UiNode key={child.id} node={child} context={context} />
-        ))}
-      </div>
+      <div className="intui-panel-body">{content}</div>
       {actions.length ? (
         <footer className="intui-panel-actions">
           {visibleActions.map((child) => (
@@ -381,6 +403,7 @@ function UiTable({ node, context }: { node: IntelligentUiNode; context: RenderCo
       </div>
     );
   const caption = asProse(resolve(node.caption ?? node.label ?? node.title, context));
+  const captionIsSurfaceTitle = Boolean(caption && caption === context.surfaceTitle);
   const normalizedColumns = columns.map((column, index) => {
     if (typeof column === 'string') return { key: column, label: column };
     if (isRecord(column)) {
@@ -398,7 +421,7 @@ function UiTable({ node, context }: { node: IntelligentUiNode; context: RenderCo
       aria-label={caption || 'Data table'}
     >
       <table className="ds-table intui-table">
-        <caption className={caption ? 'intui-table-caption' : 'sr-only'}>
+        <caption className={caption && !captionIsSurfaceTitle ? 'intui-table-caption' : 'sr-only'}>
           <MathText text={caption || 'Table'} />
         </caption>
         <thead>
@@ -518,6 +541,7 @@ function visualizationPropsOf(
 function UiVisualization({ node, context }: { node: IntelligentUiNode; context: RenderContext }) {
   const props = visualizationPropsOf(node, context);
   if (!props) return null;
+  const hideHeader = Boolean(props.title && props.title === context.surfaceTitle);
   return (
     <div
       className="intui-chart"
@@ -525,7 +549,7 @@ function UiVisualization({ node, context }: { node: IntelligentUiNode; context: 
       data-template={props.template}
       data-chart-node={node.type === 'chart' ? '' : undefined}
     >
-      <NativeVisualization {...props} streaming={context.streaming} />
+      <NativeVisualization {...props} hideHeader={hideHeader} streaming={context.streaming} />
     </div>
   );
 }

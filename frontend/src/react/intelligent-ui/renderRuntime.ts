@@ -20,6 +20,8 @@ export interface RenderContext {
   readOnly: boolean;
   streaming?: boolean;
   surfaceRootId?: string;
+  /** The title the shell promoted; a visual whose own title matches it stays quiet. */
+  surfaceTitle?: string;
 }
 
 export type UiAction = {

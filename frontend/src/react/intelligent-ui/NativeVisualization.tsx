@@ -29,6 +29,8 @@ export interface NativeVisualizationProps {
   payload: Record<string, unknown>;
   accessibilitySummary?: string;
   caption?: string;
+  /** The surrounding surface already shows this title. */
+  hideHeader?: boolean;
 }
 
 const NO_SERVER_SPECS: Parameters<typeof matchServerVisualization>[0] = [];
@@ -137,6 +139,7 @@ function useNativeVisualizationLifecycle(
 export function NativeVisualization({
   streaming = false,
   serverSpecs = NO_SERVER_SPECS,
+  hideHeader = false,
   ...props
 }: NativeVisualizationProps & {
   streaming?: boolean;
@@ -174,6 +177,7 @@ export function NativeVisualization({
       className="openui-visualization"
       data-openui-visualization={props.template}
       data-viz-phase={streaming ? 'receiving' : phase.kind}
+      data-header-hidden={hideHeader || undefined}
     >
       {/* The skeleton holds the card's exact footprint from the first token
             until the engine's card is in the host (CSS hides it then), so
