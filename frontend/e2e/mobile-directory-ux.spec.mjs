@@ -26,6 +26,13 @@ for (const width of [320, 390, 430]) {
     await page.route(/\/api\/(?:v2\/)?files(?:\?|$)/, (route) =>
       route.fulfill({ json: { files, hasMore: false } }),
     );
+    await page.route(/\/api\/(?:v2\/)?projects(?:\?|$)/, (route) =>
+      route.fulfill({ json: { projects: [
+        { id: 'project-a', name: 'Socrates' },
+        { id: 'project-b', name: 'Energy systems research' },
+        { id: 'project-c', name: 'AI research' },
+      ] } }),
+    );
     await page.route(/\/api\/(?:v2\/)?scheduled-tasks(?:\?|$)/, (route) =>
       route.fulfill({ json: { tasks: [{ id: 'task-mobile', title: 'Daily research briefing', prompt: 'Read papers', status: 'active', frequency: 'daily' }] } }),
     );
@@ -72,6 +79,8 @@ for (const width of [320, 390, 430]) {
 
     const projects = await open('#navProjects', '.projects-directory');
     await expect(projects.locator('.ui-page-search input')).toHaveCSS('font-size', '16px');
+    await expect(projects.locator('.project-row')).toHaveCount(3);
+    await expect(projects.locator('.project-row').first()).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
     await capture('projects');
     const plugins = await open('#navPlugins', '.plugin-directory');
     await expect(plugins.locator('.plugin-directory-search input')).toHaveCSS('font-size', '16px');
