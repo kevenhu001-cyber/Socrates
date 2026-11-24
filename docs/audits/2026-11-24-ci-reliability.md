@@ -9,6 +9,8 @@ Baseline main: `6365f0eb2e698bd533669565ddb9af382ae03967`.
 - Agent workflow filters reference retired paths; use current tool, chat, renderer, prompt and shared-package paths. Do not double-run feature branch pushes and their PRs. Main CI still owns required E2E tiers.
 - Repeated Node unit-test warnings show the WASM loader trying to fetch file: URLs. Avoid implicit source-file fetches; explicit byte-backed initialization and independent WASM/TS parity remain supported.
 
+- Tool argument recovery had two independent regex replacements that removed commas inside code/text strings if a provider also sent a structural trailing comma. Both parsers now share a string-aware repair helper; the tolerant path also stops immediately at the raw transport cap. Added regression cases covering JSON, loose literals, escaped quotes, and oversized whitespace.
+
 ## Historical failures requiring separate follow-up
 
 - [Older frontend E2E](https://github.com/kevenhu001-cyber/Socrates/actions/runs/45048028274): 809 passed, 41 failed, 10 skipped; failures included retired explore/analyze hooks, visualization rendering/ready-state, and mobile controls. The latest unit-test gate stops before E2E, so do not assume the older failures are fixed. Re-run against this revision and distinguish removed behavior from current regressions.
