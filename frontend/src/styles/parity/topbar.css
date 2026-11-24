@@ -236,7 +236,6 @@ html[data-main-view$='Panel'] #appShell .mobile-newchat-btn {
   /* The phone header also sits above the scrolling transcript. Blend its
      lower edge into the first visible line instead of drawing a hard rule. */
   #appShell .top-bar {
-    position: relative;
     z-index: var(--ui-z-header);
   }
   #appShell .top-bar::after {
