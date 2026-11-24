@@ -59,7 +59,7 @@ export interface UiColors {
 
 export const uiColors: Readonly<Record<ThemeMode, UiColors>> = {
   light: {
-    canvas: '#fcfcfc',
+    canvas: '#ffffff',
     card: '#ffffff',
     fill: 'rgba(0, 0, 0, 0.04)',
     fillHover: 'rgba(0, 0, 0, 0.07)',
@@ -158,15 +158,15 @@ export interface UiTypeStep {
 export const uiType = {
   display: { size: 52, lineHeight: 56, weight: '500', tracking: -1.82 },
   displayCompact: { size: 34, lineHeight: 40, weight: '500', tracking: -0.85 },
-  /** Home greeting: the landing line is the page's one display moment, so it
-   *  sits two steps above the previous 28px — large enough to read as a title
-   *  rather than a label, still restrained next to a marketing hero. */
-  greeting: { size: 40, lineHeight: 48, weight: '500', tracking: -0.9 },
-  greetingCompact: { size: 24, lineHeight: 32, weight: '500', tracking: -0.36 },
+  /** Home greeting: the reference measures 28/36 at regular weight. Size
+   *  carries the moment; the regular weight keeps the composer, not the
+   *  headline, as the page's strongest object. */
+  greeting: { size: 28, lineHeight: 36, weight: '400', tracking: -0.56 },
+  greetingCompact: { size: 24, lineHeight: 32, weight: '400', tracking: -0.36 },
   title: { size: 20, lineHeight: 28, weight: '500', tracking: -0.3 },
   titleSm: { size: 17, lineHeight: 24, weight: '500', tracking: -0.17 },
-  body: { size: 16, lineHeight: 26, weight: '400', tracking: 0 },
-  bodySm: { size: 14, lineHeight: 22, weight: '400', tracking: 0 },
+  body: { size: 16, lineHeight: 28, weight: '400', tracking: -0.1 },
+  bodySm: { size: 14, lineHeight: 22, weight: '400', tracking: -0.06 },
   label: { size: 15, lineHeight: 22, weight: '500', tracking: 0 },
   labelSm: { size: 13, lineHeight: 18, weight: '500', tracking: 0 },
   eyebrow: { size: 12, lineHeight: 16, weight: '500', tracking: 0.6 },
@@ -186,6 +186,8 @@ export const uiRadius = {
   lg: 16,
   xl: 20,
   card: 24,
+  /** The question box: 28px desktop, 26px on the phone composition. */
+  composer: 28,
   pill: 999,
 } as const;
 

@@ -75,7 +75,8 @@ export function TopBarAction({
 }: TopBarActionProps) {
   const { colors } = useUiTheme();
   const { pressed: down, hovered, handlers } = usePressFeedback();
-  const size = touch ? uiControl.hit : PILL;
+  /* The reference header is a 48px strip of 32px controls. */
+  const size = touch ? uiControl.hit : 32;
   return (
     <button
       type="button"
@@ -154,10 +155,10 @@ export function TopBarModelSwitcher({
 }: TopBarModelSwitcherProps) {
   const { colors, fontFamily, typeScale } = useUiTheme();
   const { pressed, hovered, handlers } = usePressFeedback();
-  /* Desktop: a 15px wordmark beside a 14px model name on one 22px line. The
-     old 18px lockup read as a page title and crowded the centred mode switch;
-     the phone chip keeps its 14/22 step. */
-  const brandSize = Math.round((compact ? 14 : 15) * typeScale * 10) / 10;
+  /* One 14px label: brand and model share size, weight and ink, so the
+     control reads as a single model name with a caret rather than two
+     typographic tiers. */
+  const brandSize = Math.round(14 * typeScale * 10) / 10;
   const brandLine = Math.round(22 * typeScale * 10) / 10;
   const modelSize = Math.round(14 * typeScale * 10) / 10;
   const showSettings = compact && !model;
@@ -185,8 +186,8 @@ export function TopBarModelSwitcher({
           gap: uiStep[50] + (compact ? 0 : 2),
           flexShrink: 1,
           minWidth: 0,
-          maxWidth: narrow ? 68 : compact ? 76 : 360,
-          height: PILL,
+          maxWidth: narrow ? 80 : compact ? 108 : 360,
+          height: 32,
           paddingTop: 0,
           paddingBottom: 0,
           paddingLeft: showSettings ? 0 : compact ? uiStep[100] - 2 : uiControl.padNav,
@@ -219,7 +220,7 @@ export function TopBarModelSwitcher({
               fontFamily,
               fontSize: brandSize,
               lineHeight: `${brandLine}px`,
-              fontWeight: '600',
+              fontWeight: '500',
               color: colors.ink,
             },
             clamp(1),
@@ -239,8 +240,8 @@ export function TopBarModelSwitcher({
             fontFamily,
             fontSize: modelSize,
             lineHeight: `${brandLine}px`,
-            fontWeight: compact ? '500' : '400',
-            color: compact ? colors.ink : colors.inkSecondary,
+            fontWeight: '500',
+            color: colors.ink,
           },
           clamp(1),
         ])}
@@ -354,10 +355,10 @@ export function TopBarModeSwitch({
   );
   /* Phones (reference): a 186×36 control whose thumb is the full 36px height
      and sits flush on a track drawn 1.5px shorter top and bottom. */
-  const optionWidth = narrow ? 64 : compact ? 93 : 96;
-  const inset = compact ? 0 : uiStep[50] - 1;
+  const optionWidth = narrow ? 60 : compact ? 93 : 88;
+  const inset = compact ? 0 : 2;
   const trackInset = compact ? 1.5 : 0;
-  const height = PILL;
+  const height = compact ? PILL : 32;
   return (
     <div
       id="topModeSwitch"

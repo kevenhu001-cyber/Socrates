@@ -84,11 +84,10 @@ const lightHex: ThemePaletteHex = {
     surface: '#ebebeb',
   },
   bg: {
-    /* RN-7 paper canvas, tinted (phone reference): the canvas is #fcfcfc
-     * under the paper (#ffffff) that raised and overlay surfaces share
-     * (lifted by hairline + soft shadow); the rail is #fafafa and inset
-     * wells #f2f2f2. */
-    page: '#fcfcfc',
+    /* The canvas is the paper (#ffffff) that raised and overlay surfaces
+     * share (lifted by hairline + soft shadow); the rail is #fafafa and
+     * inset wells #f2f2f2, so the shell separates by tone alone. */
+    page: '#ffffff',
     raised: '#ffffff',
     overlay: '#ffffff',
     hover: '#e0e0e0',

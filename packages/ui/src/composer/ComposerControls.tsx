@@ -83,6 +83,10 @@ export interface ComposerControlsProps {
   primary: ComposerPrimaryControl;
   /** Phone rail: compact effort control. */
   compact?: boolean;
+  /** Split the rail around the editor: `leading` draws only the tools
+   *  control, `trailing` only effort / timer / mic / send. `all` (default)
+   *  keeps the single rail used by the stacked composition. */
+  part?: 'all' | 'leading' | 'trailing';
 }
 
 function RoundControl({
@@ -172,186 +176,202 @@ export function ComposerControls({
   mic,
   primary,
   compact = false,
+  part = 'all',
 }: ComposerControlsProps) {
   const { colors } = useUiTheme();
   const effortPress = usePressFeedback();
   const primaryPress = usePressFeedback();
   const stop = primary.mode === 'stop';
   const enabled = stop || primary.ready;
+  const leading = part !== 'trailing';
+  const trailing = part !== 'leading';
   return (
     <>
-      <RoundControl
-        id="composerToolsBtn"
-        control="tools"
-        label={tools.label}
-        i18nKey={tools.i18nKey}
-        expanded={tools.expanded}
-        haspopup="menu"
-        onPress={tools.onPress}
-      >
-        <UiIcon name="plus" size={20} color={tools.expanded ? colors.ink : colors.inkSecondary} />
-      </RoundControl>
+      {leading ? (
+        <>
+          <RoundControl
+            id="composerToolsBtn"
+            control="tools"
+            label={tools.label}
+            i18nKey={tools.i18nKey}
+            expanded={tools.expanded}
+            haspopup="menu"
+            onPress={tools.onPress}
+          >
+            <UiIcon
+              name="plus"
+              size={20}
+              color={tools.expanded ? colors.ink : colors.inkSecondary}
+            />
+          </RoundControl>
 
-      <div style={{ flex: 1, minWidth: 0 }} {...dataAttributes({ composerSpacer: '' })} />
-
-      <div
-        {...dataAttributes({
-          composerControl: 'effort',
-          effort: effort.level,
-          visible: effort.visible ? 'true' : 'false',
-        })}
-        style={{ display: effort.visible ? 'flex' : 'none', flexDirection: 'row' }}
-      >
-        <button
-          type="button"
-          id="effortTrigger"
-          aria-label={effort.accessibilityLabel}
-          aria-haspopup="dialog"
-          aria-expanded={effort.expanded}
-          onClick={effort.onPress}
-          {...effortPress.handlers}
-          {...dataAttributes({ chatConfigTrigger: '' })}
-          style={{
-            display: 'flex',
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: compact ? 4 : 6,
-            height: COMPOSER_CONTROL_SIZE,
-            margin: 0,
-            paddingTop: 0,
-            paddingBottom: 0,
-            paddingLeft: compact ? 10 : 12,
-            paddingRight: 10,
-            borderRadius: uiRadius.pill,
-            borderWidth: compact ? 0 : 1,
-            borderStyle: 'solid',
-            borderColor:
-              effortPress.hovered || effort.expanded ? colors.hairlineStrong : colors.hairline,
-            backgroundColor: effortPress.pressed
-              ? colors.fillPressed
-              : effortPress.hovered || effort.expanded
-                ? colors.fillHover
-                : compact
-                  ? 'transparent'
-                  : colors.fill,
-            color: 'inherit',
-            font: 'inherit',
-            cursor: 'pointer',
-            transitionProperty: 'background-color, border-color',
-            transitionDuration: '150ms',
-          }}
-        >
-          {compact ? null : (
-            <UiText variant="labelSm" tone="secondary" numberOfLines={1}>
-              {effort.caption}
-            </UiText>
-          )}
-          {effort.value ? (
-            <UiText
-              variant={compact ? 'body' : 'labelSm'}
-              tone={compact ? 'tertiary' : 'ink'}
-              numberOfLines={1}
-              style={compact ? { lineHeight: '20px' } : undefined}
-              aria-hidden
-              {...dataAttributes({ effortValue: '' })}
-            >
-              {effort.value}
-            </UiText>
+          {part === 'all' ? (
+            <div style={{ flex: 1, minWidth: 0 }} {...dataAttributes({ composerSpacer: '' })} />
           ) : null}
-          <UiIcon name="chevron-down" size={compact ? 14 : 16} color={colors.inkTertiary} />
-        </button>
-      </div>
-
-      {mic.phase === 'recording' && mic.showTimer && mic.timerLabel ? (
-        <UiText
-          variant="eyebrow"
-          tone="secondary"
-          numberOfLines={1}
-          aria-hidden
-          {...dataAttributes({ composerVoiceTimer: '' })}
-          style={{
-            fontVariant: ['tabular-nums'],
-            paddingHorizontal: 8,
-            paddingVertical: 2,
-            borderRadius: uiRadius.pill,
-            backgroundColor: colors.fill,
-          }}
-        >
-          {mic.timerLabel}
-        </UiText>
+        </>
       ) : null}
 
-      <RoundControl
-        id="composerMicBtn"
-        control="mic"
-        label={mic.label}
-        i18nKey={mic.i18nKey}
-        pressed={mic.listening}
-        voicePhase={mic.phase}
-        filled={mic.phase === 'recording'}
-        disabled={mic.disabled}
-        onPress={mic.onPress}
-      >
-        <UiIcon
-          name="mic"
-          size={20}
-          color={
-            mic.phase === 'recording'
-              ? colors.onAction
-              : mic.disabled
-                ? colors.inkTertiary
-                : mic.listening
-                  ? colors.ink
-                  : colors.inkSecondary
-          }
-        />
-      </RoundControl>
+      {trailing ? (
+        <>
+          <div
+            {...dataAttributes({
+              composerControl: 'effort',
+              effort: effort.level,
+              visible: effort.visible ? 'true' : 'false',
+            })}
+            style={{ display: effort.visible ? 'flex' : 'none', flexDirection: 'row' }}
+          >
+            <button
+              type="button"
+              id="effortTrigger"
+              aria-label={effort.accessibilityLabel}
+              aria-haspopup="dialog"
+              aria-expanded={effort.expanded}
+              onClick={effort.onPress}
+              {...effortPress.handlers}
+              {...dataAttributes({ chatConfigTrigger: '' })}
+              style={{
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: compact ? 4 : 6,
+                height: COMPOSER_CONTROL_SIZE,
+                margin: 0,
+                paddingTop: 0,
+                paddingBottom: 0,
+                paddingLeft: compact ? 10 : 12,
+                paddingRight: 10,
+                borderRadius: uiRadius.pill,
+                borderWidth: compact ? 0 : 1,
+                borderStyle: 'solid',
+                borderColor:
+                  effortPress.hovered || effort.expanded ? colors.hairlineStrong : colors.hairline,
+                backgroundColor: effortPress.pressed
+                  ? colors.fillPressed
+                  : effortPress.hovered || effort.expanded
+                    ? colors.fillHover
+                    : compact
+                      ? 'transparent'
+                      : colors.fill,
+                color: 'inherit',
+                font: 'inherit',
+                cursor: 'pointer',
+                transitionProperty: 'background-color, border-color',
+                transitionDuration: '150ms',
+              }}
+            >
+              {compact ? null : (
+                <UiText variant="labelSm" tone="secondary" numberOfLines={1}>
+                  {effort.caption}
+                </UiText>
+              )}
+              {effort.value ? (
+                <UiText
+                  variant={compact ? 'body' : 'labelSm'}
+                  tone={compact ? 'tertiary' : 'ink'}
+                  numberOfLines={1}
+                  style={compact ? { lineHeight: '20px' } : undefined}
+                  aria-hidden
+                  {...dataAttributes({ effortValue: '' })}
+                >
+                  {effort.value}
+                </UiText>
+              ) : null}
+              <UiIcon name="chevron-down" size={compact ? 14 : 16} color={colors.inkTertiary} />
+            </button>
+          </div>
 
-      <button
-        type="button"
-        id="composerPrimaryBtn"
-        aria-label={primary.label}
-        aria-disabled={!enabled}
-        disabled={!enabled}
-        onClick={primary.onPress}
-        {...primaryPress.handlers}
-        {...dataAttributes({
-          composerControl: 'send',
-          stop: stop ? '1' : '0',
-          ready: primary.ready ? 'true' : 'false',
-          sending: primary.sending ? 'true' : 'false',
-        })}
-        style={{
-          display: 'flex',
-          width: COMPOSER_CONTROL_SIZE,
-          height: COMPOSER_CONTROL_SIZE,
-          margin: 0,
-          padding: 0,
-          border: 0,
-          borderRadius: uiRadius.pill,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: enabled ? colors.action : colors.fill,
-          color: 'inherit',
-          cursor: enabled ? 'pointer' : 'default',
-          opacity:
-            primaryPress.pressed || primary.sending
-              ? 0.78
-              : primaryPress.hovered && enabled
-                ? 0.9
-                : undefined,
-          transitionProperty: 'background-color, opacity',
-          transitionDuration: '150ms',
-        }}
-      >
-        <div id="composerPrimaryBtnContent">
-          <UiIcon
-            name={stop ? 'stop' : 'arrow-up'}
-            size={18}
-            color={enabled ? colors.onAction : colors.inkTertiary}
-          />
-        </div>
-      </button>
+          {mic.phase === 'recording' && mic.showTimer && mic.timerLabel ? (
+            <UiText
+              variant="eyebrow"
+              tone="secondary"
+              numberOfLines={1}
+              aria-hidden
+              {...dataAttributes({ composerVoiceTimer: '' })}
+              style={{
+                fontVariant: ['tabular-nums'],
+                paddingHorizontal: 8,
+                paddingVertical: 2,
+                borderRadius: uiRadius.pill,
+                backgroundColor: colors.fill,
+              }}
+            >
+              {mic.timerLabel}
+            </UiText>
+          ) : null}
+
+          <RoundControl
+            id="composerMicBtn"
+            control="mic"
+            label={mic.label}
+            i18nKey={mic.i18nKey}
+            pressed={mic.listening}
+            voicePhase={mic.phase}
+            filled={mic.phase === 'recording'}
+            disabled={mic.disabled}
+            onPress={mic.onPress}
+          >
+            <UiIcon
+              name="mic"
+              size={20}
+              color={
+                mic.phase === 'recording'
+                  ? colors.onAction
+                  : mic.disabled
+                    ? colors.inkTertiary
+                    : mic.listening
+                      ? colors.ink
+                      : colors.inkSecondary
+              }
+            />
+          </RoundControl>
+
+          <button
+            type="button"
+            id="composerPrimaryBtn"
+            aria-label={primary.label}
+            aria-disabled={!enabled}
+            disabled={!enabled}
+            onClick={primary.onPress}
+            {...primaryPress.handlers}
+            {...dataAttributes({
+              composerControl: 'send',
+              stop: stop ? '1' : '0',
+              ready: primary.ready ? 'true' : 'false',
+              sending: primary.sending ? 'true' : 'false',
+            })}
+            style={{
+              display: 'flex',
+              width: COMPOSER_CONTROL_SIZE,
+              height: COMPOSER_CONTROL_SIZE,
+              margin: 0,
+              padding: 0,
+              border: 0,
+              borderRadius: uiRadius.pill,
+              alignItems: 'center',
+              justifyContent: 'center',
+              /* The primary action is ink, not a colour: a solid disc in the
+             text colour reads as the one thing to press in both modes. */
+              backgroundColor: colors.ink,
+              color: 'inherit',
+              cursor: enabled ? 'pointer' : 'default',
+              opacity: !enabled
+                ? 0.5
+                : primaryPress.pressed || primary.sending
+                  ? 0.78
+                  : primaryPress.hovered
+                    ? 0.9
+                    : 1,
+              transitionProperty: 'background-color, opacity',
+              transitionDuration: '150ms',
+            }}
+          >
+            <div id="composerPrimaryBtnContent">
+              <UiIcon name={stop ? 'stop' : 'arrow-up'} size={18} color={colors.onInk} />
+            </div>
+          </button>
+        </>
+      ) : null}
     </>
   );
 }
