@@ -34,6 +34,8 @@ const ARGUMENT_ERROR_CODES: ReadonlySet<string> = new Set<string>([
 
 import { hashToolArguments, type ToolTurnPolicy } from '../../../services/tools/toolTurnPolicy.js';
 import { SseEmitter } from './sseEmitter.js';
+import { createToolResultArchive } from '../../../services/tools/toolResultBudget.js';
+import { estimateContextTokens } from '../../../services/core/usageTracker.js';
 import { formatToolResultContent } from './toolResultMessage.js';
 import { canRetryIdenticalToolCall, normalizeToolResultRetryability } from './toolResultPolicy.js';
 import { createToolExecutorRegistry } from './executors/executorLookup.js';
@@ -50,6 +52,8 @@ export interface ToolRunnerDeps {
   abortSignal: AbortSignal;
   toolPolicy: ToolTurnPolicy;
   onResult?: (toolCallId: string, result: import('./types.js').ToolResult) => void;
+  /** Preserve the existing durable display output separately from the model preview. */
+  onDisplayOutput?: (toolCallId: string, content: string) => void;
   schemaForTool: (
     name: string,
   ) => import('../../../services/tools/toolCallSafety.js').JsonSchemaNode | null;
@@ -63,8 +67,10 @@ export type ToolRunner = (entry: PreparedCall, activeToolNames: string[]) => Pro
 
 export function createToolRunner(deps: ToolRunnerDeps): ToolRunner {
   const registry = createToolExecutorRegistry();
+  const toolResultArchive = createToolResultArchive();
   const executorContext: ToolExecutorContext = {
     publicRuntime: deps.publicRuntime,
+    toolResultArchive,
     req: deps.req,
     sessionIdFromQuery: deps.sessionIdFromQuery,
     projectIdFromBody: deps.projectIdFromBody,
@@ -325,7 +331,19 @@ export function createToolRunner(deps: ToolRunnerDeps): ToolRunner {
       deps.toolPolicy.unmarkCall(toolName, hashToolArguments(entry.args));
     }
 
-    const toolContent = formatToolResultContent(toolName, result);
+    const rawContent = formatToolResultContent(toolName, result);
+    const toolContent = activeToolNames.includes('read_tool_result')
+      ? toolResultArchive.preview(tc.id, toolName, rawContent, {
+          correction: Boolean(result.correction), failed: result.status !== 'completed',
+        })
+      : rawContent;
+    if (toolContent !== rawContent) {
+      deps.onDisplayOutput?.(tc.id, wrapUntrustedToolResult(toolName, rawContent));
+      if (process.env.CHAT_TOOL_RESULT_METRICS === '1') {
+        console.info('[tool-result-budget]', JSON.stringify({ tool: toolName,
+          originalTokens: estimateContextTokens(rawContent), previewTokens: estimateContextTokens(toolContent) }));
+      }
+    }
     return {
       role: 'tool',
       tool_call_id: tc.id,
