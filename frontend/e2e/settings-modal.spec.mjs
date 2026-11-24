@@ -701,6 +701,11 @@ test('settings owns the whole viewport without the chat shell', async ({ page })
   await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
   const settings = page.locator('#settingsPage');
   await expect(settings).toBeVisible();
+  await expect(settings.locator('.account-page-header')).toHaveAttribute(
+    'data-page-header-variant',
+    'account',
+  );
+  await expect(settings.locator('[data-page-title]')).toHaveCount(1);
   /* Route activation runs a short FLIP on the shell; measure the settled
      page, not a frame in the middle of that transition. */
   await page.waitForTimeout(350);
