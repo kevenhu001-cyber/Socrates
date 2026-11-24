@@ -6,13 +6,17 @@
     align-items: center;
     flex: 1;
     min-width: 0;
-    height: var(--ui-control-desktop);
-    min-height: var(--ui-control-desktop);
-    padding: 0 12px;
-    border: 1px solid var(--ui-border-strong);
+    height: var(--ui-control-touch);
+    min-height: var(--ui-control-touch);
+    padding: 0 var(--ui-space-md);
+    border: 1px solid transparent;
     border-radius: var(--ui-radius-pill);
-    background: var(--ui-bg-surface);
+    background: var(--ui-bg-field);
   }
+  body.workspace-active #appShell :is(.plugin-directory-search, .library-search-pill):focus-within {
+    border-color: var(--ui-border-strong);
+  }
+
   body.workspace-active #appShell .plugin-directory-search input {
     min-width: 0;
     width: 100%;
@@ -156,9 +160,9 @@
     gap: 6px;
   }
   body.workspace-active #appShell .plugin-directory-card-title-row strong {
-    font-size: 15px;
+    font-size: var(--ui-font-size-md);
     line-height: 20px;
-    font-weight: var(--ui-font-weight-regular);
+    font-weight: var(--ui-font-weight-medium);
   }
   body.workspace-active #appShell .plugin-directory-card-status,
   body.workspace-active #appShell .plugin-directory-action-label {
@@ -198,10 +202,18 @@
     stroke-linejoin: round;
   }
 
+  body.workspace-active #appShell .library-toolbar {
+    gap: var(--ui-space-sm);
+  }
+
+  body.workspace-active #appShell .library-toolbar .library-search-pill {
+    flex: 1 0 100%;
+  }
+
   body.workspace-active #appShell .library-toolbar-controls {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: var(--ui-space-sm);
   }
   body.workspace-active #appShell .library-tool-btn,
   body.workspace-active #appShell .library-view-btn {
@@ -231,12 +243,12 @@
   body.workspace-active #appShell .library-search-pill {
     flex: 1;
     min-width: 0;
-    height: var(--ui-control-desktop);
-    min-height: var(--ui-control-desktop);
-    padding: 0 12px;
-    border: 1px solid var(--ui-border-strong);
+    height: var(--ui-control-touch);
+    min-height: var(--ui-control-touch);
+    padding: 0 var(--ui-space-md);
+    border: 1px solid transparent;
     border-radius: var(--ui-radius-pill);
-    background: var(--ui-bg-surface);
+    background: var(--ui-bg-field);
   }
   body.workspace-active #appShell .library-search-pill input {
     width: 100%;
@@ -375,13 +387,21 @@
     grid-template-columns: minmax(0, 1fr) var(--ui-control-touch);
     grid-template-rows: auto auto;
     gap: var(--ui-space-xs);
-    padding: var(--ui-space-sm);
+    padding: var(--ui-space-md);
+    min-height: 104px;
     border: 1px solid var(--ui-border-subtle);
     border-radius: var(--ui-radius-lg);
+    background: var(--ui-bg-surface);
   }
   body.workspace-active #appShell .library-list.view-grid .library-file-icon {
     grid-column: 1;
     grid-row: 1;
+    width: var(--ui-control-touch);
+    height: var(--ui-control-touch);
+    background: transparent;
+    border: 0;
+    padding: var(--ui-space-xs);
+    color: var(--ui-text-secondary);
   }
   body.workspace-active #appShell .library-list.view-grid .workspace-row-copy {
     grid-column: 1 / -1;
@@ -399,11 +419,7 @@
 }
 
 @media (max-width: 359px) {
-  /* At 320px give search its own line rather than shrinking the field or
-     stealing the 44px touch targets from the three toolbar actions. */
-  body.workspace-active #appShell .library-toolbar .library-search-pill {
-    flex: 1 0 100%;
-  }
+  /* Tighten only the action gaps, never the search field or touch targets. */
   body.workspace-active #appShell .library-toolbar-controls {
     gap: 8px;
   }

@@ -1,3 +1,4 @@
+import { Plus } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '../../ui/shadcn/tabs';
 import { Alert, AlertDescription } from '../../ui/shadcn/alert';
 import { Button } from '../../ui/shadcn/button';
@@ -69,6 +70,7 @@ export function ScheduledPage() {
         )}
         actions={
           <Button type="button" onClick={() => createTask()}>
+            <Plus aria-hidden="true" />
             {scheduledText('scheduled.new', 'New')}
           </Button>
         }

@@ -223,7 +223,7 @@ for (const mode of ['dark', 'light']) {
     await expect(page.locator('.plugin-directory')).toBeVisible();
     await expect(page.locator('#topModelSwitcher')).toBeHidden();
     expect((await page.locator('.plugin-directory-search').boundingBox()).height).toBeCloseTo(
-      36,
+      44,
       1,
     );
     await expect(page.locator('.plugin-directory-search input')).toHaveCSS('font-size', '16px');

@@ -23,6 +23,9 @@ for (const width of [320, 390, 430]) {
     await page.route(/\/api\/(?:v2\/)?files(?:\?|$)/, (route) =>
       route.fulfill({ json: { files, hasMore: false } }),
     );
+    await page.route(/\/api\/(?:v2\/)?scheduled-tasks(?:\?|$)/, (route) =>
+      route.fulfill({ json: { tasks: [{ id: 'task-mobile', title: 'Daily research briefing', prompt: 'Read papers', status: 'active', frequency: 'daily' }] } }),
+    );
     await page.goto('/');
     await waitForAppShell(page);
     async function open(id, selector) {
@@ -55,9 +58,12 @@ for (const width of [320, 390, 430]) {
     const more = rows.first().locator('.library-row-more-btn');
     await expect(more).toHaveCSS('height', '44px');
     await more.tap();
-    await expect(rows.first().getByRole('menu')).toBeVisible();
-    await more.tap();
-    await expect(rows.first().getByRole('menu')).toBeHidden();
+    const fileMenu = page.locator('.library-row-menu[role="menu"]');
+    await expect(fileMenu).toBeInViewport();
+    await expect(fileMenu.getByRole('menuitem')).toHaveCount(3);
+    await page.keyboard.press('Escape');
+    await expect(fileMenu).toBeHidden();
+    await expect(more).toBeFocused();
 
     const projects = await open('#navProjects', '.projects-directory');
     await expect(projects.locator('.ui-page-search input')).toHaveCSS('font-size', '16px');
@@ -65,6 +71,15 @@ for (const width of [320, 390, 430]) {
     await expect(plugins.locator('.plugin-directory-search input')).toHaveCSS('font-size', '16px');
     const scheduled = await open('#navScheduled', '.scheduled-directory');
     await expect(scheduled.locator('.ui-page-search input')).toHaveCSS('font-size', '16px');
+    const task = scheduled.locator('.task-row').first();
+    await expect(task).toBeVisible();
+    await expect(task.locator('.task-inline-action').first()).toBeHidden();
+    await task.locator('.task-more-btn').tap();
+    const taskMenu = page.locator('.task-action-menu[role="menu"]');
+    await expect(taskMenu).toBeInViewport();
+    await expect(taskMenu.getByRole('menuitem')).toHaveCount(3);
+    await page.keyboard.press('Escape');
+    await expect(taskMenu).toBeHidden();
     await assertFits(scheduled);
   });
 }

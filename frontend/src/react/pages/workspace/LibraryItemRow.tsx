@@ -2,7 +2,14 @@ import { Input as ShadcnInput } from '../../ui/shadcn/input';
 import { Label as ShadcnLabel } from '../../ui/shadcn/label';
 import { Checkbox } from '../../ui/shadcn/checkbox';
 import { Button as UiButton } from '../../ui/Button';
-import React, { useState } from 'react';
+import { Download, Pencil, Trash2 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLink,
+  DropdownMenuTrigger,
+} from '../../ui/shadcn/dropdown-menu';
 import type { useWorkspaceDispatch } from './workspace.hooks';
 import type { LibraryDisplayItem } from './library.types';
 import { getFileTypeCategory, fileTypeGlyph } from './libraryFileTypes';
@@ -65,64 +72,45 @@ function LibraryRowActions({
   tab: string;
   dispatch: ReturnType<typeof useWorkspaceDispatch>;
 }) {
-  const [menuOpen, setMenuOpen] = useState(false);
+  const label = `${name}: ${i18n('sidebar.nav.more', 'More')}`;
   return (
-    <div className="library-row-menu-wrap">
-      <UiButton
-        type="button"
-        className="library-row-more-btn"
-        aria-label={`${name}: ${i18n('sidebar.nav.more', 'More')}`}
-        aria-expanded={menuOpen}
-        onClick={(e) => {
-          e.stopPropagation();
-          setMenuOpen((open) => !open);
-        }}
+    <DropdownMenu modal={false}>
+      <DropdownMenuTrigger
+        render={<UiButton type="button" className="library-row-more-btn" />}
+        aria-label={label}
       >
         <MoreIcon />
-      </UiButton>
-      {menuOpen && (
-        <div className="library-row-menu" role="menu">
-          <UiButton
-            type="button"
-            role="menuitem"
-            onClick={(e) => {
-              e.stopPropagation();
-              setMenuOpen(false);
-              dispatch.startRename(item.id, itemKey);
-            }}
-          >
-            {i18n('library.rename', 'Rename')}
-          </UiButton>
-          {tab === 'files' && (
-            <a
-              role="menuitem"
-              className="library-row-menu-link"
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="library-row-menu w-auto min-w-44">
+        <DropdownMenuItem
+          className="min-h-(--ui-control-touch)"
+          onClick={() => dispatch.startRename(item.id, itemKey)}
+        >
+          <Pencil aria-hidden="true" />
+          {i18n('library.rename', 'Rename')}
+        </DropdownMenuItem>
+        {tab === 'files' && (
+          <>
+            <DropdownMenuLink
+              className="library-row-menu-link flex min-h-(--ui-control-touch) items-center gap-2 rounded-md px-2 text-sm"
               href={'/api/v2/files/' + encodeURIComponent(item.id) + '/raw'}
               download={name}
-              onClick={(e) => {
-                e.stopPropagation();
-                setMenuOpen(false);
-              }}
             >
+              <Download size={16} aria-hidden="true" />
               {i18n('library.download', 'Download original')}
-            </a>
-          )}
-          {tab === 'files' && (
-            <UiButton
-              type="button"
-              role="menuitem"
-              onClick={(e) => {
-                e.stopPropagation();
-                setMenuOpen(false);
-                dispatch.deleteFile(item.id);
-              }}
+            </DropdownMenuLink>
+            <DropdownMenuItem
+              className="min-h-(--ui-control-touch)"
+              variant="destructive"
+              onClick={() => dispatch.deleteFile(item.id)}
             >
+              <Trash2 aria-hidden="true" />
               {i18n('common.delete', 'Delete')}
-            </UiButton>
-          )}
-        </div>
-      )}
-    </div>
+            </DropdownMenuItem>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 

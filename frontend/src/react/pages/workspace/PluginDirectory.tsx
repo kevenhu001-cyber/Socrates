@@ -158,12 +158,6 @@ export function PluginDirectory({
         actions={<PluginDirectoryAddAction setQuery={setQuery} setScope={setScope} />}
       />
 
-      <InstalledPluginStrip
-        plugins={installedPlugins}
-        onSelect={onSelectPlugin}
-        onShowPersonal={() => setScope('personal')}
-      />
-
       <PageToolbar>
         <PageSearchField
           className="plugin-directory-search"
@@ -184,6 +178,12 @@ export function PluginDirectory({
           />
         </div>
       </PageToolbar>
+
+      <InstalledPluginStrip
+        plugins={installedPlugins}
+        onSelect={onSelectPlugin}
+        onShowPersonal={() => setScope('personal')}
+      />
 
       <PluginDirectoryBody
         visiblePlugins={visiblePlugins}

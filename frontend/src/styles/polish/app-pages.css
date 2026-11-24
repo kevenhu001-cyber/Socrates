@@ -666,6 +666,10 @@ body.workspace-active #appShell .ui-page-card.project-card {
   font-size: var(--ui-font-size-xs);
 }
 
+#appShell .task-mobile-actions {
+  display: none;
+}
+
 #appShell .scheduled-task-list .task-row .workspace-row-action:hover {
   border-color: var(--ui-border-default);
   color: var(--ui-text-primary);
@@ -836,19 +840,42 @@ body.workspace-active #appShell .ui-page-card.project-card {
   #appShell .ui-page-tabs[data-slot='tabs-list'] {
     height: auto;
     min-height: var(--ui-control-touch);
+    width: auto;
+    max-width: 100%;
+    padding: 0;
+    background: transparent;
     scrollbar-width: none;
   }
 
   #appShell .ui-page-tab[data-slot='toggle-group-item'],
   #appShell .ui-page-tab[data-slot='tabs-trigger'] {
     height: var(--ui-control-touch);
-    padding-inline: var(--ui-space-sm);
+    padding-inline: var(--ui-space-md);
   }
 
   #appShell .ui-page-header {
-    align-items: flex-start;
-    padding-bottom: var(--ui-space-md);
-    margin-bottom: var(--ui-space-md);
+    align-items: center;
+    gap: var(--ui-space-sm);
+    padding-bottom: 0;
+    margin-bottom: var(--ui-space-lg);
+  }
+
+  #appShell .ui-page-heading h1 {
+    line-height: 1.3;
+  }
+
+  #appShell .ui-page-actions > button {
+    min-height: var(--ui-control-touch);
+  }
+
+  #appShell .ui-page-search {
+    height: var(--ui-control-touch);
+    background: var(--ui-bg-field);
+    border-color: transparent;
+  }
+
+  #appShell .ui-page-search:focus-within {
+    border-color: var(--ui-border-strong);
   }
 
   #appShell .ui-page-toolbar {
@@ -891,12 +918,44 @@ body.workspace-active #appShell .ui-page-card.project-card {
   }
 
   #appShell .scheduled-task-list .task-row {
-    flex-wrap: wrap;
-    padding: var(--ui-space-md);
+    flex-wrap: nowrap;
+    gap: var(--ui-space-sm);
+    padding: var(--ui-space-sm) 0;
   }
 
-  #appShell .scheduled-task-list .task-row .workspace-row-action {
+  #appShell .scheduled-task-list .task-row .task-main {
+    flex: 1 1 0;
     min-height: var(--ui-control-touch);
+  }
+
+  #appShell .scheduled-task-list .task-main .workspace-row-copy {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  #appShell .scheduled-task-list .task-main .workspace-row-copy > span {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  #appShell .scheduled-task-list .task-row .task-inline-action {
+    display: none;
+  }
+
+  #appShell .scheduled-task-list .task-mobile-actions {
+    display: flex;
+    flex: none;
+  }
+
+  #appShell .task-more-btn {
+    display: grid;
+    place-items: center;
+    width: var(--ui-control-touch);
+    height: var(--ui-control-touch);
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--ui-text-secondary);
   }
 
   #appShell .ui-page-empty[data-slot='empty'] {
