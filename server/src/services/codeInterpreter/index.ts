@@ -60,7 +60,8 @@ export const codeInterpreter = {
         rawSessionId,
         () => {
           entered = true;
-          return executeCode(opts, deadline);
+          const sessionLockQueueMs = Date.now() - queuedAt;
+          return executeCode(opts, deadline, sessionLockQueueMs);
         },
         wait,
       );
