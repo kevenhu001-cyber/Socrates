@@ -1,4 +1,5 @@
 import { getLegacyActions } from '../../legacy/gateway.ts';
+import { PageFrame } from '../../ui/page/PageFrame';
 import { focusComposer } from '../../composer-input';
 import { toggleComposerPlugin } from '../../../composer/pluginSelection.ts';
 import { getConnectorIconMarkup } from '../../../connector-icons';
@@ -63,7 +64,10 @@ export function PluginDetailView({
   };
 
   return (
-    <div className="workspace-surface plugin-detail-view" aria-labelledby="plugin-detail-title">
+    <PageFrame
+      className="workspace-surface plugin-detail-view"
+      aria-labelledby="plugin-detail-title"
+    >
       <PluginDetailHeader
         plugin={plugin}
         connectable={connectable}
@@ -77,7 +81,7 @@ export function PluginDetailView({
         }}
       />
       <PluginDetailSections plugin={plugin} capabilities={capabilities} />
-    </div>
+    </PageFrame>
   );
 }
 
