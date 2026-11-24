@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -98,10 +99,16 @@ fun ProviderSheet(accountKey: String, onDismiss: () -> Unit) {
                         if (!selected!!.isActive) SocratesButton(onClick = { vm.activate(selected!!.id) }, enabled = !state.busy) { Text("设为当前服务商") }
                         if (!selected!!.isBuiltIn) { SocratesOutlinedButton(onClick = { edit(selected) }) { Text("编辑") }; SocratesTextButton(onClick = { deleting = selected }) { ReferenceIcon(ReferenceGlyph.Trash, null); Text("删除自定义服务商") } } else Text("内置服务商由系统管理，不能在此编辑或删除。")
                     }
-                    else -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        if (state.providers.isEmpty()) Text("没有可用服务商。可添加自定义服务商。", Modifier.padding(12.dp))
-                        state.providers.forEach { p -> SocratesCard(Modifier.fillMaxWidth().clickable { selected = p }) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) { Row(verticalAlignment = Alignment.CenterVertically) { Text(p.label, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium); if (p.isActive) Text("当前", color = MaterialTheme.colorScheme.primary) }; Text("${p.model} · ${p.url}", style = MaterialTheme.typography.bodySmall); Text(if (p.hasKey) "密钥已配置 · ${p.keyHint.orEmpty()}" else "未配置密钥", style = MaterialTheme.typography.bodySmall); if (!p.isActive) SocratesTextButton(onClick = { vm.activate(p.id) }, enabled = !state.busy) { Text("启用") } } } }
-                        Text("启用的服务商决定聊天使用的模型。没有个人启用项时，服务端使用系统默认模型。系统模型配置由管理员管理，不在此调用管理员接口。", style = MaterialTheme.typography.bodySmall)
+                    else -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        SettingsGroupLabel("服务商")
+                        if (state.providers.isEmpty()) Text("没有可用服务商。可添加自定义服务商。", Modifier.padding(12.dp), color = SocratesDesign.Muted)
+                        Column(Modifier.fillMaxWidth().background(SocratesDesign.Surface, RoundedCornerShape(SocratesDesign.DialogRadius)).padding(horizontal = 12.dp)) {
+                            state.providers.forEachIndexed { index, p ->
+                                if (index > 0) SocratesDivider()
+                                NativeProviderRow(p, state.busy, onOpen = { selected = p }, onActivate = { vm.activate(p.id) })
+                            }
+                        }
+                        Text("启用的服务商决定聊天使用的模型。没有个人启用项时，服务端使用系统默认模型。系统模型配置由管理员管理，不在此调用管理员接口。", style = MaterialTheme.typography.bodySmall, color = SocratesDesign.Muted)
                     }
                 }
             }
@@ -109,4 +116,25 @@ fun ProviderSheet(accountKey: String, onDismiss: () -> Unit) {
         }
     }
     deleting?.let { target -> SocratesAlert(onDismissRequest = { deleting = null }, title = { Text("删除服务商？") }, text = { Text("${target.label} 将被永久删除。") }, confirmButton = { SocratesTextButton(onClick = { deleting = null; selected = null; vm.delete(target.id) }) { Text("删除") } }, dismissButton = { SocratesTextButton(onClick = { deleting = null }) { Text("取消") } }) }
+}
+
+/** Details and activation are independent touch targets, not nested buttons. */
+@Composable
+internal fun NativeProviderRow(provider: ProviderEntry, busy: Boolean, onOpen: () -> Unit, onActivate: () -> Unit) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        SocratesTextButton(onClick = onOpen, modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 0.dp, vertical = 12.dp)) {
+            ReferenceIcon(ReferenceGlyph.Plugin, null, Modifier.size(20.dp), tint = SocratesDesign.Muted)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(provider.label, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(provider.model, style = MaterialTheme.typography.bodySmall, color = SocratesDesign.Muted, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(if (provider.hasKey) "密钥已配置" else "未配置密钥", style = MaterialTheme.typography.labelSmall, color = SocratesDesign.Muted)
+            }
+        }
+        if (provider.isActive) {
+            ReferenceIcon(ReferenceGlyph.Check, "当前服务商", Modifier.size(18.dp), tint = SocratesDesign.Ink)
+        } else {
+            SocratesTextButton(onClick = onActivate, enabled = !busy, contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)) { Text("启用") }
+        }
+    }
 }
