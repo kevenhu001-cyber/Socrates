@@ -1,6 +1,6 @@
 /*
- * Reference-aligned visual layer. It is loaded after the shared shell styles
- * and owns the final geometry for desktop and mobile workspace surfaces.
+ * Historical reference geometry. Current desktop and mobile surface owners
+ * may override this compatibility layer.
  */
 
 @media (min-width: 769px) {
@@ -120,13 +120,6 @@
     color: var(--cgv-text) !important;
     text-align: center;
   }
-}
-
-@media (max-width: 768px) {
-  /* On phones the page canvas drops to pure
-     black (see ref-baseline.css), which would leave the borderless pill
-     invisible. Re-add a hairline stroke here and lift the surface one
-     step above the canvas so the composer's silhouette stays readable. */
 }
 
 /* Workspace panels — each is now a React-owned page host. */

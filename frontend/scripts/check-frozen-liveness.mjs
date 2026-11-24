@@ -16,9 +16,8 @@
  * index.html — the CSS tree itself is excluded so a selector cannot vouch
  * for itself). A rule with no surviving identity class is counted as dead.
  *
- * The dead count is ratcheted per file: it may only go DOWN. Retiring rules
- * lowers it with `--update`; re-adding a rule against a class nobody emits
- * raises it and fails.
+ * The retirement baseline reached zero. Every frozen stylesheet must keep
+ * zero dead rules, including newly created files. There is no update mode.
  *
  * Two things deliberately do not count as death:
  *   - generic state words (`.selected`, `.ok`, `.active`, …), which appear on
@@ -27,10 +26,9 @@
  *
  * Usage:
  *   node scripts/check-frozen-liveness.mjs
- *   node scripts/check-frozen-liveness.mjs --update
  *   node scripts/check-frozen-liveness.mjs --verbose   # per-rule detail
  */
-import { readFileSync, readdirSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import postcss from 'postcss';
@@ -38,9 +36,11 @@ import postcss from 'postcss';
 const FRONTEND = fileURLToPath(new URL('..', import.meta.url));
 const REPO = join(FRONTEND, '..');
 const STYLES = join(FRONTEND, 'src', 'styles');
-const BASELINE = join(FRONTEND, 'scripts', 'frozen-liveness.baseline.json');
-const UPDATE = process.argv.includes('--update');
 const VERBOSE = process.argv.includes('--verbose');
+if (process.argv.slice(2).some((arg) => arg !== '--verbose')) {
+  console.error('Usage: node scripts/check-frozen-liveness.mjs [--verbose]');
+  process.exit(1);
+}
 
 const FROZEN_DIRS = ['legacy', 'restore'];
 const SOURCE_EXT = ['.ts', '.tsx', '.js', '.mjs', '.html'];
@@ -159,9 +159,8 @@ function referenced(cls) {
   return new RegExp('(?<![\\w-])' + escapeRe(cls) + '(?![\\w-])').test(corpus);
 }
 
-/* The identity classes of one rule. A rule dies when NONE of its identity
- * classes is emitted anywhere: an ancestor that never renders takes every
- * descendant rule with it. */
+/* Conservative heuristic: a rule is dead only when none of its selected
+ * identity classes is mentioned in the source corpus. */
 function identityClasses(selector) {
   const classes = new Set();
   for (const part of selector.split(',')) {
@@ -205,16 +204,8 @@ for (const { rel, file } of frozenFiles()) {
   results.push({ file: rel, rules, dead });
 }
 
-const baseline = existsSync(BASELINE) ? JSON.parse(readFileSync(BASELINE, 'utf8')) : { dead: {} };
-const previous = baseline.dead || {};
-
-const grew = [];
-let totalDead = 0;
-for (const { file, rules, dead } of results) {
-  totalDead += dead.length;
-  const was = previous[file];
-  if (was !== undefined && dead.length > was) grew.push({ file, was, now: dead.length, dead });
-}
+const violations = results.filter((result) => result.dead.length > 0);
+const totalDead = results.reduce((sum, result) => sum + result.dead.length, 0);
 
 if (VERBOSE) {
   for (const { file, rules, dead } of results) {
@@ -224,38 +215,15 @@ if (VERBOSE) {
   }
 }
 
-if (UPDATE) {
-  const next = {
-    description:
-      'Dead rules per frozen stylesheet (no identity class emitted by any first-party source). Shrink-only.',
-    generatedBy: 'check-frozen-liveness.mjs --update',
-    dead: Object.fromEntries(results.map((r) => [r.file, r.dead.length])),
-  };
-  writeFileSync(BASELINE, `${JSON.stringify(next, null, 2)}\n`);
-  console.log(`frozen-liveness: baseline updated (dead total ${totalDead}).`);
-  process.exit(0);
-}
-
-if (grew.length) {
-  for (const g of grew) {
-    console.error(`frozen-liveness: ${g.file} grew ${g.was} -> ${g.now} dead rules`);
-    for (const d of g.dead.slice(0, 10)) console.error(`  L${d.line}  ${d.selector}`);
+if (violations.length) {
+  for (const { file, dead } of violations) {
+    console.error(`frozen-liveness: ${file} contains ${dead.length} dead rules`);
+    for (const d of dead.slice(0, 10)) console.error(`  L${d.line}  ${d.selector}`);
   }
   console.error(
     'A frozen rule whose class no source emits cannot style anything. Delete it, or emit the class.',
   );
   process.exit(1);
-}
-
-/* A rule count that fell without --update is a win, not a failure: printed so
- * the author can lock it in with --update, but the gate stays green. */
-const shrank = results.filter(
-  (r) => previous[r.file] !== undefined && r.dead.length < previous[r.file],
-);
-if (shrank.length) {
-  console.log(
-    `frozen-liveness: ${shrank.length} file(s) below baseline — run --update to lock the reduction in.`,
-  );
 }
 
 console.log(

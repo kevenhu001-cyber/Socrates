@@ -1,9 +1,8 @@
 /*
  * Socrates visual layer
  *
- * This file is intentionally the last stylesheet import. The legacy shell
- * still owns the DOM and interaction wiring; this layer gives every surface
- * one quiet, ChatGPT-like visual language without changing those contracts.
+ * Historical visual compatibility rules, loaded before parity/ and polish/.
+ * Current surface owners live in the canonical component and polish layers.
  */
 
 :root {
@@ -50,15 +49,11 @@ body,
   #appShell .sidebar::after {
     display: none !important;
   }
-}
 
-@media (max-width: 768px) {
   #appShell .sidebar-logo {
     color: var(--cg-text);
   }
-}
 
-@media (max-width: 768px) {
   #appShell .sidebar-header .icon-btn:hover {
     width: 32px;
     height: 32px;
@@ -68,35 +63,25 @@ body,
   #appShell .sidebar-header .icon-btn {
     background: transparent;
   }
-}
 
-@media (max-width: 768px) {
   #appShell .sidebar-header .icon-btn:hover {
     color: var(--cg-text);
   }
-}
 
-@media (max-width: 768px) {
   #appShell .sidebar-nav-btn svg {
     opacity: 0.92;
   }
-}
 
-@media (max-width: 768px) {
   #appShell #navNew.sidebar-nav-btn:hover {
     background: var(--cg-surface-hover);
   }
-}
 
-@media (max-width: 768px) {
   #appShell .sidebar-search:focus-within {
     border-color: var(--cg-border-strong);
     background: var(--cg-surface);
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--cg-accent) 14%, transparent);
   }
-}
 
-@media (max-width: 768px) {
   #appShell .recents-title {
     text-transform: none;
   }
@@ -316,9 +301,6 @@ body,
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.composer-tools-plugin-name {
   color: var(--cg-text);
   font-size: 12px;
   font-weight: var(--ui-font-weight-semibold);

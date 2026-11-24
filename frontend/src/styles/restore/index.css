@@ -97,7 +97,7 @@
  * owns a surface. `npm run lint:frozen-liveness` now machine-checks this: a
  * frozen rule is counted dead when NONE of its identity classes appears in
  * frontend/src, frontend/test, frontend/e2e, packages/, server/src or
- * index.html, and the per-file counts may only shrink. Use
+ * index.html. Every frozen stylesheet must remain at zero dead rules. Use
  * `scripts/retire-frozen-css.mjs` to remove them — it prunes one dead
  * selector out of a list while leaving live siblings in place, which is why
  * the raw selector count and the rule count can differ.
