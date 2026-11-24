@@ -65,7 +65,7 @@ function historyStatusText(paging: HistoryPagingSnapshot): string {
   return i18n('chat.history.start', 'Beginning of conversation');
 }
 
-function HistoryPageStatus({ paging }: { paging: HistoryPagingSnapshot }) {
+function HistoryPageStatus({ paging }: Readonly<{ paging: HistoryPagingSnapshot }>) {
   const text = historyStatusText(paging);
   return (
     <div
@@ -89,7 +89,7 @@ function showsHistoryStatus(
   return !readOnly && start === 0 && (paging.hasMore || paging.pagedBack);
 }
 
-function MessageList({ readOnly = false }: { readOnly?: boolean }) {
+function MessageList({ readOnly = false }: Readonly<{ readOnly?: boolean }>) {
   const visibleMessages = useSyncExternalStore(
     subscribeToChatRuntime,
     getVisibleMessagesSnapshot,

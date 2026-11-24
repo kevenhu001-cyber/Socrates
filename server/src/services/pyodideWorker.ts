@@ -22,7 +22,8 @@ import { parentPort } from 'node:worker_threads';
 import fs from 'node:fs/promises';
 import fsSync from 'node:fs';
 import path from 'node:path';
-import { loadPyodide, type PyodideInterface, type TypedArray } from 'pyodide';
+import { loadPyodide, type PyodideInterface } from 'pyodide';
+import type { TypedArray } from 'pyodide/ffi';
 import { sanitizeLogValue } from '../lib/logRedaction.js';
 import { ensureCjkFontCached } from './codeInterpreter/cjkFontCache.js';
 import { PYODIDE_PACKAGE_CACHE_DIR } from './codeInterpreter/config.js';
@@ -61,6 +62,39 @@ function isRunCodeRequest(value: unknown): value is RunCodeRequest {
     typeof value.maxOutputBytes === 'number' &&
     (value.interruptBuffer === undefined || value.interruptBuffer instanceof SharedArrayBuffer)
   );
+}
+
+/* A SyntaxError-family failure means compile() rejected the source before any
+ * user code ran, so the parent can persist the row as 'rejected' and keep it
+ * out of the daily execution quota. Runtime failures still count. */
+function classifyExecutionError(
+  status: string,
+  errorMessage: string | null,
+  dependencyLoadFailed: boolean,
+): string | undefined {
+  if (status !== 'failed' || !errorMessage) return undefined;
+  if (/^(SyntaxError|IndentationError|TabError)\b/.test(errorMessage)) return 'syntax_error';
+  if (dependencyLoadFailed && /^ModuleNotFoundError\b/.test(errorMessage)) {
+    return 'python_dependency_unavailable';
+  }
+  return undefined;
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes}B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
+  return `${(bytes / 1024 / 1024).toFixed(2)}MB`;
+}
+
+function formatTotalSize(bytes: number): string {
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
+  return `${(bytes / 1024 / 1024).toFixed(2)}MB`;
+}
+
+function formatAge(seconds: number): string {
+  if (seconds < 60) return `${seconds}s ago`;
+  if (seconds < 3600) return `${Math.round(seconds / 60)}m ago`;
+  return `${Math.round(seconds / 3600)}h ago`;
 }
 
 /**
@@ -148,16 +182,14 @@ except Exception as _e:
 }
 
 function _ensureCjkFontRegistered(): Promise<string | null> {
-  if (!_cjkFontPromise) {
-    _cjkFontPromise = (async () => {
-      const fontPath = await ensureCjkFontCached();
-      if (!fontPath) return null;
-      return _registerCjkFontInPyodide(fontPath);
-    })().catch((err) => {
-      console.warn(`[pyodide] CJK font setup failed: ${(err && (err as Error).message) || err}`);
-      return null;
-    });
-  }
+  _cjkFontPromise ??= (async () => {
+    const fontPath = await ensureCjkFontCached();
+    if (!fontPath) return null;
+    return _registerCjkFontInPyodide(fontPath);
+  })().catch((err) => {
+    console.warn(`[pyodide] CJK font setup failed: ${(err && (err as Error).message) || err}`);
+    return null;
+  });
   return _cjkFontPromise;
 }
 
@@ -213,7 +245,7 @@ async function bootPyodide() {
     // level `from js import ImageData, document` raises ImportError
     // under Node (no `js` globals). Set the headless default before the
     // first import without depending on matplotlib to boot the worker.
-    pyodide.runPython(`
+    pyodide.runPython(String.raw`
 import os, sys
 os.environ['MPLBACKEND'] = 'Agg'
 
@@ -272,8 +304,8 @@ class _CappedStream:
         # so a flush-only hook left the "live output" stream silent
         # for the entire run. Emit when a line completes, or when the
         # pending delta grows past ~4 KB (covers unterminated writes
-        # and \\r progress-bar spam without a per-update SSE storm).
-        if '\\n' in s or self._pending_bytes >= 4096:
+        # and \r progress-bar spam without a per-update SSE storm).
+        if '\n' in s or self._pending_bytes >= 4096:
             self._emit_delta()
         return bs
 
@@ -355,7 +387,12 @@ def _socrates_make_flush(orig_flush):
  * Execute one piece of user-supplied Python inside the warmed Pyodide
  * instance. Returns a structured result.
  */
-async function runCode({
+/* Cognitive complexity: runCode is the worker's transaction — every block is
+ * one ordered phase (hooks, MEMFS mount, package load, execute, classify,
+ * capture) and the branches are error paths that must stay next to the phase
+ * that owns them. Extracting the phases would thread the same mutable result
+ * through helpers without simplifying any single decision. */
+/* NOSONAR */ async function runCode({
   id,
   executionId,
   code,
@@ -395,7 +432,7 @@ async function runCode({
         id,
         type: stream,
         stream,
-        chunk: String(chunk || ''),
+        chunk: typeof chunk === 'string' ? chunk : '',
         executionId,
         elapsedMs: Date.now() - startedAt,
       });
@@ -446,39 +483,27 @@ async function runCode({
             const s = await fs.stat(path.join(artifactsDir, n));
             return { name: n, size: s.size, mtimeMs: s.mtimeMs, isFile: s.isFile() };
           } catch (_) {
+            /* empty-catch: intentional — a file that vanished between readdir and stat is listed as a zero-byte entry */
             return { name: n, size: 0, mtimeMs: 0, isFile: true };
           }
         }),
       );
       const files = stats.filter((e) => e.isFile).sort((a, b) => b.mtimeMs - a.mtimeMs);
       const head = files.slice(0, 20);
-      const more = files.length > 20 ? `\\n  …(+${files.length - 20} more)` : '';
+      const more = files.length > 20 ? String.raw`\n  …(+${files.length - 20} more)` : '';
       const totalBytes = files.reduce((s, f) => s + f.size, 0);
       const nowMs = Date.now();
       const lines = head
         .map((f) => {
           const ageS = Math.max(0, Math.round((nowMs - f.mtimeMs) / 1000));
-          const sizeKB =
-            f.size < 1024
-              ? `${f.size}B`
-              : f.size < 1024 * 1024
-                ? `${(f.size / 1024).toFixed(1)}KB`
-                : `${(f.size / 1024 / 1024).toFixed(2)}MB`;
-          const ageLabel =
-            ageS < 60
-              ? `${ageS}s ago`
-              : ageS < 3600
-                ? `${Math.round(ageS / 60)}m ago`
-                : `${Math.round(ageS / 3600)}h ago`;
+          const sizeKB = formatFileSize(f.size);
+          const ageLabel = formatAge(ageS);
           return `  ${f.name}  (${sizeKB}, ${ageLabel})`;
         })
-        .join('\\n');
-      const totalKB =
-        totalBytes < 1024 * 1024
-          ? `${(totalBytes / 1024).toFixed(1)}KB`
-          : `${(totalBytes / 1024 / 1024).toFixed(2)}MB`;
+        .join(String.raw`\n`);
+      const totalKB = formatTotalSize(totalBytes);
       pyodide.runPython(
-        `print("[scratch] cwd=/artifacts — ${files.length} file${files.length === 1 ? '' : 's'}, ${totalKB} total, newest first:\\n${lines}${more}", flush=True)`,
+        String.raw`print("[scratch] cwd=/artifacts — ${files.length} file${files.length === 1 ? '' : 's'}, ${totalKB} total, newest first:\n${lines}${more}", flush=True)`,
       );
     } else {
       pyodide.runPython(
@@ -620,10 +645,11 @@ async function runCode({
     // executor then marked retryable. Letting it escape keeps the
     // JS-side timeout classification (and the parent's
     // user-raised-KeyboardInterrupt guard) intact.
+    const BACKSLASH = String.fromCharCode(0x5c);
     const oneLine = code
-      .replace(/\\/g, '\\\\') // backslash → double-backslash
-      .replace(/"/g, '\\"') // double-quote → backslash-quote
-      .replace(/\r?\n/g, '\\n'); // physical newline → \n escape
+      .replaceAll(BACKSLASH, BACKSLASH + BACKSLASH) // backslash → double-backslash
+      .replaceAll('"', BACKSLASH + '"') // double-quote → backslash-quote
+      .replace(/\r?\n/g, BACKSLASH + 'n'); // physical newline → \n escape
     const wrapped = [
       '_socrates_user_code = "' + oneLine + '"',
       '_socrates_user_failed = False',
@@ -682,10 +708,9 @@ async function runCode({
       // SystemExit is handled inside Python; only interrupts or an
       // unexpected bridge/runtime error should escape the wrapper.
       pyodideThrew = true;
-      const errType = String(
-        (err && ((err as PyRunError).type || (err as PyRunError).constructor?.name)) || '',
-      );
-      const errMsg = String((err && (err as PyRunError).message) || err);
+      const pyErr = err as PyRunError | undefined;
+      const errType = pyErr?.type || pyErr?.constructor?.name || '';
+      const errMsg = pyErr?.message ?? (typeof err === 'string' ? err : '');
       if (errType === 'KeyboardInterrupt' || /KeyboardInterrupt/.test(errMsg)) {
         /* The wrapper deliberately re-raises KeyboardInterrupt so a
            SIGINT-buffer interrupt (parent timeout or caller cancel)
@@ -694,7 +719,6 @@ async function runCode({
            KeyboardInterrupt to 'worker_interrupt'. */
         interrupted = true;
       }
-      void err;
     }
     // if the wrapper hit a user-code
     // error, the JS-side status/errorMessage haven't been set yet.
@@ -718,16 +742,11 @@ async function runCode({
       status = 'timeout';
       errorMessage = 'timeout';
       exitCode = 124;
-    } else if (sysExitCode !== null) {
-      // User called sys.exit(N). Treat as completed unless non-zero.
-      if (sysExitCode === 0) {
-        status = 'completed';
-        exitCode = 0;
-      } else {
-        status = 'failed';
-        exitCode = typeof sysExitCode === 'number' ? sysExitCode : 1;
-        errorMessage = `sys.exit(${sysExitCode})`;
-      }
+    } else if (sysExitCode !== null && sysExitCode !== 0) {
+      // User called sys.exit(N). Treat as completed only when N is zero.
+      status = 'failed';
+      exitCode = typeof sysExitCode === 'number' ? sysExitCode : 1;
+      errorMessage = `sys.exit(${sysExitCode})`;
     } else if (pyodideThrew) {
       status = 'failed';
       exitCode = 1;
@@ -785,9 +804,9 @@ async function runCode({
       const between = stderrText
         .slice(beginIdx + '---SOCRATES-ERROR-BEGIN---'.length, endIdx)
         .trim();
-      errorMessage = between || (pendingPyType ? pendingPyType : 'unknown_python_error');
+      errorMessage = between || pendingPyType || 'unknown_python_error';
     } else {
-      errorMessage = pendingPyType ? pendingPyType : 'unknown_python_error';
+      errorMessage = pendingPyType || 'unknown_python_error';
     }
     // Strip the marker lines from what we return so the user doesn't see them.
     const re = /---SOCRATES-ERROR-(BEGIN|END)---\n?/g;
@@ -800,14 +819,7 @@ async function runCode({
      as 'rejected' and keep it out of the daily execution quota.
      Runtime failures (NameError, TypeError…) still count — they
      burned real worker work. */
-  const errorCode =
-    status === 'failed' && errorMessage
-      ? /^(SyntaxError|IndentationError|TabError)\b/.test(errorMessage)
-        ? 'syntax_error'
-        : dependencyLoadFailed && /^ModuleNotFoundError\b/.test(errorMessage)
-          ? 'python_dependency_unavailable'
-          : undefined
-      : undefined;
+  const errorCode = classifyExecutionError(status, errorMessage, dependencyLoadFailed);
 
   // Walk the artifacts dir and report what we produced.
   let artifacts: Array<{
@@ -819,20 +831,30 @@ async function runCode({
   }> = [];
   try {
     const entries = await fs.readdir(artifactsDir, { withFileTypes: true });
-    for (const entry of entries) {
-      if (!entry.isFile()) continue;
-      const filePath = path.join(artifactsDir, entry.name);
-      const stat = await fs.stat(filePath);
-      artifacts.push({
-        name: entry.name,
-        relPath: entry.name,
-        size: stat.size,
-        mtimeMs: stat.mtimeMs,
-        absPath: filePath,
-      });
-    }
+    const files = entries.filter((entry) => entry.isFile());
+    const found = await Promise.all(
+      files.map(async (entry) => {
+        try {
+          const filePath = path.join(artifactsDir, entry.name);
+          const stat = await fs.stat(filePath);
+          return [
+            {
+              name: entry.name,
+              relPath: entry.name,
+              size: stat.size,
+              mtimeMs: stat.mtimeMs,
+              absPath: filePath,
+            },
+          ];
+        } catch (_) {
+          /* empty-catch: intentional — a file that vanished between readdir and stat is skipped */
+          return [];
+        }
+      }),
+    );
+    artifacts = found.flat();
   } catch (_) {
-    /* empty-catch: intentional — the artifacts dir is absent when the run failed before mounting, or a file vanished between readdir and stat */
+    /* empty-catch: intentional — the artifacts dir is absent when the run failed before mounting */
   }
 
   // Drop interrupt buffer reference so subsequent runs re-wire cleanly.

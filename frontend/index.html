@@ -58,7 +58,7 @@
       /* A URL that already carries a query (?share=…&…) must not become
          ?share=…&…?cb=… — the second '?' makes the nonce its own parameter
          name, and the CDN then caches the preflight URL. */
-      var sep = url.indexOf('?') === -1 ? '?' : '&';
+      var sep = url.includes('?') ? '&' : '?';
       var init = priority
         ? { credentials: 'include', priority: priority }
         : opts;
@@ -117,19 +117,21 @@
       initialPreference = storedPreference;
     }
   } catch (_) { /* ignore */ }
-  var initialMode = initialPreference === "system"
-    ? (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
-    : initialPreference;
+  var initialMode = initialPreference;
+  if (initialPreference === "system") {
+    var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    initialMode = prefersDark ? "dark" : "light";
+  }
   var initialStyle = "socrates";
   try {
     var storedStyle = localStorage.getItem("socrates-theme-style");
     if (storedStyle === "socrates" || storedStyle === "philosophy") {
       initialStyle = storedStyle;
     }
-  } catch (_) { /* ignore */ }
-  document.documentElement.setAttribute('data-theme-preference', initialPreference);
-  document.documentElement.setAttribute('data-mode', initialMode);
-  document.documentElement.setAttribute('data-theme', initialStyle);
+  } catch (_) { /* empty-catch: intentional — localStorage can be blocked; keep the default style */ }
+  document.documentElement.dataset.themePreference = initialPreference;
+  document.documentElement.dataset.mode = initialMode;
+  document.documentElement.dataset.theme = initialStyle;
 })();
 </script>
 <!-- Fetch the shared variable UI face before stylesheet discovery. CJK
@@ -153,14 +155,14 @@
       document.documentElement.dataset.routedSession="true";
       document.documentElement.dataset.mainView=/(?:^|[?&])(exam|examId)=/.test(_s)?"examView":"chatView";
     }
-  }catch(_){}
+  }catch(_){/* empty-catch: intentional — the routed-session marker is a best-effort flash guard */}
   /* P_grid — restore grid preference before first paint so the
      boot-loading screen respects the user's choice immediately. */
   try{
     var _g=JSON.parse(localStorage.getItem("socrates-display"));
     if(_g&&_g.showGrid===true){document.documentElement.dataset.showGrid="true";}
     else{document.documentElement.dataset.showGrid="false";}
-  }catch(_){}
+  }catch(_){/* empty-catch: intentional — an absent or malformed display preference falls back to grid off */}
   /* If no preference stored, grid is off by default. */
   /* Safety net: if authBoot() never replaces bootState within 12s
    * (offline / backend hung / unexpected error), default to the
@@ -172,7 +174,7 @@
         var g=document.getElementById("authGate");if(g)g.classList.remove("hidden");
         var s=document.getElementById("appShell");if(s)s.classList.add("hidden");
       }
-    }catch(_){}
+    }catch(_){/* empty-catch: intentional — the timeout fallback must never throw during boot */}
   },12000);
 })();
 </script>
@@ -202,17 +204,16 @@
 </head>
 <body>
 
-<!-- a11y skip link: first Tab stop on the page, parked off-screen until
-     keyboard focus. The target carries tabindex="-1" so activating the
+<!-- a11y skip link — the first Tab stop on the page, parked off-screen until
+     keyboard focus. The target carries a tabindex of -1 so activating the
      link moves focus into the main content, not just the scroll position. -->
 <a class="skip-link" href="#mainContent" data-i18n-key="a11y.skipToContent">Skip to content</a>
 
-<!-- P0.6 — pre-boot loading shell. Visible only while
-     data-boot-state="checking" (i.e. between the synchronous
-     pre-boot script and authBoot() finishing /api/auth/me). The
-     CSS rules for that data attribute set opacity:0 and
-     pointer-events:none on this element as soon as bootState
-     flips to "auth" or "app", so the transition is smooth. -->
+<!-- P0.6 — pre-boot loading shell. Visible only while the boot state is
+     "checking" (between the synchronous pre-boot script and authBoot()
+     finishing /api/auth/me). The CSS rules for that state set opacity:0 and
+     pointer-events:none on this element as soon as bootState flips to
+     "auth" or "app", so the transition is smooth. -->
 <div class="boot-loading" id="bootLoading" aria-hidden="true">
   <div class="boot-loading-sweep skeleton-shimmer"></div>
   <div class="boot-loading-logo">
@@ -233,12 +234,12 @@
      (react/auth/AuthGate.tsx). The element itself stays here so pre-boot
      CSS, showGate()/hideGate() and the auth listeners keep one stable
      node to toggle and bind against. -->
-<div class="auth-gate" id="authGate" role="dialog" aria-modal="true" aria-label="Sign in" data-i18n-aria="auth.signIn"></div>
+<div class="auth-gate" id="authGate" role="dialog" aria-modal="true" aria-label="Sign in" data-i18n-aria="auth.signIn"></div><!-- NOSONAR: a native dialog element would hide this stable host (closed dialogs are display:none); React fills it and classes control visibility. -->
 
 <div class="app hidden" id="appShell">
 
 
-<aside class="sidebar" id="sidebar">
+<aside class="sidebar" id="sidebar" aria-label="Sidebar">
   <div class="sidebar-inner">
     <!-- React renders the sidebar chrome and navigation; keep these stable
          hosts empty so the static shell does not duplicate control markup. -->
@@ -247,7 +248,7 @@
     <!-- P_sidebar-parity — reference chat splits the rail into a destination
          block and a conversation block with a hairline between them, so the
          eye can find where navigation stops and history begins. -->
-    <div class="sidebar-nav-sep" role="separator" aria-orientation="horizontal"></div>
+    <hr class="sidebar-nav-sep">
     <div id="moreNavPopoverRoot"></div>
     <!-- React owns the unified search and sidebar panel selection. The search
          box filters recents; the tutor-only buttons select Knowledge or
@@ -274,7 +275,7 @@
       <div class="user-row" id="sidebarUserRow"><div class="user-avatar" aria-hidden="true">?</div><div class="user-identity"><div class="user-name"></div><div class="user-plan">Free</div></div></div>
       <div class="sidebar-footer-actions" id="sidebarFooterActions"></div>
     </div>
-    <div class="sidebar-resize-handle" id="sidebarResizeHandle" role="separator" aria-orientation="vertical" aria-label="Drag to resize sidebar" title="Drag to resize sidebar" data-i18n-aria="chrome.resizeSidebar" data-i18n-title="chrome.resizeSidebar"></div>
+    <div class="sidebar-resize-handle" id="sidebarResizeHandle" role="separator" aria-orientation="vertical" aria-label="Drag to resize sidebar" title="Drag to resize sidebar" data-i18n-aria="chrome.resizeSidebar" data-i18n-title="chrome.resizeSidebar"></div><!-- NOSONAR: this is a focusable window splitter (role=separator with aria-valuenow), not a static hr divider. -->
   </div>
 </aside>
 <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
@@ -299,8 +300,8 @@
              paint before JS runs. -->
         <!-- RN-1: the hero is a React Native component (packages/ui/src/home)
              mounted into #homeHero by spec `home-hero`. The h1 is only the
-             first-paint placeholder; the mounted hero keeps id="topicTitle". -->
-        <div class="home-hero" id="homeHero"><h1 class="topic-title greeting" id="topicTitle" data-greeting-static data-i18n-key="greeting.chat"></h1></div>
+             first-paint placeholder; the mounted hero keeps the topicTitle id. -->
+        <div class="home-hero" id="homeHero"><h1 class="topic-title greeting" id="topicTitle" data-greeting-static data-i18n-key="greeting.chat"><span class="visually-hidden">Socrates</span></h1></div>
         <p class="topic-sub" id="topicSub"></p>
         <!-- .mobile-starter-prompts container removed: nothing ever
              populated it (see ui/homeSuggestions.ts, a no-op shim). -->
@@ -382,7 +383,7 @@
                pill anchors to the composer's top edge instead of
                chat-view's top edge. The CSS rule `.chat-input-bar >
                .new-reply-pill` keys off this parent. -->
-          <div class="new-reply-pill" id="newReplyPill" role="button" tabindex="0" aria-label="Jump to new reply" data-i18n-aria="chrome.jumpToNewReply"><svg class="new-reply-pill-glyph" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14"></path><path d="m6 13 6 6 6-6"></path></svg><span class="visually-hidden">↓ New reply</span></div>
+          <div class="new-reply-pill" id="newReplyPill" role="button" tabindex="0" aria-label="Jump to new reply" data-i18n-aria="chrome.jumpToNewReply"><svg class="new-reply-pill-glyph" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14"></path><path d="m6 13 6 6 6-6"></path></svg><span class="visually-hidden">↓ New reply</span></div><!-- NOSONAR: the host is a pre-paint placeholder that React fills; the delegated activation handler lives in src/legacy/scrollPill.ts (click + Enter/Space) because CSP forbids inline handlers. -->
           <!-- P_composer-single — typed Composer controller places the single shell here for a conversation. -->
           <div class="chat-composer-slot composer-slot" id="chatComposerSlot"></div>
         </div>
@@ -392,7 +393,7 @@
   </div>
 
   <!-- P_sources-panel — reads the citations and search results behind an answer. -->
-  <aside class="sources-panel hidden" id="sourcesPanel" aria-label="Sources" role="complementary"></aside>
+  <aside class="sources-panel hidden" id="sourcesPanel" aria-label="Sources"></aside>
   <div class="sources-backdrop hidden" id="sourcesBackdrop" aria-hidden="true"></div>
 
 </main>

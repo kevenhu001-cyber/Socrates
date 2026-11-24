@@ -13,10 +13,10 @@ import { PageFrame } from '../../ui/page/PageFrame';
 function LibraryView({
   data,
   dispatch,
-}: {
+}: Readonly<{
   data: LibraryViewData;
   dispatch: ReturnType<typeof useWorkspaceDispatch>;
-}) {
+}>) {
   const [chip, setChip] = useState<'recommend' | 'favorite' | 'folder' | 'images' | 'all'>(
     'recommend',
   );

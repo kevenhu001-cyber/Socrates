@@ -15,11 +15,11 @@ import { PageTabs } from '../../ui/page/PageTabs';
 import { PageToolbar } from '../../ui/page/PageToolbar';
 
 interface PluginDirectoryProps {
-  plugins: ReadonlyArray<PluginItem>;
-  configured: boolean;
-  openConnectorAvailable: boolean;
-  dispatch: ReturnType<typeof useWorkspaceDispatch>;
-  onSelectPlugin: (id: string) => void;
+  readonly plugins: ReadonlyArray<PluginItem>;
+  readonly configured: boolean;
+  readonly openConnectorAvailable: boolean;
+  readonly dispatch: ReturnType<typeof useWorkspaceDispatch>;
+  readonly onSelectPlugin: (id: string) => void;
 }
 
 function isInstalled(plugin: PluginItem): boolean {
@@ -29,10 +29,10 @@ function isInstalled(plugin: PluginItem): boolean {
 function PluginDirectoryAddAction({
   setQuery,
   setScope,
-}: {
+}: Readonly<{
   setQuery: (q: string) => void;
   setScope: (scope: 'public' | 'personal') => void;
-}) {
+}>) {
   return (
     <Button
       type="button"
@@ -58,14 +58,14 @@ function PluginDirectoryBody({
   configured,
   dispatch,
   onSelectPlugin,
-}: {
+}: Readonly<{
   visiblePlugins: PluginItem[];
   popularPlugins: PluginItem[];
   newPlugins: PluginItem[];
   configured: boolean;
   dispatch: PluginDirectoryProps['dispatch'];
   onSelectPlugin: (id: string) => void;
-}) {
+}>) {
   return (
     <div className="plugin-directory-body">
       {visiblePlugins.length === 0 ? (

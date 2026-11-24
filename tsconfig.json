@@ -8,12 +8,13 @@
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
     "forceConsistentCasingInFileNames": true,
-    "baseUrl": ".",
+    /* No baseUrl: TypeScript 6 deprecates it and 7 removes it. Without it,
+       `paths` resolve relative to this file, which is what baseUrl "." meant. */
     "paths": {
-      "@socrates/contracts": ["packages/contracts/src/index.ts"],
-      "@socrates/core": ["packages/core/src/index.ts"],
-      "@socrates/core/*": ["packages/core/src/*"],
-      "@socrates/theme": ["packages/theme/src/index.ts"]
+      "@socrates/contracts": ["./packages/contracts/src/index.ts"],
+      "@socrates/core": ["./packages/core/src/index.ts"],
+      "@socrates/core/*": ["./packages/core/src/*"],
+      "@socrates/theme": ["./packages/theme/src/index.ts"]
     }
   },
   "include": ["packages/contracts/src/**/*", "packages/core/src/**/*", "packages/theme/src/**/*"],

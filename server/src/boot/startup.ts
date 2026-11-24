@@ -75,12 +75,20 @@ function envFlag(name: string): boolean {
   return /^(1|true|yes|on)$/i.test(String(process.env[name] || '').trim());
 }
 
+/* Strip every trailing "/" from a provider base URL without anchoring a
+ * backtracking regex to the end of the string. */
+function trimTrailingSlashes(value: string): string {
+  let end = value.length;
+  while (end > 0 && value.charAt(end - 1) === '/') end -= 1;
+  return value.slice(0, end);
+}
+
 /** Reconcile one private Codex directory per existing conversation.
  * New sessions are initialized by POST /api/sessions; this startup pass
  * backfills older sessions and repairs rows left behind by an interrupted
  * deploy without starting a Codex thread for any of them. */
 function reconcileSessionWorkspaces(): void {
-  (async () => {
+  void (async () => {
     try {
       const { ensureSessionWorkspacesOnStartup } =
         await import('../services/tools/agentRuntime.js');
@@ -105,7 +113,7 @@ function reconcileSessionWorkspaces(): void {
  * the server accepts requests while this runs; the first few calls
  * will be queued until the pool is ready. */
 function warmPyodidePool(): void {
-  (async () => {
+  void (async () => {
     try {
       const { codeInterpreter } = await import('../services/codeInterpreter/index.js');
       await codeInterpreter.warm();
@@ -123,7 +131,7 @@ function warmPyodidePool(): void {
  * SHA-1 validation on that path. Non-blocking, and skipped when the
  * interpreter runner is disabled. */
 function warmCjkFontCache(): void {
-  (async () => {
+  void (async () => {
     try {
       const { EXEC_RUNNER } = await import('../services/codeInterpreter/config.js');
       if (EXEC_RUNNER === 'disabled') return;
@@ -144,9 +152,9 @@ function warmCjkFontCache(): void {
  * catches the orphaned sessions whose tabs were closed or whose
  * server crashed before the delete. TTL defaults to 7 days. */
 function sweepStaleScratchDirs(): void {
-  (async () => {
+  void (async () => {
     try {
-      const ttlDays = parseInt(process.env.EXEC_SCRATCH_TTL_DAYS || '7', 10);
+      const ttlDays = Number.parseInt(process.env.EXEC_SCRATCH_TTL_DAYS || '7', 10);
       const { codeInterpreter } = await import('../services/codeInterpreter/index.js');
       const r = await codeInterpreter._reapStaleSessionScratches(ttlDays);
       if (r && r.removed > 0)
@@ -164,15 +172,15 @@ function sweepStaleScratchDirs(): void {
  * default. Set LLM_WARMUP_ENABLED=1 only when the deployment explicitly
  * accepts unsolicited upstream traffic in exchange for a warmer first turn. */
 function warmLlmProvider(): void {
-  (async () => {
+  void (async () => {
     try {
       const { getActiveApiKey } = await import('../services/core/apiKey.js');
       const provider = await getActiveApiKey(null); // null = global built-in
-      if (!provider || !provider.keyPlaintext) {
+      if (!provider?.keyPlaintext) {
         console.log('[llm-warmup] No built-in provider key available — skipping');
         return;
       }
-      const baseUrl = (provider.url || '').replace(/\/+$/, '');
+      const baseUrl = trimTrailingSlashes(provider.url || '');
       const model = provider.model || 'MiniMax-M3';
       try {
         const start = Date.now();
@@ -214,7 +222,7 @@ function warmLlmProvider(): void {
  * runs their prompts through the user's LLM provider, and saves
  * the results as sessions so they appear in Recents). */
 function startSchedulerDaemon(): void {
-  (async () => {
+  void (async () => {
     try {
       const { startScheduler } = await import('../services/core/scheduler.js');
       startScheduler();
@@ -238,7 +246,7 @@ function startResearchDaemon(): void {
  * A failed reconnect is recorded as `disconnected`; the run and event
  * history remain available for an explicit resume and are never discarded. */
 function recoverAgentRuns(): void {
-  (async () => {
+  void (async () => {
     try {
       const { recoverAgentRunsOnStartup } = await import('../services/tools/agentRuntime.js');
       const result = await recoverAgentRunsOnStartup();
@@ -255,7 +263,7 @@ function recoverAgentRuns(): void {
 /** Start self-hosted status monitor (records component state
  * transitions to status_monitor_events for real uptime history). */
 function startMonitor(): void {
-  (async () => {
+  void (async () => {
     try {
       const { startStatusMonitor } = await import('../services/util/statusMonitor.js');
       /* Awaited on purpose: startStatusMonitor is async and the catch below

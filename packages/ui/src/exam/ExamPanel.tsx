@@ -1,8 +1,6 @@
 /** Screen dispatcher: draws whichever state the host selected. */
 import type { ReactNode } from 'react';
 import type { ExamDraftPatch } from '@socrates/core';
-import { ExamFooter } from './ExamFooter';
-import { ExamNavigation } from './ExamNavigation';
 import { ExamQuestionList } from './ExamQuestionList';
 import { ExamResults } from './ExamResults';
 import { ExamSetup } from './ExamSetup';
@@ -21,7 +19,7 @@ export function ExamPanel({
   renderText = plainText,
   ids,
   showHero,
-}: {
+}: Readonly<{
   screen: ExamScreen;
   strings?: ExamStrings;
   onCommand: ExamCommandHandler;
@@ -30,7 +28,7 @@ export function ExamPanel({
   renderText?: RenderExamText;
   ids?: ExamIds;
   showHero?: boolean;
-}): ReactNode {
+}>): ReactNode {
   switch (screen.kind) {
     case 'form':
       return (

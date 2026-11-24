@@ -17,7 +17,7 @@ export function PageHeader({
   variant = 'default',
   titleTabIndex,
   className,
-}: {
+}: Readonly<{
   titleId: string;
   title: string;
   description?: ReactNode;
@@ -27,7 +27,7 @@ export function PageHeader({
   variant?: 'default' | 'account';
   titleTabIndex?: number;
   className?: string;
-}) {
+}>) {
   const account = variant === 'account';
   return (
     <header
@@ -44,10 +44,7 @@ export function PageHeader({
         {description ? <p className="ui-page-description">{description}</p> : null}
       </div>
       {actions ? (
-        <div
-          className={account ? 'account-page-actions' : 'ui-page-actions'}
-          data-page-actions=""
-        >
+        <div className={account ? 'account-page-actions' : 'ui-page-actions'} data-page-actions="">
           {actions}
         </div>
       ) : null}

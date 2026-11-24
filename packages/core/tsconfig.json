@@ -8,7 +8,8 @@
     "noEmit": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "baseUrl": ".",
+    /* No baseUrl: TypeScript 6 deprecates it and 7 removes it. Without it,
+       the relative `paths` below resolve against this file directly. */
     "paths": {
       "@socrates/contracts": ["../contracts/src/index.ts"]
     }

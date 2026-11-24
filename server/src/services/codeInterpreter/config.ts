@@ -13,12 +13,18 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export const EXEC_RUNNER = process.env.EXEC_RUNNER || 'pyodide';
-export const POOL_SIZE = parseInt(process.env.EXEC_WORKER_POOL_SIZE || '1', 10);
+export const POOL_SIZE = Number.parseInt(process.env.EXEC_WORKER_POOL_SIZE || '1', 10);
 export const PYODIDE_VERSION = process.env.EXEC_PYODIDE_VERSION || '0.26.4';
-export const DEFAULT_TIMEOUT_MS = parseInt(process.env.EXEC_TIMEOUT_MS_DEFAULT || '120000', 10);
-export const MAX_OUTPUT_BYTES = parseInt(process.env.EXEC_MAX_OUTPUT_BYTES || '65536', 10);
-export const MAX_ARTIFACT_BYTES = parseInt(process.env.EXEC_MAX_ARTIFACT_BYTES || '10485760', 10);
-export const MAX_CODE_CHARS = parseInt(process.env.EXEC_MAX_CODE_CHARS || '200000', 10);
+export const DEFAULT_TIMEOUT_MS = Number.parseInt(
+  process.env.EXEC_TIMEOUT_MS_DEFAULT || '120000',
+  10,
+);
+export const MAX_OUTPUT_BYTES = Number.parseInt(process.env.EXEC_MAX_OUTPUT_BYTES || '65536', 10);
+export const MAX_ARTIFACT_BYTES = Number.parseInt(
+  process.env.EXEC_MAX_ARTIFACT_BYTES || '10485760',
+  10,
+);
+export const MAX_CODE_CHARS = Number.parseInt(process.env.EXEC_MAX_CODE_CHARS || '200000', 10);
 export const ADVERTISED_MAX_CODE_CHARS = Math.min(MAX_CODE_CHARS, MAX_TOOL_STRING_FIELD_CHARS);
 export const SCRATCH_DIR =
   process.env.EXEC_SCRATCH_DIR ||

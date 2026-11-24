@@ -3,11 +3,11 @@ import { scheduledText } from './scheduled.copy';
 import { ScheduledTaskRow } from './ScheduledTaskRow';
 
 interface ScheduledTaskListProps {
-  tasks: ReadonlyArray<ScheduledTask>;
-  onEdit: (id: string) => void;
-  onRun: (id: string) => void;
-  onToggle: (id: string, pause: boolean) => void;
-  onRemove: (id: string) => void;
+  readonly tasks: ReadonlyArray<ScheduledTask>;
+  readonly onEdit: (id: string) => void;
+  readonly onRun: (id: string) => void;
+  readonly onToggle: (id: string, pause: boolean) => void;
+  readonly onRemove: (id: string) => void;
 }
 
 export function ScheduledTaskList({

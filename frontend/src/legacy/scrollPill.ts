@@ -265,21 +265,37 @@ export function wireScrollPill() {
     true,
   ); /* useCapture so we catch scroll on any child element */
 
-  /* Pill click handler — wire once, attached to the static element
-     rendered by index.html. */
+  /* Pill activation — the static host is a div with role=button because the
+     shell must not add a native control (the shadcn ratchet counts those).
+     A real button activates on Enter/Space by itself; a div does not, so
+     both gestures are wired here. */
+  function activateNewReplyPill(): void {
+    const sc = scrollContainer();
+    if (sc) smoothScrollToBottom(sc, { smooth: false, owner: 'user' });
+    upIntentAt = 0;
+    markUserScrollIntent();
+    dispatchUi({ type: 'ui/set', key: '_userScrolledAway', value: false });
+    hideNewReplyPill();
+  }
+
   document.addEventListener('click', function (ev) {
     let t: Element | null = ev.target instanceof Element ? ev.target : null;
     while (t && t !== document.body) {
       if (t.id === 'newReplyPill') {
-        const sc = scrollContainer();
-        if (sc) smoothScrollToBottom(sc, { smooth: false, owner: 'user' });
-        upIntentAt = 0;
-        markUserScrollIntent();
-        dispatchUi({ type: 'ui/set', key: '_userScrolledAway', value: false });
-        hideNewReplyPill();
+        activateNewReplyPill();
         return;
       }
       t = t.parentElement;
+    }
+  });
+
+  /* Keyboard parity for the div-based control: Enter and Space are the two
+     native button activation keys. */
+  document.addEventListener('keydown', function (ev) {
+    if (ev.key !== 'Enter' && ev.key !== ' ') return;
+    if (ev.target instanceof Element && ev.target.id === 'newReplyPill') {
+      ev.preventDefault();
+      activateNewReplyPill();
     }
   });
 }

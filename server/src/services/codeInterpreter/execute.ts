@@ -49,7 +49,24 @@ export type ExecutionResponse = {
   artifactCount: number;
 };
 
-export async function executeCode(
+function failureMessageFor(status: string, fallback: string): string {
+  if (status === 'timeout') return 'execution_timeout';
+  if (status === 'cancelled') return 'cancelled_by_caller';
+  return fallback;
+}
+
+function exitCodeFor(status: string): number {
+  if (status === 'timeout') return 124;
+  if (status === 'cancelled') return 130;
+  return 1;
+}
+
+/* Cognitive complexity: executeCode is the linear execution transaction —
+ * each early return in the top half is one validation gate, and the two
+ * try/catch blocks own the worker call and the audit/publish path. The
+ * nesting is data-flow, not branch soup; helpers would only pass the same
+ * result object around. */
+/* NOSONAR */ export async function executeCode(
   opts: ExecuteOpts,
   waitSignal?: AbortSignal,
   sessionLockQueueMs = 0,
@@ -252,22 +269,17 @@ export async function executeCode(
       queueMs?: number;
       packageMs?: number;
     };
-    const msg = String((typed && typed.message) || err);
+    const msg = String(typed?.message ?? err);
     const status = typed.status || 'failed';
     const errorCode =
       typed.code || (status === 'timeout' ? 'execution_timeout' : 'code_execution_failed');
     result = {
       status,
       errorCode,
-      errorMessage:
-        status === 'timeout'
-          ? 'execution_timeout'
-          : status === 'cancelled'
-            ? 'cancelled_by_caller'
-            : msg,
+      errorMessage: failureMessageFor(status, msg),
       stdout: '',
       stderr: '',
-      exitCode: status === 'timeout' ? 124 : status === 'cancelled' ? 130 : 1,
+      exitCode: exitCodeFor(status),
       queueMs: typed.queueMs,
       packageMs: typed.packageMs,
       durationMs: Math.max(1, typed.durationMs ?? Date.now() - executionStartedAt),
@@ -301,7 +313,7 @@ export async function executeCode(
       continue;
     }
     try {
-      const { id: fileId, mimeType } = await persistArtifact({
+      const { id: fileId, mimeType } = /* NOSONAR: sequential on purpose */ await persistArtifact({
         userId,
         sessionId: validatedSessionId,
         executionId,

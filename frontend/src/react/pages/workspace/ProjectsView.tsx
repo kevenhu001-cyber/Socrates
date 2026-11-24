@@ -1,6 +1,6 @@
 import { Plus } from 'lucide-react';
 import { Button } from '../../ui/shadcn/button';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import type { useWorkspaceDispatch } from './workspace.hooks';
 import type { ProjectItem } from './types';
 import { i18n, MoreIcon, projectMeta } from './workspaceUi';
@@ -16,10 +16,10 @@ type ProjectScope = 'all' | 'owned' | 'shared';
 function ProjectRow({
   project,
   dispatch,
-}: {
+}: Readonly<{
   project: ProjectItem;
   dispatch: ReturnType<typeof useWorkspaceDispatch>;
-}) {
+}>) {
   const color = /^#[0-9a-f]{3,8}$/i.test(project.color || '')
     ? project.color!
     : 'hsl(var(--accent-000))';
@@ -70,10 +70,10 @@ function ProjectRow({
 function ProjectsView({
   projects,
   dispatch,
-}: {
+}: Readonly<{
   projects: ReadonlyArray<ProjectItem>;
   dispatch: ReturnType<typeof useWorkspaceDispatch>;
-}) {
+}>) {
   const [query, setQuery] = useState('');
   const [scope, setScope] = useState<ProjectScope>('all');
   const visibleProjects = useMemo(() => {
@@ -98,6 +98,45 @@ function ProjectsView({
     { value: 'owned' as const, label: i18n('projects.owned', 'Created by you') },
     { value: 'shared' as const, label: i18n('projects.shared', 'Shared with you') },
   ];
+
+  let body: ReactNode;
+  if (projects.length === 0) {
+    body = (
+      <PageEmptyState
+        title={i18n('projects.empty', 'Make space for ongoing work')}
+        description={i18n(
+          'projects.emptyDesc',
+          'Projects keep related chats, files, and instructions together.',
+        )}
+        action={
+          <Button variant="default" type="button" onClick={() => dispatch.createProject()}>
+            {i18n('projects.create', 'Create project')}
+          </Button>
+        }
+      />
+    );
+  } else if (visibleProjects.length === 0) {
+    body = (
+      <PageEmptyState
+        title={i18n('projects.noMatch', 'No matching projects')}
+        description={i18n('projects.noMatchDesc', 'Try a different search.')}
+      />
+    );
+  } else {
+    body = (
+      <>
+        <div className="ui-page-section-head projects-list-heading">
+          <h2>{i18n('projects.allProjects', 'All projects')}</h2>
+          <span>{visibleProjects.length}</span>
+        </div>
+        <div className="ui-card-grid ui-project-grid projects-list">
+          {visibleProjects.map((project) => (
+            <ProjectRow key={project.id} project={project} dispatch={dispatch} />
+          ))}
+        </div>
+      </>
+    );
+  }
 
   return (
     <PageFrame className="projects-directory" aria-labelledby="projects-directory-title">
@@ -135,37 +174,7 @@ function ProjectsView({
           />
         </div>
       </PageToolbar>
-      {projects.length === 0 ? (
-        <PageEmptyState
-          title={i18n('projects.empty', 'Make space for ongoing work')}
-          description={i18n(
-            'projects.emptyDesc',
-            'Projects keep related chats, files, and instructions together.',
-          )}
-          action={
-            <Button variant="default" type="button" onClick={() => dispatch.createProject()}>
-              {i18n('projects.create', 'Create project')}
-            </Button>
-          }
-        />
-      ) : visibleProjects.length === 0 ? (
-        <PageEmptyState
-          title={i18n('projects.noMatch', 'No matching projects')}
-          description={i18n('projects.noMatchDesc', 'Try a different search.')}
-        />
-      ) : (
-        <>
-          <div className="ui-page-section-head projects-list-heading">
-            <h2>{i18n('projects.allProjects', 'All projects')}</h2>
-            <span>{visibleProjects.length}</span>
-          </div>
-          <div className="ui-card-grid ui-project-grid projects-list">
-            {visibleProjects.map((project) => (
-              <ProjectRow key={project.id} project={project} dispatch={dispatch} />
-            ))}
-          </div>
-        </>
-      )}
+      {body}
     </PageFrame>
   );
 }

@@ -49,7 +49,8 @@ function releaseOnIntent(): void {
 }
 
 export function isSticky(list: HTMLElement): boolean {
-  return Boolean(sticky && sticky.list === list && performance.now() < sticky.until);
+  if (!sticky) return false;
+  return sticky.list === list && performance.now() < sticky.until;
 }
 
 const TOP_FADE_SIZE_PX = 56;
@@ -78,7 +79,8 @@ export function updateScrollFadeMask(list: HTMLElement | null): void {
   // Keep the composer edge soft even when the reader reaches the final
   // message. The old clipped-distance rule removed the bottom fade at the
   // exact point where the last response met the composer.
-  const bottomVal = overflow ? `${atEnd ? BOTTOM_END_FADE_SIZE_PX : BOTTOM_FADE_SIZE_PX}px` : '0px';
+  const bottomFadePx = atEnd ? BOTTOM_END_FADE_SIZE_PX : BOTTOM_FADE_SIZE_PX;
+  const bottomVal = overflow ? `${bottomFadePx}px` : '0px';
   if (list.style.getPropertyValue('--ui-scroll-fade-top') !== topVal) {
     list.style.setProperty('--ui-scroll-fade-top', topVal);
   }

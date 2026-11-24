@@ -3,7 +3,7 @@ import { Input as ShadcnInput } from '../ui/shadcn/input';
 import { Checkbox } from '../ui/shadcn/checkbox';
 import { Button as UiButton } from '../ui/shadcn/button';
 import { SectionCard } from '../ui/page/SectionCard';
-import type { FormEvent } from 'react';
+import type { SyntheticEvent } from 'react';
 
 import type { SystemModelConfig } from './types';
 
@@ -13,7 +13,7 @@ interface SystemModelSectionProps {
   saving: boolean;
   onFormChange: (form: SystemModelConfig) => void;
   onApiKeyChange: (key: string) => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onSubmit: (event: SyntheticEvent<HTMLFormElement>) => void;
 }
 
 export function SystemModelSection({
