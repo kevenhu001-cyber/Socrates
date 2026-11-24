@@ -42,9 +42,8 @@ import { loadMemories } from './storage/memoryStore.ts';
 import { initLinkFavicons } from './legacy/linkFavicons.ts';
 import { installLayoutStateMirror } from './legacy/layoutStateMirror.ts';
 import { installDiagnosticFlowActions } from './tutor/diagnosticFlow.ts';
-import { isInAuthGraceWindow, handleAuthExpired, getUserMemories } from './app/lifecycle/index.ts';
+import { isInAuthGraceWindow, handleAuthExpired } from './app/lifecycle/index.ts';
 import { installLiveTurnRetryListener } from './chat/liveTurn.ts';
-import { configurePromptSuffixes } from './chat/promptSuffixes.ts';
 import { initTheme, loadDisplayPrefs } from './displayPrefs.ts';
 import { syncWebSearchUI } from './chat/webSearchToggle.ts';
 import { bootstrapApp } from './app/bootstrap.ts';
@@ -134,7 +133,6 @@ installTestState();
 /* Install auth recovery before bootstrap can start API-backed work. */
 installAuthHooks({ on401: handleAuthExpired, isInGraceWindow: isInAuthGraceWindow });
 
-configurePromptSuffixes({ getUserMemories: getUserMemories });
 
 /* Wire the extracted feature modules into the auth-aware app bootstrap. */
 bootstrapApp({
