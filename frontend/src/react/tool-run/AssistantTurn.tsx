@@ -159,6 +159,7 @@ function ToolActivityBurst({
 }) {
   const [open, setOpen] = useState(true);
   const bodyId = useId();
+  const completedCount = members.filter((call) => toolRunStateOf(call) === 'done').length;
   const canFold =
     !live &&
     members.length >= 2 &&
@@ -183,6 +184,10 @@ function ToolActivityBurst({
           {tf('think.summaryToolsTitle', 'Used {n} tools', { n: members.length })}
           <Chevron open={open} size={8} />
         </button>
+      ) : live && completedCount >= 2 ? (
+        <div className="tool-activity-burst-caption">
+          {tf('think.summaryToolsTitle', 'Used {n} tools', { n: completedCount })}
+        </div>
       ) : null}
       <div id={bodyId} hidden={canFold && !open}>
         {members.map((call) => (
