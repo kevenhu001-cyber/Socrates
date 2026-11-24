@@ -163,12 +163,9 @@
 .intui-callout[data-tone='neutral'] {
   --intui-tone: var(--ui-text-tertiary);
 }
-.msg.assistant
-  .msg-body.is-declarative
-  .intui-callout:not([data-tone='neutral'])
-  .intui-callout-title {
-  color: var(--intui-tone);
-}
+/* The glyph alone carries the tone. A tinted heading belonged to the old
+   callout: the same warning read as amber inside a declarative answer and as
+   ink everywhere else. `.intui-callout-title` keeps the primary ink now. */
 .intui-divider {
   width: 100%;
   margin: 0;

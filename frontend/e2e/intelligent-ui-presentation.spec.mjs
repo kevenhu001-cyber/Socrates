@@ -114,6 +114,28 @@ for (const format of ['native', 'openui']) {
       await expect(shell).toHaveAttribute('data-display-mode', 'inline');
       await expect(shell.locator('.intui-surface-toolbar')).toHaveCount(0);
       await expect(shell.locator('.intui-surface-expand')).toHaveCount(0);
+      if (format === 'native') {
+        /* A note is a soft block, not a margin rule: no rail, and the tone
+           lives in the glyph only, so the heading keeps the primary ink. */
+        const note = shell.locator('.intui-callout').first();
+        await expect(note).toHaveCSS('border-left-width', '0px');
+        await expect(note).toHaveCSS('border-top-width', '0px');
+        expect(
+          await note.evaluate((node) => {
+            const title = node.querySelector('.intui-callout-title');
+            const icon = title && title.querySelector('svg');
+            const probe = document.createElement('span');
+            probe.style.color = 'var(--ui-text-primary)';
+            document.body.append(probe);
+            const ink = getComputedStyle(probe).color;
+            probe.remove();
+            return {
+              titleIsInk: title ? getComputedStyle(title).color === ink : false,
+              iconHasTone: icon ? getComputedStyle(icon).color !== ink : false,
+            };
+          }),
+        ).toEqual({ titleIsInk: true, iconHasTone: true });
+      }
       expect(
         await page.evaluate(() => document.documentElement.scrollWidth - innerWidth),
       ).toBeLessThanOrEqual(1);

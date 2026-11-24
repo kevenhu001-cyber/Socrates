@@ -60,6 +60,9 @@ for (const variant of [
     });
     const terminal = page.locator('#msgList .msg-error');
     await expect(terminal).toHaveCount(1);
+    /* A failure is a line of danger-coloured text, not a left-ruled callout:
+       the rail was the last one in the transcript and must not come back. */
+    await expect(terminal).toHaveCSS('border-left-width', '0px');
     const retry = terminal.getByRole('button', { name: 'Retry', exact: true });
     await expect(retry).toBeVisible();
     const size = await retry.boundingBox();
