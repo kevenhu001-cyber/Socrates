@@ -10,7 +10,9 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
@@ -30,26 +32,58 @@ import java.nio.charset.StandardCharsets
 @Composable
 fun ToolActivityCard(call: JSONObject) {
     var expanded by remember(call.optString("id")) { mutableStateOf(false) }
-    val failed = call.optBoolean("isError") || call.optString("progressPhase") in setOf("failed", "error")
-    val phase = call.optString("progressPhase")
+    val phase = call.optString("status").ifBlank { call.optString("progressPhase") }.lowercase()
+    val failed = call.optBoolean("isError") || phase in setOf("failed", "error", "timed_out")
     val state = when {
         failed -> "失败"
-        phase in setOf("completed", "done") -> "已完成"
+        phase in setOf("completed", "done", "succeeded", "success") -> ""
         phase in setOf("awaiting", "awaiting_approval") -> "等待确认"
-        else -> "进行中"
+        phase in setOf("stopped", "cancelled", "canceled") -> "已停止"
+        phase in setOf("running", "started", "pending") -> "进行中"
+        else -> "状态未知"
     }
-    SocratesOutlinedCard(Modifier.fillMaxWidth().padding(top = 8.dp)) {
-        Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
-            SocratesTextButton(onClick = { expanded = !expanded }, contentPadding = PaddingValues(vertical = 4.dp)) {
-                Column(Modifier.weight(1f)) {
-                    Text(call.optString("name").ifBlank { "工具" }, style = MaterialTheme.typography.titleSmall, color = SocratesDesign.Ink)
-                    val status = call.optString("userMessage").ifBlank { call.optString("progressPhase").ifBlank { state } }
-                    Text(status.take(160), style = MaterialTheme.typography.bodySmall, color = if (failed) MaterialTheme.colorScheme.error else SocratesDesign.Muted, maxLines = 2)
-                }
-                Text(if (expanded) "收起" else state, style = MaterialTheme.typography.labelMedium, color = if (failed) MaterialTheme.colorScheme.error else SocratesDesign.Muted)
+    val name = call.optString("name")
+    val input = call.optJSONObject("input")
+    val (action, glyph) = when (name.lowercase()) {
+        "web_search", "search_web" -> "检索网页" to ReferenceGlyph.Globe
+        "fetch_url", "web_fetch", "read_url" -> "读取网页" to ReferenceGlyph.Globe
+        "code_interpreter", "python_execute", "run_python" -> "运行代码" to ReferenceGlyph.Compose
+        "read", "read_file" -> "读取文件" to ReferenceGlyph.Document
+        "write", "write_file", "edit", "edit_file" -> "编辑文件" to ReferenceGlyph.Document
+        "workspace_agent" -> "执行工作区任务" to ReferenceGlyph.Plugin
+        "render_intelligent_ui" -> "生成交互内容" to ReferenceGlyph.Document
+        else -> "调用工具" to ReferenceGlyph.Plugin
+    }
+    val target = listOf("query", "url", "file_path", "path").firstNotNullOfOrNull { key ->
+        input?.optString(key)?.takeIf { it.isNotBlank() && it != "null" }
+    }.orEmpty().replace(Regex("\\s+"), " ").take(72)
+    val label = listOf(action, target).filter { it.isNotBlank() }.joinToString(" · ")
+    val ink = if (failed) MaterialTheme.colorScheme.error else SocratesDesign.Muted
+    Column(Modifier.fillMaxWidth().padding(top = 4.dp)) {
+        SocratesTextButton(
+            onClick = { expanded = !expanded },
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = 0.dp, vertical = 4.dp),
+        ) {
+            ReferenceIcon(glyph, null, Modifier.size(16.dp), tint = ink)
+            Spacer(Modifier.width(8.dp))
+            Text(label, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, color = ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            if (state.isNotBlank()) {
+                Spacer(Modifier.width(6.dp))
+                Text(state, style = MaterialTheme.typography.labelSmall, color = ink)
             }
+            Spacer(Modifier.width(6.dp))
+            Text(if (expanded) "⌃" else "⌄", color = SocratesDesign.Muted)
+        }
+        if (failed || phase in setOf("awaiting", "awaiting_approval")) {
+            call.optString("userMessage").takeIf { it.isNotBlank() }?.let {
+                Text(it.take(160), Modifier.padding(start = 24.dp), style = MaterialTheme.typography.bodySmall, color = ink)
+            }
+        }
+        Column(Modifier.fillMaxWidth().padding(start = 24.dp)) {
             if (expanded) {
                 Spacer(Modifier.height(6.dp))
+                if (name.isNotBlank()) DetailValue("工具", name)
                 val arguments = call.opt("input")?.takeUnless { it == JSONObject.NULL }
                     ?: call.opt("argumentsText")?.takeUnless { it == JSONObject.NULL }
                 arguments?.let { DetailValue("输入", displayJson(it)) }
