@@ -781,6 +781,16 @@
     min-height: 56px;
   }
 
+  @media (max-width: 360px) {
+    #appShell .plugin-detail-cta-group {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    #appShell .plugin-detail-cta-group > button {
+      width: 100%;
+    }
+  }
+
   #appShell .workspace-loading-scheduled {
     max-width: none;
     padding: 24px 16px 48px;
