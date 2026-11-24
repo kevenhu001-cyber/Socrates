@@ -95,17 +95,24 @@ html[data-main-view='settingsPage'] #appShell .top-bar {
     box-shadow: none;
   }
 
-  /* Keep a one-pixel separator only while transcript content passes under
-     the header. The actual text fade is owned by the transcript mask. */
+  /* A soft canvas-to-transparent edge replaces the hard hairline while
+     transcript content scrolls beneath the fixed header. The transcript
+     mask owns the actual text fade; this layer only blends the chrome edge. */
   #appShell .top-bar::after {
     content: '';
     position: absolute;
+    z-index: 0;
     inset-inline: 0;
-    bottom: 0;
-    height: 1px;
-    background: var(--ui-hairline);
+    bottom: -24px;
+    height: 24px;
+    background: linear-gradient(
+      to bottom,
+      var(--ui-bg-page) 0%,
+      color-mix(in srgb, var(--ui-bg-page) 82%, transparent) 38%,
+      transparent 100%
+    );
     opacity: 0;
-    transition: opacity var(--ui-duration-fast) var(--ui-ease-out);
+    transition: opacity var(--ui-duration-normal) var(--ui-ease-out);
     pointer-events: none;
   }
   body[data-transcript-scrolled='true'] #appShell .top-bar::after {
