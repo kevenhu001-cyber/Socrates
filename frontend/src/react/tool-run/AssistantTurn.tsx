@@ -6,7 +6,7 @@ import { TurnEvidence } from '../citations/TurnEvidence';
 import { TurnActivitySurface } from './TurnActivitySurface';
 import { deriveTurnPresentationState } from '../../legacy/turnActivityModel';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { Chevron } from '@socrates/ui/turn';
+import { Chevron, Spinner } from '@socrates/ui/turn';
 import { interfaceIcon } from '../../legacy/icons/interfaceIcons';
 import { Button } from '../ui/shadcn/button';
 import { tf } from '../../legacy/toolPresentationModel.ts';
@@ -15,7 +15,6 @@ import {
   groupOutputCalls,
   stripLegacyToolHtml,
   toolRunStateOf,
-  toolRunView,
   type ToolCallRecord,
   type TurnSegment,
 } from './toolRunModel.js';
@@ -162,22 +161,18 @@ function ToolActivityBurst({
   const [openOverride, setOpenOverride] = useState<boolean | null>(null);
   const expandedIds = useExpandedToolIds();
   const bodyId = useId();
-  const completedCount = members.filter((call) => toolRunStateOf(call) === 'done').length;
-  const canFold =
-    !live &&
-    members.length >= 2 &&
-    members.every(
-      (call) =>
-        toolRunStateOf(call) === 'done' &&
-        !call.approval &&
-        !toolRunView(call).agentRun &&
-        call.name !== 'workspace_agent' &&
-        call.name !== 'render_intelligent_ui',
-    );
-  // Collapse settled bursts by default; preserve a reader's open row and
-  // never hide approvals, failures, active tools or interactive attachments.
+  const running = live && members.some((call) => toolRunStateOf(call) === 'running');
+  // Approval is user input, not a log: never hide a pending decision.
+  const canFold = members.every((call) => toolRunStateOf(call) !== 'awaiting');
   const open = openOverride ?? members.some((call) => expandedIds?.has(call.id));
   const folded = canFold && !open;
+  const label = running
+    ? tf('think.toolsWorking', 'Working with tools…', {})
+    : tf(
+        members.length === 1 ? 'think.summaryToolTitle' : 'think.summaryToolsTitle',
+        members.length === 1 ? 'Used {n} tool' : 'Used {n} tools',
+        { n: members.length },
+      );
   return (
     <div className="tool-activity-burst">
       {canFold ? (
@@ -189,23 +184,16 @@ function ToolActivityBurst({
           aria-controls={bodyId}
           onClick={() => setOpenOverride(!open)}
         >
-          <span
-            className="tool-burst-glyph"
-            aria-hidden="true"
-            dangerouslySetInnerHTML={{ __html: interfaceIcon('activityTools', 18) }}
-          />
-          {tf('think.summaryToolsTitle', 'Used {n} tools', { n: members.length })}
+          {running ? <Spinner /> : (
+            <span
+              className="tool-burst-glyph"
+              aria-hidden="true"
+              dangerouslySetInnerHTML={{ __html: interfaceIcon('activityTools', 18) }}
+            />
+          )}
+          <span>{label}</span>
           <Chevron open={open} size={8} />
         </Button>
-      ) : live && completedCount >= 2 ? (
-        <div className="tool-activity-burst-caption">
-          <span
-            className="tool-burst-glyph"
-            aria-hidden="true"
-            dangerouslySetInnerHTML={{ __html: interfaceIcon('activityTools', 18) }}
-          />
-          {tf('think.summaryToolsTitle', 'Used {n} tools', { n: completedCount })}
-        </div>
       ) : null}
       <div
         id={bodyId}
