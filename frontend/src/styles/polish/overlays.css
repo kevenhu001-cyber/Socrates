@@ -654,9 +654,6 @@ body.composer-tools-open.composer-tools-open::after {
 .settings-page .settings-choice:last-child {
   border-bottom: 0;
 }
-.settings-page .settings-choice input[role='switch'] {
-  border-radius: var(--ui-radius-pill);
-}
 .settings-page .settings-choice--segmented > [data-slot='toggle-group'] {
   flex: none;
 }
@@ -962,6 +959,10 @@ body.composer-tools-open.composer-tools-open::after {
     gap: 12px;
     min-height: 0;
     padding: 14px 0;
+  }
+  .settings-page .settings-choice--switch {
+    flex-direction: row;
+    align-items: center;
   }
   .settings-page .settings-choice--segmented > [data-slot='toggle-group'] {
     width: 100%;
