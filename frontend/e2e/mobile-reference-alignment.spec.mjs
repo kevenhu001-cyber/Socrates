@@ -115,14 +115,13 @@ for (const mode of ['dark', 'light']) {
     await expect
       .poll(async () => Math.round((await page.locator('#sidebar').boundingBox()).x))
       .toBe(0);
-    expect(Math.round((await page.locator('#sidebar').boundingBox()).width)).toBe(351);
-    /* The drawer is a page-coloured sheet over the app; its separation is
-       the ring plus the ambient shadow, not a second surface tone. */
+    expect(Math.round((await page.locator('#sidebar').boundingBox()).width)).toBe(312);
+    /* The Android reference uses a separate neutral drawer surface. */
     expect(
       rgbChannels(
         await page.locator('#sidebar').evaluate((el) => getComputedStyle(el).backgroundColor),
       ),
-    ).toEqual(mode === 'dark' ? [0, 0, 0] : [255, 255, 255]);
+    ).toEqual(mode === 'dark' ? [33, 33, 33] : [245, 245, 245]);
     expect(
       await page.locator('#sidebar').evaluate((el) => getComputedStyle(el).boxShadow),
     ).not.toBe('none');
@@ -164,7 +163,14 @@ for (const mode of ['dark', 'light']) {
     await expect(recent.locator('.recent-item-glyph')).toBeHidden();
     await expect(page.locator('.sidebar-logo [data-part="brand-name"]')).toBeVisible();
     await expect(page.locator('#sidebarCloseBtn')).toBeVisible();
-    await expect(page.locator('.sidebar-mobile-new-chat')).toBeInViewport();
+    const compose = page.locator('.sidebar-mobile-new-chat');
+    const account = page.locator('.sidebar-account-trigger');
+    await expect(compose).toBeInViewport();
+    await expect(account).toBeInViewport();
+    expect((await compose.boundingBox()).x).toBeLessThan((await account.boundingBox()).x);
+    expect(rgbChannels(await compose.evaluate((el) => getComputedStyle(el).backgroundColor))).toEqual([47, 99, 233]);
+    await expect(account.locator('.user-identity')).toBeHidden();
+    await expect(page.locator('#sidebarSearchBtn')).toHaveCSS('border-top-left-radius', '9999px');
     await expect(page.locator('.recents-search-all')).toBeInViewport();
     /* The drawer account row uses the same 32px identity mark as the desktop
        rail (parity/sidebar.css), not the 44px touch target. */
