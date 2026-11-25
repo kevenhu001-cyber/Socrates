@@ -13,12 +13,11 @@ import {
 } from '../chat-configuration/useChatConfigurationLabels';
 import { effortLabel } from '../chat-configuration/ChatConfigurationPanels';
 import { toggleSidebar } from '../../sidebar/sidebar.service.ts';
-import { startNewChat, toggleIncognito } from '../../app/lifecycle/index.ts';
+import { startNewChat } from '../../app/lifecycle/index.ts';
 import { toggleAppMode } from '../../app/lifecycle/mode.ts';
 import { openFindInSession } from '../find-in-session/findInSession.actions.ts';
 import { openShareModal } from '../../legacy/share.ts';
 import { useAppMode } from '../app-mode/useAppMode.ts';
-import { useIncognito } from '../app-mode/useIncognito.ts';
 import { useSidebarStore } from '../../sidebar/sidebar.store.ts';
 import { useMobileViewport } from '../sidebar-chrome/useMobileViewport.ts';
 import { WebUiTheme } from '../rn/WebUiTheme';
@@ -398,30 +397,11 @@ function ModeSwitch({
 
 /* ── Right: find · share ──────────────────────────────────────────────── */
 
-/** Incognito is opened from More; this hidden state mirror stays in sync with that action. */
-function IncognitoAction() {
-  const on = useIncognito();
-  return (
-    <TopBarAction
-      id="mobileIncognitoBtn"
-      icon="incognito"
-      label={t('sidebar.nav.incognito', 'Incognito chat')}
-      pressed={on}
-      touch
-      visible={false}
-      onPress={() => {
-        void toggleIncognito();
-      }}
-    />
-  );
-}
-
 function TopBarRight({ phone }: { phone: boolean }) {
   const { conversationActions, sharedView } = useTopbarState();
   return (
     <div className="top-bar-right">
       <WebUiTheme>
-        <IncognitoAction />
         <TopBarAction
           id="findBtn"
           icon="search"
