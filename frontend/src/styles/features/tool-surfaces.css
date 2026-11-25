@@ -438,7 +438,7 @@
   min-height: var(--ui-control-sm);
   padding: 0 var(--ui-space-xs);
   border: 0;
-  border-radius: 9999px;
+  border-radius: var(--ui-radius-pill);
   background: transparent;
   color: var(--ui-text-secondary);
   font-family: inherit;
