@@ -63,8 +63,8 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
 @media (min-width: 721px) {
   html[data-main-view='settingsPage'] #settingsPage .settings-page {
     box-sizing: border-box;
-    flex: 1 1 auto;
-    width: 100%;
+    flex: 0 1 auto;
+    width: calc(100% - 32px);
     max-width: 880px;
     height: min(680px, calc(100% - 48px));
     min-height: 0;
