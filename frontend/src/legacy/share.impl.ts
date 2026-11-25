@@ -285,8 +285,6 @@ function createSharedViewRestorer(
   saved: {
     inputBar: HTMLElement | null;
     inputBarWasHidden: boolean;
-    topBar: HTMLElement | null;
-    topBarDisplay: string;
     sharedViewWas: boolean;
     composer: HTMLElement | null;
     composerAriaDisabled: string | null;
@@ -304,7 +302,6 @@ function createSharedViewRestorer(
         );
     }
     saved.inputBar?.classList.toggle('hidden', saved.inputBarWasHidden);
-    if (saved.topBar) saved.topBar.style.display = saved.topBarDisplay;
     setTopbarState({ sharedView: saved.sharedViewWas });
     if (saved.composer) {
       if (saved.composerAriaDisabled === null) saved.composer.removeAttribute('aria-disabled');
@@ -317,15 +314,12 @@ function createSharedViewRestorer(
 
 function captureSharedViewShell(
   inputBar: HTMLElement | null,
-  topBar: HTMLElement | null,
   composer: HTMLElement | null,
   recentsPane: HTMLElement | null,
 ) {
   return {
     inputBar,
     inputBarWasHidden: Boolean(inputBar?.classList.contains('hidden')),
-    topBar,
-    topBarDisplay: topBar?.style.display ?? '',
     sharedViewWas: readTopbarState().sharedView,
     composer,
     composerAriaDisabled: composer?.getAttribute('aria-disabled') ?? null,
@@ -336,12 +330,10 @@ function captureSharedViewShell(
 
 function applySharedViewOverrides(
   inputBar: HTMLElement | null,
-  topBar: HTMLElement | null,
   composer: HTMLElement | null,
   recentsPane: HTMLElement | null,
 ) {
   inputBar?.classList.add('hidden');
-  if (topBar) topBar.style.display = 'none';
   setTopbarState({ sharedView: true });
   composer?.setAttribute('aria-disabled', 'true');
   recentsPane?.classList.add('hidden');
@@ -353,14 +345,13 @@ function _switchToSharedChatView() {
   const bannerParent = banner?.parentElement || null;
   const bannerNextSibling = banner?.nextSibling || null;
   const inputBar = document.getElementById('chatInputBar');
-  const topBar = document.querySelector('.chat-top-bar') as HTMLElement | null;
   const composer = document.getElementById('composerRoot');
   const recentsPane = document.getElementById('recentsPane');
 
-  const saved = captureSharedViewShell(inputBar, topBar, composer, recentsPane);
+  const saved = captureSharedViewShell(inputBar, composer, recentsPane);
   activateMainView('chatView', document);
   displayReadOnlyBanner(banner);
-  applySharedViewOverrides(inputBar, topBar, composer, recentsPane);
+  applySharedViewOverrides(inputBar, composer, recentsPane);
 
   sharedShellRestore = createSharedViewRestorer(banner, bannerParent, bannerNextSibling, saved);
   hideAuthGate();
