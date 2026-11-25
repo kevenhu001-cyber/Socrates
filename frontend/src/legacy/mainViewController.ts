@@ -36,8 +36,6 @@ function resetShellState(doc: Document) {
     'admin-active',
     'exam-active',
   );
-  const pluginTabs = doc.getElementById('pluginWorkspaceTabs');
-  if (pluginTabs) pluginTabs.hidden = true;
   doc
     .querySelectorAll<HTMLElement>("[data-exam-only='true']")
     .forEach((element) => element.classList.add('hidden'));
@@ -77,8 +75,6 @@ function applyWorkspaceClasses(doc: Document, viewId: string): void {
     doc.body.classList.toggle('projects-active', viewId === 'spacesPanel');
     doc.body.classList.toggle('scheduled-active', viewId === 'scheduledPanel');
     doc.body.classList.toggle('admin-active', viewId === 'adminPanel');
-    const pluginTabs = doc.getElementById('pluginWorkspaceTabs');
-    if (pluginTabs) pluginTabs.hidden = viewId !== 'pluginsPanel';
   } else if (viewId === 'examView') {
     doc.body.classList.add('exam-active');
   }
