@@ -168,9 +168,14 @@ export function createToolRunner(deps: ToolRunnerDeps): ToolRunner {
           }),
         );
       }
-      /* A duplicate is a routing mistake rather than a tool defect, so
-       * it must not push the tool towards being withdrawn. */
-      if (code !== 'duplicate_tool_call') deps.toolPolicy.recordResult(toolName, false, code);
+      /* Duplicate and exhausted-budget rejections are not executor failures. */
+      if (
+        code !== 'duplicate_tool_call' &&
+        code !== 'tool_budget_exhausted' &&
+        code !== 'tool_time_budget_exhausted'
+      ) {
+        deps.toolPolicy.recordResult(toolName, false, code);
+      }
       recordToolOutcome({
         tool: code === 'unknown_tool' ? 'unknown_tool' : toolName || 'unknown_tool',
         outcome: 'failed',

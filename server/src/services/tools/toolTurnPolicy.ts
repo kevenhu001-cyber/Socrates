@@ -75,8 +75,8 @@ export interface ToolTurnPolicy {
   disabledReason(tool: string): string | null;
   /** True when this exact (tool, arguments) pair already ran this turn. */
   isDuplicate(tool: string, argumentsHash: string): boolean;
-  /** Count a call that is about to execute. */
-  registerCall(tool: string, argumentsHash: string): void;
+  /** Reserve one unique call within the remaining turn budget; null on success. */
+  registerCall(tool: string, argumentsHash: string): { code: string; message: string } | null;
   /* Reverse of registerCall for a call that FAILED: the (tool,args)
      pair must not stay in seenCalls or a legitimate same-arguments
      retry after a transient error gets rejected as a duplicate.
@@ -167,8 +167,18 @@ export function createToolTurnPolicy(options: ToolTurnPolicyOptions = {}): ToolT
     },
 
     registerCall(tool: string, argumentsHash: string) {
-      seenCalls.add(`${tool}:${argumentsHash}`);
+      const key = `${tool}:${argumentsHash}`;
+      if (seenCalls.has(key)) {
+        return {
+          code: 'duplicate_tool_call',
+          message: 'This exact call already ran in this turn, so it was not executed again. Use the previous result, change the arguments materially, or continue in prose.',
+        };
+      }
+      const exhausted = budgetExhausted();
+      if (exhausted) return exhausted;
+      seenCalls.add(key);
       callsUsed += 1;
+      return null;
     },
 
     unmarkCall(tool: string, argumentsHash: string) {

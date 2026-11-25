@@ -615,14 +615,14 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
             };
           } else {
             const argumentsHash = hashToolArguments(args);
-            if (toolPolicy.isDuplicate(resolved.name, argumentsHash)) {
+            const denied = toolPolicy.registerCall(resolved.name, argumentsHash);
+            if (denied) {
               rejection = {
-                code: 'duplicate_tool_call',
-                retryable: true,
-                hint: 'This exact call already ran in this turn, so it was not executed again. Use the previous result, change the arguments materially, or continue in prose.',
+                code: denied.code,
+                retryable: denied.code === 'duplicate_tool_call',
+                hint: denied.message,
               };
             } else {
-              toolPolicy.registerCall(resolved.name, argumentsHash);
               registeredArgumentsHash = argumentsHash;
             }
           }

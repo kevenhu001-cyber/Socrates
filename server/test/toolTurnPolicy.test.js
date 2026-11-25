@@ -64,8 +64,10 @@ test('duplicate identical calls are detected before execution', () => {
   const policy = createToolTurnPolicy();
   const hash = hashToolArguments({ query: 'same' });
   assert.equal(policy.isDuplicate('web_search', hash), false);
-  policy.registerCall('web_search', hash);
+  assert.equal(policy.registerCall('web_search', hash), null);
   assert.equal(policy.isDuplicate('web_search', hash), true);
+  assert.equal(policy.registerCall('web_search', hash)?.code, 'duplicate_tool_call');
+  assert.equal(policy.snapshot().callsUsed, 1);
   // A different tool or different arguments is not a duplicate.
   assert.equal(policy.isDuplicate('web_fetch', hash), false);
   assert.equal(policy.isDuplicate('web_search', hashToolArguments({ query: 'other' })), false);
@@ -133,6 +135,9 @@ test('the absolute call ceiling stops tools even with iterations left', () => {
   const exhausted = policy.budgetExhausted();
   assert.equal(exhausted?.code, 'tool_budget_exhausted');
   assert.equal(policy.toolsAllowed(1), false);
+  assert.equal(policy.registerCall('web_search', 'c')?.code, 'tool_budget_exhausted');
+  assert.equal(policy.snapshot().callsUsed, 2);
+  assert.equal(policy.isDuplicate('web_search', 'c'), false);
 });
 
 test('the wall-clock ceiling stops tools', () => {
@@ -142,6 +147,8 @@ test('the wall-clock ceiling stops tools', () => {
   clock += 60_001;
   assert.equal(policy.budgetExhausted()?.code, 'tool_time_budget_exhausted');
   assert.equal(policy.toolsAllowed(0), false);
+  assert.equal(policy.registerCall('web_search', 'late')?.code, 'tool_time_budget_exhausted');
+  assert.equal(policy.snapshot().callsUsed, 0);
 });
 
 test('snapshot reports the live budget for prompt generation', () => {
