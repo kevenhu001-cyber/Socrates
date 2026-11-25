@@ -6,7 +6,6 @@ import { activateMainView, getVisibleCoreView } from '../src/legacy/mainViewCont
 
 function createDocument() {
   return new JSDOM(`<!doctype html><html><body class="workspace-active plugins-active admin-active exam-active">
-    <button id="mobileIncognitoBtn"></button>
     <div id="mainInner" class="hidden">
       <div id="topicSetup"></div>
       <div id="diagnosticView" class="hidden"></div>
