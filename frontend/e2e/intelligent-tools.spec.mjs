@@ -55,7 +55,14 @@ for (const mode of ['light', 'dark', 'mobile']) {
       path: `test-results/intelligent-tools-plan-${encodeURIComponent(mode)}.png`,
       fullPage: true,
     });
-    await ui.getByRole('radio', { name: '任务清单', exact: true }).click();
+    const planOption = ui.getByRole('radio', { name: '练习计划', exact: true });
+    const taskOption = ui.getByRole('radio', { name: '任务清单', exact: true });
+    await expect(planOption).toHaveAttribute('tabindex', '0');
+    await expect(taskOption).toHaveAttribute('tabindex', '-1');
+    await planOption.focus();
+    await planOption.press('ArrowRight');
+    await expect(taskOption).toBeFocused();
+    await expect(taskOption).toHaveAttribute('aria-checked', 'true');
     await ui.getByRole('textbox', { name: '新任务', exact: true }).fill('学习几何');
     await ui.getByRole('button', { name: '添加任务', exact: true }).click();
     await expect(ui.getByText('任务数：2', { exact: true })).toBeVisible();
@@ -84,6 +91,17 @@ for (const mode of ['light', 'dark', 'mobile']) {
     await page.locator('#msgList').evaluate((el) => {
       el.scrollTop = 0;
     });
+    const submit = ui.getByRole('button', { name: '提交给导师', exact: true });
+    await expect(submit).toHaveAttribute('data-slot', 'button');
+    await expect(submit).toHaveAttribute('data-variant', 'default');
+    expect(
+      await submit.evaluate((element) =>
+        parseFloat(getComputedStyle(element).borderTopLeftRadius),
+      ),
+    ).toBeGreaterThanOrEqual(20);
+    if (mode === 'mobile') {
+      expect((await submit.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+    }
     const primaryColors = await ui
       .getByRole('button', { name: '提交给导师', exact: true })
       .evaluate((button) => ({
