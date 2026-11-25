@@ -167,6 +167,31 @@ test('failed plugin launch gives actionable feedback', async ({ page }) => {
   await expect(page.locator('.plugin-detail-view')).toBeVisible();
 });
 
+test('plugin launch is single-flight and cancellation restores controls', async ({ page }) => {
+  await openConnectedPluginDetail(page);
+  await page.evaluate(() => {
+    window.__pluginLaunchCalls = 0;
+    window.__socratesLegacy.navigation.startNewChat = () => {
+      window.__pluginLaunchCalls += 1;
+      return new Promise((resolve) => { window.__cancelPluginLaunch = () => resolve(false); });
+    };
+  });
+  const primary = page.locator('.plugin-detail-btn-primary');
+  const example = page.locator('button.plugin-detail-prompt-card').first();
+  // Two activations in the same task also exercise the synchronous ref guard,
+  // before React can commit the disabled state.
+  await primary.evaluate((button) => { button.click(); button.click(); });
+  await expect(primary).toBeDisabled();
+  await expect(primary).toHaveAttribute('aria-busy', 'true');
+  await expect(example).toBeDisabled();
+  expect(await page.evaluate(() => window.__pluginLaunchCalls)).toBe(1);
+  await page.evaluate(() => window.__cancelPluginLaunch());
+  await expect(primary).toBeEnabled();
+  await expect(example).toBeEnabled();
+  await expect(primary).not.toHaveAttribute('aria-busy', 'true');
+  await expect(page.locator('.composer-plugin-chip')).toHaveCount(0);
+});
+
 test('using a connected plugin waits for the chat reset to succeed', async ({ page }) => {
   await openConnectedPluginDetail(page);
 
