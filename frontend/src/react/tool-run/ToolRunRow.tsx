@@ -21,7 +21,7 @@ interface ToolRunRowProps {
   messageId?: string;
   readOnly?: boolean;
   live: boolean;
-  /** Pending approvals have their own visible surface outside the activity. */
+  /** Approvals have their own visible surface outside the activity. */
   approvalOutside?: boolean;
 }
 
