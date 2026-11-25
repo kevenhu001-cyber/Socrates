@@ -67,7 +67,11 @@ test(
     };
     const req = new EventEmitter();
     req.app = { locals: {} };
-    req.body = {};
+    const messages = [
+      { role: 'system', content: 'Base' },
+      { role: 'user', content: 'Build an estimate with an interactive chart.' },
+    ];
+    req.body = { messages };
     const res = new EventEmitter();
     res.writeHead = () => res;
     res.flushHeaders = () => {};
@@ -91,8 +95,12 @@ test(
       res.writableEnded = true;
       res.emit('finish');
     };
-    globalThis.fetch = async () => {
+    globalThis.fetch = async (_url, init) => {
       requests++;
+      if (requests === 1) {
+        const body = JSON.parse(init.body);
+        assert.ok(body.tools.some((tool) => tool.function.name === 'render_intelligent_ui'));
+      }
       if (requests > 1)
         return new Response(
           frame({ choices: [{ delta: { content: 'The completed result.' } }] }) +
@@ -144,10 +152,7 @@ test(
         res,
         prep: {
           payload: {
-            messages: [
-              { role: 'system', content: 'Base' },
-              { role: 'user', content: 'Build an estimate.' },
-            ],
+            messages,
             provider: {
               url: 'https://provider.example/v1',
               keyPlaintext: 'test',
@@ -173,7 +178,9 @@ test(
       events.filter((event) => event.type === 'ui.add').map((event) => event.node.id),
       ['root', 'value'],
     );
-    assert.deepEqual(events.find((event) => event.type === 'ui.commit').nodes, [root, child]);
+    const commit = events.find((event) => event.type === 'ui.commit');
+    assert.ok(commit, 'validated UI must commit after the tool result');
+    assert.deepEqual(commit.nodes, [root, child]);
     assert.equal(events.at(-1).type, 'turn.done');
     assert.ok(frames.some((text) => text.includes('The completed result.')));
     assert.equal(requests, 2);
@@ -189,7 +196,11 @@ test(
     const frames = [];
     const req = new EventEmitter();
     req.app = { locals: {} };
-    req.body = {};
+    const messages = [
+      { role: 'system', content: 'Base' },
+      { role: 'user', content: 'Check the official result and update a visual.' },
+    ];
+    req.body = { messages };
     const res = new EventEmitter();
     res.writeHead = () => res;
     res.flushHeaders = () => {};
@@ -224,13 +235,16 @@ test(
         });
       providerRequests++;
       const body = JSON.parse(init.body);
-      if (providerRequests === 1)
+      if (providerRequests === 1) {
+        assert.ok(body.tools.some((tool) => tool.function.name === 'render_intelligent_ui'));
+        assert.ok(body.tools.some((tool) => tool.function.name === 'patch_intelligent_ui'));
         return response({
           tool_calls: [
             call(0, 'fetch', 'web_fetch', { url: 'https://evidence.test/guide' }),
             call(1, 'ui', 'render_intelligent_ui', { version: 1, nodes: [node] }),
           ],
         });
+      }
       if (providerRequests === 2) {
         const fetched = body.messages.find(
           (message) => message.role === 'tool' && message.tool_call_id === 'fetch',
@@ -262,10 +276,7 @@ test(
         res,
         prep: {
           payload: {
-            messages: [
-              { role: 'system', content: 'Base' },
-              { role: 'user', content: 'Check the official result and update a visual.' },
-            ],
+            messages,
             provider: {
               url: 'https://provider.example/v1',
               keyPlaintext: 'test',
