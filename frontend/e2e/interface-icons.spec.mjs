@@ -92,18 +92,17 @@ for (const theme of ['light', 'dark']) {
         `.composer-tools-mobile-items [data-composer-action="${action}"] :is(.composer-tools-icon, .composer-tools-tile-icon) svg`,
       );
       await expect(glyph).toBeVisible();
-      await expect(glyph).toHaveCSS('stroke-width', '1.75px');
-      if (action === 'webSearch' || action === 'extensiveThinking') {
-        await expect(glyph).toHaveAttribute('viewBox', '0 0 24 24');
-        await expect(glyph).toHaveAttribute('stroke', 'currentColor');
-        await expect(glyph).toHaveAttribute('aria-hidden', 'true');
-        await expect(glyph).toHaveAttribute('focusable', 'false');
-        const fits = await glyph.evaluate((svg) => {
-          const box = svg.getBBox();
-          return box.x >= 1 && box.y >= 1 && box.x + box.width <= 23 && box.y + box.height <= 23;
-        });
-        expect(fits).toBe(true);
-      }
+      await expect(glyph).toHaveAttribute('viewBox', '0 0 24 24');
+      await expect(glyph).toHaveAttribute('data-icon-source', 'openai-apps-sdk');
+      await expect(glyph).toHaveAttribute('fill', 'currentColor');
+      await expect(glyph).toHaveCSS('stroke', 'none');
+      await expect(glyph).toHaveAttribute('aria-hidden', 'true');
+      await expect(glyph).toHaveAttribute('focusable', 'false');
+      const fits = await glyph.evaluate((svg) => {
+        const box = svg.getBBox();
+        return box.x >= 0 && box.y >= 0 && box.x + box.width <= 24 && box.y + box.height <= 24;
+      });
+      expect(fits).toBe(true);
     }
     await page.keyboard.press('Escape');
     await expect(page.locator('#composerToolsBtn')).toBeFocused();

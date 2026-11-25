@@ -5,8 +5,27 @@
  * of its rendered size.
  */
 import type { UiIconRendererProps } from '@socrates/ui/primitives';
+import { Icon, type IconProps } from '../../legacy/Icon';
+
+const OFFICIAL_COMPOSER_GLYPHS: Partial<Record<UiIconRendererProps['name'], IconProps['name']>> = {
+  plus: 'plus',
+  paperclip: 'paperclip',
+  image: 'image',
+  globe: 'webSearch',
+};
 
 export function WebIconRenderer({ name, shapes, size, color, strokeWidth }: UiIconRendererProps) {
+  const official = OFFICIAL_COMPOSER_GLYPHS[name];
+  if (official) {
+    return (
+      <Icon
+        name={official}
+        size={size}
+        data-ui-icon={name}
+        style={{ color, display: 'block', flexShrink: 0 }}
+      />
+    );
+  }
   return (
     <svg
       width={size}

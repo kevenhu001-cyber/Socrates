@@ -3,6 +3,7 @@ import React, { type ReactNode } from 'react';
 import {
   getInterfaceIconShapes,
   interfaceIcon,
+  isOpenAIGlyph,
   type InterfaceIconName,
 } from './icons/interfaceIcons';
 
@@ -17,6 +18,7 @@ export type IconName = InterfaceIconName | keyof typeof ALIASES | 'spinner';
 
 interface IconDescriptor {
   readonly viewBox?: string;
+  readonly filled?: boolean;
   readonly children: ReactNode;
 }
 
@@ -35,6 +37,7 @@ export function getIconDescriptor(name: IconName): IconDescriptor {
     const shapes = getInterfaceIconShapes(resolve(name));
     if (!shapes.length) return { children: null };
     descriptor = {
+      filled: isOpenAIGlyph(resolve(name)),
       children: shapes.map(([tag, attrs], key) => React.createElement(tag, { ...attrs, key })),
     };
     descriptors.set(name, descriptor);

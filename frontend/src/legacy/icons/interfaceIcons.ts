@@ -2,6 +2,9 @@
  * 24px grid, 1.75px round strokes, generous counters and quiet rounded shells.
  * Keep brand marks and user-created SVG content outside this collection.
  */
+import { OPENAI_GLYPHS, isOpenAIGlyph } from './openaiGlyphs';
+
+export { isOpenAIGlyph } from './openaiGlyphs';
 export const INTERFACE_ICON_STROKE = 1.75;
 
 type ShapeTag = 'path' | 'rect' | 'circle';
@@ -51,25 +54,11 @@ const GLYPHS = {
       'M19.4 7.85c-.05-.32.06-.65.29-.88l1.57-1.57a1.5 1.5 0 0 0-2.12-2.12l-1.57 1.57a.86.86 0 0 1-.88.29c-.77-.16-1.56.12-2.03.74a2.5 2.5 0 0 0-4 0c-.47-.62-1.26-.9-2.03-.74a.86.86 0 0 1-.88-.29L6.12 3.28a1.5 1.5 0 0 0-2.12 2.12l1.57 1.57c.23.23.34.56.29.88-.16.77.12 1.56.74 2.03a2.5 2.5 0 0 0 0 4c-.62.47-.9 1.26-.74 2.03.05.32-.06.65-.29.88l-1.57 1.57a1.5 1.5 0 0 0 2.12 2.12l1.57-1.57c.23-.23.56-.34.88-.29.77.16 1.56-.12 2.03-.74a2.5 2.5 0 0 0 4 0c.47.62 1.26.9 2.03.74.32.05.65-.06.88-.29l1.57 1.57a1.5 1.5 0 0 0 2.12-2.12l-1.57-1.57a.86.86 0 0 1-.29-.88c.16-.77-.12-1.56-.74-2.03a2.5 2.5 0 0 0 0-4c.62-.47.9-1.26.74-2.03Z',
     ),
   ],
-  image: [rect(3, 3, 18, 18, 2.5), circle(8.5, 8.5, 1.5), path('m21 15-5-5L5 21')],
   assistant: [rect(4, 6, 16, 14, 4), path('M12 2v4M8 12h.01M16 12h.01M9 16c1.5 1 4.5 1 6 0')],
   site: [rect(3, 4, 18, 16, 3), path('M3 9h18M7 6.5h.01M10 6.5h.01M13 6.5h.01')],
   exam: [rect(4, 3, 16, 18, 2.5), path('M9 12l2 2 4-4M8 3h8')],
-  skills: [rect(3, 3, 8, 8, 2), circle(17, 7, 4), rect(13, 13, 8, 8, 2), path('m3 21 4-7 4 7z')],
   /* The reference ⋯: three round dots. */
   more: [circle(6, 12, 1.5), circle(12, 12, 1.5), circle(18, 12, 1.5)],
-  search: [circle(11, 11, 7), path('m21 21-4.35-4.35')],
-  // Web activity is distinct from local conversation search.
-  webSearch: [
-    circle(10.5, 10.5, 7),
-    path('M3.5 10.5h14M10.5 3.5c-2 2-3 4.3-3 7s1 5 3 7m0-14c2 2 3 4.3 3 7s-1 5-3 7M16 16l4.5 4.5'),
-  ],
-  activityTools: [
-    path('M4 6h4m4 0h8M4 12h10m4 0h2M4 18h6m4 0h6'),
-    circle(10, 6, 2),
-    circle(16, 12, 2),
-    circle(12, 18, 2),
-  ],
   panel: [rect(3, 3, 18, 18, 3), path('M9 3v18')],
   close: [path('M18 6 6 18M6 6l12 12')],
   knowledge: [
@@ -123,27 +112,8 @@ const GLYPHS = {
       'M12 17v5M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4.76z',
     ),
   ],
-  globe: [circle(12, 12, 9), path('M3 12h18M12 3a13.5 13.5 0 0 1 0 18M12 3a13.5 13.5 0 0 0 0 18')],
   compass: [circle(12, 12, 8.5), path('m15.9 8.1-2.2 5.6-5.6 2.2 2.2-5.6 5.6-2.2Z')],
-  research: [circle(11, 11, 7), path('m21 21-4.35-4.35M8 10.5l2 2 3.5-3.5')],
   analyze: [path('M5 19.5v-6M12 19.5v-15M19 19.5v-10')],
-  paperclip: [
-    path(
-      'm21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48',
-    ),
-  ],
-  // A compact reasoning spark, not the brain or the loading spinner.
-  thinking: [
-    path('M10 3.5c.8 4.1 2.4 5.7 6.5 6.5-4.1.8-5.7 2.4-6.5 6.5-.8-4.1-2.4-5.7-6.5-6.5 4.1-.8 5.7-2.4 6.5-6.5Z'),
-    path('M18.5 13.5v6M15.5 16.5h6M19 3.5v3M17.5 5h3'),
-  ],
-  camera: [
-    path(
-      'M8 5.5 9.5 3.5h5l1.5 2h2A2.5 2.5 0 0 1 20.5 8v10a2.5 2.5 0 0 1-2.5 2.5H6A2.5 2.5 0 0 1 3.5 18V8A2.5 2.5 0 0 1 6 5.5h2Z',
-    ),
-    circle(12, 13, 3.5),
-  ],
-  plus: [path('M12 5v14M5 12h14')],
   microphone: [rect(9, 3, 6, 11, 3), path('M5 10v1a7 7 0 0 0 14 0v-1M12 18v4M8 22h8')],
   arrowUp: [path('M12 19V5M5 12l7-7 7 7')],
   arrowDown: [path('M12 5v14M5 12l7 7 7-7')],
@@ -195,11 +165,7 @@ const GLYPHS = {
       'm19 5-3-3m-6 6L7.5 5.5M12 12l2.5 2.5M6 18l3-3m-1-4 5.5-5.5a2.5 2.5 0 0 1 3.5 3.5L8.5 14a2.5 2.5 0 0 1-3.5-3.5Z',
     ),
   ],
-  skillsBadge: [
-    rect(5, 3.5, 14, 17, 3),
-    path('M8.5 14c1.2-2 2.3-2 3.5 0s2.3 2 3.5 0'),
-    circle(12, 8.5, 1.5),
-  ],
+  ...OPENAI_GLYPHS,
 } satisfies Record<string, readonly IconShape[]>;
 
 export type InterfaceIconName = keyof typeof GLYPHS;
@@ -213,7 +179,10 @@ export function interfaceIconInnerHtml(name: InterfaceIconName): string {
   return getInterfaceIconShapes(name)
     .map(([tag, attrs]) => {
       const attributes = Object.entries(attrs)
-        .map(([key, value]) => `${key}="${value}"`)
+        .map(([key, value]) => {
+          const attribute = key === 'fillRule' ? 'fill-rule' : key === 'clipRule' ? 'clip-rule' : key;
+          return `${attribute}="${value}"`;
+        })
         .join(' ');
       return `<${tag} ${attributes}/>`;
     })
@@ -224,5 +193,8 @@ export function interfaceIcon(name: InterfaceIconName, size?: number): string {
   const body = interfaceIconInnerHtml(name);
   if (!body) return '';
   const dimensions = size === undefined ? '' : ` width="${size}" height="${size}"`;
-  return `<svg viewBox="0 0 24 24"${dimensions} fill="none" stroke="currentColor" stroke-width="${INTERFACE_ICON_STROKE}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${body}</svg>`;
+  const paint = isOpenAIGlyph(name)
+    ? 'fill="currentColor" stroke="none" data-icon-source="openai-apps-sdk"'
+    : `fill="none" stroke="currentColor" stroke-width="${INTERFACE_ICON_STROKE}" stroke-linecap="round" stroke-linejoin="round"`;
+  return `<svg viewBox="0 0 24 24"${dimensions} ${paint} aria-hidden="true" focusable="false">${body}</svg>`;
 }
