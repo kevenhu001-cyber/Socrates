@@ -53,6 +53,7 @@ function PluginDirectoryAddAction({
 
 function PluginDirectoryBody({
   visiblePlugins,
+  sectionTitle,
   popularPlugins,
   newPlugins,
   configured,
@@ -60,6 +61,7 @@ function PluginDirectoryBody({
   onSelectPlugin,
 }: Readonly<{
   visiblePlugins: PluginItem[];
+  sectionTitle: string;
   popularPlugins: PluginItem[];
   newPlugins: PluginItem[];
   configured: boolean;
@@ -77,8 +79,7 @@ function PluginDirectoryBody({
       {popularPlugins.length > 0 ? (
         <section className="ui-page-section plugin-directory-section">
           <div className="ui-page-section-head">
-            <h2>{i18n('plugins.popular', 'Popular')}</h2>
-            <span>{popularPlugins.length}</span>
+            <h2>{sectionTitle}</h2>
           </div>
           <div className="plugin-directory-list">
             {popularPlugins.map((plugin) => (
@@ -97,7 +98,6 @@ function PluginDirectoryBody({
         <section className="ui-page-section plugin-directory-section">
           <div className="ui-page-section-head">
             <h2>{i18n('plugins.new', 'New and notable')}</h2>
-            <span>{newPlugins.length}</span>
           </div>
           <div className="plugin-directory-list">
             {newPlugins.map((plugin) => (
@@ -142,8 +142,9 @@ export function PluginDirectory({
     () => catalog.filter(isInstalled).sort((a, b) => installedRank(a.id) - installedRank(b.id)),
     [catalog],
   );
-  const popularPlugins = visiblePlugins.slice(0, 5);
-  const newPlugins = visiblePlugins.slice(5);
+  const browse = scope === 'public' && !query.trim();
+  const popularPlugins = browse ? visiblePlugins.slice(0, 5) : visiblePlugins;
+  const newPlugins = browse ? visiblePlugins.slice(5) : [];
   const searchLabel = i18n('plugins.search', 'Search plugins');
 
   return (
@@ -179,14 +180,15 @@ export function PluginDirectory({
         </div>
       </PageToolbar>
 
-      <InstalledPluginStrip
+      {browse ? <InstalledPluginStrip
         plugins={installedPlugins}
         onSelect={onSelectPlugin}
         onShowPersonal={() => setScope('personal')}
-      />
+      /> : null}
 
       <PluginDirectoryBody
         visiblePlugins={visiblePlugins}
+        sectionTitle={query.trim() ? i18n('plugins.searchResults', 'Search results') : scope === 'personal' ? i18n('plugins.installed', 'Installed') : i18n('plugins.popular', 'Popular')}
         popularPlugins={popularPlugins}
         newPlugins={newPlugins}
         configured={configured}
