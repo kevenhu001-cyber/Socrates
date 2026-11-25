@@ -743,7 +743,11 @@ test('decideApproval still POSTs after dispose when the store swaps the message 
   const calls = [];
   const originalFetch = globalThis.fetch;
   const originalTimeout = window.setTimeout;
-  window.setTimeout = () => 0; // This test covers the decision POST, not polling.
+  const scheduledPolls = [];
+  window.setTimeout = (callback) => {
+    scheduledPolls.push(callback);
+    return 1;
+  };
   globalThis.fetch = async (url, opts = {}) => {
     calls.push({ url: String(url), method: opts.method || 'GET', body: opts.body });
     if (String(url).includes('/approvals/')) {
@@ -803,6 +807,11 @@ test('decideApproval still POSTs after dispose when the store swaps the message 
     assert.equal(message.toolCalls[0].approval.ui.disabled, true);
     await runtime.decideApproval('tc-codex-1', 'accept');
     assert.equal(calls.filter((c) => c.method === 'POST').length, 1);
+    assert.equal(scheduledPolls.length, 1);
+    const requestCount = calls.length;
+    message = { clientId: 'another-message', toolCalls: [] };
+    await scheduledPolls[0]();
+    assert.equal(calls.length, requestCount, 'lost ownership stops polling before a request');
   } finally {
     globalThis.fetch = originalFetch;
     window.setTimeout = originalTimeout;
