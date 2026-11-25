@@ -654,7 +654,7 @@ test('wide display equations scroll inside the answer on a phone', async ({ page
       clientId: 'wide-equation',
       role: 'assistant',
       type: 'assistant',
-      rawText: 'A long equation:\n\n$' + formula + '$$',
+      rawText: 'A long equation:\n\n$$' + formula + '$$',
       html: '<p>A long equation:</p>',
     }],
   });
