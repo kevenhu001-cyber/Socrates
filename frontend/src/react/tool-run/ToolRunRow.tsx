@@ -21,6 +21,8 @@ interface ToolRunRowProps {
   messageId?: string;
   readOnly?: boolean;
   live: boolean;
+  /** Pending approvals have their own visible surface outside the activity. */
+  approvalOutside?: boolean;
 }
 
 /** The same sentence-safe position owns the trigger, its detail and its actions. */
@@ -29,6 +31,7 @@ export const ToolRunRow = memo(function ToolRunRow({
   messageId,
   readOnly,
   live,
+  approvalOutside,
 }: ToolRunRowProps) {
   useLocaleRefresh();
   const view = toolRunView(call);
@@ -102,7 +105,7 @@ export const ToolRunRow = memo(function ToolRunRow({
           </div>
         ) : null}
       </WebUiTheme>
-      {view.approval ? (
+      {view.approval && !approvalOutside ? (
         <ToolRunApproval
           view={view.approval}
           messageId={messageId ?? ''}
