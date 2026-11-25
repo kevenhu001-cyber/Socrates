@@ -535,47 +535,6 @@
 /* Tables and formulas are rendered only once the splitter has closed them
    (isStableMarkdownPrefix): they appear whole, with no per-glyph animation. */
 
-/* KaTeX dark theme overrides */
-.katex {
-  font-size: 1.05em;
-}
-/* UI-align: KaTeX display scroll — the horizontal scrollbar stays
-   invisible until the formula is hovered (open-webui pattern), so
-   wide equations don't carry a permanent gray bar underneath. */
-.katex-display {
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding: 4px 0;
-  margin: 8px 0;
-}
-@supports (scrollbar-width: thin) {
-  .katex-display {
-    scrollbar-width: thin;
-  }
-}
-@supports (scrollbar-color: transparent transparent) {
-  .katex-display {
-    scrollbar-color: transparent transparent;
-  }
-}
-@supports (scrollbar-color: hsl(var(--text-000) / 0.25) transparent) {
-  .katex-display:hover {
-    scrollbar-color: hsl(var(--text-000) / 0.25) transparent;
-  }
-}
-.katex-display::-webkit-scrollbar {
-  height: 5px;
-}
-.katex-display::-webkit-scrollbar-thumb {
-  background: transparent;
-  border-radius: 3px;
-}
-.katex-display:hover::-webkit-scrollbar-thumb {
-  background: hsl(var(--text-000) / 0.25);
-}
-.katex-display > .katex {
-  font-size: 1.1em;
-}
 /* Streaming math that is still arriving: render/markdown.ts neutralizes
    KaTeX's own .katex-error spans (red, inline color:#cc0000) into this
    class, so a half-typed formula reads as calm, dimmed live text instead
