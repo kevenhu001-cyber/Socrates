@@ -234,6 +234,8 @@ const USER_MESSAGES: Record<string, string> = {
   arguments_schema_failed: '工具参数缺少必填字段或类型不符，已附上字段说明请模型修正。',
   arguments_too_large: '工具参数超出单次调用上限，已请模型拆分成多次调用。',
   duplicate_tool_call: '模型重复了同一个工具调用，本次已跳过执行。',
+  tool_budget_exhausted: '本轮工具调用次数已达上限，将根据现有结果继续回答。',
+  tool_time_budget_exhausted: '本轮工具时间预算已用尽，将根据现有结果继续回答。',
   tool_not_available: '该工具未启用或不可用，已告知模型可用的工具。',
   unknown_tool: '该工具不存在，已告知模型可用的工具。',
   visual_spec_invalid: '可视化规格有字段不符合要求，已附上正确示例请模型修正。',

@@ -23,6 +23,8 @@
  * the loop without a code change.
  */
 
+import { createHash } from 'node:crypto';
+
 /** Consecutive same-tool failures tolerated before that tool steps aside. */
 const DEFAULT_PER_TOOL_FAILURE_LIMIT = 3;
 
@@ -73,8 +75,8 @@ export interface ToolTurnPolicy {
   disabledReason(tool: string): string | null;
   /** True when this exact (tool, arguments) pair already ran this turn. */
   isDuplicate(tool: string, argumentsHash: string): boolean;
-  /** Count a call that is about to execute. */
-  registerCall(tool: string, argumentsHash: string): void;
+  /** Reserve one unique call within the remaining turn budget; null on success. */
+  registerCall(tool: string, argumentsHash: string): { code: string; message: string } | null;
   /* Reverse of registerCall for a call that FAILED: the (tool,args)
      pair must not stay in seenCalls or a legitimate same-arguments
      retry after a transient error gets rejected as a duplicate.
@@ -165,8 +167,18 @@ export function createToolTurnPolicy(options: ToolTurnPolicyOptions = {}): ToolT
     },
 
     registerCall(tool: string, argumentsHash: string) {
-      seenCalls.add(`${tool}:${argumentsHash}`);
+      const key = `${tool}:${argumentsHash}`;
+      if (seenCalls.has(key)) {
+        return {
+          code: 'duplicate_tool_call',
+          message: 'This exact call already ran in this turn, so it was not executed again. Use the previous result, change the arguments materially, or continue in prose.',
+        };
+      }
+      const exhausted = budgetExhausted();
+      if (exhausted) return exhausted;
+      seenCalls.add(key);
       callsUsed += 1;
+      return null;
     },
 
     unmarkCall(tool: string, argumentsHash: string) {
@@ -227,22 +239,18 @@ export function createToolTurnPolicy(options: ToolTurnPolicyOptions = {}): ToolT
  * are recognised as the same call. Falls back to the raw string form when a
  * value cannot be serialized.
  *
- * The key is bounded but NOT a bare prefix: large argument objects
- * (code bodies up to 80 KB, agent tasks up to 20 KB) that differ only
- * past the 4 KB mark would otherwise collide and get wrongly rejected
- * as duplicates. Length plus a head/tail sample keeps the key short
- * while still distinguishing tail edits.
+ * Hash the entire canonical value, not a prefix or head/tail sample.
+ * Middle edits in long Python programs must not be mistaken for duplicates.
+ * Only the fixed-size digest is retained in the per-turn seen-call set.
  */
 export function hashToolArguments(value: unknown): string {
+  let serialized: string;
   try {
-    const serialized = stableStringify(value);
-    return serialized.length <= 4096
-      ? serialized
-      : `${serialized.length}:${serialized.slice(0, 3584)}…${serialized.slice(-512)}`;
+    serialized = stableStringify(value);
   } catch {
-    const raw = String(value);
-    return raw.length <= 4096 ? raw : `${raw.length}:${raw.slice(0, 3584)}…${raw.slice(-512)}`;
+    serialized = String(value);
   }
+  return createHash('sha256').update(serialized).digest('hex');
 }
 
 function stableStringify(value: unknown): string {
