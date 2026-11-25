@@ -531,15 +531,22 @@ body.workspace-active #appShell .ui-page-card.project-card {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
   gap: var(--ui-space-sm);
-  margin-bottom: var(--ui-space-xl);
+  margin: 0 0 var(--ui-space-xl);
 }
 
 #appShell .scheduled-recommendation {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
   min-height: 96px;
   padding: var(--ui-space-lg);
   border: 1px solid var(--ui-border-subtle);
   border-radius: var(--ui-radius-xl);
   background: var(--ui-bg-raised);
+  color: var(--ui-text-primary);
+  text-align: left;
+  cursor: pointer;
 }
 
 #appShell .scheduled-recommendation:hover {
@@ -548,23 +555,70 @@ body.workspace-active #appShell .ui-page-card.project-card {
 }
 
 #appShell .scheduled-recommendation-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 40px;
   width: 40px;
   height: 40px;
+  padding: 7px;
+  border: 1px solid var(--ui-border-subtle);
   border-radius: var(--ui-radius-md);
   background: var(--ui-bg-surface);
+  color: var(--ui-text-secondary);
 }
-
+#appShell .scheduled-recommendation-icon svg {
+  width: 24px;
+  height: 24px;
+}
+#appShell .scheduled-recommendation-copy {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
 #appShell .scheduled-recommendation-copy strong {
+  overflow: hidden;
+  color: var(--ui-text-primary);
   font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-semibold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-
 #appShell .scheduled-recommendation-copy small {
+  display: -webkit-box;
+  overflow: hidden;
   font-size: var(--ui-font-size-xs);
   color: var(--ui-text-tertiary);
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
-
 #appShell .scheduled-recommendation-add {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  min-height: 32px;
+  border: 0;
+  border-radius: var(--ui-radius-pill);
+  background: transparent;
   color: var(--ui-text-primary);
+  font-size: 22px;
+  font-weight: var(--ui-font-weight-regular);
+  visibility: visible;
+}
+#appShell .scheduled-recommendation-add:hover {
+  background: var(--ui-bg-hover);
+  color: var(--ui-text-primary);
+}
+.scheduled-recommendation:hover .scheduled-recommendation-add {
+  background: var(--ui-bg-hover);
 }
 
 #appShell .scheduled-task-list.ui-collection {
@@ -832,6 +886,18 @@ body.workspace-active #appShell .ui-page-card.project-card {
   #appShell .ui-project-grid,
   #appShell .scheduled-recommendations {
     grid-template-columns: minmax(0, 1fr);
+  }
+  #appShell .scheduled-recommendations {
+    gap: 10px;
+  }
+  #appShell .scheduled-recommendation {
+    gap: 10px;
+  }
+  #appShell .scheduled-recommendation-copy {
+    gap: 3px;
+  }
+  #appShell .scheduled-recommendation-add {
+    font-size: 28px;
   }
 
   body.workspace-active #appShell .ui-page-card.project-card,
