@@ -4,6 +4,7 @@
 import { randomUUID } from 'node:crypto';
 import {
   applyProviderControls,
+  modelCapability,
   isPermanentQuotaError,
   permitsCompatibilityFallback,
   providerHeaders,
@@ -112,7 +113,7 @@ export async function streamChatCompletion(
           const errBody = await response.text().catch(() => '');
           if (response.status === 400) {
             console.warn('[LLM] rejected stream request', JSON.stringify({
-              model: opts.model,
+              capability: modelCapability(opts.model).id,
               variant: variant.reason,
               fields: Object.keys(variant.body),
               toolCount: Array.isArray(tools) ? tools.length : 0,
