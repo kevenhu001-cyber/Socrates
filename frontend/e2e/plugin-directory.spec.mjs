@@ -90,6 +90,28 @@ test('plugin directory search and card surfaces follow shared responsive tokens'
   expect(overflow).toBeLessThanOrEqual(1);
 });
 
+for (const theme of ['light', 'dark']) {
+  test(`plugin action ink and official glyphs stay crisp in ${theme} mode`, async ({ page }) => {
+    await page.addInitScript((value) => localStorage.setItem('socrates-theme', value), theme);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openConnectedPluginDetail(page);
+    await expect(page.locator('html')).toHaveAttribute('data-mode', theme);
+    const ink = theme === 'dark' ? 'rgb(255, 255, 255)' : 'rgb(0, 0, 0)';
+    const inverse = theme === 'dark' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
+    await expect(page.locator('#plugin-detail-title')).toHaveCSS('color', ink);
+    const back = page.locator('.plugin-detail-back-btn');
+    await expect(back).toHaveCSS('color', ink);
+    await expect(back.locator('svg')).toHaveCSS('color', ink);
+    const primary = page.locator('.plugin-detail-btn-primary');
+    await expect(primary).toHaveCSS('color', inverse);
+    await expect(primary).toHaveCSS('background-color', ink);
+    await expect(page.locator('.plugin-detail-btn-secondary')).toHaveCSS('color', ink);
+    await expect(page.locator('.plugin-detail-prompt-card svg').first()).toHaveCSS('color', ink);
+    const description = await page.locator('.plugin-detail-desc').first().evaluate((node) => getComputedStyle(node).color);
+    expect(description).not.toBe(ink);
+  });
+}
+
 test('plugin detail header and actions fit a phone viewport', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 780 });
   await openConnectedPluginDetail(page);
