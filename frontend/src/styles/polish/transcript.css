@@ -38,16 +38,14 @@
      reaches, so the label and copy action stayed below AA on phones. */
     opacity: 1;
   }
-}
-@media (max-width: 768px) {
+
   #appShell#appShell .msg-body .code-block-header-lang {
     color: var(--ui-text-secondary);
     font-family: var(--font-sans);
     font-weight: var(--ui-font-weight-medium);
     text-transform: none;
   }
-}
-@media (max-width: 768px) {
+
   #appShell#appShell .msg-body pre:not(.tool-inline-detail-value, .viz-code-pane) {
     border-radius: var(--ui-radius-lg);
     border: 1px solid var(--ui-border-code);
@@ -60,8 +58,7 @@
     font-size: var(--ui-font-size-sm);
     line-height: 1.5;
   }
-}
-@media (max-width: 768px) {
+
   #appShell#appShell .msg-body .code-block-header + pre {
     border-top: none;
     border-top-left-radius: 0;
@@ -70,15 +67,13 @@
     border-bottom-right-radius: var(--ui-radius-lg);
     margin-top: 0;
   }
-}
-@media (max-width: 768px) {
+
   #appShell .msg-body :not(pre) > code {
     background: var(--ui-bg-chip);
     border-radius: var(--ui-radius-xs);
     padding: 1px 0.3em;
   }
-}
-@media (max-width: 768px) {
+
   #appShell#appShell .msg-body pre code {
     background: transparent;
     color: inherit;
