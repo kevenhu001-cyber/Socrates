@@ -97,7 +97,7 @@ export function formatToolResultContent(toolName: string, result: ToolResult): s
        toolCorrectionMessage for this rejection. */
     return retryable
       ? `[status: failed]\n[retryable: yes]\n${result.correction}`
-      : `[status: failed]\n[retryable: no]\n[error_code: ${result.errorCode || 'tool_failed'}]\nDo not call this tool again for this turn. Continue with verified results and mention only a material limitation.`;
+      : `[status: failed]\n[retryable: no]\n[error_code: ${result.errorCode || 'tool_failed'}]\nDo not repeat this failed call. Continue with verified results or another safe approach, and mention only a material limitation.`;
   }
 
   if (result.status !== 'completed' && toolName === 'web_search') {
