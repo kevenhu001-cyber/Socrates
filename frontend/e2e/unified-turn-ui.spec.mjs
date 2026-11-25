@@ -333,3 +333,32 @@ test('stopped workspace steps retain an unconfirmed outcome', async ({ page }) =
   await expect(run.locator('[data-step-id="command"]')).toHaveAttribute('data-state', 'stopped');
   await expect(run.locator('[data-step-id="command"] .agent-step-meta')).toContainText('Stopped');
 });
+
+
+test('collapsed search activity preserves three unique site favicons', async ({ page }) => {
+  await prepareChatWorkbench(page, { messages: [{
+    clientId: 'search-favicons',
+    role: 'assistant',
+    rawText: 'Search complete.',
+    toolCalls: [{
+      id: 'search-favicons-call',
+      name: 'web_search',
+      textOffset: 0,
+      status: 'completed',
+      input: { query: 'sources' },
+      results: [
+        { title: 'A', url: 'https://openai.com/a' },
+        { title: 'A again', url: 'https://openai.com/b' },
+        { title: 'B', url: 'https://github.com/b' },
+        { title: 'C', url: 'https://vercel.com/c' },
+      ],
+    }],
+  }] });
+  const toggle = page.getByTestId('turn-activity-toggle');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(toggle.getByTestId('tool-site-mark')).toHaveCount(3);
+  await expect(toggle.getByTestId('tool-site-mark').first()).toHaveAttribute('title', 'openai.com');
+  await expect(toolRow(page, 'search-favicons-call')).toBeHidden();
+  await toggle.click();
+  await expect(toolRow(page, 'search-favicons-call')).toBeVisible();
+});
