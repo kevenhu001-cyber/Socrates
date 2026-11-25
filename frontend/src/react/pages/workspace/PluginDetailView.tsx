@@ -6,7 +6,8 @@ import { getConnectorIconMarkup } from '../../../connector-icons';
 import type { PluginDetailViewProps } from './pluginDetail.types';
 import { PluginDetailHeader } from './PluginDetailHeader';
 import { PluginDetailSections } from './PluginDetailSections';
-import { pluginDescription } from './pluginDetailContent';
+import { detailText, pluginDescription } from './pluginDetailContent';
+import { showToast } from '../../../legacy/toast.ts';
 import { reportSwallow as reportEmptyCatch } from '../../../util/reportSwallow.ts';
 
 export function PluginDetailView({
@@ -23,6 +24,8 @@ export function PluginDetailView({
     ? plugin.capabilities.filter(Boolean)
     : [];
 
+  const canUseInChat = isConnected && connectable && Boolean(plugin.chatActions?.length);
+
   const handleConnect = () => {
     if (plugin.authType === 'api_key' || plugin.authType === 'custom_credential') {
       dispatch.openPluginForm(plugin.id);
@@ -34,7 +37,7 @@ export function PluginDetailView({
   const handleManage = () => dispatch.openPluginForm(plugin.id);
 
   const handleUseInChat = async (prompt?: string) => {
-    if (!isConnected || !connectable || plugin.chatActions?.length === 0) return;
+    if (!canUseInChat) return;
     try {
       /* Reset first because starting a new chat clears the composer plugin
          selection. A false result means the user cancelled confirmation. */
@@ -62,7 +65,7 @@ export function PluginDetailView({
         'empty catch: react/pages/workspace/PluginDetailView.tsx',
         'expected',
       );
-      // Best effort; worst case the user lands on a plain new chat.
+      showToast(detailText('Could not open this app in chat. Please try again.', '无法在对话中打开此插件，请重试。'), { variant: 'error' });
     }
   };
 
@@ -75,7 +78,7 @@ export function PluginDetailView({
         plugin={plugin}
         connectable={connectable}
         isConnected={isConnected}
-        canUseInChat={plugin.chatActions?.length !== 0}
+        canUseInChat={canUseInChat}
         renderMark={renderMark}
         onBack={onBack}
         onConnect={handleConnect}
@@ -89,7 +92,7 @@ export function PluginDetailView({
         plugin={plugin}
         capabilities={capabilities}
         connectable={connectable}
-        onUseExample={isConnected && connectable ? (prompt) => { void handleUseInChat(prompt); } : undefined}
+        onUseExample={canUseInChat ? (prompt) => { void handleUseInChat(prompt); } : undefined}
       />
     </PageFrame>
   );
