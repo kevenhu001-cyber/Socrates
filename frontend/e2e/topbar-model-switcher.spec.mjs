@@ -152,3 +152,22 @@ test('switcher exposes the React model label and composer effort stays in sync',
   await expect(pop).toBeVisible();
   await expect(effort.locator('#effortTrigger')).toHaveAttribute('aria-expanded', 'true');
 });
+
+
+test('phone model menu stays above the composer after a viewport resize', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator('#composerRoot .rich-composer-editor').focus();
+  const trigger = page.locator('#effortTrigger');
+  await trigger.click();
+  const pop = page.locator('.chat-config-pop');
+  await pop.getByRole('button', { name: /返回模型列表/ }).click();
+  for (const height of [844, 600, 500]) {
+    await page.setViewportSize({ width: 390, height });
+    await expect.poll(async () => {
+      const [a, b] = await Promise.all([trigger.boundingBox(), pop.boundingBox()]);
+      if (!a || !b) return false;
+      return b.y >= 0 && b.x >= 0 && b.x + b.width <= 391 &&
+        Math.abs(a.y - b.y - b.height - 8) <= 2;
+    }).toBe(true);
+  }
+});
