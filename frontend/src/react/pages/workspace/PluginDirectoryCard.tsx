@@ -1,5 +1,6 @@
 import { Icon } from '../../../legacy/Icon';
 import { Button } from '../../ui/shadcn/button';
+import { Button as UiButton } from '../../ui/Button';
 import { i18n, MoreIcon, PlusIcon } from './workspaceUi';
 import { ConnectorMark } from './ConnectorMark';
 import type { useWorkspaceDispatch } from './workspace.hooks';
@@ -99,7 +100,7 @@ export function PluginDirectoryCard({
       data-connector-id={plugin.id}
       key={plugin.id}
     >
-      <button
+      <UiButton
         type="button"
         className="plugin-directory-card-main"
         onClick={() => onSelect(plugin.id)}
@@ -117,7 +118,7 @@ export function PluginDirectoryCard({
         </div>
         <p className="plugin-directory-card-desc">{description}</p>
       </div>
-      </button>
+      </UiButton>
       <div className="plugin-directory-row-action">
         <PluginConnectionAction plugin={plugin} configured={configured} dispatch={dispatch} />
       </div>
