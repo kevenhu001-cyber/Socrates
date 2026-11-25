@@ -113,7 +113,16 @@ test('retrying a failed first turn sends the original text and attachment', asyn
   await attachTextFile(page, 'submitted.txt', 'submitted attachment');
   await page.locator('#composerRoot .rich-composer-editor').first().fill('Read my original notes');
   await page.evaluate(() => window.startSession());
-  await page.locator('#msgList .msg-error .msg-retry-btn').last().click();
+  const failure = page.locator('#msgList .msg-error[role="alert"]').last();
+  await expect(failure.locator('.msg-status-title')).toBeVisible();
+  await expect(failure.locator('.msg-status-icon')).toBeVisible();
+  const action = failure.locator('.msg-retry-btn');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(action).toBeVisible();
+  const [cardBox, buttonBox] = await Promise.all([failure.boundingBox(), action.boundingBox()]);
+  expect(buttonBox.x + buttonBox.width).toBeLessThanOrEqual(cardBox.x + cardBox.width + 1);
+  expect(buttonBox.y + buttonBox.height).toBeLessThanOrEqual(cardBox.y + cardBox.height + 1);
+  await action.click();
   await expect.poll(() => requests.length).toBe(2);
   const user = requests[1].messages.filter((message) => message.role === 'user').pop();
   expect(JSON.stringify(user.content)).toContain('Read my original notes');
