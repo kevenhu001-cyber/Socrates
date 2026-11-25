@@ -10,6 +10,7 @@ import {
   approvalViewOf,
   buildTurnLayout,
   groupOutputCalls,
+  runStartedAt,
   stripLegacyToolHtml,
   toolRunStateOf,
   type ToolCallRecord,
@@ -274,9 +275,14 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
   const hasRunningRow = hasRunningToolRow(segments);
   const hasAnswerProse = hasAnswerText(segments, storedProse);
   const hasSettledTool = calls.some((c) => toolRunStateOf(c) === 'done');
-  const activeTool =
-    calls.find((call) => toolRunStateOf(call) === 'awaiting') ||
-    calls.find((call) => toolRunStateOf(call) === 'running');
+  // The collapsed activity header represents the most recently started
+  // active call, not whichever running call happened to appear first.
+  const activeTool = calls.reduce<ToolCallRecord | undefined>((latest, call) => {
+    const state = toolRunStateOf(call);
+    if (state !== 'awaiting' && state !== 'running') return latest;
+    if (!latest || runStartedAt(call) >= runStartedAt(latest)) return call;
+    return latest;
+  }, undefined);
   const presentation = deriveTurnPresentationState(message, {
     live: isLive,
     answerStarted: hasAnswerProse,
