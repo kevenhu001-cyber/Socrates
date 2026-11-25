@@ -179,6 +179,8 @@ export function permitsCompatibilityFallback(body: string, reason: string): bool
   const field =
     reason === 'provider-400-without-priority'
       ? 'service_tier|priority'
+      : reason === 'provider-400-with-temperature'
+        ? 'temperature'
       : reason === 'provider-400-with-tools'
         ? 'tools?|tool_choice|function.call'
         : reason === 'provider-400-with-stream-options'
