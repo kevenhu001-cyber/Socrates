@@ -2,7 +2,8 @@ import { Input as ShadcnInput } from '../../ui/shadcn/input';
 import { Label as ShadcnLabel } from '../../ui/shadcn/label';
 import { Checkbox } from '../../ui/shadcn/checkbox';
 import { Button as UiButton } from '../../ui/Button';
-import { Download, Pencil, Trash2 } from 'lucide-react';
+import { Download } from 'lucide-react';
+import { Icon } from '../../../legacy/Icon';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,16 +47,13 @@ function LibraryItemName({
     );
   }
   return (
-    <strong
-      className="library-item-name"
-      onClick={(e) => {
-        e.stopPropagation();
-        dispatch.startRename(item.id, itemKey);
-      }}
-      title={i18n('library.clickToRename', 'Click to rename')}
-    >
+    <button type="button" className="library-item-name library-open-item" title={name}
+      onClick={(event) => {
+        event.stopPropagation();
+        dispatch.openItem(item.id, item.kind || 'file', itemKey);
+      }}>
       {name}
-    </strong>
+    </button>
   );
 }
 
@@ -86,7 +84,7 @@ function LibraryRowActions({
           className="min-h-(--ui-control-touch)"
           onClick={() => dispatch.startRename(item.id, itemKey)}
         >
-          <Pencil aria-hidden="true" />
+          <Icon name="edit" size={16} />
           {i18n('library.rename', 'Rename')}
         </DropdownMenuItem>
         {tab === 'files' && (
@@ -104,7 +102,7 @@ function LibraryRowActions({
               variant="destructive"
               onClick={() => dispatch.deleteFile(item.id)}
             >
-              <Trash2 aria-hidden="true" />
+              <Icon name="trash" size={16} />
               {i18n('common.delete', 'Delete')}
             </DropdownMenuItem>
           </>
@@ -143,7 +141,7 @@ function LibraryItemRow({
           aria-label={'Select ' + name}
         />
       </ShadcnLabel>
-      <span
+      <button type="button" aria-label={name}
         className={
           'workspace-row-icon library-file-icon library-file-' +
           getFileTypeCategory(item) +
@@ -152,7 +150,7 @@ function LibraryItemRow({
         onClick={() => dispatch.openItem(item.id, item.kind || 'file', itemKey)}
       >
         {fileTypeGlyph(item)}
-      </span>
+      </button>
       <div
         className="workspace-row-copy"
         onClick={() => dispatch.openItem(item.id, item.kind || 'file', itemKey)}
