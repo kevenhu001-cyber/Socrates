@@ -345,6 +345,25 @@ test('external link favicons have one chat style owner and retired chat tokens s
   );
 });
 
+test('artifact preview, download and retry use one stylesheet owner', async () => {
+  const [owner, ...legacy] = await Promise.all([
+    read('src/styles/components/tool-card.css'),
+    read('src/styles/legacy/11-agent-tools.css'),
+    read('src/styles/legacy/12-tutor-inline-tools.css'),
+    read('src/styles/legacy/16-final-contract.css'),
+  ]);
+  for (const selector of [
+    '.exec-artifact {',
+    '.exec-artifact-html-frame {',
+    '.exec-artifact-link {',
+    '.artifact-error {',
+    '.tool-inline-attachments:empty {',
+  ]) {
+    assert.ok(owner.includes(selector), `Missing artifact owner: ${selector}`);
+    assert.ok(legacy.every((css) => !css.includes(selector)), `Duplicate artifact style: ${selector}`);
+  }
+});
+
 test('legacy button utilities use paint-only press feedback and tag editor has one input owner', async () => {
   const [buttons, menu, overlays] = await Promise.all([
     read('src/styles/polish/buttons.css'),
