@@ -616,6 +616,9 @@
   box-shadow: none;
   background: transparent;
 }
-#appShell .viz-actions {
+/* Iframe artifacts expose no overlay actions. The Mermaid card is not an
+   iframe: its Preview / Code toggle lives in the header and is its only
+   control surface, so it must stay reachable. */
+#appShell .viz:not([data-viz-kind='mermaid']) .viz-actions {
   display: none;
 }

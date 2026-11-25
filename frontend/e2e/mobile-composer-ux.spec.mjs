@@ -86,13 +86,16 @@ test('phone composer hit areas reach into the visual gap without stealing adjace
   await waitForAppShell(page);
   const send = page.locator('#composerPrimaryBtn');
   const editor = page.locator('#composerRoot .rich-composer-editor');
-  const actionFill = 'rgb(61, 102, 192)';
+  /* The primary action is the same ink disc in every state; readiness is
+     carried by opacity (0.5 disabled, 1 enabled), so the checks read that
+     rather than a colour swap. */
+  const idleOpacity = '0.5';
   await expect(send).toBeDisabled();
-  await expect(send).not.toHaveCSS('background-color', actionFill);
+  await expect(send).toHaveCSS('opacity', idleOpacity);
   await expect(page.locator('#composerToolsBtn')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
   await editor.fill('A question');
   await expect(send).toBeEnabled();
-  await expect(send).toHaveCSS('background-color', actionFill);
+  await expect(send).toHaveCSS('opacity', '1');
   const targets = await page.evaluate(() => {
     const mic = document.getElementById('composerMicBtn').getBoundingClientRect();
     const send = document.getElementById('composerPrimaryBtn').getBoundingClientRect();

@@ -96,8 +96,8 @@ test('light conversation surface keeps readable brand and action colours', async
      through React; a raw fill followed by an immediate read sees the
      disabled `fill` role instead. */
   await expect(page.locator('#composerPrimaryBtn')).toHaveAttribute('data-ready', 'true');
-  /* The disc cross-fades from the disabled fill role to the action colour;
-     poll until the transition settles so the snapshot is not mid-blend. */
+  /* The primary action is ink, not a brand colour (docs/design/
+     chatgpt-alignment.md §3.5): black in light mode, near-white in dark. */
   await expect
     .poll(async () =>
       parseRgb(
@@ -106,7 +106,7 @@ test('light conversation surface keeps readable brand and action colours', async
           .evaluate((el) => getComputedStyle(el).backgroundColor),
       ),
     )
-    .toEqual([61, 102, 192]);
+    .toEqual([13, 13, 13]);
 
   const palette = await snapshotPalette(page);
   expect(palette.bubble).not.toBeNull();
@@ -129,26 +129,30 @@ test('light conversation surface keeps readable brand and action colours', async
   expect(avatarBg).toEqual([15, 127, 107]);
   expect(contrast(avatarFg, avatarBg)).toBeGreaterThanOrEqual(4.5);
 
-  // The light composer has a solid edge and a visible editor focus cue.
+  /* The light composer has a solid edge and a visible editor focus cue: the
+     idle sheet is flat, and focus adds the inset hairline (no cast shadow). */
   expect(idlePalette.composer.shadow).toBe('none');
   expect(idlePalette.composerEdge.borderWidth).toBe('1px');
-  expect(palette.composer.shadow).toBe('none');
+  expect(palette.composer.shadow).toMatch(/inset$/);
   expect(palette.composerEdge.borderColor).not.toBe(idlePalette.composerEdge.borderColor);
 
-  // A control glyph must clear WCAG's 3:1 non-text contrast on blue.
+  // A control glyph must clear WCAG's 3:1 non-text contrast on the ink disc.
   const sendBg = parseRgb(palette.send.background);
   const sendFg = parseRgb(palette.send.color);
   expect(sendBg).not.toBeNull();
-  expect(sendBg).toEqual([61, 102, 192]);
+  expect(sendBg).toEqual([13, 13, 13]);
   expect(contrast(sendFg, sendBg)).toBeGreaterThanOrEqual(3);
 
   await page.locator('#composerToolsBtn').click();
   const menu = page.locator('#composerToolsMenu');
   await expect(menu).toBeVisible();
-  await expect(menu).toHaveCSS('box-shadow', / 0px 0px 0px 1px$/);
+  /* The menu lifts off a white page with a ring plus contact and ambient
+     layers (docs/design/chatgpt-alignment.md §3.7); a bare 1px ring read as
+     flat against the canvas. */
+  await expect(menu).toHaveCSS('box-shadow', /0px 0px 0px 1px.*0px 2px 6px.*0px 12px 28px/);
 });
 
-test('dark conversation surface retains the blue send control', async ({ page }) => {
+test('dark conversation surface retains the ink send control', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'dark' });
   await page.addInitScript(() => {
     try {
@@ -171,7 +175,7 @@ test('dark conversation surface retains the blue send control', async ({ page })
           .evaluate((el) => getComputedStyle(el).backgroundColor),
       ),
     )
-    .toEqual([61, 102, 192]);
+    .toEqual([237, 237, 237]);
 
   const palette = await snapshotPalette(page);
   const bubbleBg = parseRgb(palette.bubble.background);
@@ -179,15 +183,16 @@ test('dark conversation surface retains the blue send control', async ({ page })
   expect(luminance(bubbleBg)).toBeLessThan(0.2);
   expect(contrast(bubbleFg, bubbleBg)).toBeGreaterThanOrEqual(4.5);
 
-  // Blue actions remain stable across mode changes.
+  /* The primary action stays the ink disc in both modes, so its fill flips
+     with the mode rather than holding one brand colour. */
   const sendBg = parseRgb(palette.send.background);
   const sendFg = parseRgb(palette.send.color);
   expect(sendBg).not.toBeNull();
-  expect(sendBg).toEqual([61, 102, 192]);
+  expect(sendBg).toEqual([237, 237, 237]);
   expect(contrast(sendFg, sendBg)).toBeGreaterThanOrEqual(3);
 });
 
-test('mobile light conversation inverts header controls and the canvas fade', async ({ page }) => {
+test('mobile light conversation inverts header controls over the canvas', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'light' });
   await page.addInitScript(() => {
     try {
@@ -200,7 +205,9 @@ test('mobile light conversation inverts header controls and the canvas fade', as
   });
   await expect(page.locator('html')).toHaveAttribute('data-mode', 'light');
   const palette = await snapshotPalette(page);
-  expect(palette.composer.shadow).toBe('none');
+  /* Phone resting sheet: the edge is a 1px inset hairline on the flat fill,
+     with no cast shadow. */
+  expect(palette.composer.shadow).toMatch(/inset$/);
   expect(palette.composerEdge.borderWidth).toBe('1px');
 
   const mobile = await page.evaluate(() => {
@@ -211,12 +218,9 @@ test('mobile light conversation inverts header controls and the canvas fade', as
       return Object.fromEntries(props.map((property) => [property, computed[property]]));
     };
     return {
-      inputBar: pick('.chat-input-bar', ['backgroundImage']),
-      // The canvas the composer fades into, read live: the assertion used to
-      // hard-code white, which was the light page colour before the page
-      // moved to --ui-bg-page (#f8f8f8). Pinning the token keeps the intent
-      // ("the fade lands on the page, not on a black band") and makes the
-      // contrast checks run against the colour that is actually rendered.
+      /* The legacy `.chat-input-bar` fade was retired with the flat composer
+         (2026-11-21): the bar is a transparent layout box on the page now. */
+      inputBar: pick('.chat-input-bar', ['backgroundImage', 'backgroundColor']),
       canvas: getComputedStyle(document.querySelector('.main-content')).backgroundColor,
       openBtn: pick('#sidebarOpenBtn', ['backgroundColor', 'color']),
       findBtn: pick('#findBtn', ['color']),
@@ -228,9 +232,10 @@ test('mobile light conversation inverts header controls and the canvas fade', as
   expect(mobile.findBtn).not.toBeNull();
   expect(mobile.shareBtn).not.toBeNull();
 
-  // The composer fade must land on the phone canvas, not a black band.
-  expect(mobile.inputBar.backgroundImage).toContain(`${mobile.canvas} 24px`);
-  expect(mobile.inputBar.backgroundImage).not.toContain('rgb(0, 0, 0) 24px');
+  // The composer bar adds no band of its own; the page colour shows through.
+  expect(mobile.inputBar.backgroundImage).toBe('none');
+  expect(mobile.inputBar.backgroundColor).toBe('rgba(0, 0, 0, 0)');
+  expect(mobile.canvas).toBe('rgb(255, 255, 255)');
 
   // Header controls are borderless glyphs on the page. The drawer toggle is
   // the reference's quiet secondary grey (#8f8f8f on the #fcfcfc canvas), an

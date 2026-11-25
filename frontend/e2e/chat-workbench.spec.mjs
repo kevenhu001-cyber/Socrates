@@ -78,7 +78,9 @@ test('desktop chat workbench keeps shell, transcript and composer in one viewpor
   expect(contract.mainBackground).toBe('rgb(0, 0, 0)');
   expect(contract.sidebarBackground).toBe('rgba(0, 0, 0, 0)');
   expect(contract.sidebarBorder).toBe('0px');
-  expect(contract.topbarHeight).toBeGreaterThanOrEqual(50);
+  /* The 2026-11-24 alignment pass settled the desktop bar at 48px
+     (docs/design/chatgpt-alignment.md). */
+  expect(contract.topbarHeight).toBe(48);
 
   const messageLayout = await page.evaluate(() => {
     const shell = document.getElementById('appShell');
@@ -212,9 +214,9 @@ test('desktop idle composer keeps its edge controls circular and optically align
     };
   });
 
-  /* Two-storey ask-box: 16px top padding + 26px editor line + 8px gap +
-     36px control rail + 8px bottom = 94px. */
-  expect(geometry.wrap?.height).toBe(94);
+  /* The inline capsule is one 52px row: 8px padding either side plus the
+     36px control rail. The 16px top padding of the stacked sheet is gone. */
+  expect(geometry.wrap?.height).toBe(52);
   expect(geometry.wrap?.radius).toBe('24px');
   /* The reference's composer controls are 36px circles; the plus and the
      primary action share one optical row with the dictation control. */
@@ -265,14 +267,19 @@ test('mobile chat workbench keeps a focusable multiline composer without horizon
     };
   });
   await editor.focus();
+  await expect(wrap).toHaveClass(/composer-focused/);
+  /* Focus expands the collapsed one-row capsule into the two-row card, so
+     the single-row height is measured against that focused state. */
+  await page.waitForTimeout(120);
+  const focusedIdleHeight = await wrap.evaluate((node) => node.getBoundingClientRect().height);
+  expect(focusedIdleHeight).toBeGreaterThan(initial.height);
   /* The collapsed-row probe measures at the pill-inclusive editor width
      (~100px), so the single-line probe string must be short. */
   await editor.fill('Mobile');
-  await expect(wrap).toHaveClass(/composer-focused/);
   await expect(wrap).not.toHaveClass(/composer-multiline/);
   await page.waitForTimeout(80);
   const singleLineHeight = await wrap.evaluate((node) => node.getBoundingClientRect().height);
-  expect(Math.abs(singleLineHeight - initial.height)).toBeLessThanOrEqual(2);
+  expect(Math.abs(singleLineHeight - focusedIdleHeight)).toBeLessThanOrEqual(2);
 
   await editor.press('Shift+Enter');
   await editor.type('Mobile line two');
@@ -349,13 +356,13 @@ test('mobile chat workbench keeps a focusable multiline composer without horizon
   await expect(page.locator('#msgList .msg.assistant').last()).toContainText(
     'Sent without changing',
   );
-  /* The capsule animates back from the multiline card to the idle row, so
-     wait for the height to settle before comparing the rest of the
-     geometry — measuring mid-transition reads an intermediate value. */
+  /* The capsule animates back from the multiline card to the focused
+     single-row card. Sending keeps the editor focused, so the settled height
+     is the focused idle height, not the blurred one. */
   await expect
     .poll(async () => {
       const height = await wrap.evaluate((node) => node.getBoundingClientRect().height);
-      return Math.abs(height - initial.height) <= 2;
+      return Math.abs(height - focusedIdleHeight) <= 2;
     })
     .toBe(true);
   const afterSend = await wrap.evaluate((node) => {
@@ -368,7 +375,7 @@ test('mobile chat workbench keeps a focusable multiline composer without horizon
       pageBackground: getComputedStyle(document.querySelector('.main-content')).backgroundColor,
     };
   });
-  expect(afterSend.height).toBeCloseTo(initial.height, 0);
+  expect(afterSend.height).toBeCloseTo(focusedIdleHeight, 0);
   expect(afterSend.width).toBeCloseTo(initial.width, 0);
   expect(afterSend.background).toBe(initial.background);
   expect(afterSend.radius).toBe(initial.radius);

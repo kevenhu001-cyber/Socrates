@@ -344,7 +344,9 @@ export function ComposerControls({
               display: 'flex',
               width: COMPOSER_CONTROL_SIZE,
               height: COMPOSER_CONTROL_SIZE,
-              margin: 0,
+              /* No margin shorthand here: the phone rail widens the gap
+                 around this control so its hit slop meets the mic's instead
+                 of overlapping it. */
               padding: 0,
               border: 0,
               borderRadius: uiRadius.pill,

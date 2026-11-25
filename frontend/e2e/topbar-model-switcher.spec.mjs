@@ -34,7 +34,7 @@ test.beforeEach(async ({ page }) => {
   await waitForAppShell(page);
 });
 
-test('header is a 52px bar with the switcher at the top-left', async ({ page }) => {
+test('header is a 48px bar with the switcher at the top-left', async ({ page }) => {
   const g = await page.evaluate(() => {
     const r = (s) => document.querySelector(s).getBoundingClientRect();
     const bar = r('.top-bar');
@@ -46,9 +46,11 @@ test('header is a 52px bar with the switcher at the top-left', async ({ page }) 
       swCy: sw.top + sw.height / 2 - bar.top,
     };
   });
-  expect(Math.round(g.barH)).toBe(52);
-  expect(Math.round(g.swH)).toBe(36);
-  expect(Math.round(g.swCy)).toBe(26);
+  /* The 2026-11-24 alignment pass settled the desktop bar at 48px with a
+     32px switcher (docs/design/chatgpt-alignment.md §5). */
+  expect(Math.round(g.barH)).toBe(48);
+  expect(Math.round(g.swH)).toBe(32);
+  expect(Math.round(g.swCy)).toBe(24);
   expect(g.swLeft).toBeLessThanOrEqual(12);
   await expect(page.locator('#topModelSwitcher [data-part="model-brand"]')).toHaveText('Socrates');
 });

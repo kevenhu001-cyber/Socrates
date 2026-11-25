@@ -75,9 +75,11 @@
   }
   /* Keep the header in flow, but overlap its reserved height with the
      transcript. The transcript's matching inset and mask are owned by chat.css.
-     The navigation itself remains opaque and independently interactive. */
+     The bar itself is painted with the page colour: the transcript scrolls
+     under it, and a see-through bar lets that text show between the title and
+     the trailing actions. */
   body[data-conversation-active='true']:not(.exam-active):not(.workspace-active) #appShell .top-bar {
-    --ui-phone-header-bg: transparent;
+    --ui-phone-header-bg: var(--conversation-page);
     --ui-phone-drawer-bg: var(--ui-bg-field);
     --ui-phone-drawer-border: 1px solid var(--ui-border-subtle);
     --ui-phone-drawer-size: var(--ui-hit-area);
@@ -107,9 +109,6 @@
     margin-inline-start: 6px;
     border-radius: var(--ui-radius-pill);
     background: var(--ui-bg-field);
-  }
-  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active) #appShell .top-conversation-title {
-    text-shadow: 0 0 8px var(--conversation-page);
   }
   #appShell .main-content,
   #appShell .main-inner {

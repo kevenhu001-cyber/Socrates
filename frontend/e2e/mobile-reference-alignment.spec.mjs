@@ -60,17 +60,19 @@ for (const mode of ['dark', 'light']) {
       const css = getComputedStyle(el);
       return { background: css.backgroundColor, radius: css.borderTopLeftRadius };
     });
-    /* Dark: the reference question box is the #1b1b1b field tone between
-       the pure-black canvas and the panel rung; menus keep #292929. Light:
-       the white paper on the #fcfcfc canvas. Corner: 26px (circle fit). */
+    /* Dark: the question box is the #303030 field tone above the pure-black
+       canvas. Light: the #f4f4f4 field on the white page. Both are fills,
+       not paper cards (docs/design/chatgpt-alignment.md §3.8). Corner: 26px
+       on the landing capsule (28px applies inside a conversation). */
     expect(rgbChannels(frameStyle.background)).toEqual(
-      mode === 'dark' ? [27, 27, 27] : [255, 255, 255],
+      mode === 'dark' ? [48, 48, 48] : [244, 244, 244],
     );
     expect(frameStyle.radius).toBe('26px');
     const composerBox = await page.locator('#composerInputWrap').boundingBox();
     expect(composerBox.x).toBe(16);
     expect(composerBox.width).toBe(358);
-    expect(composerBox.height).toBe(86);
+    /* The landing composer is the collapsed one-row capsule. */
+    expect(composerBox.height).toBe(52);
     expect(Math.round(769 - composerBox.y - composerBox.height)).toBe(24);
     /* The landing shortcut rail and the phone suggestion line were removed
        on 2026-11-16; the composer is the last thing on the landing now. */
@@ -94,7 +96,7 @@ for (const mode of ['dark', 'light']) {
       path: `test-results/reference-alignment-${encodeURIComponent(mode)}-home.png`,
     });
     const editor = page.locator('#composerRoot .rich-composer-editor');
-    await editor.fill('恢复彩色主操作');
+    await editor.fill('恢复主操作对比');
     await expect
       .poll(async () =>
         rgbChannels(
@@ -103,7 +105,7 @@ for (const mode of ['dark', 'light']) {
             .evaluate((el) => getComputedStyle(el).backgroundColor),
         ),
       )
-      .toEqual([61, 102, 192]);
+      .toEqual(mode === 'dark' ? [237, 237, 237] : [13, 13, 13]);
     await page.screenshot({
       path: `test-results/reference-alignment-${encodeURIComponent(mode)}-color-action.png`,
     });
@@ -114,11 +116,16 @@ for (const mode of ['dark', 'light']) {
       .poll(async () => Math.round((await page.locator('#sidebar').boundingBox()).x))
       .toBe(0);
     expect(Math.round((await page.locator('#sidebar').boundingBox()).width)).toBe(351);
+    /* The drawer is a page-coloured sheet over the app; its separation is
+       the ring plus the ambient shadow, not a second surface tone. */
     expect(
       rgbChannels(
         await page.locator('#sidebar').evaluate((el) => getComputedStyle(el).backgroundColor),
       ),
-    ).toEqual(mode === 'dark' ? [0, 0, 0] : [252, 252, 252]);
+    ).toEqual(mode === 'dark' ? [0, 0, 0] : [255, 255, 255]);
+    expect(
+      await page.locator('#sidebar').evaluate((el) => getComputedStyle(el).boxShadow),
+    ).not.toBe('none');
     const searchRow = page.locator('#sidebarSearchRow');
     /* Phones commit the row with display: none so the recents list never
        resizes frame by frame while the drawer opens. */
@@ -159,9 +166,11 @@ for (const mode of ['dark', 'light']) {
     await expect(page.locator('#sidebarCloseBtn')).toBeVisible();
     await expect(page.locator('.sidebar-mobile-new-chat')).toBeInViewport();
     await expect(page.locator('.recents-search-all')).toBeInViewport();
+    /* The drawer account row uses the same 32px identity mark as the desktop
+       rail (parity/sidebar.css), not the 44px touch target. */
     const avatar = await page.locator('#sidebarUserRow .user-avatar').boundingBox();
-    expect(avatar.width).toBe(44);
-    expect(avatar.height).toBe(44);
+    expect(avatar.width).toBe(32);
+    expect(avatar.height).toBe(32);
     await page.screenshot({
       path: `test-results/reference-alignment-${encodeURIComponent(mode)}-drawer.png`,
     });

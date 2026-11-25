@@ -141,13 +141,19 @@ test('light conversation is readable and find opens at the upper right', async (
       getComputedStyle(document.querySelector(selector))[property];
     return {
       // `.main-content` is a transparent layout layer; the page colour lives
-      // on the document canvas.
+      // on the document canvas and on `.main-bg` behind the bar.
       page: value('body', 'backgroundColor'),
+      mainBackground: value('.main-bg', 'backgroundColor'),
       topBar: value('.top-bar', 'backgroundColor'),
       text: value('#msgList .msg.assistant .msg-body', 'color'),
     };
   });
-  expect(sameRgb(colors.topBar, colors.page)).toBe(true);
+  /* The desktop bar is part of the canvas: it paints nothing of its own and
+     the surface behind it carries the page colour, so the header never reads
+     as a darker strip (docs/design/chatgpt-alignment.md §1). */
+  const barIsFlat = colors.topBar === 'rgba(0, 0, 0, 0)' || sameRgb(colors.topBar, colors.page);
+  expect(barIsFlat).toBe(true);
+  expect(sameRgb(colors.mainBackground, colors.page)).toBe(true);
   expect(colors.text).not.toBe(colors.page);
 
   await page.locator('#findBtn').click();

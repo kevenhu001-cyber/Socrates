@@ -134,7 +134,14 @@ export function ComposerFrame({
           </div>
           <div
             {...dataAttributes({ composerSlot: 'trailing' })}
-            style={{ display: 'flex', alignItems: 'flex-end', gap: uiStep[25], flexShrink: 0 }}
+            style={{
+              display: 'flex',
+              alignItems: 'flex-end',
+              /* Phone controls carry a 4px hit slop on each side, so the rail
+                 keeps a wider rhythm there; the send rule adds its own 4px. */
+              gap: compact ? uiStep[50] : uiStep[25],
+              flexShrink: 0,
+            }}
           >
             <ComposerControls {...controls} compact={compact} part="trailing" />
           </div>

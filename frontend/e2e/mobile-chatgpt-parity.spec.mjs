@@ -18,7 +18,14 @@ for (const width of [360, 390, 430]) {
     });
     const transcript = page.locator('#msgList');
     const header = page.locator('.top-bar');
-    await expect(header).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    /* The bar overlaps the transcript, so it must paint the page colour: a
+       translucent bar lets the scrolled transcript show through the title. */
+    await expect(header).toHaveCSS('background-color', 'rgb(0, 0, 0)');
+    const headerChrome = await page.evaluate(() => ({
+      bar: getComputedStyle(document.querySelector('.top-bar')).backgroundColor,
+      page: getComputedStyle(document.body).backgroundColor,
+    }));
+    expect(headerChrome.bar).toBe(headerChrome.page);
     await expect(transcript).toHaveCSS('mask-image', /linear-gradient/);
     const bounds = await page.evaluate(() => {
       const h = document.querySelector('.top-bar').getBoundingClientRect();
