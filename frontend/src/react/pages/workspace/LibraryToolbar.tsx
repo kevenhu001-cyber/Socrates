@@ -7,10 +7,10 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from '../../ui/shadcn/dropdown-menu';
-import { ToggleGroup, ToggleGroupItem } from '../../ui/shadcn/toggle-group';
+import { PageViewToggle } from '../../ui/page/PageTabs';
 import { t as translate } from '../../../ui/legacyI18n.ts';
 import type { useWorkspaceDispatch } from './workspace.hooks';
-import { ChevronDownIcon, FilterIcon, GridIcon, i18n, ListIcon } from './workspaceUi';
+import { ChevronDownIcon, FilterIcon, i18n } from './workspaceUi';
 import { triggerLibraryUpload } from './LibraryUploadInput';
 import { PageHeader } from '../../ui/page/PageHeader';
 import { PageSearchField } from '../../ui/page/PageSearchField';
@@ -126,33 +126,17 @@ export function LibraryToolbar({
         <div className="ui-page-toolbar-end library-toolbar-controls">
           <LibraryTypeFilter typeFilter={typeFilter} onTypeFilterChange={onTypeFilterChange} />
           <div className="library-toolbar-divider" />
-          <ToggleGroup
+          <PageViewToggle
             className="library-view-switcher"
-            value={[viewMode]}
-            aria-label={i18n('library.viewMode', 'View mode')}
-            onValueChange={(values) => {
-              if (values[0] === 'grid' || values[0] === 'list') onViewModeChange(values[0]);
-            }}
-          >
-            <ToggleGroupItem
-              type="button"
-              value="grid"
-              className="library-view-btn p-0"
-              aria-label={translate('chrome.gridView')}
-              data-i18n-aria="chrome.gridView"
-            >
-              <GridIcon />
-            </ToggleGroupItem>
-            <ToggleGroupItem
-              type="button"
-              value="list"
-              className="library-view-btn p-0"
-              aria-label={translate('chrome.listView')}
-              data-i18n-aria="chrome.listView"
-            >
-              <ListIcon />
-            </ToggleGroupItem>
-          </ToggleGroup>
+            itemClassName="library-view-btn"
+            value={viewMode}
+            onChange={onViewModeChange}
+            ariaLabel={i18n('library.viewMode', 'View mode')}
+            gridLabel={translate('chrome.gridView')}
+            listLabel={translate('chrome.listView')}
+            gridI18nKey="chrome.gridView"
+            listI18nKey="chrome.listView"
+          />
         </div>
       </PageToolbar>
     </>
