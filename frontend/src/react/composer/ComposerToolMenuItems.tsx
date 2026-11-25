@@ -108,7 +108,7 @@ export function ComposerToolMenuItems({
           />
           <MobileToolRow
             action="webSearch"
-            iconHtml={interfaceIcon('globe', 22)}
+            iconHtml={interfaceIcon('webSearch', 22)}
             title={i18n('composer.tools.webSearch', '联网搜索')}
             rightText={i18n('composer.tools.webSearch.auto', '自动')}
             active={activeKey === 'webSearch'}

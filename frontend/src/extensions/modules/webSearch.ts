@@ -1,7 +1,7 @@
 import { interfaceIcon } from '../../legacy/icons/interfaceIcons';
 import type { ExtensionDefinition } from '../types';
 
-export const WEB_SEARCH_ICON = interfaceIcon('globe', 18);
+export const WEB_SEARCH_ICON = interfaceIcon('webSearch', 18);
 
 export const webSearchExtension: ExtensionDefinition = {
   key: 'webSearch',

@@ -65,6 +65,7 @@ export const STROKE_ICONS: Record<string, string> = {
     '<path d="M10.5 22H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.706.706l3.588 3.588A2.4 2.4 0 0 1 20 8v6"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="m14 20 2 2 4-4"/>',
   ),
   search: interfaceIcon('search'),
+  webSearch: interfaceIcon('webSearch'),
   fetch: interfaceIcon('globe'),
   code: interfaceIcon('code'),
   visual: interfaceIcon('analyze'),
@@ -79,9 +80,7 @@ export const STROKE_ICONS: Record<string, string> = {
   ),
   memory: interfaceIcon('bookmark'),
   site: interfaceIcon('site'),
-  tool: icon(
-    '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z"/>',
-  ),
+  tool: interfaceIcon('activityTools'),
   runGroup: icon(
     '<path d="M3 5h.01"/><path d="M3 12h.01"/><path d="M3 19h.01"/><path d="M8 5h13"/><path d="M8 12h13"/><path d="M8 19h13"/>',
   ),
@@ -91,10 +90,7 @@ export const STROKE_ICONS: Record<string, string> = {
   alert: icon(
     '<circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>',
   ),
-  /* The process marker. Deliberately a dotted outline rather than a filled
-     or spark glyph: the pill sits above the answer, so it has to read as
-     "there was work here" without competing with the prose below it. */
-  process: icon('<circle cx="12" cy="12" r="9"/><path d="M12 8v4"/><path d="M12 16h.01"/>'),
+  process: interfaceIcon('thinking'),
   chevronDown: interfaceIcon('chevronDown'),
   chevronUp: interfaceIcon('chevronUp'),
   chevronRight: interfaceIcon('chevronRight'),
@@ -128,9 +124,9 @@ const CONNECTOR_NAMES = new Set([
 ]);
 
 const TOOL_ICONS = new Map<string, string>([
-  ['web_search', STROKE_ICONS.search],
+  ['web_search', STROKE_ICONS.webSearch],
   ['image_search', STROKE_ICONS.image],
-  ['arxiv_search', STROKE_ICONS.search],
+  ['arxiv_search', STROKE_ICONS.webSearch],
   ['zotero_search', STROKE_ICONS.search],
   ['notion_search_pages', STROKE_ICONS.search],
   ['web_fetch', STROKE_ICONS.fetch],

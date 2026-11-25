@@ -349,9 +349,9 @@
   color: var(--ui-text-secondary);
 }
 .tool-run-trigger .tool-inline-tool-icon {
-  flex: 0 0 1em;
-  width: 1em;
-  height: 1em;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
   color: inherit;
 }
 .rn-turn-activity .tool-inline-tool-icon svg,
@@ -359,13 +359,27 @@
 .tool-run-trigger .tool-inline-tool-icon svg,
 .tool-run-trigger .tool-inline-tool-icon img {
   display: block;
-  width: 87.5%;
-  height: 87.5%;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
 }
 .tool-run-trigger :is(.tool-site-marks, .is-connector-brand) {
   flex: none;
-  filter: grayscale(1);
+}
+.tool-burst-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  color: inherit;
+}
+.tool-burst-glyph svg {
+  display: block;
+}
+.tool-activity-burst-caption {
+  gap: var(--ui-space-xs);
 }
 
 /* Expanding a tool is a disclosure, not a page jump: the detail arrives on

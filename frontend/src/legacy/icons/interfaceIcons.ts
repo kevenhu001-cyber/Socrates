@@ -59,6 +59,17 @@ const GLYPHS = {
   /* The reference ⋯: three round dots. */
   more: [circle(6, 12, 1.5), circle(12, 12, 1.5), circle(18, 12, 1.5)],
   search: [circle(11, 11, 7), path('m21 21-4.35-4.35')],
+  // Web activity is distinct from local conversation search.
+  webSearch: [
+    circle(10.5, 10.5, 7),
+    path('M3.5 10.5h14M10.5 3.5c-2 2-3 4.3-3 7s1 5 3 7m0-14c2 2 3 4.3 3 7s-1 5-3 7M16 16l4.5 4.5'),
+  ],
+  activityTools: [
+    path('M4 6h4m4 0h8M4 12h10m4 0h2M4 18h6m4 0h6'),
+    circle(10, 6, 2),
+    circle(16, 12, 2),
+    circle(12, 18, 2),
+  ],
   panel: [rect(3, 3, 18, 18, 3), path('M9 3v18')],
   close: [path('M18 6 6 18M6 6l12 12')],
   knowledge: [
@@ -121,10 +132,10 @@ const GLYPHS = {
       'm21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48',
     ),
   ],
+  // A compact reasoning spark, not the brain or the loading spinner.
   thinking: [
-    path(
-      'M12 5.5a3 3 0 0 0-5.7-1.3A3.5 3.5 0 0 0 4 10a4 4 0 0 0 .5 6.5A3.5 3.5 0 0 0 12 18V5.5Zm0 0a3 3 0 0 1 5.7-1.3A3.5 3.5 0 0 1 20 10a4 4 0 0 1-.5 6.5A3.5 3.5 0 0 1 12 18M8 8a3 3 0 0 1-2 3m10-3a3 3 0 0 0 2 3M8 15a3 3 0 0 0-3.5 1.5M16 15a3 3 0 0 1 3.5 1.5',
-    ),
+    path('M10 3.5c.8 4.1 2.4 5.7 6.5 6.5-4.1.8-5.7 2.4-6.5 6.5-.8-4.1-2.4-5.7-6.5-6.5 4.1-.8 5.7-2.4 6.5-6.5Z'),
+    path('M18.5 13.5v6M15.5 16.5h6M19 3.5v3M17.5 5h3'),
   ],
   camera: [
     path(

@@ -93,6 +93,17 @@ for (const theme of ['light', 'dark']) {
       );
       await expect(glyph).toBeVisible();
       await expect(glyph).toHaveCSS('stroke-width', '1.75px');
+      if (action === 'webSearch' || action === 'extensiveThinking') {
+        await expect(glyph).toHaveAttribute('viewBox', '0 0 24 24');
+        await expect(glyph).toHaveAttribute('stroke', 'currentColor');
+        await expect(glyph).toHaveAttribute('aria-hidden', 'true');
+        await expect(glyph).toHaveAttribute('focusable', 'false');
+        const fits = await glyph.evaluate((svg) => {
+          const box = svg.getBBox();
+          return box.x >= 1 && box.y >= 1 && box.x + box.width <= 23 && box.y + box.height <= 23;
+        });
+        expect(fits).toBe(true);
+      }
     }
     await page.keyboard.press('Escape');
     await expect(page.locator('#composerToolsBtn')).toBeFocused();

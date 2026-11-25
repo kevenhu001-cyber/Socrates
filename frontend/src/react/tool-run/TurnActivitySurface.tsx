@@ -174,6 +174,8 @@ function resolveSurfaceIconProps(isLive: boolean, activeTool?: ToolCallRecord, t
   const sites = resolvedToolName ? toolActivitySites(activeTool) : [];
   const icon = resolvedToolName ? (
     <ToolActivityIcon name={resolvedToolName} sites={sites} />
+  ) : !isLive ? (
+    <StepGlyph html={interfaceIcon('thinking')} />
   ) : undefined;
   const iconWidth = sites.length > 1 ? 30 : undefined;
   return { icon, iconWidth };
