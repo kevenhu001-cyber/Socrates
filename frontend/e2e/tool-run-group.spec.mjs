@@ -281,29 +281,12 @@ test('long arguments stay inside the inline panel viewport', async ({ page }) =>
   expect(bounds.right).toBeLessThanOrEqual(bounds.viewport);
 });
 
-test('a failure keeps a readable reason and a Retry in the transcript', async ({ page }) => {
+test('tool failures remain internal until details are explicitly opened', async ({ page }) => {
   const body = await loadFixtureSession(page);
-  const notice = body.getByTestId('tool-error');
-  await expect(notice).toHaveCount(1);
-  await expect(notice).toHaveAttribute('role', 'alert');
-  await expect(notice.getByTestId('tool-error-message')).toHaveText(
-    'Search upstream timed out after 30s',
-  );
+  await expect(body.getByTestId('tool-error')).toHaveCount(0);
+  await expect(body.getByTestId('tool-error-retry')).toHaveCount(0);
+  await expect(body.getByText('Search upstream timed out after 30s')).toHaveCount(0);
   await expect(body.locator('.rn-tool-row[data-tcid="f1"]')).toHaveAttribute('data-error', '1');
-
-  /* Retry must reach the legacy delegate listener as the same CustomEvent. */
-  await page.evaluate(() => {
-    window.__retryEvents = [];
-    document.addEventListener('tool-retry', (event) => {
-      window.__retryEvents.push(event.detail);
-    });
-  });
-  await notice.getByTestId('tool-error-retry').click();
-  const seen = await page.evaluate(() => window.__retryEvents);
-  expect(seen).toHaveLength(1);
-  expect(seen[0]).toMatchObject({ toolId: 'f1', tool: 'web_search', errorCode: 'SEARCH_TIMEOUT' });
-
-  /* The inline panel carries the full error and the error code as a footnote. */
   const detail = await openDetail(page, body, 'f1');
   await expect(detail.getByTestId('tool-detail-section-error')).toContainText(
     'Search upstream timed out after 30s',
@@ -371,9 +354,9 @@ test('phone rows stay horizontal, touch-height and one line', async ({ page }) =
   await page.setViewportSize({ width: 320, height: 844 });
   const body = await loadFixtureSession(page, { theme: 'light', language: 'zh' });
 
-  const retry = body.getByTestId('tool-error-retry');
-  await expect(retry).toBeVisible();
-  expect((await retry.boundingBox()).height).toBeGreaterThanOrEqual(44);
+  const activity = body.locator('.tool-activity-burst-toggle').first();
+  await expect(activity).toBeVisible();
+  expect((await activity.boundingBox()).height).toBeGreaterThanOrEqual(44);
 
   const row = body.getByTestId('tool-row-s1');
   const rowLayout = await row.evaluate((element) => ({
@@ -679,13 +662,13 @@ test('a pending approval stays visible in the transcript with pill decisions', a
 });
 
 
-test('completed activity burst starts collapsed without hiding failed or unknown rows', async ({ page }) => {
+test('activity bursts start collapsed including failed and unknown rows', async ({ page }) => {
   const body = await loadFixtureSession(page, { expandBursts: false });
   const burst = body.locator('.tool-activity-burst-toggle').last();
   await expect(burst).toHaveAttribute('aria-expanded', 'false');
   await expect(body.getByTestId('tool-row-w1')).toBeHidden();
-  await expect(body.getByTestId('tool-row-f1')).toBeVisible();
-  await expect(body.getByTestId('tool-row-s3')).toBeVisible();
+  await expect(body.getByTestId('tool-row-f1')).toBeHidden();
+  await expect(body.getByTestId('tool-row-s3')).toBeHidden();
   await burst.focus();
   await page.keyboard.press('Enter');
   await expect(body.getByTestId('tool-row-w1')).toBeVisible();
