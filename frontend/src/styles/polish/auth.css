@@ -5,8 +5,10 @@
   --auth-field-height: calc(var(--ui-control-touch) + var(--ui-space-xs));
   justify-content: flex-start;
   gap: var(--ui-space-md);
-  padding: max(var(--ui-space-xl), env(safe-area-inset-top, 0px)) var(--ui-space-lg)
+  padding-block: max(var(--ui-space-xl), env(safe-area-inset-top, 0px))
     max(var(--ui-space-xl), env(safe-area-inset-bottom, 0px));
+  padding-inline: max(var(--ui-space-lg), env(safe-area-inset-left, 0px))
+    max(var(--ui-space-lg), env(safe-area-inset-right, 0px));
   background: var(--ui-bg-page);
   color: var(--foreground);
   font-family: var(--font-sans);
@@ -113,6 +115,8 @@
 }
 
 .auth-gate .auth-input {
+  box-sizing: border-box;
+  min-width: 0;
   width: 100%;
   height: var(--auth-field-height);
   margin-bottom: var(--ui-space-xxs);
@@ -298,9 +302,6 @@
 }
 
 @media (max-width: 768px) {
-  .auth-gate {
-    padding-inline: var(--ui-space-lg);
-  }
   .auth-gate .auth-brand {
     margin-bottom: var(--ui-space-xl);
   }
