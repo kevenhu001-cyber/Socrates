@@ -32,6 +32,19 @@ export function toolActivitySites(call?: ToolCallRecord): string[] {
   return [...urls.values()];
 }
 
+/** Deduplicate actual returned origins across the turn, not guessed websites. */
+export function turnActivitySites(calls: ReadonlyArray<ToolCallRecord>): string[] {
+  const urls = new Map<string, string>();
+  for (const call of calls) {
+    for (const url of toolActivitySites(call)) {
+      const key = faviconProxyUrl(url);
+      if (key && !urls.has(key)) urls.set(key, url);
+      if (urls.size === 3) return [...urls.values()];
+    }
+  }
+  return [...urls.values()];
+}
+
 function SiteMark({ url }: { url: string }) {
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -50,6 +63,16 @@ function SiteMark({ url }: { url: string }) {
           onError={() => setFailed(true)}
         />
       ) : null}
+    </span>
+  );
+}
+
+export function ToolSiteMarks({ sites }: { sites: readonly string[] }) {
+  return (
+    <span className="tool-site-marks" aria-hidden="true">
+      {sites.map((url) => (
+        <SiteMark key={faviconProxyUrl(url)} url={url} />
+      ))}
     </span>
   );
 }
@@ -77,13 +100,7 @@ export function ToolActivityIcon({ name, sites = [] }: { name: string; sites?: s
   }, [name]);
 
   if (sites.length) {
-    return (
-      <span className="tool-site-marks" aria-hidden="true">
-        {sites.map((url) => (
-          <SiteMark key={faviconProxyUrl(url)} url={url} />
-        ))}
-      </span>
-    );
+    return <ToolSiteMarks sites={sites} />;
   }
   const brand = marks.get(name) || (resolved.name === name ? resolved.markup : '');
   return (
