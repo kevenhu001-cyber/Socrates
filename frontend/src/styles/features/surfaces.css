@@ -519,7 +519,7 @@
 #appShell .visualization-card {
   border: 1px solid var(--ui-border-subtle);
   border-radius: var(--ui-radius-xl);
-  background: var(--conversation-page);
+  background: var(--ui-bg-page);
   box-shadow: none;
   overflow: hidden;
 }
