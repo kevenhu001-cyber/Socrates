@@ -17,6 +17,7 @@ interface ProgressEntry {
   _liveBuffer?: LiveOutputBufferHandle;
   _liveOutput?: string;
   _pendingProgress?: ToolProgress[];
+  _toolResultApplied?: boolean;
 }
 
 interface ProgressMessage<TEntry extends ProgressEntry> {
@@ -64,6 +65,8 @@ export function createProgressRuntime<
       options.pushOrphan(message, progress.id, progress);
       return;
     }
+    // A committed result owns the final snapshot; delayed progress is inert.
+    if (entry._toolResultApplied) return;
     entry._progressPhase = progress.phase;
     options.setRun(entry, phaseFromProgress(progress), { elapsedMs: progress.elapsedMs || 0 });
     appendLiveOutput(entry, progress);

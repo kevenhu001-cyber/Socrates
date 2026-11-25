@@ -107,6 +107,7 @@ test('session, knowledge and exam snapshots reject nested writes', () => {
 test('pending approval remains actionable after a frozen message is finalized', async () => {
   const h = harness();
   h.runtime.recordToolUse({ id: 'agent', name: 'workspace_agent', input: {} });
+  const revision = h.read()._toolRunRev;
   h.runtime.recordToolApproval({
     id: 'agent',
     runId: 'run',
@@ -114,6 +115,7 @@ test('pending approval remains actionable after a frozen message is finalized', 
     status: 'pending',
   });
   const before = h.read();
+  assert.equal(before._toolRunRev, revision + 1, 'one approval publishes one snapshot');
   h.runtime.dispose();
   h.loseOwnership();
   dispatchSession({

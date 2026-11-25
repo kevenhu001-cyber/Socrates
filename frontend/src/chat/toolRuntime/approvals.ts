@@ -60,14 +60,16 @@ function pollCompletedRun(
   entryId: string,
   entryName: string,
   recordToolResult: (result: ApprovalResult) => void,
+  stillOwnsApproval: () => boolean,
 ): void {
   const startedAt = Date.now();
   const poll = async (): Promise<void> => {
-    if (Date.now() - startedAt > 120_000) return;
+    if (!stillOwnsApproval() || Date.now() - startedAt > 120_000) return;
     try {
       const response = await apiFetch<AgentRunPollResponse>(
         '/api/agent-runs/' + encodeURIComponent(runId),
       );
+      if (!stillOwnsApproval()) return;
       const run = response && response.run;
       if (
         run &&
@@ -88,9 +90,11 @@ function pollCompletedRun(
       reportEmptyCatch(_, 'empty catch: chat/toolRuntime/approvals.ts');
       /* a refresh/reconnect can retry on the next tick */
     }
-    window.setTimeout(() => {
-      void poll();
-    }, 900);
+    if (stillOwnsApproval()) {
+      window.setTimeout(() => {
+        void poll();
+      }, 900);
+    }
   };
   window.setTimeout(() => {
     void poll();
@@ -128,12 +132,14 @@ export function createApprovalRuntime<
   function setApprovalUi(approvalId: string, text: string, state?: string, disabled = true): void {
     const message = options.activeMessage();
     const calls = message && Array.isArray(message.toolCalls) ? message.toolCalls : [];
+    let changed = false;
     for (const entry of calls) {
       if (!entry || !entry.approval || String(entry.approval.approvalId) !== String(approvalId))
         continue;
       entry.approval = { ...entry.approval, ui: { text, state, disabled } };
+      changed = true;
     }
-    if (message) options.notifyToolRun(message);
+    if (changed) options.notifyToolRun(message);
   }
 
   async function submitApprovalAction(
@@ -169,23 +175,38 @@ export function createApprovalRuntime<
           body: { decision },
         },
       );
-      setApprovalUi(
-        approval.approvalId,
-        decision === 'decline'
-          ? options.translate('tool.approvalDeclined', 'Declined')
-          : options.translate('tool.approvalAccepted', 'Approved'),
-        decision === 'decline' ? 'declined' : 'accepted',
-      );
-      const message = options.activeMessage();
-      const entry = options.findEntry(message, entryId);
-      if (entry) entry.approval = { ...entry.approval, ...approval, status: decision };
+      const currentEntry = () => {
+        const message = options.activeMessage();
+        const entry = options.findEntry(message, entryId);
+        return entry?.approval?.runId === approval.runId &&
+          entry.approval.approvalId === approval.approvalId &&
+          !entry._toolResultApplied
+          ? { message, entry }
+          : null;
+      };
+      const current = currentEntry();
+      if (!current) return;
+      const { message, entry } = current;
+      const declined = decision === 'decline';
+      entry.approval = {
+        ...entry.approval!,
+        status: decision,
+        ui: {
+          text: declined
+            ? options.translate('tool.approvalDeclined', 'Declined')
+            : options.translate('tool.approvalAccepted', 'Approved'),
+          state: declined ? 'declined' : 'accepted',
+          disabled: true,
+        },
+      };
       options.notifyToolRun(message);
-      if (decision !== 'decline') {
+      if (!declined) {
         pollCompletedRun(
           approval.runId,
           entryId,
-          entry ? entry.name : 'workspace_agent',
+          entry.name,
           options.recordToolResult,
+          () => currentEntry() !== null,
         );
       }
     } catch (err) {
@@ -203,7 +224,7 @@ export function createApprovalRuntime<
   async function decideApproval(toolCallId: string, decision: string): Promise<void> {
     const message = options.activeMessage();
     const entry = options.findEntry(message, String(toolCallId || ''));
-    if (!entry || !entry.approval || !decision) return;
+    if (!entry || !entry.approval || !decision || entry.approval.ui?.disabled) return;
     await submitApprovalAction(entry.approval, entry.id, decision);
   }
 
@@ -237,10 +258,7 @@ export function createApprovalRuntime<
       );
       return;
     }
-    const normalized = { ...approval, id: entry.id };
-    entry.approval = normalized;
-    options.notifyToolRun(message);
-    renderApproval(normalized);
+    renderApproval({ ...approval, id: entry.id });
   }
 
   return { decideApproval, renderApproval, recordToolApproval };
