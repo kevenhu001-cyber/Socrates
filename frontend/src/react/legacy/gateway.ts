@@ -15,7 +15,6 @@
 //   const label = t('settings.title');
 
 import type { LegacyActions } from './types';
-import { apiFetch } from '../../util/api/index.ts';
 import { isDeepResearchEnabled } from '../../config/deepResearchMode.ts';
 import { webSearchOn, extensiveThinkingOn } from '../../config/providers.ts';
 import { getCurrentUser as getAppCurrentUser } from '../../app/lifecycle/index.ts';
@@ -134,15 +133,6 @@ export function isDeepResearchOn(): boolean {
 /** Legacy extensive-thinking toggle used by the composer tools menu. */
 export function isExtensiveThinkingOn(): boolean {
   return extensiveThinkingOn;
-}
-
-/**
- * Return the canonical authenticated API client through the typed legacy
- * gateway. Keeping this helper avoids coupling React feature modules to the
- * transport implementation.
- */
-export function getApiFetch(): typeof apiFetch | null {
-  return typeof apiFetch === 'function' ? apiFetch : null;
 }
 
 /** The signed-in user record published by the legacy auth layer, or null. */

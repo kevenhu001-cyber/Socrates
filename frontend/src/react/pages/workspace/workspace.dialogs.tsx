@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
-import { getApiFetch, getConnectorIconMarkupFn, getLegacyActions } from '../../legacy/gateway.ts';
+import { getConnectorIconMarkupFn, getLegacyActions } from '../../legacy/gateway.ts';
+import { apiFetch } from '../../../util/api/index.ts';
 import { i18n } from '../../../ui/legacyI18n.ts';
 import { getCachedProjects } from '../../../projects/projectCache.ts';
 import { dispatchSession, sessionStore } from '../../../store/index.ts';
@@ -27,8 +28,6 @@ import {
 import { deleteScheduledTask, saveScheduledTask } from '../scheduled/scheduled.service';
 import { useScheduledStore } from '../scheduled/scheduled.store';
 import { reportSwallow as reportEmptyCatch } from '../../../util/reportSwallow.ts';
-
-type Api = NonNullable<ReturnType<typeof getApiFetch>>;
 
 interface ProjectRunSummary {
   id: string;
@@ -60,12 +59,6 @@ interface ReferenceSummary {
   itemType?: string;
   creators?: string[];
   date?: string;
-}
-
-function api(): Api {
-  const request = getApiFetch();
-  if (!request) throw new Error('The API client is not ready.');
-  return request;
 }
 
 function byId<T extends HTMLElement = HTMLElement>(id: string): T | null {
@@ -264,7 +257,7 @@ async function loadLibraryFileContent(id: string): Promise<void> {
   const body = byId('libraryFilePreviewBody');
   if (!body) return;
   try {
-    const request = api();
+    const request = apiFetch;
     const result = await request<{
       ok?: boolean;
       error?: string;
@@ -302,7 +295,7 @@ export async function openProjectWorkspace(projectId: string): Promise<void> {
     const sessionId = sessionStore.getState().currentSessionId;
     try {
       if (sessionId)
-        await api()('/api/sessions/' + encodeURIComponent(sessionId), {
+        await apiFetch('/api/sessions/' + encodeURIComponent(sessionId), {
           method: 'PATCH',
           body: { projectId },
         });
@@ -348,7 +341,7 @@ async function renderProjectRunHistory(projectId: string): Promise<void> {
   if (!host) return;
   host.innerHTML = `<div class="workspace-loading">${escapeHtml(i18n('dialog.project.runsLoading', 'Loading agent runs…'))}</div>`;
   try {
-    const result = await api()<{ runs?: ProjectRunSummary[] }>(
+    const result = await apiFetch<{ runs?: ProjectRunSummary[] }>(
       '/api/agent-runs?projectId=' + encodeURIComponent(projectId) + '&limit=8',
     );
     const current = byId('projectRunHistory');
@@ -469,7 +462,7 @@ async function openAgentRunDetails(runId: string): Promise<void> {
     />,
   );
   try {
-    const result = await api()<ProjectRunDetails>('/api/agent-runs/' + encodeURIComponent(runId));
+    const result = await apiFetch<ProjectRunDetails>('/api/agent-runs/' + encodeURIComponent(runId));
     const host = dialog.querySelector<HTMLElement>('#agentRunDetails');
     if (!host) return;
     renderRunDetails(host, result);
@@ -502,7 +495,7 @@ function bindScheduledTaskForm(
   const agentSelect = form.elements.namedItem('agentKind') as HTMLSelectElement;
   agentSelect.value = task?.agentKind || 'native';
   (form.elements.namedItem('projectId') as HTMLSelectElement).value = String(activeProjectId);
-  const request = api();
+  const request = apiFetch;
   void request<{ background?: boolean }>('/api/agent-runs/capabilities')
     .then((capabilities) => {
       if (capabilities?.background === false) {
@@ -665,7 +658,7 @@ export function openArxivSearch(): void {
       if (list)
         list.innerHTML = `<div class="workspace-loading">${i18n('connectors.arxivSearching', 'Searching arXiv…')}</div>`;
       try {
-        const result = await api()<{ papers?: PaperSummary[] }>(
+        const result = await apiFetch<{ papers?: PaperSummary[] }>(
           '/api/connectors/arxiv/papers?query=' + encodeURIComponent(query),
         );
         if (!list) return;
@@ -705,7 +698,7 @@ export function openZoteroLibrary(): void {
     if (list)
       list.innerHTML = `<div class="workspace-loading">${i18n('connectors.zoteroLoading', 'Loading references…')}</div>`;
     try {
-      const result = await api()<{ items?: ReferenceSummary[] }>(
+      const result = await apiFetch<{ items?: ReferenceSummary[] }>(
         '/api/connectors/zotero/items?query=' + encodeURIComponent(query),
       );
       if (!list) return;
