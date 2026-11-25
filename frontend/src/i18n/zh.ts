@@ -1468,6 +1468,7 @@ export const zh = {
   'toast.shareStartFirst': '请先开始一段对话再分享',
   'toast.loadingSessions': '正在加载会话…',
   'toast.noRetryTarget': '没有可重试的上一条用户消息。',
+  'chat.errorTitle': '未能生成回复',
   'chat.stopped': '回复已停止',
   'chat.resend': '重新发送',
   'toast.movedToProject': '已移动到 {name}',

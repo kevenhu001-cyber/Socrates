@@ -1,3 +1,4 @@
+import { CircleAlertIcon, RefreshCwIcon, SquareIcon } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { i18n } from '../../ui/legacyI18n.ts';
 import type { LiveTurnStatus } from '../types/domain';
@@ -22,8 +23,12 @@ function FailedLine({ status, messageId, readOnly }: TurnStatusProps) {
     else retryLiveTurn(messageId);
   };
   return (
-    <div className="turn-surface-status msg-error" data-turn-surface-part="terminal">
-      <span className="msg-error-text">{message}</span>
+    <div className="turn-surface-status msg-error" data-turn-surface-part="terminal" role="alert">
+      <CircleAlertIcon className="msg-status-icon" size={20} strokeWidth={1.75} aria-hidden />
+      <div className="msg-status-copy">
+        <strong className="msg-status-title">{i18n('chat.errorTitle', 'Could not generate a response')}</strong>
+        {message ? <span className="msg-error-text">{message}</span> : null}
+      </div>
       {readOnly || status.retryable === false ? null : (
         <Button
           type="button"
@@ -36,6 +41,7 @@ function FailedLine({ status, messageId, readOnly }: TurnStatusProps) {
           }}
           onClick={retry}
         >
+          <RefreshCwIcon size={16} strokeWidth={1.75} aria-hidden />
           {i18n('common.retry', 'Retry')}
         </Button>
       )}
@@ -52,8 +58,9 @@ function StoppedLine({ status, messageId, readOnly }: TurnStatusProps) {
     <div
       className="turn-surface-status msg-error msg-resend"
       data-turn-surface-part="terminal"
-      style={{ marginTop: '8px' }}
+      role="status"
     >
+      <SquareIcon className="msg-status-icon" size={18} strokeWidth={1.75} aria-hidden />
       <span className="msg-error-text">
         {normalizeChineseProse(status.label || i18n('chat.stopped', 'Response stopped'))}
       </span>
@@ -68,6 +75,7 @@ function StoppedLine({ status, messageId, readOnly }: TurnStatusProps) {
             resend();
           }}
         >
+          <RefreshCwIcon size={16} strokeWidth={1.75} aria-hidden />
           {i18n('chat.resend', 'Resend')}
         </Button>
       )}
