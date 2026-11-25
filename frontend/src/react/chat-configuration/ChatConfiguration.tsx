@@ -19,6 +19,7 @@ import {
 } from './chatConfiguration.bridge';
 import { EffortPanel, ModelPickerPanel, SpeedPanel } from './ChatConfigurationPanels';
 import type { ChatConfigurationAnchor } from './types';
+import { hasMobileComposerFocus } from '../../legacy/keyboard/geometry';
 import { restingRect } from '../../legacy/pressFeedback.ts';
 
 type View = 'main' | 'effort' | 'speed';
@@ -122,6 +123,9 @@ export function ChatConfiguration() {
   useEffect(() => {
     if (!snapshot.open) return;
     const frame = window.requestAnimationFrame(() => {
+      // A pointer-opened menu must not take focus away from the active IME.
+      // Keyboard-opened menus still receive the normal initial focus.
+      if (hasMobileComposerFocus()) return;
       popRef.current
         ?.querySelector<HTMLElement>('[data-initial-focus]')
         ?.focus({ preventScroll: true });

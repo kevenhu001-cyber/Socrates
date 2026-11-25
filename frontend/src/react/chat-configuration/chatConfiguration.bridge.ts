@@ -1,6 +1,7 @@
 import { createImmutableBridge, useBridge } from '../../store/index.ts';
 import { getProviderConfigSnapshot } from '../../config/providerConfig.store.ts';
 import { getStoredReasoningEffort, getStoredResponseSpeed } from '../../config/chatPreferences.ts';
+import { hasMobileComposerFocus } from '../../legacy/keyboard/geometry';
 import { restingRect } from '../../legacy/pressFeedback.ts';
 import type {
   ChatConfigurationBridge,
@@ -91,9 +92,11 @@ export function closeChatConfiguration(restoreFocus = true): void {
     anchorRect: current.anchorRect,
     triggerId: null,
   });
-  if (restoreFocus && returnFocus) {
+  if (restoreFocus && returnFocus && !hasMobileComposerFocus()) {
     const target = returnFocus;
-    window.setTimeout(() => target.focus({ preventScroll: true }), 0);
+    window.setTimeout(() => {
+      if (!hasMobileComposerFocus() && target.isConnected) target.focus({ preventScroll: true });
+    }, 0);
   }
   returnFocus = null;
 }

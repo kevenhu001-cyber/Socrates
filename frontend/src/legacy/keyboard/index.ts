@@ -19,6 +19,8 @@
 
 import {
   getKeyboardInset,
+  hasMobileComposerFocus,
+  retainsComposerFocus,
   isTrackedInputFocused,
   KEYBOARD_OPEN_THRESHOLD_PX,
   MIN_STABLE_VISUAL_HEIGHT,
@@ -27,7 +29,6 @@ import {
 import { TranscriptAnchor } from './anchor.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 
-const BLUR_GRACE_MS = 900;
 /* A restored (zero-coverage) read must persist this long before the lift is
  * released. Shorter than one real close animation step, longer than an IME
  * reporting hiccup, so a lone bad frame never dips the composer. */
@@ -83,7 +84,6 @@ class KeyboardLiftController implements KeyboardLift {
   private phaseValue: KeyboardPhase = 'closed';
   private sessionActive = false;
   private appliedInset = -1;
-  private blurTimer: ReturnType<typeof setTimeout> | 0 = 0;
   private closeTimer: ReturnType<typeof setTimeout> | 0 = 0;
   private finishTimer: ReturnType<typeof setTimeout> | 0 = 0;
   private nativeOpenTimer: ReturnType<typeof setTimeout> | 0 = 0;
@@ -136,33 +136,24 @@ class KeyboardLiftController implements KeyboardLift {
     };
   }
 
-  private readonly onPointerDown = (): void => {
-    /* Pointerdown is retained for the keyboard lifecycle event surface. */
+  private readonly onPointerDown = (event: PointerEvent): void => {
+    if (!event.isPrimary || event.button !== 0 || !event.cancelable) return;
+    if (hasMobileComposerFocus() && retainsComposerFocus(event.target)) {
+      // Cancel only the default focus transfer. Click still activates the
+      // model selector and touch panning remains owned by the browser.
+      event.preventDefault();
+    }
   };
 
   private readonly onFocusIn = (): void => {
-    if (this.blurTimer) {
-      clearTimeout(this.blurTimer);
-      this.blurTimer = 0;
-    }
-    this.clearNativeTimers();
+    if (this.isFocused()) this.clearNativeTimers();
     this.updateFromGeometry();
   };
 
   private readonly onFocusOut = (): void => {
     if (!this.sessionActive) return;
-    /* Geometry owns close; blur is only a fallback for WebViews without it. */
-    this.setPhase('closing');
+    // Blur alone cannot release the lift; geometry/native hide owns close.
     this.updateFromGeometry();
-    if (this.blurTimer) clearTimeout(this.blurTimer);
-    this.blurTimer = setTimeout(() => {
-      this.blurTimer = 0;
-      if (this.sessionActive && !this.isFocused()) {
-        this.cancelCloseConfirm();
-        this.publishInset(0);
-        this.finishSession();
-      }
-    }, BLUR_GRACE_MS);
   };
 
   private readonly onGeometryEvent = (): void => {
@@ -288,10 +279,6 @@ class KeyboardLiftController implements KeyboardLift {
   }
 
   private clearTimers(): void {
-    if (this.blurTimer) {
-      clearTimeout(this.blurTimer);
-      this.blurTimer = 0;
-    }
     if (this.closeTimer) {
       clearTimeout(this.closeTimer);
       this.closeTimer = 0;
@@ -346,7 +333,8 @@ class KeyboardLiftController implements KeyboardLift {
       this.finishTimer = 0;
       if (!this.sessionActive) return;
       const target = this.measureTarget();
-      if (target == null || target <= RESTORE_SLOP_PX || !this.isFocused()) this.finishSession();
+      if (target != null && target <= RESTORE_SLOP_PX) this.finishSession();
+      else this.updateFromGeometry();
     }, FINISH_CLOSE_MS);
   }
 
@@ -416,10 +404,6 @@ class KeyboardLiftController implements KeyboardLift {
   }
 
   private showNativeKeyboard(keyboardHeight?: number): void {
-    if (this.blurTimer) {
-      clearTimeout(this.blurTimer);
-      this.blurTimer = 0;
-    }
     if (this.closeTimer) {
       clearTimeout(this.closeTimer);
       this.closeTimer = 0;

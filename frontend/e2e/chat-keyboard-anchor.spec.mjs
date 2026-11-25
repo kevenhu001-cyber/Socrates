@@ -912,3 +912,48 @@ test('native height hint is a floor, not an override', async ({ page }) => {
   expect(closed.phase).toBe('closed');
   expect(closed.inset).toBeLessThanOrEqual(4);
 });
+
+
+test('blank taps and model picker retain the open keyboard until geometry restores', async ({ page }) => {
+  await seedChat(page, 4);
+  const editor = page.locator('#composerRoot .rich-composer-editor').first();
+  const composer = page.locator('#chatInputBar');
+  await editor.focus();
+  await page.evaluate(() => window.__fakeViewport.__resize({ height: 510 }));
+  await expect(page.locator('html')).toHaveAttribute('data-keyboard-phase', 'open');
+  const before = await composer.boundingBox();
+  await page.locator('#msgList').click({ position: { x: 4, y: 4 } });
+  await expect(editor).toBeFocused();
+  await page.locator('#effortTrigger').click();
+  const pop = page.locator('.chat-config-pop');
+  await expect(pop).toBeVisible();
+  await expect(editor).toBeFocused();
+  // The effort submenu's first row opens the model list.
+  await pop.locator('[data-initial-focus]').click();
+  await expect(pop.getByRole('listbox')).toBeVisible();
+  await expect(editor).toBeFocused();
+  await page.locator('#msgList').click({ position: { x: 4, y: 4 } });
+  await expect(pop).toBeHidden();
+  await expect(editor).toBeFocused();
+  await page.waitForTimeout(1000);
+  await expect(page.locator('html')).toHaveAttribute('data-keyboard-phase', 'open');
+  const after = await composer.boundingBox();
+  expect(after.y).toBeCloseTo(before.y, 0);
+  await page.evaluate(() => window.__fakeViewport.__resize({ height: 844 }));
+  await expect(page.locator('html')).toHaveAttribute('data-keyboard-phase', 'closed');
+  await expect.poll(async () => (await transcriptState(page)).inset).toBe('0px');
+});
+
+test('even a deliberate focus transfer cannot release a still-covered viewport', async ({ page }) => {
+  await seedChat(page, 4);
+  const editor = page.locator('#composerRoot .rich-composer-editor').first();
+  await editor.focus();
+  await page.evaluate(() => window.__fakeViewport.__resize({ height: 510 }));
+  await expect(page.locator('html')).toHaveAttribute('data-keyboard-phase', 'open');
+  await editor.evaluate((node) => node.blur());
+  await page.waitForTimeout(1000);
+  await expect(page.locator('html')).toHaveAttribute('data-keyboard-phase', 'open');
+  await expect.poll(async () => (await transcriptState(page)).inset).toBe('334px');
+  await page.evaluate(() => window.__fakeViewport.__resize({ height: 844 }));
+  await expect(page.locator('html')).toHaveAttribute('data-keyboard-phase', 'closed');
+});
