@@ -78,7 +78,7 @@ function toolActivityRows(
   readOnly: boolean | undefined,
   live: boolean,
 ): ReactElement[] {
-  const rows: ReactNode[] = [];
+  const rows: ReactElement[] = [];
   let completedBurst: ToolCallRecord[] = [];
 
   const flushBurst = () => {
