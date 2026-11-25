@@ -12,7 +12,7 @@
 .tag-editor-popover {
   border-color: var(--ui-border-subtle);
   box-shadow: var(--ui-shadow-menu);
-  color: var(--foreground);
+  color: var(--ui-text-primary);
   font-family: var(--font-sans);
   font-size: var(--ui-text-ui);
   line-height: var(--ui-text-ui-line);
@@ -40,14 +40,14 @@
   transform-origin: top left;
   padding: var(--ui-menu-gutter);
   background: var(--popover);
-  color: var(--foreground);
+  color: var(--ui-text-primary);
 }
 .chat-config-row {
   min-height: 40px;
   padding: var(--ui-menu-item-padding);
   gap: var(--ui-menu-item-gap);
   font-size: var(--ui-font-size-sm);
-  color: var(--foreground);
+  color: var(--ui-text-primary);
 }
 .chat-config-row:hover,
 .chat-config-row:focus-visible {
@@ -68,7 +68,7 @@
 }
 .chat-config-divider {
   margin: 3px 8px;
-  background: var(--border);
+  background: var(--ui-border-default);
 }
 .chat-config-row strong {
   font-size: var(--ui-font-size-sm);
@@ -110,7 +110,7 @@
 .display-prefs-popover .display-prefs-seg.active,
 .display-prefs-popover .display-prefs-seg[aria-checked='true'] {
   background: var(--ui-bg-segment-active);
-  color: var(--foreground);
+  color: var(--ui-text-primary);
 }
 
 /* ── Backdrops: one flat dim ──
@@ -359,7 +359,7 @@ body.composer-tools-open.composer-tools-open::after {
 .cmd-k-input-row {
   gap: var(--ui-space-sm);
   padding: var(--ui-space-lg) var(--ui-space-lg);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--ui-border-default);
 }
 .cmd-k-input-row .cmd-k-icon {
   width: 16px;
@@ -367,7 +367,7 @@ body.composer-tools-open.composer-tools-open::after {
   color: var(--ui-text-tertiary);
 }
 .cmd-k-input-row input {
-  color: var(--foreground);
+  color: var(--ui-text-primary);
   font-size: var(--ui-font-size-md);
 }
 .cmd-k-input-row input::placeholder {
@@ -397,7 +397,7 @@ body.composer-tools-open.composer-tools-open::after {
   padding: 2px 6px;
   border: 1px solid var(--ui-border-strong);
   border-radius: var(--ui-radius-xs);
-  background: var(--secondary);
+  background: var(--ui-bg-control);
   color: var(--ui-text-tertiary);
   font-family: var(--font-mono);
   font-size: var(--ui-font-size-xxs);
@@ -423,17 +423,17 @@ body.composer-tools-open.composer-tools-open::after {
   border-radius: var(--ui-radius-sm);
 }
 .cmd-k-row:hover {
-  background: var(--accent);
+  background: var(--ui-bg-hover);
 }
 .cmd-k-row.selected {
   background: var(--ui-bg-pill-selected);
 }
 .cmd-k-row-title {
-  color: var(--foreground);
+  color: var(--ui-text-primary);
   font-size: var(--ui-font-size-sm);
 }
 .cmd-k-row-snippet {
-  color: var(--muted-foreground);
+  color: var(--ui-text-secondary);
   font-size: var(--ui-font-size-xs);
 }
 .cmd-k-row-meta {
@@ -448,12 +448,12 @@ body.composer-tools-open.composer-tools-open::after {
   padding: 1px 5px;
   border: 1px solid var(--ui-border-strong);
   border-radius: var(--ui-radius-xs);
-  background: var(--secondary);
+  background: var(--ui-bg-control);
   font-family: var(--font-mono);
   font-size: var(--ui-font-size-xxs);
 }
 .cmd-k-foot {
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--ui-border-default);
   color: var(--ui-text-tertiary);
   font-size: var(--ui-font-size-xxs);
 }
@@ -462,7 +462,7 @@ body.composer-tools-open.composer-tools-open::after {
   margin-right: 4px;
   border: 1px solid var(--ui-border-strong);
   border-radius: var(--ui-radius-xs);
-  background: var(--secondary);
+  background: var(--ui-bg-control);
   font-family: var(--font-mono);
   font-size: var(--ui-font-size-xxs);
 }
@@ -498,7 +498,7 @@ body.composer-tools-open.composer-tools-open::after {
   max-width: var(--ui-page-width);
   margin-inline: auto;
   padding-inline: clamp(16px, 3vw, 40px);
-  color: var(--foreground);
+  color: var(--ui-text-primary);
 }
 .account-page-header {
   display: flex;
@@ -692,11 +692,6 @@ body.composer-tools-open.composer-tools-open::after {
   .profile-page-body {
     scrollbar-gutter: auto;
   }
-}
-
-/* ── Tag editor popover rows ── */
-.tag-editor-popover input {
-  border-radius: var(--ui-radius-control, 8px);
 }
 
 .admin-login-title {
