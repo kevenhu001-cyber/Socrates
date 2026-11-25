@@ -508,6 +508,7 @@
     height: 20px;
   }
   #appShell #sidebarHeader #sidebarSearchBtn {
+    --sidebar-search-button-bg: color-mix(in srgb, var(--foreground) 5%, transparent);
     border: 1px solid var(--ui-border-subtle);
     border-radius: var(--ui-radius-pill);
     background: color-mix(in srgb, var(--foreground) 5%, transparent);
@@ -521,7 +522,7 @@
     border-radius: var(--ui-radius-pill);
   }
   #appShell #sidebarHeader #sidebarSearchBtn[aria-expanded='true'] {
-    background: var(--ui-bg-selected);
+    --sidebar-search-button-bg: var(--ui-bg-selected);
   }
   #appShell .sidebar-search input {
     font-size: var(--ui-font-size-md);
