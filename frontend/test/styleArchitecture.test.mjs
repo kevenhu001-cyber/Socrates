@@ -249,3 +249,26 @@ test('header and transcript fades keep one paint recipe per surface', async () =
     assert.ok(css.includes(`mask-image: var(${token});`));
   }
 });
+
+test('Page Kit owns shared section, collection and card defaults', async () => {
+  const [kit, pages] = await Promise.all([
+    read('src/styles/features/page-kit.css'),
+    read('src/styles/polish/app-pages.css'),
+  ]);
+  for (const selector of [
+    '.ui-page-toolbar-end',
+    '.ui-page-section',
+    '.ui-page-section-head',
+    '.ui-collection',
+    '.ui-collection-body',
+    '.ui-card-grid',
+    '.ui-page-card',
+    '.ui-page-card-main',
+  ]) {
+    const rule = '#appShell ' + selector + ' {';
+    assert.ok(kit.includes(rule), `Page Kit must own ${selector}`);
+    // Responsive rules are allowed to specialize defaults, not redeclare
+    // a second unscoped desktop base at the top level.
+    assert.ok(!pages.split('\n').some((line) => line === rule), `Duplicate base: ${selector}`);
+  }
+});
