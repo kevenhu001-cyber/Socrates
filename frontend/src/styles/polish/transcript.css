@@ -250,8 +250,6 @@
   #appShell .msg-body p {
     margin-bottom: var(--msg-para-gap);
   }
-}
-@media (max-width: 768px) {
   #appShell .msg-body p:last-child {
     margin-bottom: 0;
   }
