@@ -402,16 +402,19 @@
   flex: none;
 }
 /* ── Unified Design System Table Contract: .ds-table-wrap & .ds-table ── */
-.ds-table-wrap {
-  position: relative;
-  width: 100%;
-  max-width: 100%;
-  margin: var(--ui-space-sm) 0;
+.ds-table-wrap,
+.intui-table-wrap {
   min-width: 0;
-  overflow-anchor: none;
+  max-width: 100%;
   overflow-x: auto;
   overscroll-behavior-x: contain;
   -webkit-overflow-scrolling: touch;
+}
+.ds-table-wrap {
+  position: relative;
+  width: 100%;
+  margin: var(--ui-space-sm) 0;
+  overflow-anchor: none;
 }
 .ds-table-wrap:focus-visible {
   /* The shared double ring (ink + paper gap), not a bare outline: the table
@@ -486,8 +489,6 @@
   border-bottom: 0;
 }
 .intui-table-wrap {
-  max-width: 100%;
-  overflow-x: auto;
   border: 1px solid var(--ui-border-subtle);
   border-radius: var(--ui-radius-md);
 }
