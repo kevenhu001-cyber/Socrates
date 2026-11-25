@@ -443,42 +443,6 @@ function TopBarRight({ phone }: { phone: boolean }) {
   );
 }
 
-/* ── Workspace tabs ────────────────────────────────────────────────────── */
-
-function PluginWorkspaceTabs() {
-  return (
-    <div
-      className="top-mode-tabs plugin-workspace-tabs"
-      id="pluginWorkspaceTabs"
-      role="tablist"
-      aria-label="Plugin workspace"
-      data-i18n-aria="chrome.pluginWorkspace"
-      hidden
-    >
-      <Button
-        variant="ghost"
-        className={`plugin-workspace-tab active ${CHROME_BUTTON}`}
-        id="pluginWorkspacePluginsTab"
-        role="tab"
-        aria-selected="true"
-        data-i18n-key="plugins.pluginsTab"
-      >
-        {t('plugins.pluginsTab', '插件')}
-      </Button>
-      <Button
-        variant="ghost"
-        className={`plugin-workspace-tab ${CHROME_BUTTON}`}
-        id="pluginWorkspaceSkillsTab"
-        role="tab"
-        aria-selected="false"
-        data-i18n-key="plugins.skillsTab"
-      >
-        {t('plugins.skillsTab', '技能')}
-      </Button>
-    </div>
-  );
-}
-
 /* The host `<div class="top-bar" id="topBar">` already carries the bar
    layout, so the tree renders its children into it rather than nesting a
    second `.top-bar` (which would become one opaque flex item and collapse
@@ -488,7 +452,6 @@ export function TopBar() {
   const conversationActive = useConversationActive();
   return (
     <>
-      <PluginWorkspaceTabs />
       <TopBarLeft phone={phone} conversationActive={conversationActive} />
       <ModeSwitch phone={phone} conversationActive={conversationActive} />
       <TopBarRight phone={phone} />
