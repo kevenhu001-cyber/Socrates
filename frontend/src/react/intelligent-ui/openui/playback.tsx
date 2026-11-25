@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { z } from 'zod/v4';
 import { i18n } from '../../../ui/legacyI18n.ts';
 import { MathText } from '../../rn/useInlineMath';
-import { Button } from '../../ui/Button';
+import { Button } from '../../ui/shadcn/button';
 import { NativeControl } from '../../ui/NativeControl';
 import { Glyph } from './glyph';
 
@@ -77,14 +77,18 @@ export const StepPlayer = defineComponent({
         />
         <div className="iui-step-actions">
           <Button
-            className="iui-button iui-button-outline iui-button-sm"
+            className="iui-button"
+            variant="outline"
+            size="sm"
             disabled={disabled || index === 0}
             onClick={() => select(index - 1)}
           >
             {i18n('intui.stepPrevious', 'Previous')}
           </Button>
           <Button
-            className="iui-button iui-button-solid iui-button-sm"
+            className="iui-button"
+            variant="default"
+            size="sm"
             disabled={disabled}
             onClick={play}
           >
@@ -92,7 +96,9 @@ export const StepPlayer = defineComponent({
             {playLabel}
           </Button>
           <Button
-            className="iui-button iui-button-outline iui-button-sm"
+            className="iui-button"
+            variant="outline"
+            size="sm"
             disabled={disabled || index === last}
             onClick={() => select(index + 1)}
           >
