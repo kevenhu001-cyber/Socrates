@@ -62,7 +62,7 @@ export function DisplaySettingsPane({ hidden, label }: SettingsPaneProps) {
             }))}
           />
         </div>
-        <div className="settings-choice">
+        <div className="settings-choice settings-choice--switch">
           <ShadcnLabel htmlFor="settings-conversation-grid">{gridLabel}</ShadcnLabel>
           <Switch
             id="settings-conversation-grid"
