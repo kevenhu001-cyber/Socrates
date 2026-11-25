@@ -359,3 +359,19 @@
     transition: none;
   }
 }
+
+/* Returned website marks stay visible on the compact activity caption. */
+.rn-turn-activity .rn-turn-activity-toggle .tool-site-marks {
+  flex: none;
+  gap: 0;
+  isolation: isolate;
+}
+.rn-turn-activity .rn-turn-activity-toggle .tool-site-mark {
+  box-sizing: content-box;
+  border: 2px solid var(--background);
+  border-radius: var(--ui-radius-pill);
+  overflow: hidden;
+}
+.rn-turn-activity .rn-turn-activity-toggle .tool-site-mark + .tool-site-mark {
+  margin-inline-start: -5px;
+}
