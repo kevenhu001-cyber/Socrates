@@ -107,6 +107,11 @@
     border: 0;
     background: transparent;
   }
+  body.workspace-active #appShell .plugin-directory-card-main {
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: var(--ui-space-md);
+  }
   body.workspace-active #appShell .plugin-directory-row .connector-icon {
     display: grid;
     place-items: center;
@@ -299,7 +304,6 @@
   body.workspace-active #appShell .library-file-icon svg {
     width: 20px;
     height: 20px;
-    stroke: currentColor;
   }
   body.workspace-active #appShell .library-row .workspace-row-copy {
     grid-column: 2;
