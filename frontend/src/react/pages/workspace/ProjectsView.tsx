@@ -1,4 +1,4 @@
-import { Plus } from 'lucide-react';
+import { Icon } from '../../../legacy/Icon';
 import { Button } from '../../ui/shadcn/button';
 import { useMemo, useState, type ReactNode } from 'react';
 import type { useWorkspaceDispatch } from './workspace.hooks';
@@ -32,17 +32,7 @@ function ProjectRow({
         onClick={() => dispatch.openProject(project.id)}
       >
         <span className="project-icon" style={{ color }}>
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.7"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M3.5 7.5h6l2-2h9v13h-17z" />
-          </svg>
+          <Icon name="folder" size={22} />
         </span>
         <span className="workspace-row-copy">
           <strong>{project.name}</strong>
@@ -154,7 +144,7 @@ function ProjectsView({
             className="projects-create-button"
             onClick={() => dispatch.createProject()}
           >
-            <Plus aria-hidden="true" />
+            <Icon name="plus" size={18} />
             <span>{i18n('projects.new', 'New')}</span>
           </Button>
         }
