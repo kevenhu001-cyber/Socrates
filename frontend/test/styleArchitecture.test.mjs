@@ -200,3 +200,26 @@ test('new owner modules use the ui token namespace', async () => {
     assert.equal(forbidden.test(css), false, `${file} introduced a retired token namespace`);
   }
 });
+
+test('converged surfaces keep their canonical stylesheet ownership', async () => {
+  const [sidebar, sharedSidebar, menu, composer, settings, overlays, preview, legacyActivity] =
+    await Promise.all([
+      read('src/styles/parity/sidebar.css'),
+      read('src/styles/polish/sidebar.css'),
+      read('src/styles/components/menu.css'),
+      read('src/styles/polish/composer.css'),
+      read('src/styles/polish/settings-page.css'),
+      read('src/styles/polish/overlays.css'),
+      read('src/styles/components/docPreview.css'),
+      read('src/styles/legacy/15-thinking-activity.css'),
+    ]);
+  assert.match(sidebar, /#appShell #sidebarHeader/);
+  assert.doesNotMatch(sharedSidebar, /@media\s*\(min-width:\s*769px\)/);
+  assert.match(menu, /#composerToolsMenu\.composer-tools-menu\[data-menu-side='sheet'\]/);
+  assert.doesNotMatch(composer, /#composerToolsMenu/);
+  assert.match(settings, /\.settings-page \.settings-shell/);
+  assert.match(settings, /\.settings-memory-list/);
+  assert.doesNotMatch(overlays, /\.settings-page|\.settings-memory-list|\.tone-preset-options/);
+  assert.match(preview, /\.library-file-preview-card/);
+  assert.doesNotMatch(legacyActivity, /\.library-file-preview-card/);
+});
