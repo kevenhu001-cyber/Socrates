@@ -908,8 +908,8 @@ html[data-detail-open='true'][data-detail-layout='docked'] #appShell .main {
   }
 
   #appShell #sidebar {
-    background: transparent;
-    border-right: 0;
+    background: var(--sidebar);
+    border-right: 1px solid var(--ui-sidebar-border);
   }
 
   /* Rows are 36px pills of neutral wash. Nothing in the rail is a card:
@@ -917,15 +917,37 @@ html[data-detail-open='true'][data-detail-layout='docked'] #appShell .main {
      shadow. */
   #appShell #sidebar .recent-item,
   #appShell #sidebarNav .sidebar-nav-btn {
-    border-radius: var(--ui-round-sm);
+    border-radius: var(--ui-radius-sidebar-row);
   }
   #appShell #sidebar .recent-item:hover,
   #appShell #sidebar .recent-item:focus-within,
   #appShell #sidebarNav .sidebar-nav-btn:hover {
     background: var(--ui-bg-hover);
   }
+  #appShell #sidebarNav .sidebar-nav-btn {
+    --sidebar-nav-bg: transparent;
+  }
+  #appShell #sidebarNav .sidebar-nav-btn > [data-part='nav-glyph'] {
+    flex: 0 0 20px;
+    width: 20px;
+    height: 20px;
+  }
+  #appShell #sidebarNav .sidebar-nav-btn > [data-part='nav-label'] {
+    min-width: 0;
+    overflow: hidden;
+  }
+  #appShell #sidebarNav .sidebar-nav-btn > [data-part='nav-glyph'] svg {
+    display: block;
+    width: 20px;
+    height: 20px;
+    flex: none;
+  }
+  #appShell #sidebarNav .sidebar-nav-btn:is(:hover, :focus-visible, [aria-expanded='true']) {
+    --sidebar-nav-bg: var(--ui-bg-hover);
+  }
   #appShell #sidebarNav .sidebar-nav-btn[aria-current='page'] {
-    background: color-mix(in srgb, var(--ui-ink) 8%, transparent);
+    --sidebar-nav-bg: color-mix(in srgb, var(--foreground) 8%, transparent);
+    background: var(--sidebar-nav-bg);
     box-shadow: none;
     color: var(--ui-ink);
   }
@@ -950,22 +972,24 @@ html[data-detail-open='true'][data-detail-layout='docked'] #appShell .main {
   align-content: center;
 }
 
-/* Desktop nav row: the shared shell row keeps the 36px density, 12px corner
+/* Desktop nav row: the shared shell row keeps the 36px density, 10px corner
    and 6px glyph-to-label gap the shadcn button recipe used before the DOM
    migration. The phone drawer overrides display/height/padding below 768px. */
-#appShell #sidebarNav .sidebar-nav-btn {
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 6px;
-  width: 100%;
-  height: var(--ui-control-desktop);
-  min-height: var(--ui-control-desktop);
-  padding: 6px 10px;
-  border-radius: var(--ui-radius-row);
-  text-align: start;
-  white-space: nowrap;
-  cursor: pointer;
-  user-select: none;
+@media (min-width: 769px) {
+  #appShell #sidebarNav .sidebar-nav-btn {
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+    width: 100%;
+    height: var(--ui-control-desktop);
+    min-height: var(--ui-control-desktop);
+    padding: 6px 10px;
+    border-radius: var(--ui-radius-sidebar-row);
+    text-align: start;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+  }
 }

@@ -204,6 +204,8 @@ export interface SidebarIconActionProps {
   controls?: string;
   visible?: boolean;
   iconSize?: number;
+  controlSize?: number;
+  backgroundVar?: string;
   hostStyle?: unknown;
   onPress: () => void;
 }
@@ -217,6 +219,8 @@ export function SidebarIconAction({
   controls,
   visible = true,
   iconSize = 20,
+  controlSize,
+  backgroundVar,
   hostStyle,
   onPress,
 }: SidebarIconActionProps) {
@@ -241,7 +245,14 @@ export function SidebarIconAction({
         {
           /* Only ever forces `none`: when shown, the host's layout CSS decides. */
           ...(visible ? null : { display: 'none' }),
-          backgroundColor: pressed ? colors.fillPressed : hovered ? colors.fill : 'transparent',
+          ...(controlSize ? { width: controlSize, height: controlSize, minWidth: controlSize } : null),
+          backgroundColor: pressed
+            ? colors.fillPressed
+            : hovered
+              ? colors.fill
+              : backgroundVar
+                ? `var(${backgroundVar}, transparent)`
+                : 'transparent',
           transitionProperty: 'background-color',
           transitionDuration: `${uiMotion.fast}ms`,
         },
@@ -274,6 +285,8 @@ export interface SidebarNavRowProps {
   /** The destination key, published as `data-nav`. */
   navKey: string;
   icon: UiGlyphName;
+  iconSize?: number;
+  iconStrokeWidth?: number;
   label: string;
   /** i18n key for the label and the collapsed rail's tooltip. */
   i18nKey?: string;
@@ -301,6 +314,8 @@ export function SidebarNavRow({
   id,
   navKey,
   icon,
+  iconSize = 20,
+  iconStrokeWidth,
   label,
   i18nKey,
   badge,
@@ -355,7 +370,7 @@ export function SidebarNavRow({
       ])}
     >
       <div aria-hidden style={domStyle([styles.glyph])} {...dataAttributes({ part: 'nav-glyph' })}>
-        <UiIcon name={icon} size={20} color={colors.ink} />
+        <UiIcon name={icon} size={iconSize} color={colors.ink} strokeWidth={iconStrokeWidth} />
       </div>
       <div style={domStyle([styles.labelWrap])} {...dataAttributes({ part: 'nav-label' })}>
         <UiText

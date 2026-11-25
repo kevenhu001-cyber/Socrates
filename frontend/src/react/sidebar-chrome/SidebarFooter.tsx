@@ -120,6 +120,21 @@ export function SidebarFooter() {
   return (
     <div className="sidebar-footer-account-wrap">
       <div className="sidebar-footer-identity-row">
+        {isMobile ? (
+          <Button
+            type="button"
+            className="sidebar-mobile-new-chat"
+            title={label('新建会话', 'New chat')}
+            aria-label={label('新建会话', 'New chat')}
+            onClick={() => {
+              getLegacyActions().navigation.startNewChat();
+              closeSidebarOnMobile();
+            }}
+          >
+            <Icon name="new-chat" />
+            <span>{label('聊天', 'Chat')}</span>
+          </Button>
+        ) : null}
         <DeferredMenu
           open={open}
           onOpenChange={setOpen}
@@ -151,21 +166,6 @@ export function SidebarFooter() {
             />
           )}
         </DeferredMenu>
-        {isMobile ? (
-          <Button
-            type="button"
-            className="sidebar-mobile-new-chat"
-            title={label('新建会话', 'New chat')}
-            aria-label={label('新建会话', 'New chat')}
-            onClick={() => {
-              getLegacyActions().navigation.startNewChat();
-              closeSidebarOnMobile();
-            }}
-          >
-            <Icon name="plus" />
-            <span>{label('新建会话', 'New chat')}</span>
-          </Button>
-        ) : null}
       </div>
     </div>
   );

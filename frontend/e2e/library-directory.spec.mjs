@@ -262,8 +262,8 @@ test('phone library filters actual images and selects only visible rows', async 
     if (sidebar && !sidebar.classList.contains('collapsed'))
       window.__socratesLegacy.navigation.toggleSidebar?.();
   });
-  // The phone drawer is min(420px, 90vw) wide and parks one control step
-  // outside the viewport when closed: -(351 + 32) = -383 at 390px.
+  // The phone drawer is min(420px, 80vw) wide and parks one control step
+  // outside the viewport when closed: -(312 + 32) = -344 at 390px.
   const closedDrawerX = await page.evaluate(() => {
     const sidebar = document.getElementById('sidebar');
     const width = sidebar?.getBoundingClientRect().width ?? 0;

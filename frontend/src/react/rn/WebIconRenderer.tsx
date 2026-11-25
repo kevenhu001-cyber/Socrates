@@ -36,20 +36,39 @@ export function WebIconRenderer({ name, shapes, size, color, strokeWidth }: UiIc
       />
     );
   }
+  if (name === 'more') {
+    return (
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        stroke="none"
+        aria-hidden="true"
+        focusable="false"
+        data-ui-icon={name}
+        style={{ color, display: 'block', flexShrink: 0 }}
+      >
+        <circle cx="5" cy="12" r="1.8" />
+        <circle cx="12" cy="12" r="1.8" />
+        <circle cx="19" cy="12" r="1.8" />
+      </svg>
+    );
+  }
   return (
     <svg
       width={size}
       height={size}
       viewBox="0 0 24 24"
       fill="none"
-      stroke={color}
+      stroke="currentColor"
       strokeWidth={strokeWidth}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
       focusable="false"
       data-ui-icon={name}
-      style={{ display: 'block', flexShrink: 0 }}
+      style={{ color, display: 'block', flexShrink: 0 }}
     >
       {shapes.map((shape, index) => {
         const key = `${name}-${index}`;

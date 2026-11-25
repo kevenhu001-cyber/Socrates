@@ -1,6 +1,7 @@
 import { t as translate } from '../../ui/legacyI18n.ts';
 import { SidebarNavRow } from '@socrates/ui/shell';
 import type { UiGlyphName, TextStyle } from '@socrates/ui/primitives';
+import { useMobileViewport } from '../sidebar-chrome/useMobileViewport';
 import { webClass } from '../rn/webHost';
 import { navButtonId, type NavButtonSpec } from './sidebarNav.items';
 
@@ -24,6 +25,14 @@ const GLYPHS: Record<NavButtonSpec['key'], UiGlyphName> = {
   skills: 'skills',
   more: 'more',
 } as Record<NavButtonSpec['key'], UiGlyphName>;
+
+const MOBILE_GLYPHS: Partial<Record<NavButtonSpec['key'], UiGlyphName>> = {
+  images: 'drawer-images',
+  library: 'drawer-library',
+  projects: 'drawer-folder',
+  sites: 'drawer-sites',
+  more: 'drawer-more',
+};
 
 /* The label size is a CSS role so the phone drawer can take the reference's
    phone step (polish/mobile-sidebar.css sets --nav-label-size under
@@ -50,12 +59,16 @@ export function SidebarNavButton({
   expanded?: boolean;
   onClick: () => void;
 }) {
+  const mobile = useMobileViewport();
   const label = i18n(item.i18nKey, item.label);
+  const glyph = (mobile ? MOBILE_GLYPHS[item.key] : undefined) ?? GLYPHS[item.key] ?? 'compose';
   return (
     <SidebarNavRow
       id={navButtonId(item.key)}
       navKey={item.key}
-      icon={GLYPHS[item.key] ?? 'compose'}
+      icon={glyph}
+      iconSize={mobile ? 24 : 20}
+      iconStrokeWidth={mobile ? 2 : 1.75}
       label={label}
       i18nKey={item.i18nKey}
       badge={item.badgeKey ? i18n(item.badgeKey, 'New') : undefined}
@@ -66,7 +79,7 @@ export function SidebarNavButton({
           ? { expanded: Boolean(expanded), controls: 'moreNavPopover' }
           : undefined
       }
-      activeShadow="var(--ui-elevation-raised)"
+      activeShadow="none"
       backgroundVar="--sidebar-nav-bg"
       hostStyle={webClass('sidebar-nav-btn', active && 'active')}
       badgeStyle={webClass('nav-new-badge')}

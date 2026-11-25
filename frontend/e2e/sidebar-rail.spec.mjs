@@ -47,6 +47,12 @@ test('open sidebar uses quiet 36px rows, compact chrome and one-line history', a
     const avatar = document.querySelector('#sidebarUserRow .user-avatar');
     return {
       navH: Math.round(box(nav).height),
+      iconW: box(nav.querySelector('svg')).width,
+      iconH: box(nav.querySelector('svg')).height,
+      iconCenterOffset: Math.abs(
+        box(nav.querySelector('svg')).y + box(nav.querySelector('svg')).height / 2 -
+          (box(nav).y + box(nav).height / 2),
+      ),
       navRadius: getComputedStyle(nav).borderTopLeftRadius,
       itemH: Math.round(box(item).height),
       metaVisible: getComputedStyle(item.querySelector('.recent-item-meta')).display !== 'none',
@@ -60,23 +66,27 @@ test('open sidebar uses quiet 36px rows, compact chrome and one-line history', a
     };
   });
   expect(rows.navH).toBe(36);
-  /* RN-7 侧栏：导航行用 uiRadius.md（12px），这是新设计规定的行圆角。 */
-  expect(rows.navRadius).toBe('12px');
+  expect(rows.navRadius).toBe('10px');
+  expect(rows.iconW).toBe(20);
+  expect(rows.iconH).toBe(20);
+  expect(rows.iconCenterOffset).toBeLessThanOrEqual(1);
   expect(rows.itemH).toBe(36);
   expect(rows.metaVisible).toBe(false);
   expect(rows.modeBadgeVisible).toBe(false);
-  /* RN-7：侧栏本身透明，灰色由外层画布承担（白色画布卡片浮在灰底上）。 */
-  expect(rows.sidebarBg).toBe('rgba(0, 0, 0, 0)');
-  /* RN-7：侧栏不画右边框，分界由白色画布卡片的发丝外框给出。 */
-  expect(rows.sidebarBorder.split(' ')[0]).toBe('0px');
+  expect(rows.sidebarBg).not.toBe('rgba(0, 0, 0, 0)');
+  expect(rows.sidebarBorder.split(' ')[0]).toBe('1px');
   expect(rows.headerH).toBe(52);
   expect(rows.logoFontSize).toBe('18px');
   expect(rows.footerBorderTop).toBe('0px');
   expect(rows.avatarSize).toBe(28);
 
-  /* 导航行悬停用 RN-7 的 fill token（4% ink），与顶栏、提问框控件的悬停一致。 */
-  await page.locator('#navProjects').hover();
-  await expect(page.locator('#navProjects')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0.04)');
+  const projects = page.locator('#navProjects');
+  const resting = await projects.evaluate((el) => getComputedStyle(el).backgroundColor);
+  await projects.hover();
+  await expect.poll(() => projects.evaluate((el) => getComputedStyle(el).backgroundColor)).not.toBe(resting);
+  await expect(page.locator('#navMore svg')).toHaveAttribute('fill', 'currentColor');
+  await expect(page.locator('#navMore svg')).toHaveAttribute('stroke', 'none');
+  await page.screenshot({ path: 'test-results/sidebar-desktop-web-parity-light.png' });
 });
 
 test('collapsing keeps a 52px icon rail with named buttons and reopens from it', async ({

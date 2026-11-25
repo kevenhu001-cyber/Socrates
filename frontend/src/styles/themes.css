@@ -921,3 +921,13 @@ html[data-theme='philosophy'][data-mode='dark'] {
   --border-400: 38 10% 32%;
   --border-500: 38 10% 40%;
 }
+
+/* Web drawer reference palette. */
+:root {
+  --ui-sidebar-drawer: rgb(245 245 245);
+  --ui-sidebar-compose: rgb(47 99 233);
+  --ui-sidebar-compose-ink: rgb(255 255 255);
+}
+[data-mode='dark'] {
+  --ui-sidebar-drawer: rgb(33 33 33);
+}
