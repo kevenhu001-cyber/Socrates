@@ -15,7 +15,7 @@ function isConnector(name: string): boolean {
   return name.startsWith('oc_') || Boolean(connectorActivityOf(name, undefined));
 }
 
-export function toolActivitySites(call?: ToolCallRecord): string[] {
+export function toolActivitySites(call?: ToolCallRecord, limit = 2): string[] {
   if (!call || isConnector(call.name)) return [];
   if (toolCategory(call.name) === 'fetch') {
     const url = urlOf(call.input);
@@ -26,7 +26,7 @@ export function toolActivitySites(call?: ToolCallRecord): string[] {
   for (const source of normalizeSources(call.results)) {
     if (source.host && !urls.has(source.host) && faviconProxyUrl(source.url)) {
       urls.set(source.host, source.url);
-      if (urls.size === 2) break;
+      if (urls.size === limit) break;
     }
   }
   return [...urls.values()];
@@ -36,7 +36,7 @@ export function toolActivitySites(call?: ToolCallRecord): string[] {
 export function turnActivitySites(calls: ReadonlyArray<ToolCallRecord>): string[] {
   const urls = new Map<string, string>();
   for (const call of calls) {
-    for (const url of toolActivitySites(call)) {
+    for (const url of toolActivitySites(call, 3)) {
       const key = faviconProxyUrl(url);
       if (key && !urls.has(key)) urls.set(key, url);
       if (urls.size === 3) return [...urls.values()];
