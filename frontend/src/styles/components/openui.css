@@ -309,15 +309,6 @@
   text-decoration: line-through;
   color: var(--iui-muted);
 }
-.intui-openui .iui-segmented {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--ui-space-xxs);
-}
-.intui-openui .iui-segmented button {
-  flex: 1;
-  cursor: pointer;
-}
 /* Formula ink follows the control, including inverted selected choices. */
 .intui-openui .katex :is(.mord, .mbin, .mrel) {
   color: inherit;
@@ -590,6 +581,9 @@
 /* Segmented choices stay a compact group instead of stretching into tabs
    the width of the card. `block` still means "fill the row". */
 .intui-openui .iui-segmented {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-xxs);
   align-self: flex-start;
   width: fit-content;
   max-width: 100%;
@@ -598,6 +592,7 @@
   border-radius: var(--ui-segment-radius);
 }
 .intui-openui .iui-segmented button {
+  cursor: pointer;
   flex: 0 0 auto;
   min-height: var(--ui-control-sm);
   border-radius: var(--ui-segment-radius);
