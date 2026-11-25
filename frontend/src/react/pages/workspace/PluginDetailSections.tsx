@@ -8,6 +8,7 @@ interface PluginDetailSectionsProps {
   plugin: WorkspacePluginBasic;
   capabilities: string[];
   connectable: boolean;
+  launching: boolean;
   onUseExample?: (prompt: string) => void;
 }
 
@@ -43,7 +44,7 @@ function ActionList({ actions }: { actions: NonNullable<WorkspacePluginBasic['ch
   );
 }
 
-export function PluginDetailSections({ plugin, capabilities, connectable, onUseExample }: PluginDetailSectionsProps) {
+export function PluginDetailSections({ plugin, capabilities, connectable, launching, onUseExample }: PluginDetailSectionsProps) {
   const actions = plugin.chatActions;
   const [authLabel, authHelp] = authDetails(plugin.authType);
   const connected = plugin.connection?.status === 'connected';
@@ -107,7 +108,7 @@ export function PluginDetailSections({ plugin, capabilities, connectable, onUseE
             {actions.slice(0, 3).map((action) => (
               <li key={action.name}>
                 {onUseExample ? (
-                  <Button variant="outline" size="surface" className="plugin-detail-prompt-card" onClick={() => onUseExample(pluginExample(plugin, action))}>
+                  <Button variant="outline" size="surface" className="plugin-detail-prompt-card" disabled={launching} onClick={() => onUseExample(pluginExample(plugin, action))}>
                     <Icon name="newChat" size={18} />
                     <span className="plugin-detail-prompt-text">{pluginExample(plugin, action)}</span>
                     <Icon name="chevronRight" size={16} className="plugin-detail-prompt-arrow" />
