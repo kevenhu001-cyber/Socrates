@@ -155,7 +155,7 @@
   color: var(--ui-link);
   text-underline-offset: 0.2em;
 }
-.intui-openui :where(.iui-button, .iui-input, .iui-segmented button, .iui-choice) {
+.intui-openui :where(.iui-input, .iui-segmented button, .iui-choice) {
   min-height: var(--ui-control-md);
   border: 1px solid var(--iui-border);
   border-radius: var(--ui-radius-control);
@@ -165,34 +165,16 @@
   font: inherit;
 }
 .intui-openui .iui-button {
-  border-radius: var(--ui-button-radius);
-  font-weight: var(--ui-font-weight-medium);
-  transition:
-    background-color var(--ui-duration-hover) ease,
-    border-color var(--ui-duration-hover) ease;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--ui-space-xs);
-  cursor: pointer;
+  height: auto;
+  min-height: var(--ui-control-md);
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
-.intui-openui .iui-button-solid {
-  border-color: transparent;
-  background: var(--primary);
-  color: var(--primary-foreground);
-}
-.intui-openui .iui-button-soft {
-  border-color: transparent;
-  background: var(--iui-surface);
-}
-.intui-openui .iui-button-ghost {
-  background: transparent;
-  border-color: transparent;
-}
-.intui-openui .iui-button-sm {
+.intui-openui .iui-button[data-size='sm'] {
   min-height: var(--ui-control-sm);
 }
-.intui-openui .iui-button-lg {
+.intui-openui .iui-button[data-size='touch'] {
   min-height: var(--ui-control-touch);
 }
 .intui-openui .iui-block {
@@ -530,15 +512,6 @@
   gap: var(--ui-space-md);
 }
 
-/* Neutral, consistent interactive states shared by every generated tool. */
-.intui-openui .iui-button:not(:disabled):hover {
-  background: var(--secondary);
-  border-color: var(--ui-text-tertiary);
-}
-.intui-openui .iui-button-solid:not(:disabled):hover {
-  background: var(--muted-foreground);
-  color: var(--background);
-}
 .intui-openui .iui-input {
   background: var(--ui-bg-raised);
 }
@@ -735,8 +708,13 @@
 
 /* Touch controls and editable text use the same host metrics as native cards. */
 @media (max-width: 768px) {
-  .intui-openui :is(.iui-button, .iui-input, .iui-segmented button, .iui-choice, .iui-check) {
+  .intui-openui :is(.iui-input, .iui-segmented button, .iui-choice, .iui-check),
+  .intui-openui .iui-button[data-size],
+  .intui-openui .iui-icon-button {
     min-height: var(--ui-control-touch);
+  }
+  .intui-openui .iui-icon-button {
+    width: var(--ui-control-touch);
   }
   .intui-openui :is(.iui-input, .iui-textarea) {
     font-size: max(16px, var(--ui-font-size-md));
