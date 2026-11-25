@@ -7,6 +7,7 @@ import { i18n, installedRank, PlusIcon } from './workspaceUi';
 import { PluginDirectoryCard } from './PluginDirectoryCard';
 import { InstalledPluginStrip } from './InstalledPluginStrip';
 import { dedupePlugins } from './pluginDirectory.data';
+import { pluginDescription } from './pluginDetailContent';
 import { PageEmptyState } from '../../ui/page/PageEmptyState';
 import { PageFrame } from '../../ui/page/PageFrame';
 import { PageHeader } from '../../ui/page/PageHeader';
@@ -131,7 +132,7 @@ export function PluginDirectory({
     return catalog.filter((plugin) => {
       if (scope === 'personal' && !isInstalled(plugin)) return false;
       if (!needle) return true;
-      return [plugin.name, plugin.description, ...(plugin.capabilities || [])]
+      return [plugin.name, plugin.id, pluginDescription(plugin), ...(plugin.chatActions?.map((action) => action.description) || plugin.capabilities || [])]
         .filter(Boolean)
         .join(' ')
         .toLowerCase()
