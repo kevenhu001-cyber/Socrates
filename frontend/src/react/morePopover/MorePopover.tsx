@@ -164,7 +164,7 @@ export function MorePopover() {
         (!menu.contains(event.target) && !trigger.contains(event.target)) ||
         !['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)
       ) return;
-      const items = Array.from(menu.querySelectorAll<HTMLElement>('[role="menuitem"]'))
+      const items = Array.from(menu.querySelectorAll<HTMLElement>('[role="menuitem"], [role="menuitemcheckbox"]'))
         .filter((item) => item.getClientRects().length > 0);
       if (!items.length) return;
       event.preventDefault();
