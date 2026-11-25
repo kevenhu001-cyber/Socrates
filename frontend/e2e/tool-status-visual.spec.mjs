@@ -80,7 +80,7 @@ test('deferred tool shows a clean single status line, no orphan dots', async ({ 
   await expect(bubble.locator('.rn-tool-row')).toHaveCount(0);
   /* A deferred tool needs just one action line and the original sphere,
      not a second status row with another spinner. */
-  await expect(bubble.locator('[data-testid="turn-activity-indicator"]')).toHaveCount(1);
+  await expect(bubble.locator('[data-testid="turn-activity-indicator"]')).toHaveCount(0);
   await expect(bubble.locator('[data-testid="thinking-step-spinner"]')).toHaveCount(0);
   await expect(bubble.locator('[data-testid="thinking-step-title"]')).toHaveCount(0);
   await expect(bubble.locator('[data-testid="turn-activity-label"]')).toHaveText(

@@ -172,25 +172,6 @@
   scrollbar-width: thin;
 }
 
-/* The live caption is still text; the working cue is the glyph alongside
-   it (react/tool-run/ThinkingSpark.tsx): twelve dots on a sphere turning in
-   3D, one turn every 3.4s, near dots larger and inked, far dots small and
-   faint. The component sizes the box and places each dot, then drives the
-   dots' transform and opacity with Web Animations, so the turn runs on the
-   compositor; there are no keyframes here. It sits on the caption ink. */
-.thinking-spark {
-  position: relative;
-  display: block;
-  flex: none;
-  color: var(--ui-text-primary);
-}
-.thinking-spark-dot {
-  position: absolute;
-  border-radius: 50%;
-  background: currentColor;
-  will-change: transform, opacity;
-}
-
 /* Public timeline entries remain still beneath the one live caption. */
 
 /* Adapted from OpenAI Apps SDK UI ShimmerText (MIT), pinned upstream
