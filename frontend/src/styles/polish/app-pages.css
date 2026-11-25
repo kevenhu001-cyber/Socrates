@@ -207,7 +207,7 @@ html:not([data-main-view='settingsPage']) #appShell .main-page .ui-page-frame.pl
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--foreground);
+  color: var(--ui-text-primary);
   font: inherit;
   font-size: var(--ui-font-size-sm);
   font-weight: var(--ui-font-weight-medium);
@@ -430,7 +430,7 @@ body.workspace-active #appShell .ui-page-card.project-card {
 }
 
 #appShell .project-card > .workspace-row-action {
-  color: var(--foreground);
+  color: var(--ui-text-primary);
   flex: 0 0 auto;
   margin-inline-start: auto;
 }
@@ -693,7 +693,7 @@ body.workspace-active #appShell .ui-page-card.project-card {
 }
 
 #appShell .scheduled-recommendation-add {
-  color: var(--foreground);
+  color: var(--ui-text-primary);
 }
 
 #appShell .scheduled-task-list.ui-collection {
@@ -745,7 +745,7 @@ body.workspace-active #appShell .ui-page-card.project-card {
   border: 1px solid var(--ui-border-subtle);
   border-radius: var(--ui-radius-pill);
   background: var(--ui-bg-surface);
-  color: var(--foreground);
+  color: var(--ui-text-primary);
   font-size: var(--ui-font-size-xs);
 }
 
@@ -1030,7 +1030,7 @@ body.workspace-active #appShell .ui-page-card.project-card {
     padding: 0;
     border: 0;
     background: transparent;
-    color: var(--foreground);
+    color: var(--ui-text-primary);
   }
 
   #appShell .ui-page-empty[data-slot='empty'] {
