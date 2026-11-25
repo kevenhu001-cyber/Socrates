@@ -1,4 +1,3 @@
-import { setConversationChrome } from './topBarState.ts';
 import { activateComposerSurface } from '../composer/controller.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { animateSurfaceEntrance } from './motion/surface.ts';
@@ -11,7 +10,6 @@ import { toggleShareBtn } from './share.ts';
 export { CORE_VIEW_IDS, MAIN_PAGE_IDS };
 
 const WORKSPACE_PAGE_IDS = new Set<string>(MAIN_PAGE_IDS.filter((id) => id !== 'examView'));
-const CONVERSATION_CHROME_VIEWS = new Set(['chatView', 'examView']);
 const VIEW_IDS = new Set(CORE_VIEW_IDS.concat(MAIN_PAGE_IDS));
 
 function resolveDocument(doc?: Document | null) {
@@ -36,8 +34,6 @@ function resetShellState(doc: Document) {
     'admin-active',
     'exam-active',
   );
-  const pluginTabs = doc.getElementById('pluginWorkspaceTabs');
-  if (pluginTabs) pluginTabs.hidden = true;
   doc
     .querySelectorAll<HTMLElement>("[data-exam-only='true']")
     .forEach((element) => element.classList.add('hidden'));
@@ -55,7 +51,6 @@ export function hideCoreViews(doc?: Document | null) {
   if (!currentDocument) return;
   setHidden(currentDocument, CORE_VIEW_IDS, true);
   syncChatPageGate(currentDocument);
-  setConversationChrome(false, currentDocument);
   setTopbarState({ conversationActions: false });
 }
 
@@ -77,8 +72,6 @@ function applyWorkspaceClasses(doc: Document, viewId: string): void {
     doc.body.classList.toggle('projects-active', viewId === 'spacesPanel');
     doc.body.classList.toggle('scheduled-active', viewId === 'scheduledPanel');
     doc.body.classList.toggle('admin-active', viewId === 'adminPanel');
-    const pluginTabs = doc.getElementById('pluginWorkspaceTabs');
-    if (pluginTabs) pluginTabs.hidden = viewId !== 'pluginsPanel';
   } else if (viewId === 'examView') {
     doc.body.classList.add('exam-active');
   }
@@ -130,7 +123,6 @@ export function activateMainView(viewId: string, doc?: Document | null) {
 
   applyWorkspaceClasses(currentDocument, viewId);
 
-  setConversationChrome(CONVERSATION_CHROME_VIEWS.has(viewId), currentDocument);
   toggleShareBtn(viewId);
   // Keep the landing and chat composer geometry intact; reveal the content
   // column when entering another surface. Same-session navigation is a no-op.

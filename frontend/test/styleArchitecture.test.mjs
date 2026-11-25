@@ -200,3 +200,144 @@ test('new owner modules use the ui token namespace', async () => {
     assert.equal(forbidden.test(css), false, `${file} introduced a retired token namespace`);
   }
 });
+
+test('converged surfaces keep their canonical stylesheet ownership', async () => {
+  const [sidebar, sharedSidebar, menu, composer, settings, overlays, preview, legacyActivity] =
+    await Promise.all([
+      read('src/styles/parity/sidebar.css'),
+      read('src/styles/polish/sidebar.css'),
+      read('src/styles/components/menu.css'),
+      read('src/styles/polish/composer.css'),
+      read('src/styles/polish/settings-page.css'),
+      read('src/styles/polish/overlays.css'),
+      read('src/styles/components/docPreview.css'),
+      read('src/styles/legacy/15-thinking-activity.css'),
+    ]);
+  assert.match(sidebar, /#appShell #sidebarHeader/);
+  assert.doesNotMatch(sharedSidebar, /@media\s*\(min-width:\s*769px\)/);
+  assert.match(menu, /#composerToolsMenu\.composer-tools-menu\[data-menu-side='sheet'\]/);
+  assert.doesNotMatch(composer, /#composerToolsMenu/);
+  const composerFrame = await read('src/styles/parity/composer-unified.css');
+  assert.match(composer, /#composerAttachmentChips \.attachment-chip\.is-leaving/);
+  assert.match(composer, /#composerAttachmentChips \.attachment-chip\.is-image/);
+  assert.doesNotMatch(composerFrame, /\.attachment-chip(?!s)/);
+  assert.doesNotMatch(composer, /\.attachment-chip-(?:progress|pct)\b/);
+  assert.match(settings, /\.settings-page \.settings-shell/);
+  assert.match(settings, /\.settings-memory-list/);
+  assert.doesNotMatch(overlays, /\.settings-page|\.settings-memory-list|\.tone-preset-options/);
+  assert.match(preview, /\.library-file-preview-card/);
+  assert.doesNotMatch(legacyActivity, /\.library-file-preview-card/);
+});
+
+test('header and transcript fades keep one paint recipe per surface', async () => {
+  const [topbar, phoneTopbar, transcript, details, chat] = await Promise.all([
+    read('src/styles/parity/topbar.css'),
+    read('src/styles/polish/topbar.css'),
+    read('src/styles/parity/transcript.css'),
+    read('src/styles/polish/transcript.css'),
+    read('src/styles/components/chat.css'),
+  ]);
+  assert.equal((topbar.match(/background: linear-gradient\(/g) || []).length, 1);
+  assert.doesNotMatch(phoneTopbar, /#pluginWorkspaceTabs\s*\{/);
+  for (const [css, token] of [
+    [transcript, '--transcript-edge-mask'],
+    [details, '--stream-tail-mask'],
+    [chat, '--phone-transcript-mask'],
+  ]) {
+    assert.ok(css.includes(`${token}: linear-gradient(`));
+    assert.ok(css.includes(`-webkit-mask-image: var(${token});`));
+    assert.ok(css.includes(`mask-image: var(${token});`));
+  }
+});
+
+test('Page Kit owns shared section, collection and card defaults', async () => {
+  const [kit, pages] = await Promise.all([
+    read('src/styles/features/page-kit.css'),
+    read('src/styles/polish/app-pages.css'),
+  ]);
+  for (const selector of [
+    '.ui-page-toolbar-end',
+    '.ui-page-section',
+    '.ui-page-section-head',
+    '.ui-collection',
+    '.ui-collection-body',
+    '.ui-card-grid',
+    '.ui-page-card',
+    '.ui-page-card-main',
+  ]) {
+    const rule = '#appShell ' + selector + ' {';
+    assert.ok(kit.includes(rule), `Page Kit must own ${selector}`);
+    // Responsive rules are allowed to specialize defaults, not redeclare
+    // a second unscoped desktop base at the top level.
+    assert.ok(!pages.split('\n').some((line) => line === rule), `Duplicate base: ${selector}`);
+  }
+});
+
+test('legacy button utilities use paint-only press feedback and tag editor has one input owner', async () => {
+  const [buttons, menu, overlays] = await Promise.all([
+    read('src/styles/polish/buttons.css'),
+    read('src/styles/components/menu.css'),
+    read('src/styles/polish/overlays.css'),
+  ]);
+  assert.doesNotMatch(buttons, /(?:^|\n)\s*(?:transform|scale):/);
+  assert.match(menu, /\.tag-editor-popover input\s*\{/);
+  assert.doesNotMatch(overlays, /\.tag-editor-popover input\s*\{/);
+});
+
+test('retired attachment markup cannot return to legacy or composer CSS', async () => {
+  const [legacy, composer, cards] = await Promise.all([
+    read('src/styles/legacy/07-composer-settings.css'),
+    read('src/styles/polish/composer.css'),
+    read('src/styles/components/chat.css'),
+  ]);
+  assert.doesNotMatch(legacy, /\.attachment-chip(?:s)?(?![-\w])/);
+  assert.doesNotMatch(composer, /\.attachment-chip-(?:info|name|meta|progress|pct)\b/);
+  assert.doesNotMatch(composer, /\.attachment-chip\.is-file\s+\.attachment-chip-/);
+  assert.match(cards, /\.file-card-caption\s*\{/);
+  assert.match(composer, /#composerAttachmentChips \.attachment-chip\.is-leaving/);
+});
+
+test('retired plugin workspace tabs have no DOM, observers or historical CSS', async () => {
+  const files = [
+    'src/react/topbar/TopBar.tsx',
+    'src/sidebar/nav.ts',
+    'src/legacy/mainViewController.ts',
+    'src/styles/layout/app-shell.css',
+    'src/styles/legacy/06-chat-transcript.css',
+    'src/styles/restore/chatgpt-v2.css',
+    'src/styles/restore/fixes.css',
+    'src/styles/restore/chat-surface.css',
+    'src/styles/restore/mobile-parity.css',
+    'src/styles/restore/chatgpt-ui.css',
+    'src/styles/restore/ref-baseline.css',
+  ];
+  for (const file of files) {
+    assert.doesNotMatch(await read(file), /pluginWorkspace(?:Tabs|PluginsTab|SkillsTab)|\.top-mode-tabs\b/);
+  }
+});
+
+test('header uses React state rather than retired DOM chrome mirrors', async () => {
+  const files = [
+    'src/react/topbar/TopBar.tsx',
+    'src/legacy/mainViewController.ts',
+    'src/legacy/share.impl.ts',
+    'src/styles/legacy/06-chat-transcript.css',
+  ];
+  for (const file of files) {
+    assert.doesNotMatch(await read(file), /mobileIncognitoBtn|\.chat-top-bar\b|setConversationChrome\b|#chatStats\b/);
+  }
+});
+
+test('scheduled recommendation cards have one stylesheet owner', async () => {
+  const pages = await read('src/styles/polish/app-pages.css');
+  assert.match(pages, /\.scheduled-recommendation-copy small\s*\{/);
+  assert.match(pages, /\.scheduled-recommendation-add\s*\{/);
+  for (const file of [
+    'src/styles/features/surfaces.css',
+    'src/styles/restore/chatgpt-ui.css',
+    'src/styles/restore/mobile-parity.css',
+    'src/styles/restore/fixes.css',
+  ]) {
+    assert.doesNotMatch(await read(file), /\.scheduled-recommendation(?:s|-[\w-]+)?\b/);
+  }
+});

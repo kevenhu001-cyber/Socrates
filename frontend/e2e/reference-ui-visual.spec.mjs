@@ -209,6 +209,13 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   });
   await page.keyboard.press('Escape');
   await expect(toolsMenu).toBeHidden();
+  // Skills must remain reachable through the visible phone composer menu.
+  await page.locator('#composerToolsBtn').click();
+  await toolsMenu.locator('.composer-tools-mobile-items [data-composer-action="skills"]').click();
+  await expect(page.locator('#promptTemplatesOverlay')).toBeVisible();
+  await page.locator('#promptTemplatesOverlay [data-prompt-command="close"]').click();
+  await expect(page.locator('#promptTemplatesOverlay')).toHaveCount(0);
+  await expect(toolsMenu).toBeHidden();
 
   await openSidebar(page);
   await expect
@@ -228,7 +235,7 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   await page.evaluate(() => document.getElementById('navPlugins')?.click());
   await expect(page.locator('.plugin-directory')).toBeVisible();
   await expect(page.locator('#sidebar')).toHaveClass(/collapsed/);
-  await expect(page.locator('#pluginWorkspaceTabs')).toBeHidden();
+  await expect(page.locator('#pluginWorkspaceTabs')).toHaveCount(0);
   await expect(page.locator('#pluginsPanel .plugins-panel-head')).toBeHidden();
   const pluginGeometry = await page.evaluate(() => {
     const box = (selector) => {
@@ -259,10 +266,6 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   );
   expect(pluginGeometry.tabs?.y).toBeLessThan(pluginGeometry.rowIcon?.y ?? 0);
   expect(pluginGeometry.rowIcon?.width).toBeCloseTo(40, 1);
-  await page.evaluate(() => document.getElementById('pluginWorkspaceSkillsTab')?.click());
-  await expect(page.locator('#promptTemplatesOverlay')).toBeVisible();
-  await page.locator('#promptTemplatesOverlay [data-prompt-command="close"]').click();
-  await expect(page.locator('#promptTemplatesOverlay')).toHaveCount(0);
   await page.evaluate(() => document.getElementById('navProjects')?.click());
   await expect(page.locator('.projects-directory')).toBeVisible();
   await expect(page.locator('.project-row').filter({ hasText: 'Socrates' })).toBeVisible();

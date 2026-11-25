@@ -62,7 +62,7 @@
   height: 44px;
   min-width: 44px;
   border-radius: var(--ui-radius-lg);
-  background: var(--ui-file-color, var(--secondary));
+  background: var(--ui-file-color, var(--ui-bg-control));
   color: hsl(var(--always-white));
   flex: 0 0 44px;
 }
@@ -188,7 +188,7 @@
   gap: var(--ui-space-sm);
   font-size: var(--ui-font-size-md);
   font-weight: var(--ui-font-weight-semibold);
-  color: var(--foreground);
+  color: var(--ui-text-primary);
   margin: 0;
   letter-spacing: -0.01em;
 }
@@ -196,7 +196,7 @@
 #appShell .plugin-detail-desc {
   font-size: var(--ui-font-size-sm);
   line-height: 1.6;
-  color: var(--muted-foreground);
+  color: var(--ui-text-secondary);
   margin: 0;
 }
 
@@ -220,7 +220,7 @@
   background: transparent;
   border: 1px solid var(--ui-border-subtle);
   border-radius: var(--ui-radius-lg);
-  color: var(--foreground);
+  color: var(--ui-text-primary);
   text-align: start;
   white-space: normal;
   overflow-wrap: anywhere;
@@ -228,7 +228,7 @@
 
 #appShell .plugin-detail-prompt-card > svg {
   flex: none;
-  color: var(--foreground);
+  color: var(--ui-text-primary);
 }
 
 #appShell button.plugin-detail-prompt-card:hover {
@@ -240,7 +240,7 @@
   min-width: 0;
   font-size: var(--ui-font-size-sm);
   line-height: 1.4;
-  color: var(--foreground);
+  color: var(--ui-text-primary);
 }
 
 #appShell .plugin-detail-prompt-arrow {
@@ -265,7 +265,7 @@
   gap: 10px;
   padding-block: var(--ui-space-xs);
   font-size: var(--ui-font-size-sm);
-  color: var(--muted-foreground);
+  color: var(--ui-text-secondary);
   line-height: 1.5;
 }
 
@@ -304,7 +304,7 @@
   min-width: 0;
   text-align: end;
   overflow-wrap: anywhere;
-  color: var(--foreground);
+  color: var(--ui-text-primary);
   font-weight: var(--ui-font-weight-medium);
 }
 
@@ -324,7 +324,7 @@
   overflow-wrap: anywhere;
 }
 #appShell .plugin-detail-action-copy strong {
-  color: var(--foreground);
+  color: var(--ui-text-primary);
   font-weight: var(--ui-font-weight-medium);
 }
 #appShell .plugin-detail-feature-item > svg {
@@ -344,7 +344,7 @@
 }
 #appShell .plugin-detail-more-actions summary {
   cursor: pointer;
-  color: var(--foreground);
+  color: var(--ui-text-primary);
   font-size: var(--ui-font-size-sm);
   min-height: var(--ui-control-touch);
   align-content: center;
@@ -374,8 +374,8 @@
    directory skeletons read the same as every other skeleton instead of running
    a second gradient at a different angle and speed. */
 #appShell .workspace-skeleton-shimmer {
-  background-color: var(--cg-surface-raised);
-  --skeleton-shimmer-highlight: color-mix(in srgb, var(--cg-surface-raised), var(--foreground) 12%);
+  background-color: var(--ui-bg-raised);
+  --skeleton-shimmer-highlight: color-mix(in srgb, var(--ui-bg-raised), var(--ui-text-primary) 12%);
 }
 
 /* Keep placeholders static and legible when reduced motion is requested. */
@@ -403,7 +403,7 @@
   height: 40px;
   min-width: 40px;
   border-radius: var(--ui-radius-lg);
-  background: var(--cg-surface-raised);
+  background: var(--ui-bg-raised);
 }
 
 #appShell .workspace-skeleton-tabs {
@@ -413,7 +413,7 @@
 
 #appShell .workspace-skeleton-pill {
   border-radius: var(--ui-radius-pill);
-  background: var(--cg-surface-raised);
+  background: var(--ui-bg-raised);
 }
 
 #appShell .workspace-skeleton-pill-sm {
@@ -427,7 +427,7 @@
 }
 
 #appShell .workspace-skeleton-pill-tab.active {
-  background-color: var(--secondary);
+  background-color: var(--ui-bg-control);
 }
 
 #appShell .workspace-skeleton-pill-chip {
@@ -454,7 +454,7 @@
   min-width: 0;
   height: 36px;
   border-radius: var(--ui-radius-pill);
-  background: var(--cg-surface-raised);
+  background: var(--ui-bg-raised);
 }
 
 #appShell .workspace-skeleton-chips {
@@ -481,7 +481,7 @@
   height: 40px;
   min-width: 40px;
   border-radius: var(--ui-radius-lg);
-  background: var(--cg-surface-raised);
+  background: var(--ui-bg-raised);
 }
 
 #appShell .workspace-skeleton-copy {
@@ -496,7 +496,7 @@
 
 #appShell .workspace-skeleton-line {
   border-radius: var(--ui-radius-sm);
-  background: var(--cg-surface-raised);
+  background: var(--ui-bg-raised);
 }
 
 #appShell .workspace-skeleton-line-title {
@@ -534,7 +534,7 @@
   width: 72px;
   height: 32px;
   border-radius: var(--ui-radius-pill);
-  background: var(--cg-surface-raised);
+  background: var(--ui-bg-raised);
   flex-shrink: 0;
 }
 
@@ -544,7 +544,7 @@
   /* --ui-radius-full never existed as a token, so this resolved to an
      invalid value and the skeleton circle drew as a hard square. */
   border-radius: var(--ui-radius-pill);
-  background: var(--cg-surface-raised);
+  background: var(--ui-bg-raised);
   flex-shrink: 0;
 }
 
@@ -552,7 +552,7 @@
   width: 24px;
   height: 24px;
   border-radius: var(--ui-radius-pill);
-  background: var(--cg-surface-raised);
+  background: var(--ui-bg-raised);
   flex-shrink: 0;
 }
 
@@ -560,7 +560,7 @@
   width: 18px;
   height: 18px;
   border-radius: var(--ui-radius-sm);
-  background: var(--cg-surface-raised);
+  background: var(--ui-bg-raised);
   flex-shrink: 0;
 }
 
@@ -568,7 +568,7 @@
   width: 24px;
   height: 24px;
   border-radius: var(--ui-radius-sm);
-  background: var(--cg-surface-raised);
+  background: var(--ui-bg-raised);
   flex-shrink: 0;
 }
 
@@ -743,7 +743,7 @@
   max-width: var(--ui-content-chat);
   margin-inline: auto;
   padding: var(--ui-space-lg) 0;
-  color: var(--foreground);
+  color: var(--ui-text-primary);
   background: transparent;
   border: 0;
 }
@@ -753,5 +753,5 @@
   flex: 1;
   min-height: 0;
   border: 0;
-  background: var(--background);
+  background: var(--ui-bg-page);
 }

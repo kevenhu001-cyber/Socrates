@@ -335,3 +335,31 @@ test("a popover opened by a pressed trigger is placed from the trigger's resting
   expect(geo.inlineScale, 'the guard lifted its pin').toBe('');
   await page.keyboard.press('Escape');
 });
+
+for (const reducedMotion of [false, true]) {
+  test(`legacy utility buttons do not move when held (reduced motion: ${reducedMotion})`, async ({ page }) => {
+    await boot(page, { reducedMotion });
+    await page.evaluate(() => {
+      const variants = ['btn btn-primary', 'btn btn-secondary', 'btn btn-ghost', 'btn-icon'];
+      for (const [index, className] of variants.entries()) {
+        const button = document.createElement('button');
+        button.id = 'utilityPress' + index;
+        button.className = className;
+        button.textContent = 'Probe';
+        button.style.cssText = 'position:fixed;left:40px;top:' + (40 + index * 64) + 'px;z-index:99999';
+        document.body.appendChild(button);
+      }
+    });
+    for (let index = 0; index < 4; index += 1) {
+      const selector = '#utilityPress' + index;
+      const { boxBefore, boxDuring, pressed, released, opacityBefore, opacityDuring } =
+        await holdAndMeasure(page, selector);
+      expect(pressed).toBe(1);
+      expect(released).toBe(1);
+      for (const key of ['x', 'y', 'width', 'height']) {
+        expect(Math.abs(boxBefore[key] - boxDuring[key])).toBeLessThan(0.1);
+      }
+      expect(opacityDuring).toBeLessThan(opacityBefore);
+    }
+  });
+}

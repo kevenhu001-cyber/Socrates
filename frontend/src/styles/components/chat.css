@@ -39,20 +39,15 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
     --phone-transcript-top: calc(var(--ui-mobile-header) + env(safe-area-inset-top, 0px));
     --phone-transcript-bottom: 32px;
     scroll-padding-block: calc(var(--phone-transcript-top) + 12px) var(--phone-transcript-bottom);
-    -webkit-mask-image: linear-gradient(
+    --phone-transcript-mask: linear-gradient(
       to bottom,
       transparent 0,
       black var(--phone-transcript-top),
       black calc(100% - var(--phone-transcript-bottom)),
       transparent 100%
     );
-    mask-image: linear-gradient(
-      to bottom,
-      transparent 0,
-      black var(--phone-transcript-top),
-      black calc(100% - var(--phone-transcript-bottom)),
-      transparent 100%
-    );
+    -webkit-mask-image: var(--phone-transcript-mask);
+    mask-image: var(--phone-transcript-mask);
   }
 }
 
@@ -734,7 +729,8 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
 }
 
 .file-card:hover .file-card-remove,
-.file-card:focus-within .file-card-remove {
+.file-card:focus-within .file-card-remove,
+.file-card.uploading .file-card-remove {
   opacity: 1;
 }
 

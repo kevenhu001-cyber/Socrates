@@ -172,70 +172,11 @@
   background: hsl(var(--text-500) / 0.25);
 }
 
-/* chat-header is now legacy — content lives in .top-bar. The rule
-   below is kept so old selectors don't break, but it's hidden. */
-/* chatDomain element was removed from index.html — topicBadge is the
-   sole session indicator now. Hide any stale nodes defensively. */
-/* U-H2 — chat-header mode badge (Tutor/Chat), a pill next to chatStats.
-   The text/background/color crossfade between Tutor and Chat instead of
-   snapping instantly, driven by JS clearing and re-adding the class. */
-/* The top-bar container class, still used by the plugin
-   workspace tabs (#pluginWorkspaceTabs). The shared Chat/Tutor control is
-   rendered in the React top-bar. */
-.top-mode-tabs {
-  position: absolute;
-  left: 50%;
-  top: calc(50% + 14px);
-  transform: translate(-50%, -50%);
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  padding: 3px;
-  border-radius: 999px;
-  background: hsl(var(--bg-300) / 0.6);
-  z-index: 1;
-  pointer-events: auto;
-}
-/* Exam is a focused workspace. The mobile incognito control is hidden
-   independently of inline styles so it cannot leak into the exam UI. */
-body.exam-active #mobileIncognitoBtn {
-  display: none !important;
-}
-body.workspace-active #mobileIncognitoBtn {
-  display: none !important;
-}
-/* Admin console is a standalone operator page — none of the chat
-   top-bar chrome applies (mode switch, model switcher, find, share,
-   stats). !important because the chat runtime toggles .hidden off
-   these controls whenever a session is active. The sidebar toggle
-   stays visible for navigation. */
-body.admin-active #mobileIncognitoBtn,
+/* Admin pages do not expose conversation actions. */
 body.admin-active #topModelSwitcher,
 body.admin-active #findBtn,
-body.admin-active #shareBtn,
-body.admin-active #chatStats {
+body.admin-active #shareBtn {
   display: none !important;
-}
-/* See the canonical rule in
-   00-foundations.css. The attribute reflects the live conversation state, so
-   the mode dropdown is hidden only while a conversation is active and
-   reappears when the user returns to the topic-input page. */
-/* Compatibility layer: the final responsive contract below keeps the shared
-   top-bar container on the empty landing surface and only hides it for live
-   conversations. */
-@media (max-width: 640px) {
-  .top-mode-tabs {
-    display: none;
-  }
-}
-
-/* The incognito top-bar control remains mounted for compatibility but is
-   hidden; the active action lives in the sidebar's More menu. */
-@media (max-width: 640px) {
-  /* Right-side incognito toggle — moved into the sidebar 更多 popover so
-     the mobile header matches the single-icon reference. The element
-     stays mounted (syncIncognitoBtn still mirrors aria state onto it)
-     but never renders in the top bar. */
 }
 
 .msg-list {

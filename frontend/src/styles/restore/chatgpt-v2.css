@@ -99,12 +99,6 @@
    the sidebar is closed. Restore the three-zone rhythm on desktop (the
    mode tabs stay absolutely centered, so the sides don't shift them). */
 
-@media (max-width: 768px) {
-  #appShell .top-mode-tabs {
-    box-sizing: border-box;
-  }
-}
-
 /* The 14px nudge below is a desktop-only
    sidebar-alignment offset. Left unscoped it leaks onto phones, where
    the 14px-gutter #topicSetup turns it into a 28px-left / 0-right pill.
@@ -173,9 +167,6 @@
      ID selectors, which outrank `.hidden`. Re-assert hidden here so
      workspace pages don't show find/share before a chat starts. */
 
-  #appShell .top-mode-tabs {
-    width: 174px;
-  }
 }
 
 /* -------------------------------------------------------------------------
@@ -230,13 +221,6 @@ html[data-mode='light'] #appShell {
   #appShell .main-content,
   #appShell .main-bg {
     background-color: var(--cg-page) !important;
-  }
-}
-
-@media (max-width: 768px) {
-  #appShell .top-mode-tabs {
-    border-color: var(--cg-border-strong) !important;
-    background: var(--cg-surface) !important;
   }
 }
 

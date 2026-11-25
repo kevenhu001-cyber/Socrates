@@ -408,87 +408,6 @@ body.workspace-active #appShell .workspace-danger:hover {
   padding-bottom: 10px;
 }
 
-.scheduled-recommendations {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0 32px;
-}
-
-.scheduled-recommendation {
-  display: flex;
-  align-items: center;
-  min-width: 0;
-  gap: 12px;
-  min-height: 76px;
-  padding: 10px 0;
-  border: 0;
-  border-bottom: 1px solid var(--cg-border);
-  color: var(--cg-text);
-  background: transparent;
-  text-align: left;
-  cursor: pointer;
-}
-
-.scheduled-recommendation:hover .scheduled-recommendation-add {
-  color: var(--cg-text);
-  background: var(--cg-surface-hover);
-}
-
-.scheduled-recommendation-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 38px;
-  width: 38px;
-  height: 38px;
-  border-radius: 11px;
-  color: var(--cg-text-secondary);
-  background: var(--cg-surface);
-}
-
-.scheduled-recommendation-icon svg {
-  width: 21px;
-  height: 21px;
-}
-
-.scheduled-recommendation-copy {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.scheduled-recommendation-copy strong {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 14px;
-  font-weight: var(--ui-font-weight-semibold);
-}
-
-.scheduled-recommendation-copy small {
-  overflow: hidden;
-  color: var(--cg-text-muted);
-  font-size: 12px;
-  line-height: 18px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.scheduled-recommendation-add {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 28px;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  color: var(--cg-text-muted);
-  font-size: 22px;
-  font-weight: var(--ui-font-weight-regular);
-}
-
 .scheduled-task-list {
   margin-top: 38px;
 }
@@ -586,10 +505,6 @@ body.workspace-active #appShell .workspace-row:hover {
     --conversation-composer-width: calc(100vw - 28px);
   }
 
-  #appShell .top-mode-tabs {
-    min-width: 166px;
-  }
-
   #appShell #mainInner,
   body.workspace-active #appShell #mainInner {
     width: 100%;
@@ -603,8 +518,7 @@ body.workspace-active #appShell .workspace-row:hover {
 
   /* Topic send fills the old mic track's neighbour slot. */
 
-  .composer-tools-plugin-list,
-  .scheduled-recommendations {
+  .composer-tools-plugin-list {
     grid-template-columns: 1fr;
   }
 
@@ -612,12 +526,6 @@ body.workspace-active #appShell .workspace-row:hover {
     max-height: 270px;
   }
 
-  /* Reference cards keep the action on the same line even on phones:
-     single-line ellipsis on the copy absorbs the narrow width. */
-
-  .scheduled-recommendation-copy small {
-    white-space: normal;
-  }
 }
 
 /* Final cascade guard. The legacy stylesheet contains a few later, highly

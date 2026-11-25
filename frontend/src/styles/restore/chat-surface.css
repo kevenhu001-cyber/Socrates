@@ -43,13 +43,6 @@ body,
   }
 }
 
-@media (max-width: 768px) {
-  #appShell#appShell .top-mode-tabs {
-    border: 1px solid var(--conversation-border) !important;
-    border-radius: 999px;
-  }
-}
-
 #appShell#appShell #sidebarOpenBtn {
   width: var(--ui-phone-drawer-size, 40px) !important;
   min-width: var(--ui-phone-drawer-size, 40px) !important;
@@ -294,13 +287,6 @@ body,
 
 [data-mode='light'] {
   --chat-accent: #3b82f6;
-}
-
-@media (max-width: 768px) {
-  #appShell#appShell .top-mode-tabs {
-    border-color: var(--chat-line) !important;
-    background: var(--chat-surface) !important;
-  }
 }
 
 @media (min-width: 769px) {

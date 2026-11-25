@@ -2,7 +2,7 @@ import { Icon } from '../../../legacy/Icon';
 import { Button } from '../../ui/shadcn/button';
 import { i18n, MoreIcon, PlusIcon } from './workspaceUi';
 import { ConnectorMark } from './ConnectorMark';
-import { pluginDescription } from './pluginDetailContent';
+import { detailText, pluginDescription } from './pluginDetailContent';
 import type { useWorkspaceDispatch } from './workspace.hooks';
 import type { PluginItem } from './types';
 
@@ -92,7 +92,11 @@ export function PluginDirectoryCard({
   dispatch,
   onSelect,
 }: PluginDirectoryCardProps) {
-  const connectedLabel = i18n('plugins.connected', 'Connected');
+  const connectionLabel = plugin.connection?.status === 'connected'
+    ? i18n('plugins.connected', 'Connected')
+    : plugin.connection?.status === 'initiated'
+      ? detailText('Awaiting authorization', '等待授权')
+      : null;
   const description = pluginDescription(plugin);
   return (
     <article
@@ -114,8 +118,8 @@ export function PluginDirectoryCard({
         <span className="workspace-row-copy">
           <span className="plugin-directory-card-title-row">
             <strong>{plugin.name}</strong>
-            {plugin.connection?.status === 'connected' ? (
-              <span className="plugin-directory-card-status">{connectedLabel}</span>
+            {connectionLabel ? (
+              <span className="plugin-directory-card-status">{connectionLabel}</span>
             ) : null}
           </span>
           <span className="plugin-directory-card-desc">{description}</span>

@@ -1190,3 +1190,22 @@ test('desktop settings has a compact neutral panel with aligned category glyphs'
   await expect(panel.locator('.settings-index-group-label')).toHaveCount(0);
   await page.screenshot({ path: 'test-results/settings-web-compact.png' });
 });
+
+test('settings follows the shell breakpoint at 768 and 769 pixels', async ({ page }) => {
+  await page.setViewportSize({ width: 768, height: 900 });
+  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
+  const overlay = page.locator('#settingsPage');
+  const nav = overlay.locator('.settings-nav');
+  const body = overlay.locator('.settings-body');
+  await expect(nav).toBeVisible();
+  await expect(body).toBeHidden();
+  await nav.locator('[data-section="general"]').click();
+  await expect(nav).toBeHidden();
+  await expect(body).toBeVisible();
+  await expect(overlay.locator('#settingsMobileBack')).toBeVisible();
+  await page.setViewportSize({ width: 769, height: 900 });
+  await expect(nav).toBeVisible();
+  await expect(body).toBeVisible();
+  await expect(overlay.locator('#settingsMobileBack')).toBeHidden();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
+});

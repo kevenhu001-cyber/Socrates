@@ -23,8 +23,12 @@ interface PluginDirectoryProps {
   readonly onSelectPlugin: (id: string) => void;
 }
 
-function isInstalled(plugin: PluginItem): boolean {
-  return plugin.connection?.status === 'connected' || plugin.connection?.status === 'initiated';
+function isConnected(plugin: PluginItem): boolean {
+  return plugin.connection?.status === 'connected';
+}
+
+function isPersonal(plugin: PluginItem): boolean {
+  return isConnected(plugin) || plugin.connection?.status === 'initiated';
 }
 
 function PluginDirectoryAddAction({
@@ -40,7 +44,7 @@ function PluginDirectoryAddAction({
       variant="outline"
       size="icon-lg"
       className="plugin-directory-add-btn rounded-full"
-      aria-label={getCurrentLang() === 'zh' ? '添加插件' : 'Add plugin'}
+      aria-label={getCurrentLang() === 'zh' ? '查找插件' : 'Find plugins'}
       onClick={() => {
         setScope('public');
         setQuery('');
@@ -130,7 +134,7 @@ export function PluginDirectory({
   const visiblePlugins = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return catalog.filter((plugin) => {
-      if (scope === 'personal' && !isInstalled(plugin)) return false;
+      if (scope === 'personal' && !isPersonal(plugin)) return false;
       if (!needle) return true;
       return [
         plugin.name,
@@ -150,7 +154,7 @@ export function PluginDirectory({
     });
   }, [catalog, query, scope]);
   const installedPlugins = useMemo(
-    () => catalog.filter(isInstalled).sort((a, b) => installedRank(a.id) - installedRank(b.id)),
+    () => catalog.filter(isConnected).sort((a, b) => installedRank(a.id) - installedRank(b.id)),
     [catalog],
   );
   const browse = scope === 'public' && !query.trim();
@@ -199,7 +203,7 @@ export function PluginDirectory({
 
       <PluginDirectoryBody
         visiblePlugins={visiblePlugins}
-        sectionTitle={query.trim() ? i18n('plugins.searchResults', 'Search results') : scope === 'personal' ? i18n('plugins.installed', 'Installed') : detailText('Featured', '精选插件')}
+        sectionTitle={query.trim() ? i18n('plugins.searchResults', 'Search results') : scope === 'personal' ? detailText('Your apps', '我的插件') : detailText('Featured', '精选插件')}
         popularPlugins={popularPlugins}
         newPlugins={newPlugins}
         configured={configured}

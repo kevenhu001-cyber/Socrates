@@ -34,16 +34,6 @@
     background: var(--ui-phone-drawer-bg, transparent) !important;
     box-shadow: none !important;
   }
-  #appShell .scheduled-recommendations {
-    display: grid !important;
-    grid-template-columns: 1fr !important;
-  }
-  #appShell .scheduled-recommendation {
-    min-height: 72px !important;
-  }
-  #appShell .scheduled-recommendation-add {
-    visibility: visible;
-  }
   #appShell .scheduled-task-list .task-row {
     min-height: 70px;
   }
@@ -79,15 +69,6 @@
      is retired — it covered the composer's own trigger and cut its last
      visible row in half. What stays is the row rhythm below. */
 
-  /* The restored parity layer grows the phone top bar to 72px while no
-     mobile rule re-centres the mode pill, so it inherited the modular
-     top:12px and floated ~10px above the 44px header controls. Anchor it
-     to the bar's midline instead of a fixed offset. */
-  #appShell .top-mode-tabs {
-    top: 50%;
-    transform: translate(-50%, -50%) !important;
-  }
-
   #composerToolsMenu .composer-tools-mobile-items .composer-tools-group-label {
     padding-top: 8px;
     padding-bottom: 2px;
@@ -103,15 +84,6 @@
     color: var(--cg-text-muted);
     font-size: 12px;
     line-height: 16px;
-  }
-
-  #appShell#appShell .top-mode-tabs {
-    box-sizing: border-box;
-    width: min(140px, calc(100vw - 112px));
-    min-width: 0;
-    height: 32px;
-    min-height: 32px;
-    padding: 2px;
   }
 
   /* See legacy/layoutStateMirror.ts. */

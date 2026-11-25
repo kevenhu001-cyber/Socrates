@@ -5,6 +5,7 @@ import type { Root } from 'react-dom/client';
 
 import { t as _t } from '../../ui/legacyI18n.ts';
 import { restingRect } from '../../legacy/pressFeedback.ts';
+import { useIncognito } from '../app-mode/useIncognito.ts';
 import { useMorePopoverStore } from '../../sidebar/morePopover.store.ts';
 import { useMorePopoverDispatch, useMorePopoverSnapshot } from './morePopover.store';
 import type { MorePopoverAction } from './types';
@@ -90,8 +91,10 @@ function i18n(key: string, fallback: string): string {
 function MenuItem({
   spec,
   onPick,
+  incognito,
 }: {
   spec: MenuItemSpec;
+  incognito: boolean;
   onPick: (action: MorePopoverAction) => void;
 }) {
   const label = i18n(spec.labelKey, spec.labelFallback);
@@ -103,7 +106,8 @@ function MenuItem({
     <UiButton
       type="button"
       className={className}
-      role="menuitem"
+      role={spec.action === 'incognito' ? 'menuitemcheckbox' : 'menuitem'}
+      aria-checked={spec.action === 'incognito' ? incognito : undefined}
       onPointerEnter={preloadSettings}
       onPointerDown={preloadSettings}
       onFocus={preloadSettings}
@@ -117,6 +121,7 @@ function MenuItem({
 
 export function MorePopover() {
   const isOpen = useMorePopoverSnapshot();
+  const incognito = useIncognito();
   const { pick } = useMorePopoverDispatch();
   const menuRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState<CSSProperties>({ left: 8, top: 8 });
@@ -159,7 +164,7 @@ export function MorePopover() {
         (!menu.contains(event.target) && !trigger.contains(event.target)) ||
         !['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)
       ) return;
-      const items = Array.from(menu.querySelectorAll<HTMLElement>('[role="menuitem"]'))
+      const items = Array.from(menu.querySelectorAll<HTMLElement>('[role="menuitem"], [role="menuitemcheckbox"]'))
         .filter((item) => item.getClientRects().length > 0);
       if (!items.length) return;
       event.preventDefault();
@@ -203,7 +208,7 @@ export function MorePopover() {
       style={position}
     >
       {ITEMS.map((item) => (
-        <MenuItem key={item.action} spec={item} onPick={pick} />
+        <MenuItem key={item.action} spec={item} onPick={pick} incognito={incognito} />
       ))}
     </div>
   );

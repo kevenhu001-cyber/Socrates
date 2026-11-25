@@ -12,7 +12,7 @@
 .tag-editor-popover {
   border-color: var(--ui-border-subtle);
   box-shadow: var(--ui-shadow-menu);
-  color: var(--foreground);
+  color: var(--ui-text-primary);
   font-family: var(--font-sans);
   font-size: var(--ui-text-ui);
   line-height: var(--ui-text-ui-line);
@@ -40,14 +40,14 @@
   transform-origin: top left;
   padding: var(--ui-menu-gutter);
   background: var(--popover);
-  color: var(--foreground);
+  color: var(--ui-text-primary);
 }
 .chat-config-row {
   min-height: 40px;
   padding: var(--ui-menu-item-padding);
   gap: var(--ui-menu-item-gap);
   font-size: var(--ui-font-size-sm);
-  color: var(--foreground);
+  color: var(--ui-text-primary);
 }
 .chat-config-row:hover,
 .chat-config-row:focus-visible {
@@ -68,7 +68,7 @@
 }
 .chat-config-divider {
   margin: 3px 8px;
-  background: var(--border);
+  background: var(--ui-border-default);
 }
 .chat-config-row strong {
   font-size: var(--ui-font-size-sm);
@@ -110,7 +110,7 @@
 .display-prefs-popover .display-prefs-seg.active,
 .display-prefs-popover .display-prefs-seg[aria-checked='true'] {
   background: var(--ui-bg-segment-active);
-  color: var(--foreground);
+  color: var(--ui-text-primary);
 }
 
 /* ── Backdrops: one flat dim ──
@@ -359,7 +359,7 @@ body.composer-tools-open.composer-tools-open::after {
 .cmd-k-input-row {
   gap: var(--ui-space-sm);
   padding: var(--ui-space-lg) var(--ui-space-lg);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--ui-border-default);
 }
 .cmd-k-input-row .cmd-k-icon {
   width: 16px;
@@ -367,7 +367,7 @@ body.composer-tools-open.composer-tools-open::after {
   color: var(--ui-text-tertiary);
 }
 .cmd-k-input-row input {
-  color: var(--foreground);
+  color: var(--ui-text-primary);
   font-size: var(--ui-font-size-md);
 }
 .cmd-k-input-row input::placeholder {
@@ -397,7 +397,7 @@ body.composer-tools-open.composer-tools-open::after {
   padding: 2px 6px;
   border: 1px solid var(--ui-border-strong);
   border-radius: var(--ui-radius-xs);
-  background: var(--secondary);
+  background: var(--ui-bg-control);
   color: var(--ui-text-tertiary);
   font-family: var(--font-mono);
   font-size: var(--ui-font-size-xxs);
@@ -423,17 +423,17 @@ body.composer-tools-open.composer-tools-open::after {
   border-radius: var(--ui-radius-sm);
 }
 .cmd-k-row:hover {
-  background: var(--accent);
+  background: var(--ui-bg-hover);
 }
 .cmd-k-row.selected {
   background: var(--ui-bg-pill-selected);
 }
 .cmd-k-row-title {
-  color: var(--foreground);
+  color: var(--ui-text-primary);
   font-size: var(--ui-font-size-sm);
 }
 .cmd-k-row-snippet {
-  color: var(--muted-foreground);
+  color: var(--ui-text-secondary);
   font-size: var(--ui-font-size-xs);
 }
 .cmd-k-row-meta {
@@ -448,12 +448,12 @@ body.composer-tools-open.composer-tools-open::after {
   padding: 1px 5px;
   border: 1px solid var(--ui-border-strong);
   border-radius: var(--ui-radius-xs);
-  background: var(--secondary);
+  background: var(--ui-bg-control);
   font-family: var(--font-mono);
   font-size: var(--ui-font-size-xxs);
 }
 .cmd-k-foot {
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--ui-border-default);
   color: var(--ui-text-tertiary);
   font-size: var(--ui-font-size-xxs);
 }
@@ -462,7 +462,7 @@ body.composer-tools-open.composer-tools-open::after {
   margin-right: 4px;
   border: 1px solid var(--ui-border-strong);
   border-radius: var(--ui-radius-xs);
-  background: var(--secondary);
+  background: var(--ui-bg-control);
   font-family: var(--font-mono);
   font-size: var(--ui-font-size-xxs);
 }
@@ -484,525 +484,6 @@ body.composer-tools-open.composer-tools-open::after {
   border-radius: var(--ui-radius-control, 8px);
 }
 
-/* ── Settings page ── */
-.settings-page .settings-shell {
-  display: grid;
-  grid-template-columns: clamp(208px, 27%, 264px) minmax(0, 1fr);
-  min-height: 0;
-  flex: 1;
-}
-.settings-page .settings-nav {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 12px;
-  min-height: 0;
-  padding: 24px var(--ui-space-md) 24px 0;
-  border-right: 1px solid var(--ui-border-subtle);
-  overflow: hidden;
-  scrollbar-width: thin;
-}
-.settings-page .settings-nav-categories {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-height: 0;
-  overflow-y: auto;
-  scrollbar-width: thin;
-}
-.settings-page .settings-nav-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  min-height: 46px;
-  padding: 6px 10px;
-  border-radius: var(--ui-radius-control);
-  text-align: left;
-}
-.settings-page .settings-category-icon {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  flex: none;
-  color: var(--foreground);
-}
-.settings-page .settings-category-icon svg {
-  width: 17px;
-  height: 17px;
-}
-.settings-page .settings-category-copy {
-  display: flex;
-  flex: 1;
-  min-width: 0;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 1px;
-}
-.settings-page .settings-category-name {
-  overflow: hidden;
-  max-width: 100%;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: var(--ui-font-size-sm);
-  line-height: 20px;
-}
-.settings-page .settings-category-description {
-  display: block;
-  overflow: hidden;
-  max-width: 100%;
-  color: var(--ui-text-tertiary);
-  font-size: var(--ui-font-size-xxs);
-  line-height: 15px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.settings-page .settings-nav-item[aria-current='page'] .settings-category-description {
-  color: var(--ui-text-secondary);
-}
-.settings-page .settings-category-chevron {
-  display: none;
-}
-.settings-page .settings-nav-item:hover .settings-category-chevron,
-.settings-page .settings-nav-item[aria-current='page'] .settings-category-chevron {
-  opacity: 1;
-}
-.settings-page .settings-nav-item.active .settings-category-icon {
-  color: var(--foreground);
-}
-.settings-page .settings-nav-empty {
-  margin: 0;
-  padding: 14px 8px;
-  color: var(--ui-text-secondary);
-  font-size: var(--ui-font-size-sm);
-}
-.settings-page .settings-search {
-  margin: 0;
-}
-.settings-page .settings-body {
-  display: block;
-  min-width: 0;
-  min-height: 0;
-  overflow: auto;
-  padding: 24px clamp(24px, 4vw, 56px) 40px;
-  scrollbar-gutter: stable;
-}
-.settings-page .settings-mobile-back {
-  display: none;
-}
-.settings-page .settings-pane[hidden] {
-  display: none;
-}
-.settings-page .settings-pane {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  width: 100%;
-  max-width: 740px;
-  margin-inline: auto;
-}
-.settings-page .settings-pane > h2 {
-  margin: 0;
-  color: var(--foreground);
-  font-size: var(--ui-font-size-xl);
-  line-height: 28px;
-  font-weight: var(--ui-font-weight-semibold);
-  letter-spacing: -0.02em;
-}
-.settings-page .settings-pane > p {
-  margin: -10px 0 0;
-  color: var(--ui-text-secondary);
-  font-size: var(--ui-font-size-sm);
-  line-height: var(--ui-text-ui-line);
-}
-.settings-preference-fields {
-  gap: 18px;
-}
-.provider-fields {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-.provider-multimodal {
-  grid-column: 1 / -1;
-}
-.settings-account-name {
-  min-width: 0;
-}
-.settings-page .settings-section {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  margin: 0;
-  padding: 18px;
-  border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-lg);
-  background: var(--ui-bg-raised);
-}
-.settings-page .settings-choice {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  min-height: 48px;
-  padding-block: 6px;
-  border-bottom: 1px solid var(--ui-border-subtle);
-  color: var(--foreground);
-  font-size: var(--ui-font-size-sm);
-}
-.settings-page .settings-choice:last-child {
-  border-bottom: 0;
-}
-.settings-page .settings-choice--segmented > [data-slot='toggle-group'] {
-  flex: none;
-}
-.settings-page .settings-choice--color {
-  padding-block: 12px;
-}
-.settings-page .settings-choice-label {
-  color: var(--foreground);
-  font-size: var(--ui-font-size-sm);
-}
-.settings-page :is(.settings-label, .settings-hint) {
-  color: var(--ui-text-secondary);
-}
-.settings-page .settings-section-head {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 0;
-}
-.settings-page .settings-section-head--actions {
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-.settings-page .settings-section-head > h3 {
-  margin: 0;
-  color: var(--foreground);
-  font-size: var(--ui-font-size-md);
-  font-weight: var(--ui-font-weight-semibold);
-}
-.settings-page .settings-section-head > p {
-  margin: 0;
-  color: var(--ui-text-secondary);
-  font-size: var(--ui-font-size-xs);
-  line-height: var(--ui-text-ui-line);
-}
-.settings-page .settings-card--toggle {
-  display: flex;
-  align-items: center;
-  min-height: var(--ui-control-touch);
-  padding: 14px 16px;
-  border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-control);
-  background: var(--ui-bg-surface);
-}
-.settings-page .settings-provider-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-  padding-top: 14px;
-  border-top: 1px solid var(--ui-border-subtle);
-}
-.settings-page .settings-clear-api {
-  color: var(--destructive);
-}
-.settings-page .provider-empty {
-  padding: 10px 4px;
-  color: var(--ui-text-secondary);
-  font-size: var(--ui-font-size-sm);
-  line-height: var(--ui-text-ui-line);
-  text-align: center;
-}
-.settings-page .provider-row {
-  border-color: var(--ui-border-subtle);
-  border-radius: var(--ui-radius-control);
-  background: var(--ui-bg-surface);
-}
-.settings-page .built-in-row [data-slot='card-content'] {
-  padding-top: 0;
-}
-.settings-page .settings-inline-action {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.settings-page .settings-inline-action > input {
-  flex: 1;
-  min-width: 0;
-}
-.settings-page .settings-inline-action > button {
-  flex: none;
-}
-.settings-page .settings-image-model-field {
-  gap: 10px;
-}
-.settings-page .settings-info-panel {
-  flex-direction: row;
-  align-items: center;
-  gap: 14px;
-}
-.settings-page .settings-info-icon {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  flex: none;
-  border-radius: var(--ui-radius-md);
-  background: var(--secondary);
-  color: var(--ui-text-secondary);
-}
-.settings-page .settings-info-icon svg {
-  width: 20px;
-  height: 20px;
-}
-.settings-page .settings-info-copy {
-  min-width: 0;
-  flex: 1;
-}
-.settings-page .settings-info-copy h3 {
-  margin: 0;
-  color: var(--foreground);
-  font-size: var(--ui-font-size-sm);
-  font-weight: var(--ui-font-weight-semibold);
-}
-.settings-page .settings-info-copy p {
-  margin: 4px 0 0;
-  color: var(--ui-text-secondary);
-  font-size: var(--ui-font-size-xs);
-  line-height: var(--ui-text-ui-line);
-}
-.settings-page .settings-info-badge {
-  flex: none;
-  padding: 4px 8px;
-  border-radius: var(--ui-radius-pill);
-  background: var(--secondary);
-  color: var(--ui-text-secondary);
-  font-size: var(--ui-font-size-xxs);
-}
-.settings-page .tone-preset-options {
-  margin-top: 0;
-}
-.settings-page .settings-save-error {
-  margin: 14px 0 0;
-  color: var(--ui-text-secondary);
-  font-size: var(--ui-font-size-xs);
-}
-.settings-page .settings-account-card {
-  padding: 18px;
-}
-.settings-page .settings-account-card + .settings-section {
-  margin-top: 0;
-}
-.settings-page .settings-danger-zone {
-  border-color: color-mix(in srgb, var(--destructive) 36%, var(--ui-border-subtle));
-  background: color-mix(in srgb, var(--destructive) 5%, var(--ui-bg-raised));
-}
-.settings-page .settings-mobile-back:focus-visible {
-  box-shadow: var(--ui-focus-shadow);
-}
-/* Laptop / tablet: keep the rail but give the pane room to breathe. */
-@media (min-width: 721px) and (max-width: 900px) {
-  .settings-page .settings-shell {
-    grid-template-columns: 184px minmax(0, 1fr);
-  }
-  .settings-page .settings-nav {
-    padding: 16px 10px 16px 0;
-  }
-  .settings-page .settings-body {
-    padding: 22px 22px 34px;
-  }
-  .settings-page .settings-pane {
-    max-width: none;
-  }
-}
-@media (max-width: 720px) {
-  .provider-fields {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .settings-page .settings-shell {
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-  }
-  .settings-page .settings-nav {
-    display: none;
-  }
-  .settings-page[data-mobile-index='true'] .settings-nav {
-    display: flex;
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-    padding: 18px 0 calc(16px + env(safe-area-inset-bottom, 0px));
-    border: 0;
-    background: transparent;
-  }
-  .settings-page .settings-search {
-    width: 100%;
-    min-height: var(--ui-control-touch);
-    height: auto;
-    margin: 0;
-  }
-  .settings-page .settings-nav-categories {
-    display: flex;
-    flex: 1;
-    gap: 8px;
-    overflow-y: auto;
-    padding: 2px 1px 8px;
-  }
-  .settings-page .settings-nav-item {
-    min-height: var(--ui-control-touch);
-    padding: 9px 10px;
-    gap: 11px;
-    border: 1px solid var(--ui-border-subtle);
-    border-radius: var(--ui-radius-lg);
-    background: var(--ui-bg-surface);
-    white-space: normal;
-  }
-  .settings-page .settings-nav-item.active {
-    border-color: var(--ring);
-    background: var(--secondary);
-  }
-  .settings-page .settings-category-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: var(--ui-radius-sm);
-    background: var(--ui-bg-raised);
-  }
-  .settings-page .settings-category-icon svg {
-    width: 18px;
-    height: 18px;
-  }
-  .settings-page .settings-category-copy {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 3px;
-  }
-  .settings-page .settings-category-name {
-    font-size: var(--ui-font-size-sm);
-    font-weight: var(--ui-font-weight-medium);
-  }
-  .settings-page .settings-category-description {
-    display: block;
-    overflow: hidden;
-    max-width: 100%;
-    color: var(--ui-text-secondary);
-    font-size: var(--ui-font-size-xs);
-    line-height: var(--ui-text-ui-line);
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .settings-page .settings-category-chevron {
-    opacity: 1;
-  }
-  .settings-page .settings-nav-empty {
-    padding: 18px 4px;
-  }
-  .settings-page[data-mobile-index='true'] .settings-body {
-    display: none;
-  }
-  .settings-page[data-mobile-index='false'] .settings-body {
-    display: block;
-    flex: 1;
-    padding: 8px 0 calc(24px + env(safe-area-inset-bottom, 0px));
-    scrollbar-gutter: auto;
-  }
-  .settings-page .settings-mobile-back {
-    display: inline-flex;
-    align-self: flex-start;
-    min-height: var(--ui-control-touch);
-    margin: 0 0 12px -8px;
-    padding-inline: 8px;
-    color: var(--ui-text-secondary);
-    font-size: var(--ui-font-size-sm);
-  }
-  .settings-page .settings-body button,
-  .settings-page .settings-body :is(input:not([type='hidden'], [role='switch']), select) {
-    min-height: var(--ui-control-touch);
-  }
-  .settings-page .settings-bg-picker input[type='color'] {
-    width: var(--ui-control-touch);
-    height: var(--ui-control-touch);
-  }
-  .settings-page .settings-pane {
-    gap: 16px;
-    max-width: none;
-  }
-  .settings-page .settings-pane > h2 {
-    font-size: var(--ui-font-size-lg);
-  }
-  .settings-page .settings-pane > p {
-    margin: -8px 0 0;
-    font-size: var(--ui-font-size-xs);
-  }
-  .settings-page .settings-section {
-    gap: 14px;
-    padding: 16px;
-    border-radius: var(--ui-radius-lg);
-  }
-  .settings-page .settings-section-head--actions {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-  .settings-page .settings-section-head--actions > button {
-    align-self: flex-start;
-  }
-  .settings-page .settings-choice {
-    align-items: stretch;
-    flex-direction: column;
-    gap: 12px;
-    min-height: 0;
-    padding: 14px 0;
-  }
-  .settings-page .settings-choice--switch {
-    flex-direction: row;
-    align-items: center;
-  }
-  .settings-page .settings-choice--segmented > [data-slot='toggle-group'] {
-    width: 100%;
-  }
-  .settings-page .settings-choice--segmented [data-slot='toggle-group-item'] {
-    flex: 1;
-    min-width: 0;
-  }
-  .settings-page .settings-provider-actions {
-    gap: 10px;
-  }
-  .settings-page .settings-memory-head {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-  .settings-page .settings-inline-action {
-    gap: 8px;
-  }
-  .settings-page .settings-inline-action > button {
-    white-space: nowrap;
-  }
-  .settings-page .settings-bg-pickers {
-    width: 100%;
-    gap: 10px;
-  }
-  .settings-page .settings-account-card {
-    align-items: flex-start;
-    flex-wrap: wrap;
-  }
-  .settings-page .settings-info-panel {
-    align-items: flex-start;
-    flex-wrap: wrap;
-  }
-  .settings-page .settings-info-copy {
-    flex-basis: calc(100% - 60px);
-  }
-  .settings-page .settings-info-panel > button {
-    margin-left: 56px;
-  }
-}
-
 /* Account destinations share the main pane and leave the app sidebar available. */
 .account-page {
   width: 100%;
@@ -1017,7 +498,7 @@ body.composer-tools-open.composer-tools-open::after {
   max-width: var(--ui-page-width);
   margin-inline: auto;
   padding-inline: clamp(16px, 3vw, 40px);
-  color: var(--foreground);
+  color: var(--ui-text-primary);
 }
 .account-page-header {
   display: flex;
@@ -1045,16 +526,6 @@ body.composer-tools-open.composer-tools-open::after {
   line-height: 1.5;
   letter-spacing: -0.02em;
 }
-.settings-page .settings-nav-item.active {
-  background: var(--ui-fill-hover);
-  box-shadow: inset 2px 0 var(--ui-ink);
-}
-.settings-page .settings-nav-item.active:focus-visible {
-  box-shadow:
-    var(--ui-focus-shadow),
-    inset 2px 0 var(--ui-ink);
-}
-
 .profile-page {
   max-width: var(--ui-page-reading-width);
 }
@@ -1221,166 +692,6 @@ body.composer-tools-open.composer-tools-open::after {
   .profile-page-body {
     scrollbar-gutter: auto;
   }
-}
-
-/* ── Settings · Account pane ── */
-.settings-account-card {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 16px;
-  border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-lg, 12px);
-  background: var(--ui-bg-raised);
-}
-.settings-account-avatar {
-  width: 44px;
-  height: 44px;
-  font-size: 15px;
-  flex: 0 0 auto;
-}
-.settings-account-id {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  flex: 1;
-}
-.settings-account-email {
-  color: var(--ui-text-muted);
-  font-size: var(--ui-font-size-xs);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.settings-choice-value {
-  color: var(--muted-foreground);
-  font-size: var(--ui-font-size-xs);
-  text-align: right;
-}
-.settings-choice-value.is-yes {
-  color: var(--ui-ink);
-}
-.settings-mono {
-  font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: var(--ui-font-size-xxs);
-}
-.settings-danger-zone .settings-section-head h3 {
-  color: var(--destructive);
-}
-.settings-danger-text {
-  color: var(--destructive);
-}
-
-/* ── Settings · Display pane — native color picker layout ── */
-.settings-bg-pickers {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-.settings-bg-picker {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: var(--ui-font-size-xs);
-  color: var(--muted-foreground);
-}
-.settings-bg-picker input[type='color'] {
-  width: 34px;
-  height: 30px;
-  padding: 2px;
-  border: 1px solid var(--border);
-  border-radius: var(--ui-radius-control, 8px);
-  background: var(--ui-bg-surface);
-  cursor: pointer;
-}
-
-/* ── Tag editor popover rows ── */
-.tag-editor-popover input {
-  border-radius: var(--ui-radius-control, 8px);
-}
-
-/* ── Settings modal: tone, custom instructions & memory list ── */
-.tone-preset-options {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
-  gap: var(--ui-space-sm);
-  margin-top: var(--ui-space-md);
-}
-.tone-preset-label {
-  font-weight: var(--ui-font-weight-semibold);
-}
-.tone-preset-desc {
-  color: var(--muted-foreground);
-  font-size: var(--ui-font-size-xs);
-  line-height: var(--ui-text-ui-line);
-}
-.settings-memory-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-height: 220px;
-  overflow-y: auto;
-  padding-right: 4px;
-  margin-bottom: 8px;
-}
-.settings-memory-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 8px 12px;
-  border-radius: var(--ui-radius-control);
-  background: var(--secondary);
-  border: 0.5px solid var(--ui-border-subtle);
-}
-.settings-memory-content {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  overflow: hidden;
-  flex: 1;
-}
-.settings-memory-key {
-  font-size: var(--ui-font-size-xxs);
-  font-weight: var(--ui-font-weight-semibold);
-  padding: 2px 6px;
-  border-radius: var(--ui-radius-xs);
-  background: var(--ui-bg-chip);
-  color: var(--ui-text-tertiary);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  flex-shrink: 0;
-}
-.settings-memory-val {
-  font-size: var(--ui-font-size-xs);
-  color: var(--foreground);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.settings-memory-add-form {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-  margin-top: 6px;
-}
-.settings-memory-key-input {
-  flex: 1 1 140px;
-  min-width: 0;
-}
-.settings-memory-val-input {
-  flex: 2 1 220px;
-  min-width: 0;
-}
-.settings-empty-hint {
-  font-size: var(--ui-font-size-xs);
-  color: var(--muted-foreground);
-  padding: 12px 4px;
-  font-style: italic;
-  line-height: 1.4;
 }
 
 .admin-login-title {

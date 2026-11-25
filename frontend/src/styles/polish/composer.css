@@ -1,7 +1,7 @@
 /*
- * polish/composer.css — composer capsule + tools menu + effort picker.
+ * polish/composer.css — landing typography and attachment presentation.
  * Grid geometry and control sizes are owned by parity/composer-unified.css;
- * this layer refines surrounding tools and desktop greeting details.
+ * Menu presentation and motion belong to components/menu.css.
  */
 
 /* Bundled brand face on the hero line and composer text. The parity layer
@@ -49,59 +49,8 @@
   }
 }
 
-/* Effort trigger reads as a chip: quieter type than the editor text. */
-
-/* "+" tools menu — the desktop card skin (16px radius, border, shadow,
-   220px width) is owned by restore/chatgpt-parity.css's :not(.hidden)
-   block and the phone sheet by restore/mobile-parity.css + fixes.css;
-   nothing to converge here. */
-
-/* "+" open animation — same motion language as the rest of the overlay
-   system: a 2px anchored lift and the shared scale / duration / easing.
-   The menu lives on <body> and is shown by removing .hidden (display:none),
-   so the panel stays in the DOM and the whole open/close pair can be one
-   transition: `allow-discrete` holds the box for the fade before `display`
-   flips, and `@starting-style` supplies the first frame of the next open.
-   Browsers without support keep the instant toggle. */
-body #composerToolsMenu.composer-tools-menu {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-  transform-origin: top left;
-  transition:
-    opacity var(--ui-duration-fast) var(--ui-ease-out),
-    transform var(--ui-duration-fast) var(--ui-ease-out),
-    display var(--ui-duration-fast) allow-discrete;
-}
-body #composerToolsMenu.composer-tools-menu.hidden {
-  opacity: 0;
-  transform: translateY(var(--_ct-dir, -2px)) scale(var(--_ct-scale, var(--ui-overlay-enter-scale)));
-}
-body #composerToolsMenu.composer-tools-menu[data-menu-side='above'] {
-  --_ct-dir: 2px;
-  transform-origin: bottom left;
-}
-body #composerToolsMenu.composer-tools-menu[data-menu-side='sheet'] {
-  --_ct-dir: var(--ui-step-150);
-  --_ct-scale: 1;
-}
-@starting-style {
-  body #composerToolsMenu.composer-tools-menu:not(.hidden) {
-    opacity: 0;
-    transform: translateY(var(--_ct-dir, -2px))
-      scale(var(--_ct-scale, var(--ui-overlay-enter-scale)));
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  body #composerToolsMenu.composer-tools-menu {
-    transition: none;
-  }
-}
-/* The tools card's rows, glyphs, group labels and footer now belong to
-   `components/menu.css` alone (ADR 0024: one owner per surface). The 34px /
-   20px / `--ui-radius-tools-row` block that lived here re-skinned the same
-   rows after the component layer and kept them off the shadcn 32px rung;
-   removed 2026-10-29 with the matching `restore/chatgpt-parity.css` pins. */
-
+/* Composer drafts: FileCard owns document contents; this stylesheet owns
+   the scrolling strip, image tiles and the draft-only transition. */
 /* ── Attachment row (reference: chat-demo FileCard / DraftAttachments) ──
    Two shapes, one row: an image is a 64px cover tile, a document is a
    240×64 card whose icon column states the type and whose caption names
@@ -110,8 +59,8 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side='sheet'] {
    an attachment. The row scrolls horizontally when a draft has several
    files; the composer keeps its shape because the row has a fixed height.
 
-   Message bubbles keep the legacy inline chip (MessageAttachments.tsx);
-   these rules are scoped to the composer's own row. */
+   Sent documents use FileCard in components/chat.css; sent images use
+   their own message image card. No legacy document-chip markup remains. */
 #appShell #composerAttachmentChips {
   box-sizing: border-box;
   display: flex;
@@ -128,6 +77,7 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side='sheet'] {
   overflow-y: hidden;
   overscroll-behavior-x: contain;
   scrollbar-width: thin;
+  scroll-snap-type: x proximity;
   cursor: default;
 }
 #appShell #composerAttachmentChips.hidden {
@@ -148,10 +98,13 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side='sheet'] {
   background: var(--ui-bg-surface);
   color: var(--ui-text-primary);
   line-height: 1.25;
-  animation: attachment-card-in 180ms var(--ui-ease-out) both;
+  scroll-snap-align: start;
+  animation: attachment-card-in 180ms var(--ui-ease-out);
   transition:
     border-color var(--ui-duration-hover) ease,
-    background-color var(--ui-duration-hover) ease;
+    background-color var(--ui-duration-hover) ease,
+    opacity var(--ui-duration-fast) var(--ui-ease-out),
+    transform var(--ui-duration-fast) var(--ui-ease-out);
 }
 #appShell #composerAttachmentChips .attachment-chip:hover {
   border-color: var(--ui-border-strong);
@@ -160,34 +113,22 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side='sheet'] {
 #appShell #composerAttachmentChips .attachment-chip:focus-within {
   border-color: var(--ui-border-strong);
 }
+#appShell #composerAttachmentChips .attachment-chip.is-leaving {
+  animation: none;
+  opacity: 0;
+  transform: translateY(2px) scale(0.96);
+  pointer-events: none;
+}
 
-/* Document card: icon column · name / type + size · remove. */
-#appShell #composerAttachmentChips .attachment-chip.is-file {
+/* Document cards use the shared FileCard body. Only draft sizing differs. */
+#appShell #composerAttachmentChips .file-card {
   width: 240px;
   min-height: 64px;
   padding: 0 24px 0 14px;
 }
-#appShell #composerAttachmentChips .attachment-chip.is-file .attachment-chip-visual {
-  width: 28px;
-  height: 28px;
-  flex: 0 0 28px;
-  border-radius: 0;
-  background: transparent;
-  color: var(--ui-text-tertiary);
-}
-#appShell #composerAttachmentChips .attachment-chip.is-file .attachment-chip-icon {
-  width: 100%;
-  height: 100%;
-  background: transparent;
-}
-#appShell #composerAttachmentChips .attachment-chip.is-file .attachment-chip-icon svg {
-  width: 26px;
-  height: 26px;
-}
 
 /* Image tile: the picture is the card. 64×64 square, as in the reference.
-   The parity base still carries its old 56px flex basis, so the size has to
-   be pinned on every axis here or the tile renders 56 wide × 64 tall. */
+   Keep the flex basis and every axis equal so the tile stays square. */
 #appShell #composerAttachmentChips .attachment-chip.is-image {
   flex: 0 0 64px;
   width: 64px;
@@ -200,56 +141,43 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side='sheet'] {
   background: var(--ui-bg-hover);
 }
 #appShell #composerAttachmentChips .attachment-chip.is-image .attachment-chip-visual {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
   width: 64px;
   height: 64px;
-  border-radius: 0;
+  overflow: hidden;
   background: transparent;
+}
+#appShell #composerAttachmentChips .attachment-chip.is-image .attachment-chip-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: var(--ui-text-secondary);
+}
+#appShell #composerAttachmentChips .attachment-chip.is-image .attachment-chip-icon svg {
+  width: 24px;
+  height: 24px;
 }
 #appShell #composerAttachmentChips .attachment-chip.is-image .attachment-chip-thumb {
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-
-#appShell #composerAttachmentChips .attachment-chip-info {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  justify-content: center;
-  gap: 3px;
-  min-width: 0;
-  user-select: none;
-}
-#appShell #composerAttachmentChips .attachment-chip-name {
-  overflow: hidden;
-  color: var(--ui-text-primary);
-  font-size: var(--ui-font-size-sm);
-  font-weight: var(--ui-font-weight-regular);
-  line-height: 22px;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-#appShell #composerAttachmentChips .attachment-chip-meta {
-  overflow: hidden;
-  color: var(--ui-text-tertiary);
-  font-size: var(--ui-font-size-xxs);
-  line-height: 18px;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  font-variant-numeric: tabular-nums;
+  display: block;
 }
 
 /* Failure: the card's edge and caption say what happened. A retryable
    upload puts the refresh glyph where the type icon was; an unsupported
    file keeps the type icon and shows the reason. */
 #appShell #composerAttachmentChips .attachment-chip.error {
-  border-color: color-mix(in srgb, var(--destructive) 65%, var(--ui-border-subtle));
-}
-#appShell #composerAttachmentChips .attachment-chip.error .attachment-chip-meta {
-  color: var(--destructive);
+  border-color: color-mix(in srgb, var(--ui-danger) 65%, var(--ui-border-subtle));
 }
 #appShell #composerAttachmentChips .attachment-chip.error .attachment-chip-visual {
-  color: var(--destructive);
+  color: var(--ui-danger);
 }
 
 /* Remove — quiet until the card is hovered, focused, or on a touch layout. */
@@ -265,7 +193,7 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side='sheet'] {
   justify-content: center;
   padding: 0;
   border: 0;
-  border-radius: 50%;
+  border-radius: var(--ui-radius-pill);
   background: var(--ui-text-primary);
   color: var(--ui-bg-surface);
   cursor: pointer;
@@ -281,7 +209,7 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side='sheet'] {
 }
 #appShell
   #composerAttachmentChips
-  .attachment-chip:is(:hover, :focus-within)
+  .attachment-chip:is(:hover, :focus-within, .pending)
   .attachment-chip-remove {
   opacity: 1;
 }
@@ -305,8 +233,7 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side='sheet'] {
   color: white;
 }
 
-/* Retry — replaces the type icon on a document, covers the picture on an
-   image. Same class, one behaviour: click resumes the retained File. */
+/* Image retry covers the picture. FileCard owns document retry. */
 #appShell #composerAttachmentChips .attachment-chip-retry {
   position: relative;
   z-index: 2;
@@ -317,17 +244,11 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side='sheet'] {
   justify-content: center;
   padding: 0;
   border: 0;
-  border-radius: 50%;
+  border-radius: var(--ui-radius-pill);
   background: transparent;
   color: var(--ui-text-secondary);
   cursor: pointer;
   transition: background-color var(--ui-duration-fast) ease;
-}
-#appShell #composerAttachmentChips .attachment-chip.is-file .attachment-chip-retry {
-  position: absolute;
-  top: 50%;
-  left: 14px;
-  transform: translateY(-50%);
 }
 #appShell #composerAttachmentChips .attachment-chip-retry svg {
   width: 18px;
@@ -363,7 +284,7 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side='sheet'] {
   align-items: center;
   justify-content: center;
   transform: translate(-50%, -50%);
-  color: var(--destructive);
+  color: var(--ui-danger);
 }
 #appShell #composerAttachmentChips .attachment-chip-error-badge svg {
   width: 16px;
@@ -375,14 +296,13 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side='sheet'] {
   bottom: 5px;
   left: auto;
   transform: none;
-  border-radius: 50%;
+  border-radius: var(--ui-radius-pill);
   background: rgba(0, 0, 0, 0.56);
   color: white;
 }
 
-/* Upload state: an image dims under a spinner; a document keeps its type
-   icon and shows a hairline bar along the card's bottom edge. The bar's
-   width is a transition, not a re-render per percentage point. */
+/* Upload state: the image dims under a spinner. FileCard owns document
+   upload status and its accessible caption. */
 #appShell #composerAttachmentChips .attachment-chip-veil {
   position: absolute;
   inset: 0;
@@ -399,7 +319,7 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side='sheet'] {
   height: 16px;
   border: 2px solid color-mix(in srgb, var(--ui-text-tertiary) 40%, transparent);
   border-top-color: var(--ui-text-secondary);
-  border-radius: 50%;
+  border-radius: var(--ui-radius-pill);
   animation: attachment-chip-spin 0.8s linear infinite;
 }
 #appShell #composerAttachmentChips .attachment-chip-veil .attachment-chip-spinner {
@@ -440,15 +360,6 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side='sheet'] {
     transform: none;
   }
 }
-@keyframes attachment-processing-sweep {
-  from {
-    background-position: -40% 0;
-  }
-  to {
-    background-position: 140% 0;
-  }
-}
-
 /* Touch layouts cannot hover, so the remove control must be visible. */
 @media (hover: none) {
   #appShell #composerAttachmentChips .attachment-chip-remove {
@@ -458,19 +369,9 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side='sheet'] {
 @media (prefers-reduced-motion: reduce) {
   #appShell #composerAttachmentChips .attachment-chip {
     animation: none;
+    transition: none;
   }
-}
-
-/* Reference phone sheet is a flat action list — group labels stay in the
-   DOM for the group aria-labels and the compat specs, but clip out of the
-   painted sheet on phones. */
-@media (max-width: 768px) {
-  body #composerToolsMenu .composer-tools-mobile-items .composer-tools-group-label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
+  #appShell #composerAttachmentChips .attachment-chip-spinner {
+    animation: none;
   }
 }

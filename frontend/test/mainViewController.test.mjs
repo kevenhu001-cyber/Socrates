@@ -6,8 +6,6 @@ import { activateMainView, getVisibleCoreView } from '../src/legacy/mainViewCont
 
 function createDocument() {
   return new JSDOM(`<!doctype html><html><body class="workspace-active plugins-active admin-active exam-active">
-    <div id="pluginWorkspaceTabs"></div>
-    <button id="mobileIncognitoBtn"></button>
     <div id="mainInner" class="hidden">
       <div id="topicSetup"></div>
       <div id="diagnosticView" class="hidden"></div>
@@ -52,7 +50,6 @@ test('activateMainView makes one workspace page authoritative', () => {
   assert.equal(document.body.classList.contains('plugins-active'), false);
   assert.equal(document.body.classList.contains('admin-active'), false);
   assert.equal(document.body.classList.contains('exam-active'), false);
-  assert.equal(document.getElementById('pluginWorkspaceTabs').hidden, true);
 });
 
 test('activateMainView applies plugin, admin and exam shell flags', () => {
@@ -60,7 +57,6 @@ test('activateMainView applies plugin, admin and exam shell flags', () => {
 
   activateMainView('pluginsPanel', document);
   assert.equal(document.body.classList.contains('plugins-active'), true);
-  assert.equal(document.getElementById('pluginWorkspaceTabs').hidden, false);
 
   activateMainView('adminPanel', document);
   assert.equal(document.body.classList.contains('admin-active'), true);

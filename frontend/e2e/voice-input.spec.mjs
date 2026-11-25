@@ -129,34 +129,34 @@ test('incognito lives in the 更多 popover; new-chat stays out of the home head
   const newChat = page.locator('#mobileNewChatBtn');
   const incognito = page.locator('#mobileIncognitoBtn');
   await expect(newChat).toBeHidden();
-  await expect(incognito).toBeHidden();
+  await expect(incognito).toHaveCount(0);
 
   await page.locator('#sidebarOpenBtn').click();
   await expect(page.locator('#sidebar')).toBeVisible();
   await page.locator('#navMore').click();
   const popover = page.locator('#moreNavPopover');
   await expect(popover).toBeVisible();
-  const incognitoItem = popover.getByRole('menuitem', { name: 'Incognito chat' });
+  const incognitoItem = popover.getByRole('menuitemcheckbox', { name: 'Incognito chat' });
   await expect(incognitoItem).toBeVisible();
+  await expect(incognitoItem).toHaveAttribute('aria-checked', 'false');
   await incognitoItem.click();
   await expect(page.locator('body')).toHaveAttribute('data-incognito', 'true');
-  await expect(incognito).toHaveAttribute('aria-pressed', 'true');
 
   /* Entering incognito resets the view, which closes the drawer —
      reopen it to toggle back off through the same menu path. */
   await page.locator('#sidebarOpenBtn').click();
   await expect(page.locator('#sidebar')).toBeVisible();
   await page.locator('#navMore').click();
-  await popover.getByRole('menuitem', { name: 'Incognito chat' }).click();
+  await expect(incognitoItem).toHaveAttribute('aria-checked', 'true');
+  await incognitoItem.click();
   await expect(page.locator('body')).toHaveAttribute('data-incognito', 'false');
-  await expect(incognito).toHaveAttribute('aria-pressed', 'false');
 
   await enterChat(page);
 
   /* New-chat becomes available in the active conversation header;
      incognito remains out of the header. */
   await expect(newChat).toBeVisible();
-  await expect(incognito).toBeHidden();
+  await expect(incognito).toHaveCount(0);
 });
 
 test('the mic records inline and the phone shows the live spectrum', async ({ page }) => {

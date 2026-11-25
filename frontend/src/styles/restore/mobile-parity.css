@@ -25,10 +25,6 @@
     color: var(--cg-text) !important;
   }
 
-  #appShell#appShell .top-mode-tabs {
-    gap: 0;
-  }
-
   /* In-flow surfaces need no paint compensation: the visual-viewport pan
      is already subtracted from --keyboard-inset by legacy/keyboard/index.ts,
      so the composer position tracks the visible keyboard edge 1:1 with
@@ -149,20 +145,6 @@
     min-width: 40px !important;
     height: 40px !important;
     border-radius: 12px !important;
-  }
-
-  #appShell .project-row,
-  #appShell .scheduled-recommendation,
-  #appShell .task-row {
-  }
-
-  #appShell .scheduled-recommendation-add {
-    width: 32px !important;
-    min-width: 32px !important;
-    height: 32px !important;
-    min-height: 32px !important;
-    font-size: 28px;
-    font-weight: var(--ui-font-weight-regular);
   }
 
   /* Workspace plugin tabs live in the panel for backwards compatibility,
