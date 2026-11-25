@@ -73,6 +73,10 @@
   --ui-menu-gutter: 6px;
   --ui-menu-item-gap: 6px;
   --ui-menu-item-padding: 6px 8px;
+  --ui-tooltip-radius: var(--ui-radius-sm);
+  --ui-tooltip-padding: 4px 8px;
+  --ui-tooltip-delay: 250ms;
+  --ui-tooltip-line-height: 1.45;
   --ui-shimmer-delay: 600ms;
 
   /* Controls and responsive shell. Lobe's 28/36/40 ladder is available as
