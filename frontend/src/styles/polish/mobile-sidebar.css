@@ -563,7 +563,8 @@
   #appShell #sidebarNav .sidebar-nav-btn:active {
     background: var(--ui-bg-active);
   }
-  #appShell #sidebarNav .sidebar-nav-btn svg {
+  #appShell #sidebarNav .sidebar-nav-btn > [data-part='nav-glyph'],
+  #appShell #sidebarNav .sidebar-nav-btn > [data-part='nav-glyph'] svg {
     width: 24px;
     height: 24px;
   }
