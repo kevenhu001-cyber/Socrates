@@ -1538,6 +1538,7 @@ export const en = {
   'toast.shareStartFirst': 'Start a chat first to share it',
   'toast.loadingSessions': 'Loading sessions…',
   'toast.noRetryTarget': 'No previous user message to retry.',
+  'chat.errorTitle': 'Could not generate a response',
   'chat.stopped': 'Response stopped',
   'chat.resend': 'Resend',
   'toast.movedToProject': 'Moved to {name}',
