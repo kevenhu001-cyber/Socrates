@@ -34,7 +34,7 @@ test('alias payloads the server accepts draw real data instead of an empty axis'
   await expect(page.locator('.intui-openui .visualization-stage-progress')).toHaveCount(0);
 });
 
-test('a rejected render_intelligent_ui call keeps a card with reason, table and repair', async ({
+test('a rejected render_intelligent_ui call does not render an error card', async ({
   page,
 }) => {
   const source =
@@ -77,26 +77,13 @@ test('a rejected render_intelligent_ui call keeps a card with reason, table and 
       },
     ],
   });
-  const card = page.locator('[data-viz-state="failed"]').first();
-  await expect(card).toBeVisible();
-  await expect(card.locator('.viz-state-title')).toHaveText('Class averages');
-  await expect(card).toContainText('The chart could not be drawn');
-  await expect(card).toContainText('The chart has no data to draw.');
-  const box = await card.boundingBox();
-  expect(box.height).toBeGreaterThan(60);
-  await card.getByRole('button', { name: 'View as table' }).click();
-  await expect(card.locator('table tbody tr')).toHaveCount(2);
-  await page.evaluate(() => {
-    window.__vizRetries = [];
-    document.addEventListener('tool-retry', (event) => window.__vizRetries.push(event.detail));
-  });
-  await card.getByRole('button', { name: 'Fix with AI' }).click();
-  const prompt = await page.evaluate(() => window.__vizRetries[0]?.prompt || '');
-  expect(prompt).toContain('render_intelligent_ui');
-  expect(prompt).toContain('Class averages');
+  await expect(page.locator('[data-viz-state="failed"]')).toHaveCount(0);
+  await expect(page.locator('[data-tool-anchor="ui-failed"]')).toHaveCount(0);
+  await expect(page.locator('.tool-activity-burst-toggle').first()).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.getByText('Here is the chart.')).toBeVisible();
 });
 
-test('a rejected demonstration repairs the program instead of teaching an OpenUI payload', async ({
+test('a rejected demonstration does not mount a failed attachment', async ({
   page,
 }) => {
   await prepareChatWorkbench(page, {
@@ -143,19 +130,9 @@ test('a rejected demonstration repairs the program instead of teaching an OpenUI
       },
     ],
   });
-  const card = page.locator('[data-viz-state="failed"]').first();
-  await expect(card).toBeVisible();
-  await expect(card.locator('.viz-state-title')).toHaveText('Damped oscillation');
-  await page.evaluate(() => {
-    window.__vizRetries = [];
-    document.addEventListener('tool-retry', (event) => window.__vizRetries.push(event.detail));
-  });
-  await card.getByRole('button', { name: 'Fix with AI' }).click();
-  const prompt = await page.evaluate(() => window.__vizRetries[0]?.prompt || '');
-  expect(prompt).toContain('demonstration');
-  expect(prompt).toContain('program');
-  expect(prompt).toContain('views[0].x');
-  expect(prompt).not.toContain('Visualization arguments');
+  await expect(page.locator('[data-viz-state="failed"]')).toHaveCount(0);
+  await expect(page.locator('[data-tool-anchor="demo-failed"]')).toHaveCount(0);
+  await expect(page.getByText('Here is the demonstration.')).toBeVisible();
 });
 
 test('labelled JSX fences stay code and never run in the preview iframe', async ({ page }) => {
