@@ -480,7 +480,6 @@ body.composer-tools-open.composer-tools-open::after {
 .modal-card {
   background: var(--ui-bg-dialog);
 }
-.confirm-btn,
 .share-copy-btn {
   border-radius: var(--ui-radius-control, 8px);
 }
