@@ -22,6 +22,20 @@ const OFFICIAL_WEB_GLYPHS: Partial<Record<UiIconRendererProps['name'], IconProps
   sliders: 'sliders',
   sparkle: 'personalization',
   skills: 'skills',
+  puzzle: 'puzzle',
+  assistant: 'assistant',
+  site: 'site',
+  exam: 'exam',
+  more: 'more',
+  'drawer-more': 'more',
+  'drawer-sites': 'site',
+  pin: 'pin',
+  share: 'share',
+  close: 'close',
+  pen: 'edit',
+  mic: 'microphone',
+  'chevron-down': 'chevronDown',
+  'chevron-right': 'chevronRight',
   'drawer-images': 'image',
   'drawer-library': 'library',
   'drawer-folder': 'folder',
@@ -37,25 +51,6 @@ export function WebIconRenderer({ name, shapes, size, color, strokeWidth }: UiIc
         data-ui-icon={name}
         style={{ color, display: 'block', flexShrink: 0 }}
       />
-    );
-  }
-  if (name === 'more') {
-    return (
-      <svg
-        width={size}
-        height={size}
-        viewBox="0 0 24 24"
-        fill="currentColor"
-        stroke="none"
-        aria-hidden="true"
-        focusable="false"
-        data-ui-icon={name}
-        style={{ color, display: 'block', flexShrink: 0 }}
-      >
-        <circle cx="5" cy="12" r="1.8" />
-        <circle cx="12" cy="12" r="1.8" />
-        <circle cx="19" cy="12" r="1.8" />
-      </svg>
     );
   }
   return (
