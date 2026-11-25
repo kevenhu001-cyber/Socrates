@@ -96,7 +96,7 @@
   border: 1px solid var(--ui-border-subtle);
   border-radius: var(--ui-radius-pill);
   background: var(--ui-bg-field);
-  color: var(--ui-text-tertiary);
+  color: var(--ui-text-primary);
 }
 
 .ui-page-search > svg {
@@ -323,7 +323,7 @@
   flex-direction: column;
   width: 100%;
   box-sizing: border-box;
-  background: var(--ui-bg-card, var(--ui-bg-page));
+  background: var(--ui-bg-surface);
   color: var(--ui-text-primary);
   border-radius: var(--ui-radius-2xl);
   border: 1px solid var(--ui-border-subtle);
@@ -389,7 +389,7 @@
 }
 
 .ui-dialog-close {
-  color: var(--ui-text-tertiary);
+  color: var(--ui-text-primary);
 }
 
 @media (max-width: 768px) {

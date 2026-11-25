@@ -693,7 +693,7 @@ body.workspace-active #appShell .ui-page-card.project-card {
 
 #appShell .scheduled-recommendations {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
   gap: var(--ui-space-sm);
   margin-bottom: var(--ui-space-xl);
 }
@@ -798,9 +798,8 @@ body.workspace-active #appShell .ui-page-card.project-card {
 #appShell .creation-empty,
 #appShell .creation-empty[data-slot='empty'] {
   padding: var(--ui-space-xxl) var(--ui-space-lg);
-  border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-2xl);
-  background: var(--ui-bg-raised);
+  border: 0;
+  background: transparent;
   color: var(--ui-text-tertiary);
   font-size: var(--ui-font-size-sm);
 }
@@ -819,12 +818,12 @@ body.workspace-active #appShell .ui-page-card.project-card {
 #appShell .creation-table {
   overflow: hidden;
   border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-2xl);
-  background: var(--ui-bg-raised);
+  border-radius: var(--ui-radius-lg);
+  background: transparent;
 }
 
 #appShell .creation-table .creation-table-head {
-  background: color-mix(in srgb, var(--ui-bg-raised), var(--ui-bg-page) 36%);
+  background: transparent;
 }
 
 #appShell .creation-table .creation-row:last-child {
@@ -889,7 +888,7 @@ body.workspace-active #appShell .ui-page-card.project-card {
 }
 
 #appShell .settings-page .settings-pane {
-  max-width: 760px;
+  max-width: var(--ui-page-reading-width);
 }
 
 /* ── Admin ──────────────────────────────────────────────────────────── */
