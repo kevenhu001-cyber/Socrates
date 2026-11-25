@@ -47,6 +47,8 @@ export interface PluginItem {
   name: string;
   description?: string;
   capabilities?: string[];
+  /** Reviewed actions exposed by Socrates, distinct from upstream capabilities. */
+  chatActions?: Array<{ name: string; description: string }>;
   authType?: string;
   connection?: {
     status?: string;
