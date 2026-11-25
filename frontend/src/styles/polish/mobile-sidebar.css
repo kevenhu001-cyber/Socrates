@@ -538,6 +538,7 @@
      (SidebarNavButton); on the phone it takes the reference's 14px step. */
   #appShell #sidebarNav {
     --nav-label-size: calc(16px * var(--app-type-scale));
+    --sidebar-glyph-size: 24px;
   }
   #appShell #sidebarNav .sidebar-nav-btn {
     display: grid;
@@ -562,11 +563,6 @@
   }
   #appShell #sidebarNav .sidebar-nav-btn:active {
     background: var(--ui-bg-active);
-  }
-  #appShell #sidebarNav .sidebar-nav-btn > [data-part='nav-glyph'],
-  #appShell #sidebarNav .sidebar-nav-btn > [data-part='nav-glyph'] svg {
-    width: 24px;
-    height: 24px;
   }
   #appShell #sidebarNav .nav-label {
     line-height: 24px;
