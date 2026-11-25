@@ -458,6 +458,10 @@ test('More menu supports keyboard navigation and returns focus on dismissal', as
   await page.keyboard.press('ArrowDown');
   const items = menu.getByRole('menuitem');
   await expect(items.first()).toBeFocused();
+  const incognito = menu.getByRole('menuitemcheckbox', { name: /Incognito chat|无痕/ });
+  // Every menu row, including the checked-state action, is reachable by arrows.
+  for (let index = 0; index < 4; index += 1) await page.keyboard.press('ArrowDown');
+  await expect(incognito).toBeFocused();
   await page.keyboard.press('End');
   await expect(items.last()).toBeFocused();
   await page.keyboard.press('Escape');
