@@ -246,7 +246,7 @@ test('pending approvals remain visible with activity collapsed', async ({ page }
 });
 
 
-test('live activity counts completed tools without hiding the active row', async ({ page }) => {
+test('live activity keeps tool rows folded until requested', async ({ page }) => {
   await prepareChatWorkbench(page);
   await page.evaluate(async () => {
     const ctl = await window.addStreamingMessage({ userPrompt: 'Check sources.' });
@@ -258,10 +258,13 @@ test('live activity counts completed tools without hiding the active row', async
     }
     window.__unifiedController = ctl;
   });
-  await expect(page.locator('.tool-activity-burst-caption')).toBeVisible();
-  await expect(page.locator('.tool-activity-burst-toggle')).toHaveCount(0);
+  const burst = page.locator('.tool-activity-burst-toggle');
+  await expect(burst).toHaveAttribute('aria-expanded', 'false');
+  await expect(toolRow(page, 'third')).toBeHidden();
+  await burst.click();
   await expect(toolRow(page, 'third')).toBeVisible();
   await expect(toolRow(page, 'third').locator(TURN.spinner)).toHaveCount(1);
+  await burst.click();
   await page.evaluate(() => {
     const ctl = window.__unifiedController;
     ctl.recordToolResult({ id: 'third', name: 'web_search', ok: true, status: 'completed', output: 'Checked.' });
