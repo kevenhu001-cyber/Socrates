@@ -88,7 +88,7 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
   }
 
   html[data-main-view='settingsPage'] #settingsPage .settings-nav {
-    gap: var(--ui-space-sm);
+    gap: var(--ui-space-xs);
     padding: var(--ui-space-lg) var(--ui-space-md);
     border-color: var(--ui-account-border);
     background: transparent;
@@ -98,7 +98,7 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
     gap: var(--ui-space-sm);
     min-height: var(--ui-control-md);
     padding: var(--ui-space-xxs) var(--ui-space-sm);
-    border-radius: var(--ui-radius-sm);
+    border-radius: var(--ui-radius-md);
     color: var(--ui-text-secondary);
   }
 
@@ -121,7 +121,7 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
   }
 
   html[data-main-view='settingsPage'] #settingsPage .settings-body {
-    padding: var(--ui-space-xxl) clamp(20px, 4vw, 40px) var(--ui-space-xxl);
+    padding: var(--ui-space-xl) clamp(20px, 4vw, 40px) var(--ui-space-xxl);
   }
 
   html[data-main-view='settingsPage'] #settingsPage .settings-category-description {
@@ -314,7 +314,7 @@ html[data-main-view='settingsPage']
   html[data-main-view='settingsPage'] #settingsPage .provider-nav-item {
     width: auto;
     max-width: 180px;
-    min-height: 40px;
+    min-height: var(--ui-control-touch);
     flex: none;
   }
   html[data-main-view='settingsPage'] #settingsPage .provider-workbench-detail {
@@ -323,8 +323,8 @@ html[data-main-view='settingsPage']
 }
 
 html[data-main-view='settingsPage'] #settingsPage .settings-nav-item.active {
-  background: var(--ui-account-selection);
-  border-radius: var(--ui-radius-sm);
+  background: var(--ui-bg-selected);
+  border-radius: var(--ui-radius-md);
   box-shadow: none;
 }
 html[data-main-view='settingsPage'] #settingsPage .settings-nav-item.active:focus-visible {
@@ -528,8 +528,8 @@ html[data-main-view='settingsPage'] #settingsPage .settings-choice {
     font-weight: var(--ui-font-weight-semibold);
   }
   .settings-theme-choice[aria-pressed='true'] .settings-theme-preview {
-    border-color: var(--ui-focus-ring);
-    box-shadow: 0 0 0 1px var(--ui-focus-ring);
+    border-color: var(--ui-border-strong);
+    box-shadow: 0 0 0 1px var(--ui-border-strong);
   }
   .settings-page > .settings-save-error {
     margin-inline: var(--ui-space-md);

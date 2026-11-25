@@ -42,15 +42,15 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
     -webkit-mask-image: linear-gradient(
       to bottom,
       transparent 0,
-      #000 var(--phone-transcript-top),
-      #000 calc(100% - var(--phone-transcript-bottom)),
+      black var(--phone-transcript-top),
+      black calc(100% - var(--phone-transcript-bottom)),
       transparent 100%
     );
     mask-image: linear-gradient(
       to bottom,
       transparent 0,
-      #000 var(--phone-transcript-top),
-      #000 calc(100% - var(--phone-transcript-bottom)),
+      black var(--phone-transcript-top),
+      black calc(100% - var(--phone-transcript-bottom)),
       transparent 100%
     );
   }

@@ -9,14 +9,13 @@ import {
   CpuIcon,
   DatabaseIcon,
   MonitorIcon,
-  MoonIcon,
-  SearchIcon,
   Settings2Icon,
   SparklesIcon,
   UserRoundIcon,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from 'cn';
+import { Icon, type IconProps } from '../../legacy/Icon';
 import { useUserInfo } from '../sidebar-chrome/sidebarChrome.store';
 import { settingsPreferenceActions, useSettingsPreferencesStore } from './settings.store';
 import type { SaveSettingsPreference, SettingsLabel, SettingsSection } from './settings.types';
@@ -31,6 +30,13 @@ const categoryIcons: Record<SettingsSection, LucideIcon> = {
   apps: BoxesIcon,
   data: DatabaseIcon,
   account: UserRoundIcon,
+};
+
+const officialCategoryIcons: Partial<Record<SettingsSection, IconProps['name']>> = {
+  general: 'sliders',
+  notifications: 'bell',
+  personalization: 'personalization',
+  account: 'user',
 };
 
 const mobileGroups = [
@@ -52,7 +58,7 @@ function SettingsIdentity({ label, onOpen }: { label: SettingsLabel; onOpen: () 
       aria-label={label('账户', 'Account')}
       onClick={onOpen}
     >
-      <span className="settings-identity-avatar"><UserRoundIcon aria-hidden /></span>
+      <span className="settings-identity-avatar"><Icon name="user" size={22} /></span>
       <span className="settings-identity-copy">
         <span>{user.displayName || user.email || label('访客', 'Guest')}</span>
         <span>{user.email && user.displayName ? user.email : free ? label('免费版', 'Free') : user.tierLabel}</span>
@@ -80,7 +86,7 @@ function MobileAppearance({
     <div className="settings-index-appearance" role="group" aria-label={title}>
       <div className="settings-index-appearance-title">
         <span className="settings-category-icon">
-          <MoonIcon aria-hidden />
+          <Icon name="moon" size={20} />
         </span>
         {title}
       </div>
@@ -126,7 +132,7 @@ export function SettingsMobileSearch({
       aria-label={label('搜索设置', 'Search settings')}
       onClick={onToggle}
     >
-      <SearchIcon aria-hidden />
+      <Icon name="search" size={18} />
     </Button>
   );
 }
@@ -198,6 +204,7 @@ export function SettingsNavigation({
 
   const renderCategory = ({ key, name, description }: SettingsCategory) => {
     const CategoryIcon = categoryIcons[key];
+    const official = officialCategoryIcons[key];
     const current = !mobile && section === key;
     return (
       <Button
@@ -211,7 +218,7 @@ export function SettingsNavigation({
         onClick={() => onSectionChange(key)}
       >
         <span className="settings-category-icon">
-          <CategoryIcon aria-hidden />
+          {official ? <Icon name={official} size={20} /> : <CategoryIcon aria-hidden />}
         </span>
         <span className="settings-category-copy">
           <span className="settings-category-name">{name}</span>

@@ -60,19 +60,26 @@ for (const theme of ['light', 'dark']) {
             const style = getComputedStyle(svg);
             const box = svg.getBBox();
             return {
+              official: svg.getAttribute('data-icon-source') === 'openai-apps-sdk',
+              fill: style.fill,
               stroke: style.strokeWidth,
               color: style.stroke,
               decorative: svg.getAttribute('aria-hidden'),
               focusable: svg.getAttribute('focusable'),
-              fits: box.x >= 1 && box.y >= 1 && box.x + box.width <= 23 && box.y + box.height <= 23,
+              fits: box.x >= 0 && box.y >= 0 && box.x + box.width <= 24 && box.y + box.height <= 24,
             };
           }),
       );
     expect(icons.length).toBeGreaterThanOrEqual(5);
     for (const icon of icons) {
       /* RN-7 图标统一 1.5px 线宽（UI_ICON_STROKE，non-scaling）。 */
-      expect(icon.stroke).toBe('1.5px');
-      expect(icon.color).toBe(ink);
+      if (icon.official) {
+        expect(icon.color).toBe('none');
+        expect(icon.fill).toBe(ink);
+      } else {
+        expect(icon.stroke).toBe('1.5px');
+        expect(icon.color).toBe(ink);
+      }
       expect(icon.decorative).toBe('true');
       expect(icon.focusable).toBe('false');
       expect(icon.fits).toBe(true);

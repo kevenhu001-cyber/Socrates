@@ -7,15 +7,24 @@
 import type { UiIconRendererProps } from '@socrates/ui/primitives';
 import { Icon, type IconProps } from '../../legacy/Icon';
 
-const OFFICIAL_COMPOSER_GLYPHS: Partial<Record<UiIconRendererProps['name'], IconProps['name']>> = {
+const OFFICIAL_WEB_GLYPHS: Partial<Record<UiIconRendererProps['name'], IconProps['name']>> = {
   plus: 'plus',
   paperclip: 'paperclip',
   image: 'image',
   globe: 'webSearch',
+  compose: 'newChat',
+  'new-chat': 'newChat',
+  search: 'search',
+  folder: 'folder',
+  library: 'library',
+  clock: 'clock',
+  panel: 'panel',
+  sliders: 'sliders',
+  skills: 'skills',
 };
 
 export function WebIconRenderer({ name, shapes, size, color, strokeWidth }: UiIconRendererProps) {
-  const official = OFFICIAL_COMPOSER_GLYPHS[name];
+  const official = OFFICIAL_WEB_GLYPHS[name];
   if (official) {
     return (
       <Icon
