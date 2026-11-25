@@ -15,80 +15,109 @@
   --tool-activity-danger-bg: color-mix(in srgb, var(--destructive) 8%, var(--background));
 }
 
-/* Terminal chat state shares the canonical palette and control ladder.
-   The old tutor stylesheet no longer owns chat errors or Retry/Resend.
-   A failure now reads the same way wherever it appears: danger-coloured
-   text at the body-meta step, plus the Retry/Resend action when the turn
-   can be recovered. It used to keep a 2px danger rule to match the
-   callouts, but a callout is a soft block now, so a rail here would be the
-   last left-rule in the transcript. The row is just text. */
+/* Terminal state: a neutral, compact surface; semantic color is confined
+   to the status glyph. Keep archived HTML fallbacks readable as well. */
 .msg-error {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--ui-space-sm);
-  width: fit-content;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
   max-width: 100%;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--destructive);
-  font-size: var(--ui-font-size-xs);
+  box-sizing: border-box;
+  padding: 14px 16px;
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-bg-raised);
+  color: var(--foreground);
+  font-size: var(--ui-font-size-sm);
   line-height: var(--ui-text-ui-line);
 }
+.msg-error .msg-status-icon {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  color: var(--destructive);
+  margin-top: 1px;
+}
+.msg-status-copy {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 4px;
+}
+.msg-status-title {
+  font-weight: var(--ui-font-weight-semibold);
+  color: var(--foreground);
+}
 .msg-error-text {
-  flex: 0 1 auto;
+  flex: 1 1 auto;
   min-width: 0;
   overflow-wrap: anywhere;
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-sm);
 }
 .msg-resend {
-  color: var(--muted-foreground);
+  align-items: center;
+  background: transparent;
+  border: 0;
+  padding: 4px 0;
 }
-.msg-retry-btn {
+.msg-resend .msg-status-icon {
+  color: var(--ui-text-secondary);
+  margin-top: 0;
+}
+#appShell #msgList .msg-body .msg-error .msg-retry-btn,
+.msg-error .msg-retry-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   flex-shrink: 0;
   min-height: var(--ui-control-sm);
-  padding: 0 var(--ui-space-sm);
-  border: 1px solid var(--border);
-  border-radius: var(--ui-radius-control);
-  background: transparent;
+  padding: 0 12px;
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-pill);
+  background: var(--background);
   color: var(--foreground);
   font: inherit;
-  font-weight: var(--ui-font-weight-medium);
-  cursor: pointer;
-  transition: background-color var(--ui-duration-fast) ease;
-}
-.msg-retry-btn:hover:not(:disabled) {
-  background: var(--accent);
-}
-.msg-retry-btn:disabled {
-  opacity: var(--ui-disabled-opacity, 0.5);
-  cursor: wait;
-}
-/* The transcript paints model-authored action buttons as blue pills. Retry is
-   a system control, not a model action, so it keeps the quiet outline even
-   though it lives in the same message body. The selector has to out-rank
-   parity/transcript.css, which is why it repeats the shell ids. */
-#appShell #msgList .msg-body .msg-error .msg-retry-btn {
-  min-height: var(--ui-control-sm);
-  padding: 0 var(--ui-space-sm);
-  border: 1px solid var(--border);
-  border-radius: var(--ui-radius-control);
-  background: transparent;
-  color: var(--foreground);
-  font-family: var(--font-sans);
   font-size: var(--ui-font-size-xs);
   font-weight: var(--ui-font-weight-medium);
   box-shadow: none;
   transform: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color var(--ui-duration-fast) ease;
 }
-#appShell #msgList .msg-body .msg-error .msg-retry-btn:hover:not(:disabled) {
-  background: var(--accent);
-  color: var(--foreground);
+.msg-error .msg-retry-btn svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+#appShell #msgList .msg-body .msg-error .msg-retry-btn:hover:not(:disabled),
+.msg-error .msg-retry-btn:hover:not(:disabled) {
+  background: var(--ui-bg-hover);
+}
+.msg-error .msg-retry-btn:disabled {
+  opacity: var(--ui-disabled-opacity, 0.5);
+  cursor: wait;
 }
 @media (max-width: 768px) {
-  .msg-retry-btn {
-    min-height: var(--ui-control-touch);
+  .msg-error:not(.msg-resend) {
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr);
+    gap: 10px;
+    padding: 12px;
   }
-  #appShell #msgList .msg-body .msg-error .msg-retry-btn {
+  .msg-error:not(.msg-resend) > .msg-error-text:only-child {
+    grid-column: 1 / -1;
+  }
+  .msg-error:not(.msg-resend) .msg-retry-btn {
+    grid-column: 2;
+    justify-self: start;
+  }
+  #appShell #msgList .msg-body .msg-error .msg-retry-btn,
+  .msg-error .msg-retry-btn {
     min-height: var(--ui-control-touch);
   }
 }
