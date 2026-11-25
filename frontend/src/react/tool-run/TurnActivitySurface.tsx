@@ -210,7 +210,13 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
   const headerIcon = toolName ? (
     <ToolActivityIcon name={toolName} sites={headerTool ? toolActivitySites(headerTool) : []} />
   ) : undefined;
-  const currentActivity = live ? status?.phase || 'working' : latestTool ? 'tool' : latestStep ? 'thinking' : 'complete';
+  const currentActivity = live
+    ? status?.phase || 'working'
+    : latestTool
+      ? 'tool'
+      : latestStep
+        ? 'thinking'
+        : 'complete';
   if (!live && !expandable && !props.reasoningDurationSec) return null;
   const durationLabel =
     working && elapsedSec
