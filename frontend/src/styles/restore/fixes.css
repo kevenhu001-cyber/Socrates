@@ -72,24 +72,6 @@
   }
 }
 
-#composerToolsMenu .composer-tools-state-action {
-  width: fit-content;
-  min-height: 32px;
-  padding: 5px 10px;
-  border: 1px solid var(--cg-border);
-  border-radius: var(--ui-radius-control);
-  background: transparent;
-  color: var(--cg-text);
-  font: inherit;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-#composerToolsMenu .composer-tools-state-action:hover,
-#composerToolsMenu .composer-tools-state-action:focus-visible {
-  background: var(--cg-surface-raised) !important;
-}
-
 @media (max-width: 768px) {
   /* The plus menu is a bottom sheet: placement lives in the React controller
      and the shape in components/menu.css. The floating-card geometry that
