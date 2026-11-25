@@ -379,8 +379,8 @@ test('a visualization stays visible across the running → result transition', a
     SEARCH_RESULTS,
   );
 
-  /* The chart mounts while its call is still in flight (the spec is already
-     in the arguments) and must not vanish when the result lands. */
+  /* Complete arguments alone do not authorize mounting a chart; wait for
+     the accepted result. */
   const spec = vizSpec('Probe transition');
   await page.evaluate(
     (input) =>
@@ -423,9 +423,7 @@ test('a visualization stays visible across the running → result transition', a
   await expect(message.locator('.rn-tool-row .visualization-card')).toHaveCount(0);
   await expect(message.locator('.visualization-card')).toHaveCount(1);
 
-  /* The settle must not have torn the running renderer down and rebuilt it:
-     the host survives the single-member → aggregate shape change, and the
-     content-stable spec identity keeps the effect from re-running. */
+  /* Only the accepted chart should have mounted, once. */
   const probe = await readVizProbe(page);
   expect(probe.created).toHaveLength(1);
   expect(probe.created[0].cardId).toMatch(/^openui-/);
