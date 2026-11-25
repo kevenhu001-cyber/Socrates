@@ -142,6 +142,35 @@ export const UI_GLYPHS = {
     ['c', 12, 12, 1.5],
     ['c', 18, 12, 1.5],
   ],
+  /* Mobile drawer variants: 24px optical grid, rounded contours.
+     Keep these distinct from generic image/folder/overflow glyphs. */
+  'drawer-images': [
+    ['p', 'M8 5.5 9.3 3.7a2.5 2.5 0 0 1 2.6-1l8.2 2.2a2.5 2.5 0 0 1 1.8 3l-2.2 8.2a2.5 2.5 0 0 1-3 1.8l-1.1-.3'],
+    ['p', 'M4.4 8.1 12 6.3a2.5 2.5 0 0 1 3 1.9l1.8 7.6a2.5 2.5 0 0 1-1.9 3l-7.6 1.8a2.5 2.5 0 0 1-3-1.9l-1.8-7.6a2.5 2.5 0 0 1 1.9-3Z'],
+    ['c', 7.4, 11.7, 1.35],
+    ['p', 'm5.2 18.4 3.5-5.2a1.5 1.5 0 0 1 2.2-.3l5 3.7'],
+  ],
+  'drawer-library': [
+    ['p', 'm9 5.1 1.1-1.8a2.5 2.5 0 0 1 2.8-1.1l7.2 2.4a2.5 2.5 0 0 1 1.6 3.2l-2.4 7.1a2.5 2.5 0 0 1-2.8 1.6'],
+    ['p', 'M3.1 9.1a2.5 2.5 0 0 1 2.2-2.8l8.1-.9a2.5 2.5 0 0 1 2.8 2.2l1.1 10.2a2.5 2.5 0 0 1-2.2 2.8l-8.1.9a2.5 2.5 0 0 1-2.8-2.2Z'],
+  ],
+  'drawer-folder': [
+    ['p', 'M3 7V5.5A2.5 2.5 0 0 1 5.5 3h3a2.5 2.5 0 0 1 1.8.8l1.5 1.7H19A2 2 0 0 1 21 7.5V18a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 18Z'],
+    ['p', 'M3 10h18'],
+  ],
+  'drawer-sites': [
+    ['r', 3.5, 3.5, 8, 8, 1.7],
+    ['r', 15.5, 3.5, 5, 5, 1.3],
+    ['r', 3.5, 15.5, 5, 5, 1.3],
+    ['r', 12.5, 12.5, 8, 8, 1.7],
+    ['p', 'M11.5 7.5h1.2M7.5 11.5v1.2'],
+  ],
+  'drawer-more': [
+    ['r', 3, 3.5, 7, 7, 1.5],
+    ['p', 'm17.3 2.7 4.5 4.5-4.5 4.5-4.5-4.5Z'],
+    ['r', 3, 14, 7, 7, 1.5],
+    ['r', 13.5, 14, 7, 7, 1.5],
+  ],
   /* RN-10 — the pinned-chat mark in the history rows; an outline pushpin. */
   pin: [
     [
@@ -176,10 +205,11 @@ export interface UiIconProps {
   size?: number;
   /** Defaults to the theme's ink; pass a palette colour for quieter glyphs. */
   color?: string;
+  strokeWidth?: number;
 }
 
 /** A decorative line glyph. Accessible names belong on the control around it. */
-export function UiIcon({ name, size = 18, color }: UiIconProps) {
+export function UiIcon({ name, size = 18, color, strokeWidth = UI_ICON_STROKE }: UiIconProps) {
   const { colors, iconRenderer: Renderer } = useUiTheme();
   if (!Renderer) {
     return <span aria-hidden style={{ display: 'inline-block', width: size, height: size }} />;
@@ -190,7 +220,7 @@ export function UiIcon({ name, size = 18, color }: UiIconProps) {
       shapes={UI_GLYPHS[name]}
       size={size}
       color={color ?? colors.ink}
-      strokeWidth={UI_ICON_STROKE}
+      strokeWidth={strokeWidth}
     />
   );
 }
