@@ -10,6 +10,8 @@ import {
 } from '../src/lib/errorMessages.ts';
 import { ApiError, BadRequest, NotFound } from '../src/lib/errors.ts';
 import { buildSseErrorFrame } from '../src/lib/sseErrorFrame.ts';
+import { LlmProviderError } from '../src/services/core/llm/types.js';
+import { errorHandler } from '../src/middleware/error.js';
 
 /**
  * The server used to answer every failure in English while the SPA ships a
@@ -76,6 +78,44 @@ test('the upstream failure sentence interpolates the status in both locales', ()
   assert.match(en, /503/);
   assert.match(zh, /503/);
   assert.notEqual(en, zh);
+});
+
+test('known upstream 400s have the same actionable JSON and SSE copy', () => {
+  const locale = 'zh';
+  for (const [providerMessage, expected] of [
+    ['matched user group has no available model instance', /模型权限/],
+    ['Request path cannot be relayed', /Chat Completions 接口地址/],
+  ]) {
+    const upstream = new LlmProviderError(
+      400,
+      JSON.stringify({ error: { message: providerMessage, data: 'private upstream detail' } }),
+    );
+    const frame = buildSseErrorFrame(upstream, { locale });
+    assert.match(frame.message, expected);
+    assert.equal(frame.status, 400);
+    assert.equal(frame.upstreamStatus, 400);
+    assert.equal(frame.retryable, false);
+    assert.doesNotMatch(upstream.message, /private upstream detail/);
+    assert.doesNotMatch(frame.message, /private upstream detail/);
+    const res = {
+      status(status) {
+        assert.equal(status, 400);
+        return this;
+      },
+      json(body) {
+        return body;
+      },
+    };
+    assert.deepEqual(
+      errorHandler(upstream, { headers: { 'x-socrates-locale': locale } }, res, () => {}),
+      {
+        code: frame.code,
+        message: frame.message,
+        upstreamStatus: frame.upstreamStatus,
+        retryable: frame.retryable,
+      },
+    );
+  }
 });
 
 test('the SSE error frame renders the curated message in the request locale', () => {

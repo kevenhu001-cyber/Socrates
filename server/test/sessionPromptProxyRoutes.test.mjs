@@ -218,6 +218,55 @@ test('a built-in turn first never leaks the provider identity into a later BYOK 
   );
 });
 
+test('chat reports the selected custom provider’s endpoint rejection', async (t) => {
+  await ensureProvider();
+  const calls = [];
+  const app = express();
+  app.use(express.json());
+  app.post('/v1/chat/completions', (req, res) => {
+    calls.push({
+      version: req.query['api-version'],
+      auth: req.get('Authorization'),
+      model: req.body.model,
+      stream: req.body.stream,
+    });
+    res.status(400).json({ error: { message: 'Request path cannot be relayed' } });
+  });
+  const custom = await listen(app);
+  t.after(() => custom.close());
+  const [selected] = await f.db
+    .insert(apiKeys)
+    .values({
+      userId: f.owner.id,
+      label: 'explicit-custom-provider',
+      url: custom.url + '/v1/chat/completions/?api-version=diagnostic',
+      model: 'custom-model',
+      keyCiphertext: encrypt('custom-fixture-key', encryptionKey()),
+      isActive: false,
+      isBuiltIn: false,
+    })
+    .returning({ id: apiKeys.id });
+
+  const response = await f.request('/api/v2/chat', {
+    method: 'POST',
+    headers: { 'X-Socrates-Locale': 'zh' },
+    body: { messages: [{ role: 'user', content: 'hello' }], providerId: selected.id },
+  });
+  assert.equal(response.status, 400, response.text);
+  assert.match(response.body.message, /Chat Completions 接口地址/);
+  assert.equal(response.body.upstreamStatus, 400);
+  assert.equal(response.body.retryable, false);
+  assert.doesNotMatch(response.text, /Request path cannot be relayed/);
+  assert.deepEqual(calls, [
+    {
+      version: 'diagnostic',
+      auth: 'Bearer custom-fixture-key',
+      model: 'custom-model',
+      stream: false,
+    },
+  ]);
+});
+
 test('proxy rejects foreign sessions and conflicting query/body scope without calling the provider', async () => {
   const s = await newSession(),
     count = requests.length;

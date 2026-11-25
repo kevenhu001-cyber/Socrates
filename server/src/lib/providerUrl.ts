@@ -1,3 +1,11 @@
+/** Resolve a configured API base or a pasted Chat Completions endpoint. */
+export function chatCompletionsEndpoint(apiBase: string): string {
+  const url = new URL(apiBase);
+  const path = url.pathname.replace(/\/+$/, '');
+  url.pathname = path.endsWith('/chat/completions') ? path : `${path}/chat/completions`;
+  return url.href;
+}
+
 /**
  * SSRF guard rails for LLM and Agent provider URLs.
  * Rejects non-https, private/internal IPs (RFC1918), loopback, link-local,

@@ -171,7 +171,21 @@ export function localizeErrorCode(code: string, locale: ErrorLocale, fallback?: 
  * The upstream status is interpolated, so this one is a function rather
  * than a catalog entry.
  */
-export function upstreamFailureMessage(status: number, locale: ErrorLocale): string {
+export function upstreamFailureMessage(
+  status: number,
+  locale: ErrorLocale,
+  reason?: unknown,
+): string {
+  if (status === 400 && reason === 'model_unavailable') {
+    return locale === 'zh'
+      ? '当前凭据在模型服务商没有可用的模型实例，请检查模型权限或切换到可用模型。'
+      : 'The provider has no available instance for this model and credential. Check model access or switch to an available model.';
+  }
+  if (status === 400 && reason === 'endpoint_rejected') {
+    return locale === 'zh'
+      ? '模型网关无法转发请求，请核对模型配置中的 Chat Completions 接口地址。'
+      : 'The model gateway could not relay the request. Check the Chat Completions URL in the model settings.';
+  }
   if (locale === 'zh') {
     return `模型服务返回错误（上游 ${status}），请稍后重试或切换模型。`;
   }

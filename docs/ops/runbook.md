@@ -66,7 +66,8 @@ sudo nginx -t && sudo nginx -s reload
 ## 4. 证书与密钥轮换
 
 - **TLS 证书：** 仓库 deploy/nginx 样例没有可证明的证书签发/续期机制或证书文件路径。维护者先在目标机审查当前生效配置（`sudo nginx -T`，注意输出可能含敏感信息，勿外传），识别实际 `ssl_certificate`/私钥路径及签发方；按该签发方既定流程续期/部署，限制私钥权限，先 `sudo nginx -t`，再 `sudo nginx -s reload`，随后验证 `https://app.topodrive.top/api/health` 与证书有效期/域名链。确认续期自动任务及到期告警属于待人工核验，不假设 certbot。
-- **应用密钥：** `scripts/rotate-secrets.sh` 只打印新值、不改 `.env`；生成值必须经安全通道录入 `/home/ubuntu/socrates-api.env`，mode 0600 且属服务账户。逐个在各自供应商先签发/启用新凭据、更新环境、重启/验证，再撤销旧凭据（若供应商支持重叠）；按该脚本列出的 OAuth、SMTP、Beagle provider 等手动轮换，不能只跑脚本。
+- **应用密钥：** `scripts/rotate-secrets.sh` 只打印新值、不改 `.env`；生成值必须经安全通道录入 `/home/ubuntu/socrates-api.env`，mode 0600 且属服务账户。OAuth、SMTP 等环境变量凭据应先签发并启用新值，再更新环境、重启验证，最后撤销旧凭据（若供应商支持重叠）。
+- **Beagle 聊天模型：** 在 `/admin` 保存端点、模型和密钥，并验证一次聊天请求后再撤销旧密钥。启动时仅在数据库没有内置模型记录的情况下读取 `BEAGLE_SYSTEM_KEY`、`MINIMAX_BASE_URL` 和 `MINIMAX_MODEL` 初始化聊天模型。后台保存的配置和禁用状态会在重启后保留。
 - **严重注意：** 不要盲目替换 `SESSION_SECRET`：脚本明确表示它派生存储 API key 的加密密钥；轮换会使已有会话失效，并使已存密钥不可解密（除非另行实施并验证重加密迁移）。轮换前需业务批准、受控密钥备份/恢复方案、用户影响沟通与演练。改 `.env` 后 `./scripts/restart-server.sh`，检查 health、日志与认证/解密功能，再撤销旧值。泄露时立即按事件处理，不等常规窗口。
 
 ## 5. 故障分级与处置

@@ -92,9 +92,9 @@ export class SseEmitter {
   fatal(error: Error): void {
     console.error('[chat/stream] LLM error:', error.message);
     // Never forward raw upstream bodies to the client — they may contain
-    // provider-specific details. buildSseErrorFrame maps every failure to a
-    // status-based message and keeps the machine-readable status/code/retryable
-    // contract, so the browser does not replay a 400 or an exhausted 429.
+    // provider-specific details. buildSseErrorFrame keeps the machine-readable
+    // status/code/retryable contract so the browser does not replay a 400 or an
+    // exhausted 429.
     const details = buildSseErrorFrame(error, {
       fallbackCode: 'LLM_UPSTREAM_ERROR',
       locale: this.locale,

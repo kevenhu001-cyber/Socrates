@@ -3,10 +3,8 @@
  *
  * The "system model" is the LLM the site owner picks for the
  * built-in (a.k.a. Beagle) path — the model anonymous visitors and
- * users without their own API key get. Today the seed hard-codes
- * Beagle to whatever BEAGLE_SYSTEM_KEY + MINIMAX_MODEL /
- * MINIMAX_BASE_URL say at boot; this route lets an admin override
- * that from a UI without touching env vars or restarting.
+ * users without their own API key get. The environment bootstraps a new
+ * database. Once a row exists, this route manages the saved configuration.
  *
  * Storage: the `api_keys` table, `is_built_in = true` rows. The
  * seed already creates exactly one such row; the admin PUT updates
@@ -29,7 +27,7 @@
  *   }
  *
  * Security posture (mirrors embeddingConfig.ts):
- *   - ADMIN_EMAILS allowlist gate, fail-closed when unset.
+ *   - Admin session and optional IP allowlist gate.
  *   - keyCiphertext never leaves the server.
  *   - Provider URLs run the same SSRF guard as apiKeys.ts.
  *   - Setting the key to an empty string deactivates the built-in
@@ -45,6 +43,7 @@ import { requireAdminSession } from '../../middleware/adminAuth.js';
 import { BadRequest } from '../../lib/errors.js';
 import { encrypt, encryptionKey } from '../../lib/crypto.js';
 import { isAllowedProviderUrl } from '../../lib/providerUrl.js';
+import { invalidateApiKeyCache, lockBuiltInProviderConfig } from '../../services/core/apiKey.js';
 
 const router = Router();
 
@@ -121,7 +120,6 @@ router.put('/', async (req, res, next) => {
       );
     }
 
-    const db = getDb();
     const values: typeof apiKeys.$inferInsert = {
       label,
       url,
@@ -139,31 +137,34 @@ router.put('/', async (req, res, next) => {
       values.keyHint = keyHint || key.slice(0, 8);
     }
 
-    const [existing] = await db
-      .select({ id: apiKeys.id })
-      .from(apiKeys)
-      .where(eq(apiKeys.isBuiltIn, true))
-      .orderBy(apiKeys.createdAt)
-      .limit(1);
-    let saved;
-    if (existing) {
-      [saved] = await db
-        .update(apiKeys)
-        .set(values)
-        .where(eq(apiKeys.id, existing.id))
-        .returning(SAFE_PROJECTION);
-    } else {
-      if (clearingKey) {
+    const saved = await getDb().transaction(async (tx) => {
+      await lockBuiltInProviderConfig(tx);
+      const [existing] = await tx
+        .select({ id: apiKeys.id })
+        .from(apiKeys)
+        .where(eq(apiKeys.isBuiltIn, true))
+        .orderBy(apiKeys.createdAt)
+        .limit(1);
+
+      if (!existing && clearingKey) {
         throw new BadRequest('Cannot clear the key: the built-in provider is not configured yet.');
       }
-      [saved] = await db.insert(apiKeys).values(values).returning(SAFE_PROJECTION);
-    }
-    /* Exactly-one-active invariant: this row is the only built-in
-       active row. */
-    await db
-      .update(apiKeys)
-      .set({ isActive: false })
-      .where(and(eq(apiKeys.isBuiltIn, true), ne(apiKeys.id, saved.id)));
+      const [row] = existing
+        ? await tx
+            .update(apiKeys)
+            .set(values)
+            .where(eq(apiKeys.id, existing.id))
+            .returning(SAFE_PROJECTION)
+        : await tx.insert(apiKeys).values(values).returning(SAFE_PROJECTION);
+      await tx
+        .update(apiKeys)
+        .set({ isActive: false })
+        .where(
+          and(eq(apiKeys.isBuiltIn, true), ne(apiKeys.id, row.id), eq(apiKeys.isActive, true)),
+        );
+      return row;
+    });
+    invalidateApiKeyCache();
     return res.json(saved);
   } catch (err) {
     next(err);

@@ -94,6 +94,65 @@ const BASE_OPTS = Object.freeze({
   messages: [{ role: 'user', content: 'hi' }],
 });
 
+test('both chat transports accept base URLs and complete endpoint URLs', async () => {
+  const endpoint = 'https://llm.example.com/compat/v1/chat/completions?api-version=2026-01';
+  for (const apiBase of [
+    'https://llm.example.com/compat/v1/?api-version=2026-01',
+    'https://llm.example.com/compat/v1/chat/completions/?api-version=2026-01',
+  ]) {
+    const fetchMock = mock.fn(async (_url, init) => {
+      const body = JSON.parse(init.body);
+      return body.stream
+        ? makeSseResponse([{ choices: [{ delta: { content: 'ok' } }] }, sseDone()])
+        : makeJsonResponse({ choices: [{ message: { content: 'ok' } }] });
+    });
+    globalThis.fetch = fetchMock;
+    const opts = { ...BASE_OPTS, apiBase };
+    assert.equal((await callChatCompletion(opts)).content, 'ok');
+    let text = '';
+    await streamChatCompletion(
+      opts,
+      (chunk) => {
+        text += chunk;
+      },
+      () => {},
+      (error) => {
+        throw error;
+      },
+    );
+    assert.equal(text, 'ok');
+    assert.deepEqual(
+      fetchMock.mock.calls.map((call) => call.arguments[0]),
+      [endpoint, endpoint],
+    );
+  }
+});
+
+test('both chat transports report a rejected model group without replaying the request', async () => {
+  const fetchMock = mock.fn(async () =>
+    makeJsonResponse(
+      { error: { message: 'matched user group has no available model instance' } },
+      400,
+    ),
+  );
+  globalThis.fetch = fetchMock;
+  const expectedError = {
+    status: 400,
+    code: 'LLM_UPSTREAM_ERROR',
+    reason: 'model_unavailable',
+    retryable: false,
+  };
+  await assert.rejects(() => callChatCompletion(BASE_OPTS), expectedError);
+  await assert.rejects(
+    () =>
+      new Promise((resolve, reject) =>
+        streamChatCompletion(BASE_OPTS, () => {}, resolve, reject).catch(reject),
+      ),
+    expectedError,
+  );
+  assert.equal(fetchMock.mock.callCount(), 2);
+});
+
 /* ── streamChatCompletion ─────────────────────────────────────── */
 
 describe('streamChatCompletion: happy path', () => {
@@ -1228,7 +1287,7 @@ describe('callChatCompletion', () => {
     assert.equal(result.tool_calls[0].function.name, 'foo');
   });
 
-  test('throws ApiError carrying the upstream status on 4xx/5xx', async () => {
+  test('throws a structured provider error carrying the upstream status on 4xx/5xx', async () => {
     globalThis.fetch = mock.fn(
       async () =>
         /* Retry-After collapses the backoff so the test exercises the real

@@ -12,6 +12,7 @@ import {
 } from '../llmProtocol.js';
 import { observePromptCacheUsage } from '../../../lib/promptCacheUsage.js';
 import { createUpstreamRetryBudget } from '../../../lib/upstreamRetryBudget.js';
+import { chatCompletionsEndpoint } from '../../../lib/providerUrl.js';
 import { getLlmDispatcher, markLlmActivity } from './dispatcher.js';
 import { LlmProviderError, type ChatCompletionRequestOptions } from './types.js';
 import {
@@ -59,6 +60,7 @@ export async function streamChatCompletion(
   let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
 
   try {
+    const endpoint = chatCompletionsEndpoint(apiBase);
     if (Array.isArray(tools) && tools.length > 0) {
       /* don't log the upstream model name. The
        * provider-agnostic tool names are enough to confirm what
@@ -98,7 +100,7 @@ export async function streamChatCompletion(
         }
         try {
           markLlmActivity();
-          response = await fetch(`${apiBase}/chat/completions`, {
+          response = await fetch(endpoint, {
             method: 'POST',
             headers: providerHeaders(apiKey, true),
             body: JSON.stringify(variant.body),
@@ -112,12 +114,15 @@ export async function streamChatCompletion(
 
           const errBody = await response.text().catch(() => '');
           if (response.status === 400) {
-            console.warn('[LLM] rejected stream request', JSON.stringify({
-              capability: modelCapability(opts.model).id,
-              variant: variant.reason,
-              fields: Object.keys(variant.body),
-              toolCount: Array.isArray(tools) ? tools.length : 0,
-            }));
+            console.warn(
+              '[LLM] rejected stream request',
+              JSON.stringify({
+                capability: modelCapability(opts.model).id,
+                variant: variant.reason,
+                fields: Object.keys(variant.body),
+                toolCount: Array.isArray(tools) ? tools.length : 0,
+              }),
+            );
           }
           const delayMs = upstreamRetryDelayMs(
             response.status,

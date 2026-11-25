@@ -1,5 +1,5 @@
-import { eq, and, isNotNull, ne } from 'drizzle-orm';
-import { getDb } from '../../db/index.js';
+import { eq, and, isNotNull, sql } from 'drizzle-orm';
+import { getDb, type Database } from '../../db/index.js';
 import { apiKeys } from '../../db/schema/index.js';
 import { encrypt, decrypt, encryptionKey } from '../../lib/crypto.js';
 
@@ -87,8 +87,17 @@ export async function getSelectedApiKey(userId: string | null, providerId: strin
     .from(apiKeys)
     .where(
       providerId === 'beagle-built-in'
-        ? and(eq(apiKeys.isBuiltIn, true), eq(apiKeys.isActive, true), isNotNull(apiKeys.keyCiphertext))
-        : and(eq(apiKeys.id, providerId), eq(apiKeys.userId, userId!), eq(apiKeys.isBuiltIn, false), isNotNull(apiKeys.keyCiphertext)),
+        ? and(
+            eq(apiKeys.isBuiltIn, true),
+            eq(apiKeys.isActive, true),
+            isNotNull(apiKeys.keyCiphertext),
+          )
+        : and(
+            eq(apiKeys.id, providerId),
+            eq(apiKeys.userId, userId!),
+            eq(apiKeys.isBuiltIn, false),
+            isNotNull(apiKeys.keyCiphertext),
+          ),
     )
     .orderBy(apiKeys.createdAt)
     .limit(1);
@@ -190,11 +199,12 @@ function decryptProvider(key: ApiKeyRow) {
   };
 }
 
-/**
- * Seed the built-in Beagle provider from environment variables.
- * Called once on server startup. Idempotent — updates the key if
- * the provider already exists, otherwise creates it.
- */
+/** Serialize first-time bootstrap and admin writes, including when no row exists. */
+export async function lockBuiltInProviderConfig(db: Pick<Database, 'execute'>) {
+  await db.execute(sql`SELECT pg_advisory_xact_lock(hashtext('socrates:built-in-provider'))`);
+}
+
+/** Bootstrap Beagle from the environment on an unconfigured database. */
 export async function seedBuiltInProvider() {
   const apiKey = process.env.BEAGLE_SYSTEM_KEY;
   if (!apiKey) {
@@ -203,65 +213,32 @@ export async function seedBuiltInProvider() {
   }
 
   try {
-    const db = getDb();
-    const model = process.env.MINIMAX_MODEL || 'MiniMax-M3';
-    const url = (process.env.MINIMAX_BASE_URL || 'https://api.minimax.io/v1').replace(/\/+$/, '');
-    const keyCiphertext = encrypt(apiKey, encryptionKey());
+    const created = await getDb().transaction(async (tx) => {
+      await lockBuiltInProviderConfig(tx);
+      // An existing row is authoritative even after a rename or key removal.
+      const [existing] = await tx
+        .select({ id: apiKeys.id })
+        .from(apiKeys)
+        .where(eq(apiKeys.isBuiltIn, true))
+        .limit(1);
+      if (existing) return false;
 
-    const [existing] = await db
-      .select()
-      .from(apiKeys)
-      .where(and(eq(apiKeys.isBuiltIn, true), eq(apiKeys.label, 'Beagle')))
-      .limit(1);
-
-    if (existing) {
-      /* do NOT log the resolved model/url here. The
-       * built-in "Beagle" provider is an alias; surfacing the real
-       * upstream model in the boot log reveals the operator's
-       * LLM choice to anyone with access to the systemd journal.
-       * The "Updated" line below is enough to confirm the seed ran. */
-      const upd = await db
-        .update(apiKeys)
-        .set({ keyCiphertext, keyHint: keyHintFor(apiKey), url, model, isMultimodal: true })
-        .where(eq(apiKeys.id, existing.id))
-        .returning({ id: apiKeys.id });
-      console.log('[seed] Updated built-in Beagle provider (id=' + (upd[0] && upd[0].id) + ')');
-      /* Clean up any stale built-in rows (e.g. "Beagle A" from
-         previous seed runs) that could confuse getActiveApiKey(). */
-      const cleaned = await db
-        .update(apiKeys)
-        .set({ isActive: false })
-        .where(
-          and(eq(apiKeys.isBuiltIn, true), ne(apiKeys.id, existing.id), eq(apiKeys.isActive, true)),
-        );
-      if ((cleaned.rowCount ?? 0) > 0) {
-        console.log('[seed] Deactivated ' + cleaned.rowCount + ' stale built-in row(s)');
-      }
-    } else {
-      const ins = await db
-        .insert(apiKeys)
-        .values({
-          label: 'Beagle',
-          url,
-          model,
-          keyCiphertext,
-          keyHint: keyHintFor(apiKey),
-          isBuiltIn: true,
-          isActive: true,
-          /* built-in Beagle is a vision
-           * model (MiniMax-M3). Force the flag on insert so chat.js
-           * forwards image_url parts without any user setup. */
-          isMultimodal: true,
-        })
-        .returning({ id: apiKeys.id });
-      console.log('[seed] Created built-in Beagle provider (id=' + (ins[0] && ins[0].id) + ')');
+      await tx.insert(apiKeys).values({
+        label: 'Beagle',
+        url: (process.env.MINIMAX_BASE_URL || 'https://api.minimax.io/v1').replace(/\/+$/, ''),
+        model: process.env.MINIMAX_MODEL || 'MiniMax-M3',
+        keyCiphertext: encrypt(apiKey, encryptionKey()),
+        keyHint: keyHintFor(apiKey),
+        isBuiltIn: true,
+        isActive: true,
+        isMultimodal: true,
+      });
+      return true;
+    });
+    if (created) {
+      invalidateApiKeyCache();
+      console.log('[seed] Created built-in Beagle provider');
     }
-    /* the built-in key is the global fallback
-       for both authenticated and anonymous users. Any seed run
-       (first boot, re-seed, or the legacy cleanup path above) must
-       drop the cached entry so the next /api/chat/stream picks up
-       the fresh ciphertext. */
-    invalidateApiKeyCache(null);
   } catch (err) {
     console.error('[seed] Failed to seed built-in provider:', (err as Error).message);
   }

@@ -40,6 +40,7 @@ const suites = [
   'sessionPromptProxyRoutes.test.mjs',
   'sessionPromptSnapshotDb.test.mjs',
   'suggestions.test.js',
+  'systemModels.test.js',
   'ttsStore.test.js',
   'workspaceOrganizationRoutes.test.js',
 ];

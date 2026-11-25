@@ -164,10 +164,7 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
     });
   }
 
-  // Upstream provider failures (LlmProviderError) carry a status and a code
-  // but embed the provider's raw response text in their message. Report the
-  // status and code so the browser can tell an exhausted upstream budget from
-  // a transient failure — and never forward the provider body.
+  // Keep the same upstream failure contract as streaming chat.
   if (
     errorDetails &&
     (errorDetails.name === 'LlmProviderError' || errorDetails.code === 'LLM_UPSTREAM_ERROR') &&
@@ -175,7 +172,11 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
   ) {
     return res.status(errorDetails.status).json({
       code: 'LLM_UPSTREAM_ERROR',
-      message: upstreamFailureMessage(errorDetails.status, resolveErrorLocale(req?.headers)),
+      message: upstreamFailureMessage(
+        errorDetails.status,
+        resolveErrorLocale(req?.headers),
+        errorDetails.reason,
+      ),
       // The server already spent its provider retry budget; replaying here
       // would just repeat the same paid failure.
       retryable: false,

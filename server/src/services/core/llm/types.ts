@@ -32,10 +32,10 @@ export interface ChatCompletionRequestOptions {
   }) => void;
 }
 
-/** Preserve useful upstream context without exposing credentials. */
+/** Preserve the upstream status and recognized cause without exposing the response body. */
 export class LlmProviderError extends Error {
   readonly status: number;
-  readonly providerBody: string;
+  readonly reason?: 'model_unavailable' | 'endpoint_rejected';
   readonly code = 'LLM_UPSTREAM_ERROR';
   /** Provider retries are exhausted here; the browser must not replay them. */
   readonly retryable = false;
@@ -45,10 +45,17 @@ export class LlmProviderError extends Error {
     body: string,
     readonly retryAfterMs?: number,
   ) {
-    const compactBody = body.slice(0, 200);
-    super(`LLM API error ${status}: ${compactBody}`);
+    let reason: LlmProviderError['reason'];
+    if (status === 400) {
+      if (/matched user group has no available model instance/i.test(body)) {
+        reason = 'model_unavailable';
+      } else if (/request path cannot be relayed/i.test(body)) {
+        reason = 'endpoint_rejected';
+      }
+    }
+    super(`LLM API error ${status}${reason ? ` (${reason})` : ''}`);
     this.name = 'LlmProviderError';
     this.status = status;
-    this.providerBody = compactBody;
+    this.reason = reason;
   }
 }

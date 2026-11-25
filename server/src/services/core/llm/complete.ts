@@ -2,7 +2,6 @@
  * Non-streaming chat completion.
  */
 import {
-  applyProviderControls,
   modelCapability,
   isPermanentQuotaError,
   providerHeaders,
@@ -10,6 +9,7 @@ import {
 } from '../llmProtocol.js';
 import { observePromptCacheUsage } from '../../../lib/promptCacheUsage.js';
 import { createUpstreamRetryBudget } from '../../../lib/upstreamRetryBudget.js';
+import { chatCompletionsEndpoint } from '../../../lib/providerUrl.js';
 import { getLlmDispatcher, markLlmActivity } from './dispatcher.js';
 import { LlmProviderError, type ChatCompletionRequestOptions } from './types.js';
 import {
@@ -25,6 +25,7 @@ import { nextCompatibilityVariant, requestBodyVariants } from './protocol.js';
 export async function callChatCompletion(opts: ChatCompletionRequestOptions) {
   const retryBudget = createUpstreamRetryBudget();
   const { apiBase, apiKey, signal, tools } = opts;
+  const endpoint = chatCompletionsEndpoint(apiBase);
 
   let response: Response | undefined;
   const variants = requestBodyVariants(opts, false);
@@ -41,7 +42,7 @@ export async function callChatCompletion(opts: ChatCompletionRequestOptions) {
       if (signal && signal.aborted) throw new Error('LLM request aborted');
       markLlmActivity();
       try {
-        response = await fetch(`${apiBase}/chat/completions`, {
+        response = await fetch(endpoint, {
           method: 'POST',
           headers: providerHeaders(apiKey, false),
           body: JSON.stringify(variant.body),
@@ -62,12 +63,15 @@ export async function callChatCompletion(opts: ChatCompletionRequestOptions) {
       }
       const errBody = await response.text().catch(() => '');
       if (response.status === 400) {
-        console.warn('[LLM] rejected completion request', JSON.stringify({
-          capability: modelCapability(opts.model).id,
-          variant: variant.reason,
-          fields: Object.keys(variant.body),
-          toolCount: Array.isArray(tools) ? tools.length : 0,
-        }));
+        console.warn(
+          '[LLM] rejected completion request',
+          JSON.stringify({
+            capability: modelCapability(opts.model).id,
+            variant: variant.reason,
+            fields: Object.keys(variant.body),
+            toolCount: Array.isArray(tools) ? tools.length : 0,
+          }),
+        );
       }
       const fallbackIndex =
         response.status === 400 ? nextCompatibilityVariant(variants, variantIndex, errBody) : -1;
@@ -94,23 +98,16 @@ export async function callChatCompletion(opts: ChatCompletionRequestOptions) {
         attempt >= attemptsForUpstreamStatus(response.status) - 1 ||
         !retryBudget.reserve(delayMs)
       ) {
-        const { ApiError } = await import('../../../lib/errors.js');
         console.warn(
           '[LLM] completion failed',
           JSON.stringify({ status: response.status, attempts: attempt + 1 }),
         );
-        throw Object.assign(
-          new ApiError(
-            response.status,
-            'LLM_UPSTREAM_ERROR',
-            `LLM API error ${response.status}. Try again later or switch model.`,
-          ),
-          {
-            retryable: false,
-            ...(response.status === RATE_LIMIT_STATUS && !isPermanentQuotaError(errBody)
-              ? { retryAfterMs: delayMs }
-              : {}),
-          },
+        throw new LlmProviderError(
+          response.status,
+          errBody,
+          response.status === RATE_LIMIT_STATUS && !isPermanentQuotaError(errBody)
+            ? delayMs
+            : undefined,
         );
       }
       console.warn(
@@ -139,16 +136,8 @@ export async function callChatCompletion(opts: ChatCompletionRequestOptions) {
   };
   const failure = providerPayloadFailure(json);
   if (failure) {
-    const { ApiError } = await import('../../../lib/errors.js');
     console.warn('[LLM] error in successful HTTP body', JSON.stringify({ status: failure.status }));
-    throw Object.assign(
-      new ApiError(
-        failure.status,
-        'LLM_UPSTREAM_ERROR',
-        `LLM API error ${failure.status}. Try again later or switch model.`,
-      ),
-      { retryable: false },
-    );
+    throw new LlmProviderError(failure.status, failure.body);
   }
   observePromptCacheUsage(json.usage);
   /* Preserve reasoning_content for the next tool/history request. */

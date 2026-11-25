@@ -16,10 +16,8 @@ export interface SseErrorFrame {
  *
  * Two rules:
  *
- *  - Never forward a raw upstream provider body. `LlmProviderError` embeds
- *    the provider's response text in its message; that text belongs in the
- *    server log, not in the browser. Any error carrying a numeric `status`
- *    is therefore mapped to a status-only description.
+ *  - Report upstream failures with localized copy for the status and any
+ *    recognized reason. Raw provider bodies never reach the client.
  *  - Always carry `status` and `code`, and carry `retryable` whenever the
  *    server has an opinion. The browser uses it to tell a deterministic
  *    failure (quota exhausted, bad key, unsupported mode) from a transient
@@ -35,7 +33,13 @@ export function buildSseErrorFrame(
   options: { fallbackCode?: string; locale?: ErrorLocale } = {},
 ): SseErrorFrame {
   const failure = err as
-    | (Error & { status?: number; code?: string; retryable?: boolean; retryAfterMs?: number })
+    | (Error & {
+        status?: number;
+        code?: string;
+        reason?: unknown;
+        retryable?: boolean;
+        retryAfterMs?: number;
+      })
     | null
     | undefined;
   const status = typeof failure?.status === 'number' ? failure.status : undefined;
@@ -50,7 +54,7 @@ export function buildSseErrorFrame(
   const message = curated
     ? localizeErrorCode((err as ApiError).code, locale, (err as ApiError).message)
     : status !== undefined
-      ? upstreamFailureMessage(status, locale)
+      ? upstreamFailureMessage(status, locale, failure?.reason)
       : (failure?.message ?? 'The model connection failed. Please try again.');
 
   const frame: SseErrorFrame = {
