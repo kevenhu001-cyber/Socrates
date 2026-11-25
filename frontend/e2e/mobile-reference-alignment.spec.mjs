@@ -172,7 +172,13 @@ for (const mode of ['dark', 'light']) {
       rgbChannels(await compose.evaluate((el) => getComputedStyle(el).backgroundColor)),
     ).toEqual([47, 99, 233]);
     await expect(account.locator('.user-identity')).toBeHidden();
-    await expect(page.locator('#sidebarSearchBtn')).toHaveCSS('border-top-left-radius', '999px');
+    const searchButton = page.locator('#sidebarSearchBtn');
+    const searchBox = await searchButton.boundingBox();
+    expect(searchBox.width).toBe(44);
+    expect(searchBox.height).toBe(44);
+    expect(
+      await searchButton.evaluate((el) => parseFloat(getComputedStyle(el).borderTopLeftRadius)),
+    ).toBeGreaterThanOrEqual(22);
     await expect(page.locator('.recents-search-all')).toBeInViewport();
     /* The drawer account row uses the same 32px identity mark as the desktop
        rail (parity/sidebar.css), not the 44px touch target. */
