@@ -63,9 +63,6 @@
   margin: 0.4em 0;
   color: var(--ui-text-primary);
 }
-.intui :is(.intui-text, .intui-callout-text) .katex-display > .katex {
-  font-size: 1.1em;
-}
 :is(.intui-panel-body, .intui-stack) {
   display: grid;
   gap: var(--ui-space-md);
@@ -1274,11 +1271,11 @@
 }
 
 /* Preserve Markdown alignment; generated tables default to reading direction. */
-.ds-table :is(th, td):not([align]) {
+:is(.ds-table, .intui-table) :is(th, td):not([align]) {
   text-align: start;
 }
 /* Long formulas scroll within their cell instead of painting across adjacent data. */
-.ds-table :is(th, td) .katex {
+:is(.ds-table, .intui-table) :is(th, td) .katex:not(.katex-display > .katex) {
   display: inline-block;
   vertical-align: middle;
   max-width: 100%;
