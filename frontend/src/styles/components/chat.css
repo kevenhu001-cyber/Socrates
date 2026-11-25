@@ -675,9 +675,9 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
     scrollbar-color: transparent transparent;
   }
 }
-@supports (scrollbar-color: hsl(var(--text-000) / 0.25) transparent) {
-  .katex-display:hover {
-    scrollbar-color: hsl(var(--text-000) / 0.25) transparent;
+@supports (scrollbar-color: auto) {
+  .katex-display:is(:hover, :focus-within) {
+    scrollbar-color: var(--ui-scrollbar-thumb-hover) transparent;
   }
 }
 .katex-display::-webkit-scrollbar {
@@ -685,10 +685,10 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
 }
 .katex-display::-webkit-scrollbar-thumb {
   background: transparent;
-  border-radius: 3px;
+  border-radius: var(--ui-radius-pill);
 }
-.katex-display:hover::-webkit-scrollbar-thumb {
-  background: hsl(var(--text-000) / 0.25);
+.katex-display:is(:hover, :focus-within)::-webkit-scrollbar-thumb {
+  background: var(--ui-scrollbar-thumb-hover);
 }
 .katex-display > .katex {
   font-size: 1.1em;
