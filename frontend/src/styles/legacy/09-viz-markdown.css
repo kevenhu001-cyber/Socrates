@@ -535,23 +535,6 @@
 /* Tables and formulas are rendered only once the splitter has closed them
    (isStableMarkdownPrefix): they appear whole, with no per-glyph animation. */
 
-/* Streaming math that is still arriving: render/markdown.ts neutralizes
-   KaTeX's own .katex-error spans (red, inline color:#cc0000) into this
-   class, so a half-typed formula reads as calm, dimmed live text instead
-   of an error message. The span keeps the partial source KaTeX preserved,
-   so the completed render is a seamless continuation of the last frame. */
-.math-stream-pending {
-  color: hsl(var(--text-400));
-  font-style: italic;
-}
-.katex .mord {
-  color: hsl(var(--text-100));
-}
-/* Force all KaTeX output to use normal (non-italic) style. KaTeX
-   applies italic to variables by default, which can look odd in
-   mixed-language chat. Use !important to override KaTeX's inline
-   style="font-style:italic" on mathnormal spans. */
-
 @media (max-width: 768px) {
   .sidebar {
     position: fixed;
