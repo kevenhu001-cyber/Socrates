@@ -117,12 +117,10 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
           <div className="ui-collapse-inner">
             <div className="activity-timeline" data-testid="thinking-timeline">
               {intent ? <SummaryStep step={{ id: 'intent', title: i18n('think.taskOverview', 'Task overview'), summary: intent }} /> : null}
-              {timeline.map((entry) => entry.kind === 'step' ? (
-                <SummaryStep key={entry.step.id} step={entry.step} />
-              ) : (
-                entry.tools.map((call) => <ToolRunRow key={call.id} call={call} messageId={messageId}
-                  readOnly={readOnly} live={live} approvalOutside />)
-              ))}
+              {timeline.flatMap((entry) => entry.kind === 'step' ? [
+                <SummaryStep key={`summary-${entry.step.id}`} step={entry.step} />,
+              ] : entry.tools.map((call) => <ToolRunRow key={`tool-${call.id}`} call={call} messageId={messageId}
+                  readOnly={readOnly} live={live} approvalOutside />))}
             </div>
           </div>
         </div>
