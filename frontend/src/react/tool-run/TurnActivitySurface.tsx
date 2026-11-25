@@ -190,15 +190,8 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
   const toolName = live ? status?.toolName : undefined;
   const sites = useMemo(() => turnActivitySites(calls), [calls]);
   if (!live && !expandable && !props.reasoningDurationSec) return null;
-  const siteMarkWidth = sites.length ? sites.length * 11 + 5 : 0;
-  const iconWidth =
-    (toolName ? 18 : 0) + siteMarkWidth + (toolName && sites.length ? 4 : 0);
-  const headerIcon = iconWidth ? (
-    <span className="activity-header-icons">
-      {toolName ? <ToolActivityIcon name={toolName} /> : null}
-      {sites.length ? <ToolSiteMarks sites={sites} /> : null}
-    </span>
-  ) : undefined;
+  const headerIcon = toolName ? <ToolActivityIcon name={toolName} /> : undefined;
+  const trailing = sites.length ? <ToolSiteMarks sites={sites} /> : undefined;
   const durationLabel =
     working && elapsedSec
       ? tf('think.rn.elapsed', '{sec}s', { sec: Math.max(1, Math.round(elapsedSec)) })
@@ -222,7 +215,8 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
           durationClassName="activity-duration"
           live={working}
           icon={headerIcon}
-          iconWidth={iconWidth || 18}
+          iconWidth={18}
+          trailing={trailing}
           expandable={expandable}
           open={open}
           onToggle={() => setOpen((value) => !value)}
@@ -232,7 +226,11 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
           bodyInert={!open}
         >
           <div className="ui-collapse-inner">
-            <div className="activity-timeline" data-testid="thinking-timeline">
+            <div
+              className="activity-timeline"
+              data-testid="thinking-timeline"
+              style={{ paddingInlineStart: toolName ? 22 : 0 }}
+            >
               {intent ? (
                 <SummaryStep
                   step={{
