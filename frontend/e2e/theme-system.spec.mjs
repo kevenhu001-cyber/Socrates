@@ -47,13 +47,11 @@ test('theme selector follows the operating system and persists explicit modes', 
       sidebar: styles.getPropertyValue('--ui-bg-sidebar').trim(),
       raised: styles.getPropertyValue('--ui-bg-raised').trim(),
       surface: styles.getPropertyValue('--ui-bg-surface').trim(),
-      cgPage: styles.getPropertyValue('--cg-page').trim(),
-      chatgptPage: styles.getPropertyValue('--chatgpt-page').trim(),
-      conversationPage: styles.getPropertyValue('--conversation-page').trim(),
       legacyPage: styles.getPropertyValue('--bg-000').trim(),
-      lobeLayout: styles.getPropertyValue('--lobe-color-bg-layout').trim(),
-      lobeContainer: styles.getPropertyValue('--lobe-color-bg-container').trim(),
-      lobeElevated: styles.getPropertyValue('--lobe-color-bg-elevated').trim(),
+      retiredCg: styles.getPropertyValue('--cg-page').trim(),
+      retiredChatgpt: styles.getPropertyValue('--chatgpt-page').trim(),
+      retiredConversation: styles.getPropertyValue('--conversation-page').trim(),
+      retiredLobe: styles.getPropertyValue('--lobe-color-bg-layout').trim(),
     };
   });
   // The dark canvas is the reference's pure #000 (Geist background-200, the
@@ -63,14 +61,12 @@ test('theme selector follows the operating system and persists explicit modes', 
   expect(hex6(darkPalette.sidebar)).toBe('#1a1a1a');
   expect(hex6(darkPalette.raised)).toBe('#1f1f1f');
   expect(hex6(darkPalette.surface)).toBe('#292929');
-  // Computed custom properties resolve var() aliases to the canonical value.
-  expect(hex6(darkPalette.cgPage)).toBe(hex6(darkPalette.page));
-  expect(hex6(darkPalette.chatgptPage)).toBe(hex6(darkPalette.page));
-  expect(hex6(darkPalette.conversationPage)).toBe(hex6(darkPalette.page));
+  // Retired compatibility families no longer publish a value.
   expect(darkPalette.legacyPage).toBe('0 0% 0%');
-  expect(hex6(darkPalette.lobeLayout)).toBe(hex6(darkPalette.page));
-  expect(hex6(darkPalette.lobeContainer)).toBe(hex6(darkPalette.raised));
-  expect(hex6(darkPalette.lobeElevated)).toBe(hex6(darkPalette.surface));
+  expect(darkPalette.retiredCg).toBe('');
+  expect(darkPalette.retiredChatgpt).toBe('');
+  expect(darkPalette.retiredConversation).toBe('');
+  expect(darkPalette.retiredLobe).toBe('');
 
   await themeSegs.locator('[data-theme-option="system"]').click();
   await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'system');
@@ -95,10 +91,10 @@ test('theme selector follows the operating system and persists explicit modes', 
     text: hex6(lightPalette.text),
     border: hex6(lightPalette.border),
   }).toEqual({
-    page: '#fcfcfc',
+    page: '#ffffff',
     raised: '#ffffff',
     elevated: '#ffffff',
-    text: '#171717',
+    text: '#000000',
     border: '#eaeaea',
   });
 

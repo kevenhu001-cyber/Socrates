@@ -196,7 +196,10 @@ test('mobile composer keeps model selector and reference controls discoverable',
   const effortTrigger = effort.locator('#effortTrigger');
   await expect(editor).toBeFocused();
   await editor.evaluate((node) => node.blur());
-  await expect(effortTrigger).toBeHidden();
+  /* A non-default reasoning level stays visible at rest; only the default
+     (medium) pill folds away with the focused composer. */
+  await expect(effortTrigger).toBeVisible();
+  await expect(effort.locator('[data-effort-value]')).toHaveText('高');
 });
 
 test('desktop configuration reuses the same content in an anchored popover', async ({ page }) => {

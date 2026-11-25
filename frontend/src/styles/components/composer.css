@@ -62,3 +62,11 @@
 
   /* Single-line editors: compact tiptap so the capsule stays ~54px. */
 }
+
+@media (min-width: 769px) {
+  /* Desktop landing composer keeps the reference's 20px breathing room
+     below the capsule. Migrated from restore/chat-surface.css. */
+  #appShell #chatInputBar {
+    padding-bottom: 20px;
+  }
+}

@@ -129,7 +129,7 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   await page.evaluate(() => {
     const sidebar = document.getElementById('sidebar');
     if (sidebar && !sidebar.classList.contains('collapsed'))
-      window.__socratesLegacy.navigation.toggleSidebar?.();
+      window.__socratesTestState.actions.toggleSidebar?.();
   });
   await expect
     .poll(async () => {
@@ -250,13 +250,9 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
       rowIcon: box('.plugin-directory-row .workspace-row-icon'),
     };
   });
-  /* 36px search per docs/ref/mobile-reference-2026-10-04.md
-     ("Directories | 36px search, 40px tabs/app icons, 60px file rows"),
-     owned by polish/mobile-directories.css.
-     The densities stay pinned to the pixel, but the measurement tolerates
-     sub-pixel layout rounding: a loaded machine can land on 35.99998… and
-     an exact match turned that into a random red. */
-  expect(pluginGeometry.search?.height).toBeCloseTo(36, 1);
+  /* The 2026-11-23 page pass raised the phone directory search to the
+     44px touch rung; tabs/app icons stay at 40px. */
+  expect(pluginGeometry.search?.height).toBeCloseTo(44, 1);
   expect(
     (pluginGeometry.installedLabel?.y ?? 0) + (pluginGeometry.installedLabel?.height ?? 0),
   ).toBeLessThanOrEqual(pluginGeometry.installedIcon?.y ?? 0);
@@ -301,7 +297,7 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   await page.evaluate(() => {
     const sidebar = document.getElementById('sidebar');
     if (sidebar?.classList.contains('collapsed'))
-      window.__socratesLegacy.navigation.toggleSidebar?.();
+      window.__socratesTestState.actions.toggleSidebar?.();
     document.getElementById('navNew')?.click();
   });
   await expect(page.locator('#topicSetup')).toBeVisible();
@@ -413,7 +409,9 @@ test('Create image waits for a user prompt before submitting the image-generatio
   await expect
     .poll(async () => (await readActiveTemplate(page))?.extensionKey || null)
     .toBe('createImage');
-  expect((await readActiveTemplate(page))?.systemPrompt || '').toContain('You are in image creation mode');
+  expect((await readActiveTemplate(page))?.systemPrompt || '').toContain(
+    'You are in image creation mode',
+  );
   expect(chatRequests).toEqual([]);
 
   await page
@@ -470,7 +468,10 @@ for (const theme of ['light', 'dark']) {
         await capture(name, selector);
         const title = page.locator(selector).locator('[data-page-title]').first();
         await expect(title).toBeVisible();
-        await expect(title).toHaveCSS('color', theme === 'dark' ? 'rgb(255, 255, 255)' : 'rgb(0, 0, 0)');
+        await expect(title).toHaveCSS(
+          'color',
+          theme === 'dark' ? 'rgb(255, 255, 255)' : 'rgb(0, 0, 0)',
+        );
       }
       for (const [nav, panel, name] of [
         ['navImages', '#imagesPanel', 'images'],
@@ -490,8 +491,13 @@ for (const theme of ['light', 'dark']) {
       await page.locator('#settingsPage .settings-nav [data-section="models"]').click();
       await capture('models', '#settingsPage .settings-body');
       await expect(page.locator('#addProviderBtn')).toBeVisible();
-      const settingsClose = page.locator('#settingsPage .account-page-header [data-slot="button"]').first();
-      await expect(settingsClose.locator('svg')).toHaveCSS('color', theme === 'dark' ? 'rgb(255, 255, 255)' : 'rgb(0, 0, 0)');
+      const settingsClose = page
+        .locator('#settingsPage .account-page-header [data-slot="button"]')
+        .first();
+      await expect(settingsClose.locator('svg')).toHaveCSS(
+        'color',
+        theme === 'dark' ? 'rgb(255, 255, 255)' : 'rgb(0, 0, 0)',
+      );
     });
   }
 }

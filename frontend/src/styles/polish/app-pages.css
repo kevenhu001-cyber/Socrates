@@ -128,7 +128,11 @@ html:not([data-main-view='settingsPage']) #appShell .main-page .ui-page-frame.pl
     border-radius: 0;
   }
 
-  body.workspace-active #appShell .ui-collection.library-list:not(.view-grid) .library-row + .library-row {
+  body.workspace-active
+    #appShell
+    .ui-collection.library-list:not(.view-grid)
+    .library-row
+    + .library-row {
     border-top: 1px solid var(--ui-border-subtle);
   }
 
@@ -979,4 +983,84 @@ body.workspace-active #appShell .ui-page-card.project-card {
   #appShell .creation-gallery {
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 160px), 1fr));
   }
+}
+
+@media (max-width: 768px) {
+  /* Retired restore/fixes.css eight-pixel lift above the shared 68px row. */
+  #appShell .scheduled-task-list .task-row {
+    min-height: 70px;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Directory pages sit on the full main column; the drawer's page padding
+     would double the Page Frame gutter. Migrated from restore/mobile-parity.css. */
+  body.workspace-active #appShell .main-page,
+  body.workspace-active #appShell .scheduled-directory {
+    width: calc(100% - 32px);
+    max-width: none;
+    margin-inline: auto;
+    padding: 30px 0 72px;
+  }
+  #appShell .project-icon,
+  #appShell .task-row .workspace-row-icon {
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    border-radius: var(--ui-radius-md);
+  }
+  body.workspace-active #appShell #mainContent {
+    position: relative;
+    z-index: var(--ui-z-panel);
+  }
+  #appShell :is(.workspace-field, .modal) :is(input, textarea) {
+    font-size: var(--ui-font-size-md);
+    border-radius: var(--ui-radius-row);
+  }
+  #appShell .scheduled-directory .scheduled-section-heading span:last-child {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Phone directory panels sit inside the 16px page gutter. Migrated from
+     restore/ref-baseline.css. */
+  #appShell #pluginsPanel {
+    width: calc(100% - 16px);
+    max-width: none;
+    margin-inline: 8px;
+    padding-top: 16px;
+    background: transparent;
+  }
+  body.workspace-active #appShell #scheduledPanel {
+    position: relative;
+    width: calc(100% - 16px);
+    margin-inline: 8px;
+    background: transparent;
+    z-index: var(--ui-z-panel);
+  }
+  #appShell #scheduledPanel .scheduled-directory {
+    width: 100%;
+    margin: 0;
+    padding: 14px 0 72px;
+  }
+}
+
+/* Library row affordances: selection and row actions appear on hover,
+   selection or keyboard focus. Migrated from restore/chatgpt-ui.css. */
+#appShell .library-checkbox-label {
+  padding-left: 4px;
+  opacity: 0;
+  transition: opacity 0.16s ease;
+}
+#appShell :is(.library-row:hover, .library-row-selected) .library-checkbox-label,
+#appShell .library-checkbox-label:focus-within {
+  opacity: 1;
+}
+#appShell .library-row-actions .workspace-row-action {
+  opacity: 0;
+}
+#appShell .library-row:hover .library-row-actions .workspace-row-action,
+#appShell .library-row-actions .workspace-row-action:focus-visible {
+  opacity: 1;
 }

@@ -12,6 +12,16 @@
 @layer theme, base, components, utilities;
 
 :root {
+  /* Runtime display preferences. displayPrefs.ts writes the real values on
+     the root element; these defaults keep the first paint and the no-JS
+     fallback stable. They live here, not in the frozen legacy layer, because
+     canonical CSS reads them. */
+  --app-font-scale: 1;
+  --app-width-scale: 1;
+  --keyboard-inset: 0px;
+  --always-white: 0 0% 100%;
+  --always-black: 0 0% 0%;
+
   /* shadcn uses the same corner scale as the product. */
   --radius: var(--ui-radius-md);
   /* Socrates product spacing. The 2px optical rung is intentionally outside
@@ -217,7 +227,7 @@
 @media (max-width: 768px) {
   :root {
     /* Leave a tappable strip of the covered page outside the phone drawer. */
-    --ui-sidebar-mobile: min(420px, 80vw);
+    --ui-sidebar-mobile: min(420px, 90vw);
     /* Phone reference bubble: a pill on one line (44px tall, 22px radius). */
     --ui-radius-bubble: 22px;
   }

@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
+import { getAppMode, subscribeAppMode } from '../../config/providers.ts';
 import { EditorContent } from '@tiptap/react';
 import type { NativeIslandEditorProps } from '@socrates/contracts';
 import { useComposerSurface } from './useComposerSurface';
@@ -28,9 +29,24 @@ export function RichComposer({
   }, []);
 
   const webSearchOn = useWebSearchOn();
+  const appMode = useSyncExternalStore(subscribeAppMode, getAppMode, () => 'chat');
+  const placeholderKey =
+    appMode === 'tutor'
+      ? surface === 'chat'
+        ? 'tutor.chatPlaceholder'
+        : 'tutor.inputPlaceholder'
+      : surface === 'chat'
+        ? 'chat.inputPlaceholder'
+        : 'topic.inputPlaceholder';
+  const placeholderFallback =
+    appMode === 'tutor'
+      ? surface === 'chat'
+        ? 'Ask a question, or try a problem'
+        : 'What would you like to explore?'
+      : placeholder;
   const activePlaceholder = webSearchOn
     ? i18n('composer.webSearch.placeholder', 'Search the web')
-    : i18n(surface === 'chat' ? 'chat.inputPlaceholder' : 'topic.inputPlaceholder', placeholder);
+    : i18n(placeholderKey, placeholderFallback);
   const shape = useComposerShape();
   const editor = useRichComposerEditor({
     activePlaceholder,

@@ -7,6 +7,7 @@ import type { SessionItem } from '../legacy/sessionListState.ts';
 import { sameSessionRow, sessionRowFields } from './sessionRowModel.ts';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 import { getSessionListSearchQuery, publishSessionListState } from '../legacy/sessionListState.ts';
+import { serverCache } from './serverCache.ts';
 
 export { sameSessionRow, sessionRowFields };
 
@@ -63,7 +64,7 @@ export function publishSessionList(): void {
       currentSessionId: sessionBridge.getSnapshot().currentSessionId as string | null,
       searchQuery: rawSearchQuery,
       filter,
-      fetchFailed: !!window.SERVER_SESSIONS_FETCH_FAILED,
+      fetchFailed: serverCache.fetchFailed,
     });
   } catch (error) {
     reportEmptyCatch(error, 'empty catch: session/sessionListPublisher.ts', 'expected');

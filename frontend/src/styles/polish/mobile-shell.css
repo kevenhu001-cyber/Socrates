@@ -78,8 +78,10 @@
      The bar itself is painted with the page colour: the transcript scrolls
      under it, and a see-through bar lets that text show between the title and
      the trailing actions. */
-  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active) #appShell .top-bar {
-    --ui-phone-header-bg: var(--conversation-page);
+  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
+    #appShell
+    .top-bar {
+    --ui-phone-header-bg: var(--ui-bg-page);
     --ui-phone-drawer-bg: var(--ui-bg-field);
     --ui-phone-drawer-border: 1px solid var(--ui-border-subtle);
     --ui-phone-drawer-size: var(--ui-hit-area);
@@ -87,25 +89,40 @@
     padding-inline: var(--ui-mobile-page-gutter);
     pointer-events: none;
   }
-  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active) #appShell .top-bar :is(button, a, [role='button']) {
+  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
+    #appShell
+    .top-bar
+    :is(button, a, [role='button']) {
     pointer-events: auto;
   }
-  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active) #appShell #sidebarOpenBtn .glyph-panel {
+  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
+    #appShell
+    #sidebarOpenBtn
+    .glyph-panel {
     display: none;
   }
-  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active) #appShell #sidebarOpenBtn .glyph-hamburger {
+  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
+    #appShell
+    #sidebarOpenBtn
+    .glyph-hamburger {
     display: block;
   }
-  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active) #appShell .top-bar-right {
+  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
+    #appShell
+    .top-bar-right {
     gap: 0;
     background: var(--ui-bg-field);
     border: 1px solid var(--ui-border-subtle);
     border-radius: var(--ui-radius-pill);
   }
-  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active) #appShell .top-bar-right:empty {
+  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
+    #appShell
+    .top-bar-right:empty {
     display: none;
   }
-  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active) #appShell .mobile-newchat-btn {
+  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
+    #appShell
+    .mobile-newchat-btn {
     margin-inline-start: 6px;
     border-radius: var(--ui-radius-pill);
     background: var(--ui-bg-field);
@@ -184,4 +201,20 @@
      so the model name still fits. The selector repeats the state prefix so it
      outranks the base chip rule, which carries the same two ids plus an
      attribute. */
+}
+
+@media (max-width: 768px) {
+  [data-mode='dark'] #appShell,
+  [data-mode='dark'] #appShell :is(.main-content, .main-bg) {
+    background: var(--ui-bg-page);
+  }
+  [data-mode='dark'] #appShell .top-bar {
+    background: var(--ui-phone-header-bg, var(--ui-bg-page));
+  }
+}
+
+@media (max-width: 768px) {
+  #appShell :is(.main, .main-content, .main-bg) {
+    background-color: var(--ui-bg-page);
+  }
 }

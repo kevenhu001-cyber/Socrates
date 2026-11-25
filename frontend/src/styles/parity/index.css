@@ -4,7 +4,7 @@
  * composer file owns it at every width); the
  * older rules for that surface were moved behind @media (max-width: 768px)
  * by scripts/migrate-surface-css.mjs, so this layer needs no !important.
- * Sits after restore/ (being retired) and before polish/.
+ * Sits after the canonical feature layer and before polish/.
  */
 @import './sidebar.css';
 @import './topbar.css';

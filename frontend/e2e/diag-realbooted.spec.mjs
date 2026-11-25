@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test';
+import { test } from './_state-fixture.mjs';
+import { expect } from '@playwright/test';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 /* Reveals the chat view via the real boot path: hides the auth gate,

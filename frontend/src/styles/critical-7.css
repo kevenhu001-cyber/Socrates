@@ -1,9 +1,8 @@
 /* critical-7.css — first-paint slice 7/7 (render-blocking).
  *
- * The shared page grammar for every non-chat page. It must load after the
- * compatibility `restore/` sheets so a collection card can replace the old
- * row chrome without !important bidding; keeping it as a leaf link would put
- * it before the bundled critical slices in production and lose that order.
+ * The shared page grammar for every non-chat page. It loads after the
+ * component/feature slices and before the desktop owners; keeping it as a
+ * leaf link would put it before the bundled critical slices in production.
  * themes.css still closes the cascade as its own final <link>.
  * See critical-1.css for the contract. */
 @import './polish/app-pages.css';

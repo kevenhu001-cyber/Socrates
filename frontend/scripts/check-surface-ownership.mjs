@@ -123,7 +123,9 @@ for (const file of walk(STYLES)) {
     }
     if (
       rel === 'polish/overlays.css' &&
-      /\.settings-(?:page|account-|bg-|memory-|choice-|danger-|mono|empty-hint)|\.tone-preset-/.test(rule.selector)
+      /\.settings-(?:page|account-|bg-|memory-|choice-|danger-|mono|empty-hint)|\.tone-preset-/.test(
+        rule.selector,
+      )
     ) {
       problems.push(
         `${rel}:${rule.source?.start?.line ?? '?'} settings rules belong in polish/settings-page.css`,
@@ -137,13 +139,7 @@ for (const file of walk(STYLES)) {
       }
     }
   });
-  if (
-    rel.startsWith('legacy/') ||
-    rel.startsWith('restore/') ||
-    rel === 'themes.css' ||
-    rel === 'tokens.css'
-  )
-    continue;
+  if (rel.startsWith('legacy/') || rel === 'themes.css' || rel === 'tokens.css') continue;
   const root = postcss.parse(readFileSync(file, 'utf8'), { from: file });
   root.walkRules((rule) => {
     if (insideKeyframes(rule)) return;
@@ -238,13 +234,7 @@ const lastSimple = (selector) => {
 const ownerOf = new Map();
 for (const file of walk(STYLES)) {
   const rel = relative(STYLES, file).replaceAll('\\', '/');
-  if (
-    rel.startsWith('legacy/') ||
-    rel.startsWith('restore/') ||
-    rel === 'themes.css' ||
-    rel === 'tokens.css'
-  )
-    continue;
+  if (rel.startsWith('legacy/') || rel === 'themes.css' || rel === 'tokens.css') continue;
   const root = postcss.parse(readFileSync(file, 'utf8'), { from: file });
   root.walkRules((rule) => {
     if (!appliesOnDesktop(rule)) return;

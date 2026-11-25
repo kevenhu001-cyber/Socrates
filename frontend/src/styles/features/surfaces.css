@@ -120,8 +120,7 @@
   background: var(--ui-backdrop);
 }
 
-/* .workspace-dialog-card's chrome is pinned by chatgpt-ui's !important
-   rule (border/radius/dialog bg/shadow) — it still takes color above. */
+/* Shared dialog chrome: one border, radius, fill and shadow recipe. */
 #appShell .modal,
 #appShell .modal-card {
   border: 1px solid var(--ui-border-subtle);

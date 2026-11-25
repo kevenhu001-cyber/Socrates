@@ -11,7 +11,8 @@
 //   - settled history rows do not replay the msgIn reveal and the boot
 //     spinners stop once the app has booted;
 //   - Plotly charts follow a light/dark switch after they mounted.
-import { test, expect } from '@playwright/test';
+import { test } from './_state-fixture.mjs';
+import { expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -409,7 +410,10 @@ for (const mode of ['dark', 'light']) {
         ].map((element) => getComputedStyle(element).backgroundColor),
       );
     expect(surfaces).toHaveLength(4);
-    expect(new Set(surfaces).size).toBe(surfaces.length);
+    /* Settings v2 is a flat page: the page shell and the content column are
+       transparent, the nav is transparent, and the search field is the one
+       raised control. Assert layering, not four distinct paints. */
+    expect(new Set(surfaces).size).toBeGreaterThanOrEqual(2);
   });
 }
 
@@ -438,7 +442,7 @@ test('phone light code blocks are light cards', async ({ page }) => {
   await page.evaluate(() => {
     const sidebar = document.getElementById('sidebar');
     if (sidebar && !sidebar.classList.contains('collapsed'))
-      window.__socratesLegacy.navigation.toggleSidebar?.();
+      window.__socratesTestState.actions.toggleSidebar?.();
   });
   await loadSession(page);
   const code = await page.evaluate(() => {
@@ -461,7 +465,7 @@ test('phone light tools menu keeps light icon chips', async ({ page }) => {
   await page.evaluate(() => {
     const sidebar = document.getElementById('sidebar');
     if (sidebar && !sidebar.classList.contains('collapsed'))
-      window.__socratesLegacy.navigation.toggleSidebar?.();
+      window.__socratesTestState.actions.toggleSidebar?.();
   });
   await page.locator('#composerToolsBtn').click();
   const menu = page.locator('#composerToolsMenu');

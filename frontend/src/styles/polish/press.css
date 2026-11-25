@@ -155,3 +155,9 @@
     opacity: var(--ui-press-opacity);
   }
 }
+
+/* Hover may tint, but it must not move the control. Press feedback is
+   paint-only. Migrated from restore/chatgpt-v2.css. */
+#appShell :where(button, a, [role='button']):hover {
+  transform: none;
+}

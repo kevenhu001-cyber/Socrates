@@ -44,6 +44,9 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
     await window.askChatTurn('Explore Socratic learning');
   });
 
+  /* Reasoning and tool activity now live in one collapsed disclosure. Open it
+     before asserting the individual tool row. */
+  await page.locator('.rn-turn-activity-toggle').first().click();
   const toolRow = page.locator('.msg.assistant .rn-tool-row[data-tcid="search-visual"]');
   await expect(toolRow).toBeVisible();
   await expect(toolRow.locator('[data-testid="thinking-step-title"]')).toContainText(
@@ -80,12 +83,11 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
     };
   });
   expect(desktopControlBoxes.effort).toBeNull();
-  /* RN-7 ask-box: the editor is the top storey, the rail sits beneath it —
-     + on the left, mic and send on the right, all on one centre line. */
-  expect(desktopControlBoxes.editor?.bottom ?? 0).toBeLessThanOrEqual(
-    (desktopControlBoxes.attach?.top ?? 0) + 1,
-  );
+  /* One-row desktop capsule: + · editor · mic · send share one centre line. */
   expect(desktopControlBoxes.attach?.right ?? 0).toBeLessThanOrEqual(
+    (desktopControlBoxes.editor?.left ?? 0) + 1,
+  );
+  expect(desktopControlBoxes.editor?.right ?? 0).toBeLessThanOrEqual(
     (desktopControlBoxes.mic?.left ?? 0) + 1,
   );
   expect(desktopControlBoxes.mic?.right ?? 0).toBeLessThanOrEqual(
@@ -93,9 +95,9 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
   );
   const sendCenter =
     ((desktopControlBoxes.send?.top ?? 0) + (desktopControlBoxes.send?.bottom ?? 0)) / 2;
-  const attachCenter =
-    ((desktopControlBoxes.attach?.top ?? 0) + (desktopControlBoxes.attach?.bottom ?? 0)) / 2;
-  expect(Math.abs(sendCenter - attachCenter)).toBeLessThanOrEqual(1);
+  const editorCenter =
+    ((desktopControlBoxes.editor?.top ?? 0) + (desktopControlBoxes.editor?.bottom ?? 0)) / 2;
+  expect(Math.abs(sendCenter - editorCenter)).toBeLessThanOrEqual(2);
   await page.screenshot({ path: 'test-results/visual-qa/chat-composer-dark.png', fullPage: true });
   await page.evaluate(() => document.getElementById('themeToggle')?.click?.());
   await page.waitForTimeout(250);
@@ -107,7 +109,7 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
   await page.evaluate(() => {
     const sidebar = document.getElementById('sidebar');
     if (sidebar && !sidebar.classList.contains('collapsed'))
-      window.__socratesLegacy.navigation.toggleSidebar?.();
+      window.__socratesTestState.actions.toggleSidebar?.();
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
   });
   await page.waitForTimeout(400);
@@ -131,15 +133,17 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
       editor: rect('#composerInputWrap .rich-composer-editor'),
       send: rect('#composerPrimaryBtn'),
       bodyDisplay: getComputedStyle(
-        document.querySelector('#composerInputWrap [data-composer-slot="rail"]'),
+        document.querySelector('#composerInputWrap [data-composer-slot="inline"]'),
       ).display,
     };
   });
   console.log('[mobile-collapsed-geometry]', JSON.stringify(collapsedGeometry));
   expect(['contents', 'grid', 'flex']).toContain(collapsedGeometry.bodyDisplay);
-  expect(collapsedGeometry.send?.top ?? 0).toBeGreaterThanOrEqual(
-    (collapsedGeometry.editor?.bottom ?? 0) - 8,
-  );
+  const mobileSendCenter =
+    ((collapsedGeometry.send?.top ?? 0) + (collapsedGeometry.send?.bottom ?? 0)) / 2;
+  const mobileEditorCenter =
+    ((collapsedGeometry.editor?.top ?? 0) + (collapsedGeometry.editor?.bottom ?? 0)) / 2;
+  expect(Math.abs(mobileSendCenter - mobileEditorCenter)).toBeLessThanOrEqual(2);
   await page.screenshot({
     path: 'test-results/visual-qa/chat-composer-mobile-collapsed.png',
     fullPage: true,

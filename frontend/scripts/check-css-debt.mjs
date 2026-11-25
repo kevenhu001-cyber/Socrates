@@ -15,7 +15,7 @@
  * 3. Debt ratchet: for every stylesheet under src/styles we count
  *    `!important`, literal hex colors, literal px border-radius values, and
  *    selectors that repeat one id three or more times (`#appShell#appShell…`).
- *    legacy/ and restore/ are frozen historical zones; every other directory
+ *    legacy/ is the frozen historical zone; every other directory
  *    is "live". Counts may only go DOWN — if a metric grows past its baseline
  *    the check fails. Shrink the baseline with --update after an intentional
  *    reduction.
@@ -32,7 +32,7 @@ const STYLES = join(FRONTEND, 'src', 'styles');
 const BASELINE = join(FRONTEND, 'scripts', 'css-debt.baseline.json');
 const UPDATE = process.argv.includes('--update');
 
-const FROZEN_DIRS = new Set(['legacy', 'restore']);
+const FROZEN_DIRS = new Set(['legacy']);
 /* Token projections written by scripts/gen-ui-tokens.mjs from packages/theme.
  * Their literals are the shared source's values, not hand-authored debt, and
  * gen-ui-tokens --check keeps them byte-identical to that source. */
@@ -61,16 +61,6 @@ const ORDERED_MANIFESTS = {
     './14-tool-surfaces.css',
     './15-thinking-activity.css',
     './16-final-contract.css',
-  ],
-  'restore/index.css': [
-    './chatgpt-ui.css',
-    './chatgpt-v2.css',
-    './ref-baseline.css',
-    './mobile-parity.css',
-    './chat-surface.css',
-    './chatgpt-parity.css',
-    './fixes.css',
-    './creation-surfaces.css',
   ],
   'parity/index.css': [
     './sidebar.css',
@@ -305,7 +295,7 @@ function countMetric(re, text) {
 /* A selector that repeats the same id (`#appShell#appShell#appShell …`) is
  * not styling, it is winning a cascade fight by brute force. Each new one
  * makes the next legitimate rule harder to place, which is how
- * restore/fixes.css accumulated 21 of them. The count is ratcheted exactly
+ * The retired restore/ layer accumulated 21 of them. The count is ratcheted exactly
  * like the other metrics so it can only shrink. */
 function countStackedIdSelectors(text) {
   let n = 0;
@@ -364,14 +354,14 @@ const METRICS = {
    *
    * themes.css still publishes the historical HSL channels (--text-*, --bg-*,
    * --border-*, --accent-*, --brand-*, --oncolor-*, --surface-*) because the
-   * frozen legacy/ and restore/ trees read them. They are a second palette
+   * frozen legacy/ tree reads them. They are a second palette
    * running beside --ui-*, and the two do not agree value-for-value (the
    * legacy text-300 is 54% grey while --ui-text-tertiary is a different
    * step), so a live file that reads one renders a colour nobody chose in
    * themes.css and drifts whenever either ramp is re-tuned.
    *
    * The live side is zero: every live reader now uses an --ui-* role. The
-   * frozen side stays frozen at its current count — legacy/ and restore/ are
+   * frozen side stays frozen at its current count — legacy/ is
    * historical geometry, not something to migrate in this pass.
    */
   legacyChannel: /var\(--(?:text|bg|border|accent|brand|oncolor|surface)-\d+/g,
@@ -407,7 +397,6 @@ function tierOf(spec) {
     spec.startsWith('./features/')
   )
     return 3;
-  if (spec.startsWith('./restore/')) return 3.5;
   if (spec.startsWith('./parity/')) return 4;
   if (spec.startsWith('./polish/')) return 5;
   if (spec === './themes.css') return 6;

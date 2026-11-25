@@ -41,7 +41,7 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
-  --font-sans: var(--cg-font);
+  --font-sans: var(--ui-font-ui);
   --font-weight-normal: var(--ui-font-weight-regular);
   --font-weight-medium: var(--ui-font-weight-medium);
   --font-weight-semibold: var(--ui-font-weight-semibold);

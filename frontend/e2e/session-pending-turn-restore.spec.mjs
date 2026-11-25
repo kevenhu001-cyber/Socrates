@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test';
+import { test } from './_state-fixture.mjs';
+import { expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 

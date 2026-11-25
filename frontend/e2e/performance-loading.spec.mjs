@@ -45,12 +45,10 @@ test('download-first UI fonts preload one variable face without duplicate transf
   expect(result.count).toBe(1);
   expect(result.initiator).toBe('link');
   expect(result.preload).toBe(1);
-  /* Platform CJK faces stay ahead of the self-hosted Noto subset: a Mac or
-     Windows reader renders Chinese from PingFang/YaHei without downloading
-     ~560KB of Noto, while Linux (the test runner) still reaches Noto before
-     the generic fallback. */
+  /* The bundled UI stack keeps Geist Sans and the self-hosted Noto CJK face
+     first; the platform faces are the fallback behind them. */
   expect(result.family).toMatch(
-    /^"Geist Sans", .*"PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", "Noto Sans SC", system-ui, sans-serif$/,
+    /^"Geist Sans", "Noto Sans SC", .*"PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", system-ui, sans-serif$/,
   );
   /* Platform CJK faces may satisfy the glyphs entirely; what must never
      happen is a third-party font origin. */
@@ -245,7 +243,7 @@ test('settings and workspace code load only when opened', async ({ page }) => {
   const afterSettings = await loadedScripts();
   expect(newlyLoadedScripts(initial, afterSettings)).toBe(true);
 
-  await page.evaluate(() => window.__socratesLegacy.navigation.closeSettings());
+  await page.evaluate(() => window.__socratesTestState.actions.closeSettings());
   await page.click('#navLibrary');
   await expect(page.locator('#libraryPanel')).not.toHaveAttribute('aria-busy', 'true');
   const afterWorkspace = await loadedScripts();

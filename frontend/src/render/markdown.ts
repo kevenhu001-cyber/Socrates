@@ -367,7 +367,7 @@ function replaceProgressiveCodeBlocks(
     const trimmed = body.trim();
     if (!trimmed)
       return bank.save(
-        '<span style="color:hsl(var(--text-400));font-style:italic;font-size:0.9em">…</span>',
+        '<span style="color:var(--ui-text-tertiary);font-style:italic;font-size:0.9em">…</span>',
       );
     const isHtmlLang = lang === 'html' || lang === 'viz' || lang === 'svg';
     if (isHtmlLang) {

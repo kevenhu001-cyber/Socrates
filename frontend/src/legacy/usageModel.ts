@@ -147,10 +147,10 @@ export function beagleUsageSummary(limits: UsageLimits | null): {
   const percent = Math.min(100, Math.round((used / limit) * 100));
   const color =
     percent >= 90
-      ? 'hsl(0 65% 55%)'
+      ? 'var(--ui-danger)'
       : percent >= 70
         ? 'var(--ui-ink-secondary)'
-        : 'hsl(var(--accent-000))';
+        : 'var(--ui-accent-strong)';
   return {
     used,
     limit,

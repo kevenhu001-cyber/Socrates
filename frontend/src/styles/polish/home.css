@@ -47,3 +47,41 @@
 #appShell #homeHero [data-greeting-static] {
   visibility: hidden;
 }
+
+/* A blank landing has no scroll region, so the conversation shell's bottom
+   reserve must not create one. The mirror attribute is written by
+   legacy/layoutStateMirror.ts. */
+:where(:root[data-topic-setup-open]) #appShell #mainInner {
+  padding-bottom: 0;
+}
+
+/* Landing composition — the greeting and capsule share one centred column.
+   Migrated from the retired restore/chat-surface.css. */
+@media (min-width: 769px) {
+  #appShell #topicSetup {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: stretch;
+    min-height: calc(100dvh - 56px);
+    padding-bottom: calc(112px + var(--ui-safe-bottom));
+    background: var(--ui-bg-page);
+  }
+  #appShell #topicSetup .topic-title.greeting {
+    max-width: min(100%, 620px);
+    margin-inline: auto;
+    text-align: center;
+  }
+}
+
+@media (max-width: 768px) {
+  #appShell #topicSetup .topic-title.greeting {
+    text-align: center;
+    text-indent: -0.005em;
+  }
+  #appShell .mobile-sidebar-status {
+    display: none;
+  }
+}

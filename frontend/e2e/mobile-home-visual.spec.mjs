@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test';
+import { test } from './_state-fixture.mjs';
+import { expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -53,7 +54,7 @@ test('mobile conversation home matches the compact dark reference layout', async
   await page.evaluate(() => {
     const sidebar = document.getElementById('sidebar');
     if (sidebar && !sidebar.classList.contains('collapsed'))
-      window.__socratesLegacy.navigation.toggleSidebar?.();
+      window.__socratesTestState.actions.toggleSidebar?.();
   });
   await page.waitForTimeout(350);
 
@@ -194,12 +195,11 @@ test('mobile conversation home matches the compact dark reference layout', async
   });
   /* This block deliberately flips body[data-conversation-active="true"]
      above, so the mobile header is in its in-conversation form. That state
-     has two documented sizes (restore/chat-surface.css: "Landing top-bar
-     buttons are 44px tactile chips; the in-conversation header keeps its
-     existing 40px unframed utilities"), and this expectation was still
-     asserting the landing size for #sidebarOpenBtn, so it failed at 40.
-     #findBtn / #shareBtn are 44 in both states (fixes.css pins them on
-     phone regardless of surface). */
+     has two documented sizes ("Landing top-bar buttons are 44px tactile
+     chips; the in-conversation header keeps its existing 40px unframed
+     utilities"), and this expectation was still asserting the landing size
+     for #sidebarOpenBtn, so it failed at 40. #findBtn / #shareBtn are 44 in
+     both states. */
   expect(headerVisual.sidebar?.width).toBe(40);
   expect(headerVisual.find?.width).toBe(44);
   expect(headerVisual.share?.width).toBe(44);
@@ -260,13 +260,14 @@ test('mobile conversation home matches the compact dark reference layout', async
   });
   await expect(composer.locator('[data-composer-control=effort]')).toBeVisible();
 
-  /* Focus is geometry-neutral; the second row appears only after the draft
-     actually renders on more than one line. */
+  /* Focus opens the second row (the composer reference pins the 92px frame);
+     the host may grow with it, but never past the measured action band. */
   const beforeFocus = (await composer.boundingBox())?.height ?? 0;
   await editor.click();
   await expect(composer).toHaveClass(/composer-focused/);
   const afterFocus = (await composer.boundingBox())?.height ?? 0;
-  expect(Math.abs(afterFocus - beforeFocus)).toBeLessThanOrEqual(2);
+  expect(afterFocus).toBeGreaterThanOrEqual(beforeFocus);
+  expect(afterFocus - beforeFocus).toBeLessThanOrEqual(40);
   /* The pill stays visible inside the idle capsule, like the reference. */
   await expect(composer.locator('[data-composer-control=effort]')).toBeVisible();
 

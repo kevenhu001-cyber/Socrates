@@ -160,7 +160,7 @@ function UsageCalendar({
                 key={`month-${column}`}
                 style={{
                   fontSize: 'calc(8px * var(--app-font-scale, 1))',
-                  color: 'hsl(var(--text-500))',
+                  color: 'var(--ui-text-tertiary)',
                   textAlign: 'center',
                 }}
               >
@@ -276,7 +276,7 @@ function BeagleUsage({ limits }: { limits: ReturnType<typeof beagleUsageSummary>
       style={{
         marginBottom: 20,
         padding: '14px 16px',
-        background: 'hsl(var(--bg-100))',
+        background: 'var(--ui-bg-raised)',
         borderRadius: 10,
       }}
     >
@@ -292,7 +292,7 @@ function BeagleUsage({ limits }: { limits: ReturnType<typeof beagleUsageSummary>
           style={{
             fontSize: 'calc(13px * var(--app-font-scale, 1))',
             fontWeight: 600,
-            color: 'hsl(var(--text-000))',
+            color: 'var(--ui-text-primary)',
           }}
         >
           Beagle Monthly Usage
@@ -300,14 +300,19 @@ function BeagleUsage({ limits }: { limits: ReturnType<typeof beagleUsageSummary>
         <div
           style={{
             fontSize: 'calc(11px * var(--app-font-scale, 1))',
-            color: 'hsl(var(--text-500))',
+            color: 'var(--ui-text-tertiary)',
           }}
         >
           {limits.used.toLocaleString()} / {limits.limit.toLocaleString()} tokens
         </div>
       </div>
       <div
-        style={{ height: 8, background: 'hsl(var(--bg-300))', borderRadius: 4, overflow: 'hidden' }}
+        style={{
+          height: 8,
+          background: 'var(--ui-bg-control)',
+          borderRadius: 4,
+          overflow: 'hidden',
+        }}
       >
         <div
           style={{
@@ -324,7 +329,7 @@ function BeagleUsage({ limits }: { limits: ReturnType<typeof beagleUsageSummary>
           style={{
             marginTop: 6,
             fontSize: 'calc(11px * var(--app-font-scale, 1))',
-            color: 'hsl(0 65% 55%)',
+            color: 'var(--ui-danger)',
             fontWeight: 500,
           }}
         >

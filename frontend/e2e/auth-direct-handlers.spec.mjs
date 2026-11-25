@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test';
+import { test } from './_state-fixture.mjs';
+import { expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp } from './_mock-api.mjs';
 
@@ -18,8 +19,8 @@ test('React auth gate owns view transitions, form feedback, and submit actions',
   expect(await page.evaluate(() => 'refreshApiConfig' in window)).toBe(false);
 
   await page.evaluate(() => {
-    window.__socratesLegacy.auth.showGate();
-    window.__socratesLegacy.auth.showAuthSignin();
+    window.__socratesTestState.actions.showGate();
+    window.__socratesTestState.actions.showAuthSignin();
   });
 
   await expect(page.locator('#authGate')).toBeVisible();
@@ -80,7 +81,9 @@ test('React auth gate owns view transitions, form feedback, and submit actions',
 });
 
 for (const mode of ['light', 'dark']) {
-  test(`flat auth form uses monochrome theme and fits narrow screens: ${mode}`, async ({ page }) => {
+  test(`flat auth form uses monochrome theme and fits narrow screens: ${mode}`, async ({
+    page,
+  }) => {
     await page.emulateMedia({ colorScheme: mode });
     await page.addInitScript((value) => {
       localStorage.setItem('socrates-theme', value);
@@ -91,8 +94,8 @@ for (const mode of ['light', 'dark']) {
     await gotoAndSettle(page, '/');
     await expect(page.locator('#authGate')).toBeHidden();
     await page.evaluate(() => {
-      window.__socratesLegacy.auth.showGate();
-      window.__socratesLegacy.auth.showAuthSignin();
+      window.__socratesTestState.actions.showGate();
+      window.__socratesTestState.actions.showAuthSignin();
     });
     const gate = page.locator('#authGate');
     const card = gate.locator('.auth-card');
@@ -109,7 +112,9 @@ for (const mode of ['light', 'dark']) {
     await page.screenshot({ path: `test-results/auth-${encodeURIComponent(mode)}-desktop.png` });
     await page.setViewportSize({ width: 320, height: 568 });
     await expect(card.locator('#authSigninEmail')).toBeVisible();
-    expect(await gate.evaluate((node) => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(1);
+    expect(await gate.evaluate((node) => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(
+      1,
+    );
     await page.screenshot({ path: `test-results/auth-${encodeURIComponent(mode)}-mobile.png` });
   });
 }

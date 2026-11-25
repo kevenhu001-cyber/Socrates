@@ -137,7 +137,7 @@ test('archive from Recents row soft-hides the session and surfaces it in Storage
 
   // Archived row is listable via the typed session action used by Storage.
   const archived = await page.evaluate(() => {
-    const list = window.__socratesLegacy.sessions.getArchivedSessions();
+    const list = window.__socratesTestState.actions.getArchivedSessions();
     return {
       legacyFieldPresent: 'getArchivedSessions' in window,
       rows: list.map((s) => ({ id: s.id, archivedAt: s.archivedAt })),

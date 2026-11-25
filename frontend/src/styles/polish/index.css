@@ -7,10 +7,9 @@
  * mobile-directories; composer geometry stays in parity/composer-unified.
  * themes.css follows this layer and owns the sole active palette.
  *
- * Cascade position is the mechanism: this file is @imported after
- * restore/, so equal-specificity rules win by order. Rules that must beat
- * an existing `!important` keep the same `!important` + equal-or-higher
- * specificity (the `#appShell#appShell` convention used by restore/).
+ * Cascade position is the mechanism: this file is @imported after parity/,
+ * so equal-specificity rules win by order. Prefer a scoped selector over a
+ * new `!important`; the frozen compatibility layer is legacy/ only.
  *
  * Component map:
  *   sidebar.css     — shared sidebar affordances; desktop geometry in parity/sidebar.css

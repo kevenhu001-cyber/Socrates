@@ -9,7 +9,6 @@ import { updateSessionMetadata } from '../session/rowActions.ts';
 import { setChatStopState, handleSendClick, stopChatResponse } from '../chat/turn/composer.ts';
 import {
   markAuthSuccess,
-  toggleAppMode,
   resetApp,
   startNewChat,
   signOut,
@@ -26,7 +25,6 @@ import {
   archiveSession,
   restoreSession,
   confirmPurgeSession,
-  getArchivedSessions,
   flushRecentsReconcile,
 } from '../session/recents.ts';
 import { renderRecents } from '../legacy/recentsView.ts';
@@ -77,7 +75,6 @@ import {
   analyzeAction,
   dispatchExtension,
 } from '../extensions/index.ts';
-import { toggleSidebar } from '../sidebar/sidebar.service.ts';
 import { toggleDisplayPrefs } from '../displayPrefs.ts';
 import { openStorageModal, closeStorageModal } from '../legacy/storage.js';
 import { openPromptTemplatesModal, closePromptTemplatesModal } from '../legacy/promptTemplates.ts';
@@ -106,7 +103,6 @@ import { startSession } from '../chat/sessionBootstrap/index.ts';
 import { submitChatMessage } from '../chat/sendPipeline.ts';
 import { setRecentsSearch } from '../legacy/recentsView.ts';
 import { setLang } from '../i18n/index.ts';
-import { showGate, showAuthSignin } from '../auth/index.ts';
 import { setLegacyActions } from '../react/legacy/gateway.ts';
 import type { LegacyActions } from '../react/legacy/types.ts';
 
@@ -123,8 +119,15 @@ function _loadDangerConfirms() {
   return _dangerImport;
 }
 
-// The remaining browser hooks are retained for legacy HTML and browser tests.
-if (typeof window !== 'undefined') {
+// Browser hooks are a test-only compatibility surface. Playwright installs
+// `__installSocratesTestState` before navigation; production boot never
+// creates these globals. The transport fallback in chat/format.ts imports
+// askChatTurn directly, so the app no longer needs a window copy.
+if (
+  typeof window !== 'undefined' &&
+  typeof (window as Window & { __installSocratesTestState?: unknown })
+    .__installSocratesTestState === 'function'
+) {
   Object.assign(window, {
     askChatTurn,
     addStreamingMessage,
@@ -150,10 +153,6 @@ if (typeof window !== 'undefined') {
 }
 
 const legacyActions: LegacyActions = {
-  auth: {
-    showGate,
-    showAuthSignin,
-  },
   messages: {
     regenerateAssistantMessage,
     switchMessageBranch,
@@ -167,13 +166,9 @@ const legacyActions: LegacyActions = {
   navigation: {
     resetApp,
     startNewChat,
-    toggleAppMode,
-    toggleSidebar,
     openNav,
     openSettings: () =>
       import('../react/settings/settings.service.ts').then((module) => module.openSettings()),
-    closeSettings: () =>
-      import('../react/settings/settings.service.ts').then((module) => module.closeSettings()),
     openProfile,
     closeProfile,
     openUsageModal: () => import('../legacy/usage.ts').then((module) => module.openUsageModal()),
@@ -195,7 +190,6 @@ const legacyActions: LegacyActions = {
   },
   sessions: {
     flushRecentsReconcile,
-    getArchivedSessions,
     updateSessionMetadata,
     loadSession,
     setRecentsSearch,

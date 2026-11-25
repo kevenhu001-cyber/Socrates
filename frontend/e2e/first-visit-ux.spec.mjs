@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test';
+import { test } from './_state-fixture.mjs';
+import { expect } from '@playwright/test';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 test('sign-in centers the form with consent above it on desktop and phones', async ({ page }) => {
@@ -12,7 +13,7 @@ test('sign-in centers the form with consent above it on desktop and phones', asy
   const consent = page.locator('#socratesCookieConsent:popover-open');
   await expect(consent).toBeVisible();
   const appConsentBox = await consent.boundingBox();
-  await page.evaluate(() => window.__socratesLegacy.auth.showGate());
+  await page.evaluate(() => window.__socratesTestState.actions.showGate());
   const card = page.locator('.auth-card');
   const gate = page.locator('#authGate');
   await expect(card.getByRole('heading', { name: 'Sign in to Socrates' })).toBeVisible();

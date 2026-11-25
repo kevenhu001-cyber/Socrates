@@ -139,25 +139,6 @@ const MAX_STEP = 7.0;
  * is 10.2%). */
 const BLACK_CANVAS_MAX_STEP = 12.0;
 
-/* The chat-surface bridge. The frozen legacy chat surface composes these;
- * they are declared once per mode in themes.css and inherited by every
- * theme, so a theme only has to own the --ui-* roles they point at.
- *
- * The family used to be declared for dark mode only. Light mode then fell
- * back to the frozen hex palette inside restore/chat-surface.css, which
- * meant one mode tracked the ladder and the other did not. Both modes now
- * declare the family, and this check keeps it that way. */
-const CHAT_BRIDGE = [
-  '--chat-page',
-  '--chat-surface',
-  '--chat-control',
-  '--chat-control-hover',
-  '--chat-line',
-  '--chat-text',
-  '--chat-muted',
-  '--chat-overlay',
-];
-
 /* The Geist surface ramp, per mode, in the order the scale itself runs:
  * the two background tones first (paper and canvas), then the ten grays
  * from the near-white inset tone down to the primary ink.
@@ -516,23 +497,6 @@ function main() {
         rungHex[rung] = rgbToHex(rgb).toLowerCase();
       }
       ladders[theme][mode] = { vars, rungHex };
-    }
-  }
-
-  /* ── the chat-surface bridge ───────────────────────────────────────── */
-
-  /* The family has to exist in both generic mode blocks. It is declared
-   * once per mode and inherited by every theme, so a theme only has to own
-   * the --ui-* roles it points at. */
-  for (const mode of ['dark', 'light']) {
-    const vars = generic[mode];
-    if (!vars) continue;
-    for (const name of CHAT_BRIDGE) {
-      if (!vars.has(name)) {
-        failures.push(
-          `themes.css: [data-mode="${mode}"] is missing ${name} — the chat-surface bridge has to be declared for both modes`,
-        );
-      }
     }
   }
 

@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test';
+import { test } from './_state-fixture.mjs';
+import { expect } from '@playwright/test';
 import { gotoAndSettle, rgbChannels } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -118,7 +119,7 @@ test('light conversation home has a neutral readable palette and balanced compos
   await page.evaluate(() => {
     const sidebar = document.getElementById('sidebar');
     if (sidebar && !sidebar.classList.contains('collapsed'))
-      window.__socratesLegacy.navigation.toggleSidebar?.();
+      window.__socratesTestState.actions.toggleSidebar?.();
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     const setup = document.getElementById('topicSetup');
     if (setup) setup.scrollTop = 0;

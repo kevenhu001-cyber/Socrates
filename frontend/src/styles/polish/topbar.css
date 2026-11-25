@@ -4,9 +4,8 @@
  */
 
 @media (max-width: 768px) {
-  /* The phone top bar is fully owned by restore/chat-surface.css's 72px
-   safe-area block — every decl in the earlier translucent-bar rule lost to
-   its !important pins, so it was removed rather than kept as dead code. */
+  /* The phone top bar is owned by polish/mobile-shell.css; this file keeps
+     the desktop bar and the shared mode pill. */
 
   #appShell .top-bar .toggle-sidebar,
   #appShell .top-bar .icon-btn {

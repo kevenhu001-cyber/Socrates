@@ -2,7 +2,8 @@
 // and archive must fire a real POST from a real click (no JS .click()).
 // Regression: document capture-phase close swallowed the archive click, and
 // `contain: layout` on .recent-item let the next row paint over the open menu.
-import { test, expect } from '@playwright/test';
+import { test } from './_state-fixture.mjs';
+import { expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -133,7 +134,7 @@ test('phone row menu shows tag/archive/delete and archive POSTs from a real clic
   await page.evaluate(() => {
     const sidebar = document.getElementById('sidebar');
     if (sidebar?.classList.contains('collapsed'))
-      window.__socratesLegacy.navigation.toggleSidebar?.();
+      window.__socratesTestState.actions.toggleSidebar?.();
   });
   await page.waitForTimeout(300);
 

@@ -68,7 +68,6 @@ for (const file of walk(styles)) {
       }
       if (
         !owner.startsWith('legacy/') &&
-        !owner.startsWith('restore/') &&
         sidebarCtx.test(selector) &&
         !sidebarExcl.test(selector) &&
         !sidebarOwners.has(owner)

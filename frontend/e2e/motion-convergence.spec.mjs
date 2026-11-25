@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test';
+import { test } from './_state-fixture.mjs';
+import { expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -24,7 +25,7 @@ test('desktop sidebar commits layout once and animates the main surface with tra
     main.getAnimations().forEach((animation) => animation.cancel());
 
     const beforeInset = Number.parseFloat(getComputedStyle(main).paddingLeft);
-    window.__socratesLegacy.navigation.toggleSidebar?.();
+    window.__socratesTestState.actions.toggleSidebar?.();
 
     const afterInset = Number.parseFloat(getComputedStyle(main).paddingLeft);
     const sidebarTransition = getComputedStyle(sidebar).transitionDuration;
@@ -59,14 +60,14 @@ test('rapid sidebar reversal preserves the visible position and reduced motion s
     const sidebar = document.getElementById('sidebar');
     const main = document.querySelector('#appShell .main');
     sidebar.classList.remove('collapsed');
-    window.__socratesLegacy.navigation.toggleSidebar();
+    window.__socratesTestState.actions.toggleSidebar();
     const motion = main.getAnimations()[0];
     motion.pause();
     motion.currentTime = 60;
     const visibleInset =
       parseFloat(getComputedStyle(main).paddingLeft) +
       new DOMMatrixReadOnly(getComputedStyle(main).transform).m41;
-    window.__socratesLegacy.navigation.toggleSidebar();
+    window.__socratesTestState.actions.toggleSidebar();
     const next = main.getAnimations()[0];
     next.pause();
     next.currentTime = 0;
@@ -84,7 +85,7 @@ test('rapid sidebar reversal preserves the visible position and reduced motion s
 
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const count = await page.evaluate(() => {
-    window.__socratesLegacy.navigation.toggleSidebar();
+    window.__socratesTestState.actions.toggleSidebar();
     return document.querySelector('#appShell .main').getAnimations().length;
   });
   expect(count).toBe(0);

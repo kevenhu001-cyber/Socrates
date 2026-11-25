@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test';
+import { test } from './_state-fixture.mjs';
+import { expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -179,7 +180,7 @@ test('phone workspace destinations hide the landing too', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.evaluate(() => {
     if (document.getElementById('sidebar')?.classList.contains('collapsed'))
-      window.__socratesLegacy.navigation.toggleSidebar();
+      window.__socratesTestState.actions.toggleSidebar();
   });
   await expect(page.locator('#sidebar')).not.toHaveClass(/collapsed/);
   await page.locator('#navPlugins').click();
@@ -304,7 +305,7 @@ test('collapsed sidebar rail keeps only the avatar of the account row', async ({
   await page.evaluate(() => {
     const sidebar = document.getElementById('sidebar');
     if (sidebar && !sidebar.classList.contains('collapsed'))
-      window.__socratesLegacy.navigation.toggleSidebar?.();
+      window.__socratesTestState.actions.toggleSidebar?.();
   });
   await expect(page.locator('#sidebar')).toHaveClass(/collapsed/);
   const row = page.locator('#sidebarUserRow');
@@ -331,7 +332,7 @@ test('phone drawer keeps nav glyphs aligned and account menu in view', async ({ 
   await page.evaluate(() => {
     const sidebar = document.getElementById('sidebar');
     if (sidebar?.classList.contains('collapsed'))
-      window.__socratesLegacy.navigation.toggleSidebar?.();
+      window.__socratesTestState.actions.toggleSidebar?.();
   });
   await expect(page.locator('#sidebar')).not.toHaveClass(/collapsed/);
   const rows = await page.locator('#sidebarNav .sidebar-nav-btn:visible').evaluateAll((buttons) =>
@@ -447,7 +448,6 @@ test('sidebar search opens the same global search as the keyboard shortcut', asy
   await page.keyboard.press('ControlOrMeta+k');
   await expect(field).toBeFocused();
 });
-
 
 test('More menu supports keyboard navigation and returns focus on dismissal', async ({ page }) => {
   const trigger = page.locator('#navMore');

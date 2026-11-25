@@ -353,3 +353,31 @@
     padding-inline: 6px;
   }
 }
+
+@media (max-width: 768px) {
+  /* Phone plugin directory order: search, installed apps, scope tabs, list.
+     The desktop toolbar groups search and tabs; display:contents lets the
+     installed strip sit between them without duplicating the React host. */
+  body.workspace-active #appShell .plugin-directory {
+    display: flex;
+    flex-direction: column;
+  }
+  body.workspace-active #appShell .plugin-directory > .ui-page-toolbar {
+    display: contents;
+  }
+  body.workspace-active #appShell .plugin-directory .plugin-directory-search {
+    order: 1;
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: none;
+  }
+  body.workspace-active #appShell .plugin-directory .plugin-installed-strip {
+    order: 2;
+  }
+  body.workspace-active #appShell .plugin-directory .ui-page-toolbar-end {
+    order: 3;
+  }
+  body.workspace-active #appShell .plugin-directory .plugin-directory-body {
+    order: 4;
+  }
+}

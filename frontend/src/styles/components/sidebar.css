@@ -284,3 +284,9 @@
     font-size: var(--ui-font-size-sm);
   }
 }
+
+/* Desktop recents have no tag-filter chip row; the phone drawer hides it in
+   polish/mobile-sidebar.css. Migrated from restore/chatgpt-v2.css. */
+#appShell .recents-filter-chips {
+  display: none;
+}

@@ -94,15 +94,18 @@ test('display settings change theme, text scale, and content width', async ({ pa
     .locator('#topicTitle')
     .evaluate((element) => parseFloat(getComputedStyle(element).fontSize));
   await page.locator('#displayPrefsBtn').click();
-  await page.locator('#displayPrefsFontSegs [data-font="1.375"]').click();
-  await page.locator('#displayPrefsWidthSegs [data-width="1.7"]').click();
   await page.locator('#displayThemeSegs [data-theme-option="light"]').click();
-
   await expect(page.locator('html')).toHaveAttribute('data-mode', 'light');
-  // P_display-prefs-no-dup — the segmented controls carry the value, so the
-  // selected radio is what states it.
-  await expect(page.locator('#displayPrefsFontSegs [aria-checked="true"]')).toHaveText('XL');
-  await expect(page.locator('#displayPrefsWidthSegs [aria-checked="true"]')).toHaveText('XL');
+
+  /* Typography and width have one home: Settings → Display. The footer
+     popover is the quick theme switcher only. */
+  await page.getByRole('button', { name: 'All display settings' }).click();
+  await expect(page.locator('#settingsPage')).toBeVisible();
+  await page.locator('[aria-label="Text size"]').getByText('XL', { exact: true }).click();
+  await page.locator('[aria-label="Content width"]').getByText('XL', { exact: true }).click();
+  await page.locator('#settingsCloseBtn').click();
+  await expect(page.locator('#settingsPage')).toBeHidden();
+
   const after = await page.locator('#composerInputWrap').boundingBox();
   const afterTitleSize = await page
     .locator('#topicTitle')

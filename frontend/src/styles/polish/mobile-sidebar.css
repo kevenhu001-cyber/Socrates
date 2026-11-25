@@ -426,9 +426,9 @@
    in components/input.css; the rule lives here because the sidebar surface is
    owned by this file per check-surface-ownership.mjs.
    The ring lives in a box-shadow now, so that is what has to be cleared.
-   The outline needs no `!important`: the transparent one restore/fixes.css
-   already applies paints nothing either, so the result is the same and the
-   forced-colours fallback there stays in charge of the outline. */
+   The outline needs no `!important`: the transparent outline in
+   foundations/base.css paints nothing either, so the result is the same and
+   the forced-colours fallback there stays in charge of the outline. */
   :root:not(#_focus-a):not(#_focus-b) #appShell .sidebar-search input:focus-visible {
     outline: none;
     box-shadow: none;
@@ -842,14 +842,14 @@
    background: resting and selected rows stay transparent, the current row
    takes the shared hover surface, and hover, keyboard focus plus press pick
    up the reference wash (10% white on the dark rail, 5% black in the light
-   theme). This is the canonical owner and loads after restore/. */
+   theme). This is the canonical phone owner and loads after parity/. */
 @media (max-width: 768px) {
   #appShell #sidebarNav .sidebar-nav-btn {
     --sidebar-nav-bg: transparent;
   }
   #appShell #sidebarNav .sidebar-nav-btn.active,
   #appShell #sidebarNav .sidebar-nav-btn[aria-current='page'] {
-    --sidebar-nav-bg: var(--cg-surface-hover);
+    --sidebar-nav-bg: var(--ui-bg-hover);
   }
   /* The primary entry keeps its transparent resting state even when it also
      carries .active / aria-current; only hover and focus paint it. Its
@@ -894,5 +894,75 @@
   #appShell .sidebar,
   #appShell .sidebar-backdrop {
     transition: none;
+  }
+}
+
+/* Phone drawer geometry and the recents row menu. Migrated from the retired
+   restore/fixes.css on 2026-11-26. */
+@media (max-width: 768px) {
+  #appShell .sidebar {
+    width: var(--ui-sidebar-mobile);
+    min-width: var(--ui-sidebar-mobile);
+  }
+
+  #appShell .recent-item.actions-open {
+    position: relative;
+    z-index: var(--ui-z-popover, 200);
+  }
+  #appShell .recent-item-menu {
+    z-index: var(--ui-z-popover, 200);
+  }
+  #appShell .recent-item-menu :is(.recent-item-del, .recent-item-archive, .recent-item-tag-btn) {
+    opacity: 1;
+  }
+
+  #appShell #sidebarOpenBtn {
+    border: var(--ui-phone-drawer-border, 0);
+    background: var(--ui-phone-drawer-bg, transparent);
+    box-shadow: none;
+  }
+
+  #appShell #apiSettingsBtn {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  #appShell #sidebarOpenBtn,
+  #appShell #sidebarOpenBtn:hover {
+    color: var(--ui-text-primary);
+  }
+  #appShell #sidebarOpenBtn:hover {
+    background: var(--ui-bg-hover);
+  }
+  #appShell #sidebarOpenBtn svg {
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  #appShell#appShell .sidebar-search {
+    height: 40px;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Landing header actions are 44px tactile chips; in-conversation utilities
+     keep the unframed 40px treatment. Migrated from restore/chat-surface.css. */
+  body:not([data-conversation-active='true']) #appShell #sidebarOpenBtn {
+    width: var(--ui-hit-area);
+    min-width: var(--ui-hit-area);
+    height: var(--ui-hit-area);
+    min-height: var(--ui-hit-area);
+    border: 1px solid var(--ui-border-default);
+    background: var(--ui-bg-surface);
+    color: var(--ui-icon-secondary, var(--ui-text-primary));
+    box-shadow: inset 0 1px rgb(255 255 255 / 5%);
+  }
+}
+
+@media (max-width: 768px) {
+  /* Prevent iOS Safari auto-zoom on the drawer search. */
+  #appShell #sidebarSearch {
+    font-size: var(--ui-font-size-md);
+    border-radius: var(--ui-radius-control);
   }
 }

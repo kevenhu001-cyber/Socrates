@@ -5,7 +5,7 @@
  * solid hover wash, and a 52px icon rail when collapsed instead of sliding
  * off screen.
  *
- * Older sidebar rules in restore/ and components/ were moved behind
+ * Older sidebar rules in the retired compatibility layer and components/ were moved behind
  * @media (max-width: 768px) by scripts/migrate-surface-css.mjs (surface
  * "sidebar"); legacy/01-sidebar.css still provides the base box and is
  * outranked here by specificity, so this file needs no !important.
@@ -177,7 +177,6 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     background: var(--ui-bg-hover);
     color: var(--foreground);
   }
-  
 
   /* ── Rows (primary nav, search, history) ─────────────────────────────── */
   #appShell #sidebarNav {
@@ -242,7 +241,7 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     cursor: pointer;
     transition: background-color var(--ui-duration-hover) ease;
   }
-  
+
   /* Selected is one step stronger than the hover wash (8% ink over the rail),
      so the current chat stays marked while the pointer moves over its
      neighbours. */
@@ -325,7 +324,7 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     color: var(--ui-text-tertiary);
     opacity: 1;
   }
-  
+
   /* The search field is a bare input inside a ghost pill — it has no frame
      of its own, so the global focus contract painted a hard ring around
      something that looks like a label, and the ring read as a box drawn
@@ -394,7 +393,7 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
   #appShell #sidebar .recent-item-glyph {
     display: none;
   }
-  
+
   #appShell #sidebar .recent-item-main {
     display: flex;
     flex: 1 1 auto;
@@ -454,7 +453,7 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     background: transparent;
     cursor: pointer;
   }
-  
+
   #appShell #sidebar .recent-item-overflow svg {
     width: 16px;
     height: 16px;
@@ -607,7 +606,8 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     pointer-events: none;
     z-index: var(--ui-z-popover);
     opacity: 0;
-    animation: railTooltipIn var(--ui-duration-fast) var(--ui-ease-out) var(--ui-tooltip-delay) forwards;
+    animation: railTooltipIn var(--ui-duration-fast) var(--ui-ease-out) var(--ui-tooltip-delay)
+      forwards;
   }
   @keyframes railTooltipIn {
     from {
@@ -728,7 +728,7 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
   width: 32px;
   height: 32px;
   margin: 0;
-  border-radius: var(--ui-radius-pill);
+  border-radius: 50%;
   overflow: hidden;
   background: var(--ui-avatar-bg);
   /* The initials take the accent's own contrast colour, so the disc flips
@@ -873,8 +873,8 @@ html[data-detail-open='true'][data-detail-layout='docked'] #appShell .main {
   }
 
   #appShell #sidebar {
-    background: var(--sidebar);
-    border-right: 1px solid var(--ui-sidebar-border);
+    background: transparent;
+    border-right: 0;
   }
 
   /* Rows are 36px pills of neutral wash. Nothing in the rail is a card:

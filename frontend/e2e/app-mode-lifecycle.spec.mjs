@@ -14,7 +14,7 @@ test('mode change keeps an active session on cancel and resets only after confir
   });
 
   const cancelledSwitch = page.evaluate(() =>
-    window.__socratesLegacy.navigation.toggleAppMode('tutor'),
+    window.__socratesTestState.actions.toggleAppMode('tutor'),
   );
   await expect(page.locator('#confirmDialog')).toBeVisible();
   await page.locator('#confirmCancelBtn').click();
@@ -25,7 +25,7 @@ test('mode change keeps an active session on cancel and resets only after confir
   );
 
   const confirmedSwitch = page.evaluate(() =>
-    window.__socratesLegacy.navigation.toggleAppMode('tutor'),
+    window.__socratesTestState.actions.toggleAppMode('tutor'),
   );
   await expect(page.locator('#confirmDialog')).toBeVisible();
   await page.locator('#confirmOkBtn').click();

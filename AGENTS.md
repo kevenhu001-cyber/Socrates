@@ -79,8 +79,9 @@ them — those files are dated snapshots, not current state.
   `legacy/index.css`), `frontend/src/i18n/index.ts` (locale tables live in `frontend/src/i18n/{en,zh}.ts`),
   `frontend/src/chat/turn/` (the streaming-turn core), and `frontend/src/render/{markdown.ts,viz.ts}`.
 - **CSS contract.** `frontend/src/styles/themes.css` is imported exactly once and last; it is the sole
-  active palette plus the bridge for `--cg-*`, `--chatgpt-*`, `--conversation-*` and legacy HSL
-  channels. `legacy/` and `restore/` are compatibility geometry only. Current desktop surface owners
+  active palette plus the remaining legacy HSL-channel bridge. The old `--cg-*`, `--chatgpt-*`,
+  `--conversation-*`, `--chat-*` and Lobe families were retired on 2026-11-26. `legacy/` is the only
+  frozen compatibility tree; `restore/` was deleted. Current desktop surface owners
   are `parity/{sidebar,topbar,composer-unified,transcript}.css`, with scoped auxiliaries enforced by
   `npm run lint:surface-css`; never add a competing palette or a second desktop owner to
   compatibility CSS.
@@ -165,7 +166,9 @@ migrations; completed migrations use fixed invariants without an update mode.
 | `check-shadcn-adoption.mjs` | Shared control primitives are adopted: raw controls, unadapted primitives, compatibility controls, retained markup and legacy DOM/template controls each stay at or below their frozen per-bucket count (also `lint:shadcn`) |
 | `check-react-roots.mjs` | React root creation and hydration stay in `react/lib/boot/ownedRoot.ts`; retired transcript mount globals cannot return. Includes a shrink-only baseline (also `lint:react-roots`) |
 | `check-css-debt.mjs` | `!important`, hex colours, literal radii, stacked IDs and literal font sizes stay at or below their frozen counts; the cascade order in `index.html` is proved against `styles/index.css` (nested `@import`s included), and no `@import` may sit after a style rule — browsers drop those silently |
-| `check-frozen-liveness.mjs` | Every frozen stylesheet (`styles/legacy/`, `styles/restore/`) must contain zero rules whose identity classes are all absent from the first-party source corpus (including tests). Generic state words do not decide liveness when identity classes exist. Fixed zero invariant, including new files; no baseline or update mode (also `lint:frozen-liveness`) |
+| `check-frozen-liveness.mjs` | Every frozen stylesheet (`styles/legacy/`) must contain zero rules whose identity classes are all absent from the first-party source corpus (including tests). Generic state words do not decide liveness when identity classes exist. Fixed zero invariant, including new files; no baseline or update mode (also `lint:frozen-liveness`) |
+| `check-css-dependencies.mjs` | Canonical CSS may not read a custom property that only `styles/legacy/` defines, and may not read a retired theme family (`--cg-*`, `--chatgpt-*`, `--conversation-*`, `--chat-*`, `--lobe-*`). Fixed zero invariant; no baseline or update mode (also `lint:css-dependencies`) |
+| `check-attribute-liveness.mjs` | Every `[data-*]` selector in the stylesheets (including `legacy/`) has a producer in first-party TS/TSX/JS/HTML (`data-*`, `dataset.fooBar`, `dataAttributes({ fooBar })` or `setAttribute('data-*')`). Radix/shadcn vendor attributes are allowlisted. Fixed zero invariant (also `lint:attribute-liveness`) |
 | `check-z-index.mjs` | Live sheets use the `--ui-z-*` rungs (20/30/40/80/90/200/400/1600) instead of literal `z-index` ≥ 10 (local 0–9 allowed); off-token count stays at or below baseline (also `lint:z-index`) |
 | `../scripts/check-empty-catch.mjs` | Every empty `catch` in `frontend/src`, `server/src` and `packages/*/src` is either instrumented or carries a reasoned `empty-catch: intentional — …` marker; per-tree baseline may only shrink (AST-based, so strings and regexes never count). It runs from the frontend/root lint, which installs the TypeScript compiler API; the server tree is scanned from there. |
 | `check-composer-css.mjs` | Exactly one owner for composer CSS: `styles/parity/composer-unified.css` |

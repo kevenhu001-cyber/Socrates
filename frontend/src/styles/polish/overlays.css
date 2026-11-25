@@ -17,9 +17,9 @@
   font-size: var(--ui-text-ui);
   line-height: var(--ui-text-ui-line);
 }
-/* legacy/04 gives the "+" menu an 18px backdrop blur, but every layer since
-   paints it opaque (--chatgpt-menu), so the blur only costs a full
-   re-rasterise of what is behind it during the open animation. */
+/* legacy/04 gives the "+" menu an 18px backdrop blur, but the menu is
+   opaque, so the blur only costs a full re-rasterise of what is behind it
+   during the open animation. */
 .composer-tools-menu {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
@@ -32,9 +32,8 @@
 /* Generation-config popover — converge on the same density as the "+"
    tools menu: 14px type, 40px rows, quiet hairline divider. The card
    anchors to a 36px pill; 46px rows at 15px read oversized beside it.
-   Surface: restore/chat-surface.css paints it with --chat-control, a grey
-   control fill (#e7e7e7 in light) — a popover is a raised white card like
-   the other menus, with the ghost wash for rows. */
+   Surface: a raised card like the other menus, with the ghost wash for
+   rows. */
 .chat-config-pop {
   border-radius: var(--ui-radius-popover);
   transform-origin: top left;
@@ -142,7 +141,7 @@ body :is(.cmd-k-overlay, .share-overlay, .usage-overlay, .admin-modal-overlay, .
    rung below the menu so the pair keeps its relationship.
    The class is doubled on purpose: this file is a deferred link that lands
    *before* the bundled stylesheet in production (index.html), so a plain
-   `body.composer-tools-open::after` would tie with restore/chatgpt-ui.css and
+   `body.composer-tools-open::after` would tie with an equal-specificity rule and
    lose on order. Same convention as the `#appShell#appShell` shims. */
 body.composer-tools-open.composer-tools-open::after {
   z-index: calc(var(--ui-z-popover) - 1);
@@ -701,4 +700,61 @@ body.composer-tools-open.composer-tools-open::after {
   font-weight: var(--ui-font-weight-semibold);
   line-height: 1.5;
   letter-spacing: -0.02em;
+}
+
+/* The footer popover is a quick theme switcher; typography, width, grid and
+   background colours have one canonical home in Settings → Display. */
+.display-prefs-all {
+  width: 100%;
+  justify-content: center;
+  margin-top: var(--ui-space-xs);
+}
+
+/* The sidebar search row advertises the global palette; the hint is a real
+   button so pointer users get the same entry as the keyboard. */
+.sidebar-search-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  min-width: 34px;
+  height: 22px;
+  padding: 0 6px;
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-sm);
+  background: var(--ui-bg-raised);
+  color: var(--ui-text-tertiary);
+  cursor: pointer;
+}
+.sidebar-search-kbd kbd {
+  font-family: var(--font-sans);
+  font-size: var(--ui-font-size-xxs);
+  line-height: 1;
+}
+.sidebar-search-kbd:hover {
+  border-color: var(--ui-border-default);
+  color: var(--ui-text-primary);
+}
+
+/* Empty palette: three quick actions instead of a blank 204px box. */
+.cmd-k-quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-xs);
+  margin-top: var(--ui-space-sm);
+}
+.cmd-k-quick button {
+  min-height: var(--ui-control-sm);
+  padding: 0 var(--ui-space-md);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-bg-raised);
+  color: var(--ui-text-primary);
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-font-weight-medium);
+  cursor: pointer;
+}
+.cmd-k-quick button:hover {
+  border-color: var(--ui-border-default);
+  background: var(--ui-bg-hover);
 }

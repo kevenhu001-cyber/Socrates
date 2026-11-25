@@ -72,9 +72,7 @@ export function DisplaySettingsPane({ hidden, label }: SettingsPaneProps) {
           />
         </div>
         <div className="settings-choice settings-choice--color">
-          <span className="settings-choice-label">
-            {label('自定义背景色', 'Custom background')}
-          </span>
+          <span className="settings-choice-label">{label('深色背景', 'Dark background')}</span>
           <div className="settings-bg-pickers">
             <ShadcnLabel className="settings-bg-picker">
               <ShadcnNativeControl
@@ -93,6 +91,11 @@ export function DisplaySettingsPane({ hidden, label }: SettingsPaneProps) {
             >
               {label('重置', 'Reset')}
             </Button>
+          </div>
+        </div>
+        <div className="settings-choice settings-choice--color">
+          <span className="settings-choice-label">{label('浅色背景', 'Light background')}</span>
+          <div className="settings-bg-pickers">
             <ShadcnLabel className="settings-bg-picker">
               <ShadcnNativeControl
                 type="color"

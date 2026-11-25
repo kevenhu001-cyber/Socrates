@@ -6,12 +6,8 @@ import { callBridge, dispatchCall } from '../store/index.ts';
 import { isUserAbort } from './retryPolicy.ts';
 import { scheduleTurnToTopForMessage } from './turn/anchor/schedule.ts';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
-
-type ChatResultWindow = Window & {
-  askChatTurn(text: string): Promise<unknown>;
-  isExpectedTurnAbort?: (error: unknown) => boolean;
-  addMessage?: (role: string, text: string) => string;
-};
+import { isExpectedTurnAbort } from './turn/ui.ts';
+import { addMessage } from './messages.ts';
 
 /* Detect a tool envelope in the model's response. Returns:
       null — not a tool call
@@ -180,13 +176,11 @@ function handleChatApiResult(
           const p = (
             typeof retry === 'function'
               ? retry()
-              : (window as unknown as ChatResultWindow).askChatTurn(userText)
+              : import('./turn/controller.ts').then((module) => module.askChatTurn(userText))
           ) as Promise<unknown> | undefined;
           if (p && typeof p.catch === 'function') {
             p.catch((e: unknown) => {
-              const quiet = (window as unknown as ChatResultWindow).isExpectedTurnAbort;
-              if (typeof quiet === 'function' ? !quiet(e) : true)
-                console.error('[chat] retry turn failed:', e);
+              if (!isExpectedTurnAbort(e)) console.error('[chat] retry turn failed:', e);
             });
           }
         } catch (error) {
@@ -203,12 +197,8 @@ function handleChatApiResult(
         'lastCallError=',
         lastCallError,
       );
-      const runtime = window as unknown as ChatResultWindow;
-      if (runtime.addMessage) {
-        const clientId = runtime.addMessage(
-          'assistant',
-          '(response interrupted — no content received)',
-        );
+      {
+        const clientId = addMessage('assistant', '(response interrupted — no content received)');
         const list = typeof document !== 'undefined' ? document.getElementById('msgList') : null;
         scheduleTurnToTopForMessage(list, clientId);
       }

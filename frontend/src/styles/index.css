@@ -7,8 +7,8 @@
  * palette wins across every surface and legacy token family.
  *
  *   Tier 1  structural tokens    — geometry, type, motion and control metrics.
- *   Tier 2  compatibility        — legacy/ and restore/ rules still required by
- *                                  feature surfaces during selector migration.
+ *   Tier 2  compatibility        — legacy/ rules still required by feature
+ *                                  surfaces during selector migration.
  *   Tier 3  canonical UI         — modular component ownership plus parity and
  *                                  polish rules that define the current design.
  *   Tier 4  final theme contract — the only active palette and compatibility
@@ -48,8 +48,7 @@
 @import './features/learn-scaffolds.css';
 @import './features/study.css';
 
-/* Compatibility visuals still consumed by unmigrated feature surfaces */
-@import './restore/index.css';
+@import './features/creation.css';
 
 /* Canonical desktop surface owners */
 @import './parity/index.css';

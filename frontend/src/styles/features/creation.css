@@ -131,10 +131,7 @@
 #appShell .creation-sites-table.is-grid .creation-site-visibility {
   padding: 0 4px;
 }
-#appShell .creation-image-actions input,
-#appShell .creation-editor input,
-#appShell .creation-editor textarea,
-#appShell .creation-editor select {
+#appShell :is(.creation-image-actions, .creation-editor) :is(input, textarea, select) {
   box-sizing: border-box;
   min-height: var(--ui-control-desktop);
   border: 1px solid var(--input);
@@ -149,10 +146,7 @@
 #appShell .creation-editor textarea {
   padding: 8px 12px;
 }
-#appShell .creation-image-actions input:focus,
-#appShell .creation-editor input:focus,
-#appShell .creation-editor textarea:focus,
-#appShell .creation-editor select:focus {
+#appShell :is(.creation-image-actions, .creation-editor) :is(input, textarea, select):focus {
   border-color: var(--ring);
   box-shadow: var(--ui-focus-shadow);
 }
@@ -387,7 +381,7 @@
   }
   #appShell #sitesPanel {
     width: 100%;
-    padding: 20px 16px 48px !important;
+    padding: 20px 16px 48px;
   }
   #appShell .creation-site-banner {
     flex-wrap: wrap;
@@ -437,7 +431,7 @@
 }
 #appShell #sitesPanel .creation-site-thumb {
   pointer-events: none;
-  background: #fff;
+  background: var(--ui-bg-surface);
 }
 #appShell #sitesPanel .creation-sites-table .creation-row-actions {
   position: relative;
@@ -450,7 +444,7 @@
 
 @media (max-width: 768px) {
   #appShell #sitesPanel {
-    padding: 18px 16px 48px !important;
+    padding: 18px 16px 48px;
   }
   #appShell #sitesPanel .creation-site-banner {
     display: grid;

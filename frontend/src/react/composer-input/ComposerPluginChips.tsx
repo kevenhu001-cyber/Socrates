@@ -14,9 +14,8 @@ import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 /* Web search is picked from the "+" menu and then shown as a removable chip,
    the same affordance chatgpt.com uses. State lives in config/providers.js;
    setWebSearchOn() broadcasts `socrates:websearchchange`.
-   Desktop only for now: the phone composer's chip row (restore/ mobile
-   layer) still overlaps the "+" button, so phones keep the active dot in
-   the tools menu until that layout moves to parity/. */
+   Desktop only for now: the phone composer's chip row still overlaps the
+   "+" button, so phones keep the active dot in the tools menu. */
 const DESKTOP_COMPOSER_QUERY = '(min-width: 769px)';
 
 /* Chips are shadcn `Badge` / `Button` (secondary): the component owns the

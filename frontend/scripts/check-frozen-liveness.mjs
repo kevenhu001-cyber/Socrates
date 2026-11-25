@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /*
  * scripts/check-frozen-liveness.mjs — retirement ratchet for the frozen CSS
- * compatibility trees (styles/legacy/ and styles/restore/).
+ * compatibility tree (styles/legacy/).
  *
- * Those two directories are the historical cascade foundation. They are
+ * That directory is the historical cascade foundation. They are
  * imported before the canonical owners and are allowed to keep only rules
  * that still match a class the application actually emits. A rule whose
  * selector names a class that no source file mentions cannot style anything:
@@ -42,7 +42,7 @@ if (process.argv.slice(2).some((arg) => arg !== '--verbose')) {
   process.exit(1);
 }
 
-const FROZEN_DIRS = ['legacy', 'restore'];
+const FROZEN_DIRS = ['legacy'];
 const SOURCE_EXT = ['.ts', '.tsx', '.js', '.mjs', '.html'];
 const SKIP_DIRS = new Set([
   'node_modules',

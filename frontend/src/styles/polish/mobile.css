@@ -1,7 +1,8 @@
 /*
  * polish/mobile.css — ≤768px refinement. Geometry (drawer transform,
- * keyboard inset, capsule placement) is owned by restore/mobile-parity.css
- * + fixes.css; this file only aligns skins with the desktop polish pass.
+ * keyboard inset, capsule placement) is owned by polish/mobile-shell.css,
+ * polish/mobile-sidebar.css and parity/composer-unified.css; this file only
+ * aligns skins with the desktop polish pass.
  */
 
 @media (max-width: 768px) {

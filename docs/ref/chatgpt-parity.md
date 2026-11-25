@@ -31,13 +31,12 @@ Re-capture: `node frontend/scripts/chatgpt-ref.mjs`; Socrates side:
 
 ## Token mapping (Socrates)
 
-`styles/themes.css` holds the ramp above as `--ui-*` and bridges the older
-namespaces onto it — `--cg-*`, `--chatgpt-*`, `--conversation-*` and the Lobe
-`--lobe-color-*` set. It also still publishes the historical HSL channels
-(`--text-*`, `--bg-*`, `--border-*`, `--accent-*`) because the frozen
-`legacy/` and `restore/` trees read them; those are a second palette and no
-live file may read them any more (`frontend/scripts/check-css-debt.mjs`
-ratchets that at zero). Motion/type tokens live in `styles/tokens.css`
+`styles/themes.css` holds the ramp above as `--ui-*`. The older `--cg-*`,
+`--chatgpt-*`, `--conversation-*`, `--chat-*` and Lobe families were retired
+on 2026-11-26; `frontend/scripts/check-css-dependencies.mjs` rejects new
+reads. The historical HSL channels (`--text-*`, `--bg-*`, `--border-*`,
+`--accent-*`) remain only for the frozen `legacy/` tree; no live file may read
+them (`check-css-debt.mjs` ratchets that at zero). Motion/type tokens live in `styles/tokens.css`
 (`--ui-duration-hover` 100ms, `--ui-duration-overlay` 160ms,
 `--ui-text-ui` 14px, `--ui-text-body` 16/28, `--ui-text-hero` 24px).
 
@@ -173,4 +172,4 @@ P1 — visual deviation from ChatGPT
 9. Cmd-K overlay blurs the whole page heavily; ChatGPT uses a flat dim scrim.
 
 P2 — structure / debt
-10. Composer grid template is redefined in 10 files (`restore/*`, `components/composer.css`, `legacy/13,16`) with ~2 700 `!important` in `restore/`.
+10. Composer grid template is redefined across `components/composer.css` and `legacy/13,16`. The historical `restore/` layer (~2,700 `!important`) was deleted on 2026-11-26.

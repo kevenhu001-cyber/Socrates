@@ -6,9 +6,8 @@
  *
  * ── Focus contract ───────────────────────────────────────────────────────
  * foundations/base.css owns the focus indicator: one double ring painted as
- * a two-layer box-shadow (`--ui-focus-shadow`). restore/fixes.css keeps the
- * matching `!important` outline transparent, so the only painted indicator
- * is that ring.
+ * a two-layer box-shadow (`--ui-focus-shadow`). foundations/base.css keeps the
+ * matching outline transparent, so the only painted indicator is that ring.
  *
  * This file handles the remaining half of the problem: an input that is
  * embedded in a container which already reacts to focus must not draw a ring
@@ -34,8 +33,8 @@
  * which root element matches. The field tails live inside :is() so #appShell
  * and the id-level specificity each appear only once in the full rule,
  * keeping both debt counters flat. No `!important` is needed here: the
- * transparent outline restore/fixes.css already applies wins on its own, and
- * that leaves the forced-colours fallback there in charge of the outline.
+ * transparent outline in foundations/base.css wins on its own, and its
+ * forced-colours counterpart stays in charge of the outline.
  */
 
 :root:not(#_focus-a):not(#_focus-b)

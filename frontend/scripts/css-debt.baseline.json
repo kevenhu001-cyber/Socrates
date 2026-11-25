@@ -4,19 +4,19 @@
       "important": 7,
       "hexColor": 31,
       "literalRadius": 0,
-      "stackedId": 24,
-      "literalFontSize": 22,
+      "stackedId": 23,
+      "literalFontSize": 16,
       "legacyChannel": 0,
-      "shadcnVarReads": 611
+      "shadcnVarReads": 496
     },
     "frozen": {
-      "important": 256,
-      "hexColor": 28,
-      "literalRadius": 119,
-      "stackedId": 27,
-      "literalFontSize": 210,
-      "legacyChannel": 498,
-      "shadcnVarReads": 99
+      "important": 43,
+      "hexColor": 3,
+      "literalRadius": 87,
+      "stackedId": 0,
+      "literalFontSize": 156,
+      "legacyChannel": 435,
+      "shadcnVarReads": 37
     }
   },
   "generatedBy": "check-css-debt.mjs --update"

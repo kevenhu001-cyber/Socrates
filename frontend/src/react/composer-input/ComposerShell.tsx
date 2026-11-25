@@ -28,6 +28,7 @@ import { composerLifecycleStore } from '../../composer/lifecycle.store.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { useSendGlyphStore } from '../../legacy/sendGlyph.store.ts';
 import { toggleComposerTools, useComposerToolsSnapshot } from '../composer/composerTools.store';
+import { getAppMode, subscribeAppMode } from '../../config/providers.ts';
 import { useStore } from 'zustand';
 import { useIsChatStreaming } from '../useChatRuntime';
 import { VoiceSpectrum } from './VoiceSpectrum';
@@ -298,10 +299,15 @@ export function ComposerShell({
      control and cannot submit a half-transcribed turn. */
   const canSend = !voiceActive && (hasDraft || attachments.length > 0);
   const { primaryLabel, toolsLabel } = controlLabels(streaming);
+  const appMode = useSyncExternalStore(subscribeAppMode, getAppMode, () => 'chat');
   const composerLabel =
-    surface === 'chat'
-      ? i18n('chat.placeholder', 'Ask Socrates')
-      : i18n('topic.inputPlaceholder', placeholder);
+    appMode === 'tutor'
+      ? surface === 'chat'
+        ? i18n('tutor.chatPlaceholder', 'Ask a question, or try a problem')
+        : i18n('tutor.inputPlaceholder', 'What would you like to explore?')
+      : surface === 'chat'
+        ? i18n('chat.placeholder', 'Ask Socrates')
+        : i18n('topic.inputPlaceholder', placeholder);
   const handlePrimaryClick = usePrimaryClickHandler(streaming, canSend, onStop, onPrimarySubmit);
 
   useEffect(() => {

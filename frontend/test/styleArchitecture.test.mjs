@@ -22,7 +22,7 @@ test('the app exposes the split stylesheet bundle in cascade order', async () =>
     '/src/styles/critical-2.css',
     '/src/styles/legacy/08-exam.css',
     '/src/styles/critical-3.css',
-    '/src/styles/restore/creation-surfaces.css',
+    '/src/styles/features/creation.css',
     '/src/styles/critical-4.css',
     '/src/styles/polish/overlays.css',
     '/src/styles/polish/workspace.css',
@@ -33,6 +33,15 @@ test('the app exposes the split stylesheet bundle in cascade order', async () =>
     '/src/styles/critical-7.css',
     '/src/styles/themes.css',
   ]);
+});
+
+test('the restore compatibility tree is retired', async () => {
+  await assert.rejects(
+    access(new URL('src/styles/restore', root)),
+    'styles/restore must stay deleted',
+  );
+  const css = await read('src/styles/index.css');
+  assert.equal(css.includes('restore/'), false, 'the cascade must not re-import restore/');
 });
 
 test('the stylesheet entry does not reconnect historical parity layers', async () => {
@@ -304,15 +313,12 @@ test('retired plugin workspace tabs have no DOM, observers or historical CSS', a
     'src/legacy/mainViewController.ts',
     'src/styles/layout/app-shell.css',
     'src/styles/legacy/06-chat-transcript.css',
-    'src/styles/restore/chatgpt-v2.css',
-    'src/styles/restore/fixes.css',
-    'src/styles/restore/chat-surface.css',
-    'src/styles/restore/mobile-parity.css',
-    'src/styles/restore/chatgpt-ui.css',
-    'src/styles/restore/ref-baseline.css',
   ];
   for (const file of files) {
-    assert.doesNotMatch(await read(file), /pluginWorkspace(?:Tabs|PluginsTab|SkillsTab)|\.top-mode-tabs\b/);
+    assert.doesNotMatch(
+      await read(file),
+      /pluginWorkspace(?:Tabs|PluginsTab|SkillsTab)|\.top-mode-tabs\b/,
+    );
   }
 });
 
@@ -324,7 +330,10 @@ test('header uses React state rather than retired DOM chrome mirrors', async () 
     'src/styles/legacy/06-chat-transcript.css',
   ];
   for (const file of files) {
-    assert.doesNotMatch(await read(file), /mobileIncognitoBtn|\.chat-top-bar\b|setConversationChrome\b|#chatStats\b/);
+    assert.doesNotMatch(
+      await read(file),
+      /mobileIncognitoBtn|\.chat-top-bar\b|setConversationChrome\b|#chatStats\b/,
+    );
   }
 });
 
@@ -332,12 +341,7 @@ test('scheduled recommendation cards have one stylesheet owner', async () => {
   const pages = await read('src/styles/polish/app-pages.css');
   assert.match(pages, /\.scheduled-recommendation-copy small\s*\{/);
   assert.match(pages, /\.scheduled-recommendation-add\s*\{/);
-  for (const file of [
-    'src/styles/features/surfaces.css',
-    'src/styles/restore/chatgpt-ui.css',
-    'src/styles/restore/mobile-parity.css',
-    'src/styles/restore/fixes.css',
-  ]) {
+  for (const file of ['src/styles/features/surfaces.css']) {
     assert.doesNotMatch(await read(file), /\.scheduled-recommendation(?:s|-[\w-]+)?\b/);
   }
 });

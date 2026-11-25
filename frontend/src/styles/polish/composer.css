@@ -4,16 +4,17 @@
  * Menu presentation and motion belong to components/menu.css.
  */
 
-/* Bundled brand face on the hero line and composer text. The parity layer
-   dropped these to the generic system stack (--chatgpt-font) while the rest
-   of the app renders Plus Jakarta Sans via --cg-font; the bundled face is
-   also what the localization specs assert. */
+/* One bundled brand face on the hero line and composer text; the same
+   --font-sans stack is what the localization specs assert. */
 @media (min-width: 769px) {
   :root:not(#_composer-a):not(#_composer-b):not(#_composer-c)
     #appShell
     #topicSetup
     .topic-title.greeting {
-    font-family: var(--cg-font);
+    font-family: var(--font-sans);
+    min-height: 0;
+    height: auto;
+    max-width: min(100%, 768px);
     /* Brand typography has one live owner; the old restore pins are retired. */
     margin: 0 auto 28px;
     /* R1 restyle: the marketing site sets every heading in Geist medium with
@@ -45,7 +46,8 @@
    and the pair alone was left sitting low). */
 @media (min-width: 769px) {
   :root:not(#_composer-a):not(#_composer-b) #appShell #topicSetup {
-    padding-bottom: calc(200px + var(--conversation-safe-bottom) + 4vh);
+    padding-top: 0;
+    padding-bottom: calc(200px + var(--ui-safe-bottom) + 4vh);
   }
 }
 
@@ -373,5 +375,16 @@
   }
   #appShell #composerAttachmentChips .attachment-chip-spinner {
     animation: none;
+  }
+}
+
+@media (min-width: 769px) {
+  /* The conversation bar sits in the transcript's own column; a second
+     horizontal inset made it narrower than the landing capsule. */
+  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
+    #appShell
+    #chatInputBar {
+    padding-inline: 0;
+    background: transparent;
   }
 }

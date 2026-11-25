@@ -25,11 +25,8 @@ export interface LegacyMessages {
 export interface LegacyNavigation {
   resetApp(options?: { confirmActiveSession?: boolean; projectId?: string }): Promise<boolean>;
   startNewChat(): Promise<boolean>;
-  toggleAppMode: (typeof import('../../app/lifecycle/mode.ts'))['toggleAppMode'];
-  toggleSidebar(): void;
   openNav(key: string): void;
   openSettings(): Promise<void> | void;
-  closeSettings(): void;
   openProfile(trigger?: HTMLElement | null): void;
   closeProfile(): void;
   openUsageModal(): void;
@@ -56,7 +53,6 @@ export interface LegacyConfirm {
 
 export interface LegacySessions {
   flushRecentsReconcile(): Promise<unknown> | void;
-  getArchivedSessions: (typeof import('../../session/recents.ts'))['getArchivedSessions'];
   updateSessionMetadata(
     id: string,
     patch: { title?: string; pinned?: boolean; projectId?: string },
@@ -121,11 +117,6 @@ export interface LegacyProfile {
   confirmClearSettings(): void;
   confirmDeleteAccount(): void;
   setLang(lang: string): void;
-}
-
-export interface LegacyAuth {
-  showGate(): void;
-  showAuthSignin(): void;
 }
 
 export interface LegacyPostRender {
@@ -198,7 +189,6 @@ export interface LegacyLiveTurn {
 }
 
 export interface LegacyActions {
-  auth: LegacyAuth;
   messages: LegacyMessages;
   navigation: LegacyNavigation;
   confirm: LegacyConfirm;

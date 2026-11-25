@@ -50,7 +50,8 @@ test('open sidebar uses quiet 36px rows, compact chrome and one-line history', a
       iconW: box(nav.querySelector('svg')).width,
       iconH: box(nav.querySelector('svg')).height,
       iconCenterOffset: Math.abs(
-        box(nav.querySelector('svg')).y + box(nav.querySelector('svg')).height / 2 -
+        box(nav.querySelector('svg')).y +
+          box(nav.querySelector('svg')).height / 2 -
           (box(nav).y + box(nav).height / 2),
       ),
       navRadius: getComputedStyle(nav).borderTopLeftRadius,
@@ -73,8 +74,10 @@ test('open sidebar uses quiet 36px rows, compact chrome and one-line history', a
   expect(rows.itemH).toBe(36);
   expect(rows.metaVisible).toBe(false);
   expect(rows.modeBadgeVisible).toBe(false);
-  expect(rows.sidebarBg).not.toBe('rgba(0, 0, 0, 0)');
-  expect(rows.sidebarBorder.split(' ')[0]).toBe('1px');
+  /* Card-on-canvas shell: the rail is transparent and separation comes from
+     the main card's inset, not a hairline. */
+  expect(rows.sidebarBg).toBe('rgba(0, 0, 0, 0)');
+  expect(rows.sidebarBorder.split(' ')[0]).toBe('0px');
   expect(rows.headerH).toBe(52);
   expect(rows.logoFontSize).toBe('18px');
   expect(rows.footerBorderTop).toBe('0px');
@@ -83,7 +86,9 @@ test('open sidebar uses quiet 36px rows, compact chrome and one-line history', a
   const projects = page.locator('#navProjects');
   const resting = await projects.evaluate((el) => getComputedStyle(el).backgroundColor);
   await projects.hover();
-  await expect.poll(() => projects.evaluate((el) => getComputedStyle(el).backgroundColor)).not.toBe(resting);
+  await expect
+    .poll(() => projects.evaluate((el) => getComputedStyle(el).backgroundColor))
+    .not.toBe(resting);
   await expect(page.locator('#navMore svg')).toHaveAttribute('fill', 'currentColor');
   await expect(page.locator('#navMore svg')).toHaveAttribute('stroke', 'none');
   await page.screenshot({ path: 'test-results/sidebar-desktop-web-parity-light.png' });

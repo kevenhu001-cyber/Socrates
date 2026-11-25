@@ -755,3 +755,21 @@
   border: 0;
   background: var(--ui-bg-page);
 }
+
+/* Workspace pages own the full main column; the shell's page padding would
+   double the page frame's own gutter. Migrated from restore/chatgpt-parity.css. */
+body.workspace-active #appShell .main-page:not(.creation-panel) {
+  padding: 0;
+  background: var(--background);
+}
+
+/* The plugin directory is a fixed-chrome page: keep the main scroll host from
+   clipping it while the panel owns its own scroll surface. Migrated from
+   restore/ref-baseline.css. */
+@media (min-width: 769px) {
+  :root[data-plugins-panel-open] body.workspace-active #appShell #mainContent {
+    position: relative;
+    z-index: var(--ui-z-panel);
+    overflow: visible;
+  }
+}

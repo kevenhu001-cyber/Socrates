@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test';
+import { test } from './_state-fixture.mjs';
+import { expect } from '@playwright/test';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 import { rgbChannels } from './_lib.mjs';
 
@@ -292,7 +293,7 @@ for (const mode of ['dark', 'light']) {
     await expect(page.locator('#topicTitle')).toBeVisible();
     await page.evaluate(() => {
       if (document.getElementById('sidebar')?.classList.contains('collapsed'))
-        window.__socratesLegacy.navigation.toggleSidebar();
+        window.__socratesTestState.actions.toggleSidebar();
     });
     await expect(page.locator('.sidebar-logo [data-part="brand-name"]')).toBeVisible();
     await assertNoOverflow(page);

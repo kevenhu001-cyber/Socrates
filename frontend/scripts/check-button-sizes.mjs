@@ -18,7 +18,7 @@
  * This check counts literal px `height` / `min-height` / `width` /
  * `min-width` declarations on interactive control selectors across the
  * live stylesheets and compares the total against a baseline. The count
- * may only go DOWN. legacy/ and restore/ are frozen historical zones and
+ * may only go DOWN. legacy/ is the frozen historical zone and
  * are exempt, exactly as in check-css-debt.mjs — see FROZEN_DIRS.
  *
  * Shrinking the baseline is an explicit act: run with --update.
@@ -35,7 +35,7 @@ const BASELINE = join(FRONTEND, 'scripts', 'button-sizes.baseline.json');
 const UPDATE = process.argv.includes('--update');
 
 /* Frozen historical zones — same split as check-css-debt.mjs. */
-const FROZEN_DIRS = new Set(['legacy', 'restore']);
+const FROZEN_DIRS = new Set(['legacy']);
 
 /* The canonical ladder. A literal matching one of these is not debt.
  *

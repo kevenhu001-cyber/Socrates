@@ -350,8 +350,20 @@
     #appShell
     .composer-shell:not(.has-plugin-chips):not(.has-queue)
     [data-composer-frame][data-layout='inline']:not([data-expanded='true']) {
-    --composer-collapsed-inset: 0px;
-    --composer-frame-radius: var(--ui-radius-composer-desktop);
+    --composer-collapsed-inset: min(5vw, var(--ui-step-200));
+    --composer-frame-radius: calc(var(--ui-radius-composer-desktop) - 2px);
+    box-shadow: inset 0 0 0 1px var(--ui-border-subtle);
+  }
+
+  /* The landing composer is the same capsule as the in-session one. The
+     5vw collapsed inset and its 26px radius belong to the old stacked
+     landing; one shell means one width, one radius and one resting edge. */
+  body:not([data-conversation-active='true']):not(.exam-active):not(.workspace-active)
+    #appShell
+    .composer-shell:not(.has-plugin-chips):not(.has-queue)
+    [data-composer-frame][data-layout='inline']:not([data-expanded='true']) {
+    --composer-collapsed-inset: min(5vw, var(--ui-step-200));
+    --composer-frame-radius: calc(var(--ui-radius-composer-desktop) - 2px);
     box-shadow: inset 0 0 0 1px var(--ui-border-subtle);
   }
   #appShell .composer-shell [data-composer-frame][data-layout='inline'][data-expanded='true'],
@@ -570,4 +582,31 @@
   stroke-width: 1.5px;
 }
 
+@media (max-width: 768px) {
+  /* A non-default reasoning level stays visible at rest: the default pill is
+     hidden to keep the phone rail quiet, but a user who chose High/Low needs
+     to see that state without opening the menu. */
+  #appShell
+    .composer-shell:not(.has-plugin-chips, .has-queue)
+    [data-expanded='false']
+    [data-composer-control='effort'][data-effort]:not([data-effort='medium']) {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity var(--ui-duration-fast) var(--ui-ease-out);
+  }
+  #appShell
+    .composer-shell:not(.has-plugin-chips, .has-queue)
+    [data-expanded='false']
+    [data-composer-control='effort'][data-effort]:not([data-effort='medium'])
+    button {
+    pointer-events: auto;
+  }
+}
 
+@media (max-width: 768px) {
+  /* The host reserves the phone reference's 86px action band around the
+     52px resting capsule; the morph itself stays inside the frame. */
+  #appShell #composerInputWrap {
+    padding-block: 17px;
+  }
+}

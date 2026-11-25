@@ -70,10 +70,8 @@
   }
 
   /* ── Sidebar footer icon-btn — 44 hit area ──
-     The only !important competitor (the 36px pins in restore/fixes.css)
-     targets `.sidebar-footer-actions > .icon-btn`, which that same layer
-     keeps display:none on phones — a plain declaration suffices for any
-     footer button that is actually visible. */
+     The phone drawer hides the footer action group outright, so a plain
+     declaration suffices for any footer button that is actually visible. */
   #appShell .sidebar-footer .icon-btn,
   #appShell .sidebar-footer-actions > .icon-btn,
   #appShell .sidebar-footer .btn-icon {
@@ -141,10 +139,9 @@
      mobile media block at the bottom of that file. */
 
   /* ── Hardcoded colour overrides ──
-     Force the legacy dark surfaces onto the --ui-bg-* palette. The
-     restore/ + components/ layers still hold the literals (fallback
-     semantics), but we beat them with equal specificity by living in
-     polish/ Tier 5. theme-contrast.spec.mjs validates the visual diff. */
+     Force the legacy dark surfaces onto the --ui-bg-* palette. This layer
+     beats the component fallbacks by living in polish/ Tier 5;
+     theme-contrast.spec.mjs validates the visual diff. */
   body #composerToolsMenu.composer-tools-menu {
     background-color: var(--ui-bg-surface); /* was #1f1f1f */
   }
@@ -154,10 +151,8 @@
 
   /* ── User bubble mobile ──
      The phone bubble's radius, surface and ink all come from the shared
-     tokens now (--ui-radius-bubble / --conversation-user /
-     --conversation-text in restore/chat-surface.css), so there is nothing
-     left to restate here — a second declaration at this specificity only
-     lost to that layer's !important rules. */
+     tokens now (--ui-radius-bubble / --ui-bg-bubble),
+     so there is nothing left to restate here. */
 }
 
 /* ── Drawer nav geometry contract (moved from restore/fixes.css) ── */

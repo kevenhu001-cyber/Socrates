@@ -56,11 +56,9 @@
     animation: none;
     padding: 0;
     color: var(--foreground);
-    /* No font-family here on purpose. This rule used to open with
-     "Plus Jakarta Sans" while polish/composer.css pins the greeting to
-     --cg-font (the bundled Inter) at four-#appShell specificity, so the
-     declaration never applied — it only made the shell look like it had a
-     second typeface. One face, declared once, in themes.css. */
+    /* No font-family here on purpose. One face is declared once in
+     themes.css (--font-sans); a second family here only made the shell look
+     like it had two typefaces. */
     font-weight: var(--ui-font-weight-regular);
     letter-spacing: 0;
     text-align: center;

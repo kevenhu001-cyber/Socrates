@@ -57,7 +57,7 @@ export function CodeBlockActions({ codeElement, language }: CodeBlockActionsProp
 
   function expandCode() {
     const code = codeElement.querySelector('code')?.textContent || '';
-    const html = `<pre style="margin:0;border:0;background:transparent;padding:18px 20px;font-family:var(--font-mono);font-size:13px;line-height:1.6;color:hsl(var(--text-200));white-space:pre-wrap;word-break:break-word;max-height:calc(100vh - 120px);overflow:auto"><code>${esc(code)}</code></pre>`;
+    const html = `<pre style="margin:0;border:0;background:transparent;padding:18px 20px;font-family:var(--font-mono);font-size:13px;line-height:1.6;color:var(--ui-text-secondary);white-space:pre-wrap;word-break:break-word;max-height:calc(100vh - 120px);overflow:auto"><code>${esc(code)}</code></pre>`;
     openVizModalRaw(html, `${language || 'code'} source`);
   }
 

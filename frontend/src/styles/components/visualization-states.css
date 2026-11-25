@@ -261,7 +261,7 @@
    preview body, so switching views cannot discard it. */
 .viz[data-viz-kind='mermaid'] {
   border-radius: var(--ui-radius-xl);
-  background: var(--conversation-page);
+  background: var(--ui-bg-page);
 }
 .viz-mermaid-header {
   display: flex;

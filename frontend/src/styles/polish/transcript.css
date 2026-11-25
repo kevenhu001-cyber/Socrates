@@ -2,8 +2,8 @@
  * polish/transcript.css — message list, bubbles, toolbar, code, cursor.
  */
 
-/* User bubble: slightly narrower + tighter pad; radius stays at the
-   reference-aligned 15px (restore/chat-surface.css). */
+/* User bubble: slightly narrower + tighter pad; the radius comes from
+   parity/transcript.css's --ui-radius-bubble role. */
 @media (max-width: 768px) {
   #appShell#appShell .msg.user .msg-body {
     max-width: min(72%, 560px);
@@ -495,5 +495,22 @@
   }
   #appShell .msg-body .code-block-copy-label {
     display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  #appShell .msg.user .msg-body a {
+    color: inherit;
+    text-decoration: underline;
+  }
+  #appShell .msg.user .msg-body code {
+    background: var(--ui-bg-chip);
+    color: var(--ui-text-primary);
+  }
+}
+
+@media (max-width: 768px) {
+  #appShell .msg.user .msg-body {
+    line-height: calc(24px * var(--app-type-scale));
   }
 }

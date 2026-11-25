@@ -2,7 +2,9 @@ import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
-test('display preferences own their controls without data-action delegation', async ({ page }) => {
+test('display preferences keep one quick theme entry and defer the rest to Settings', async ({
+  page,
+}) => {
   await page.addInitScript(() => localStorage.setItem('socrates-theme', 'dark'));
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
@@ -12,55 +14,21 @@ test('display preferences own their controls without data-action delegation', as
   expect(await popover.locator('[data-action], [data-action-input]').count()).toBe(0);
   await expect(page.locator('#themeToggle')).not.toHaveAttribute('data-action', /.+/);
   await expect(page.locator('#displayPrefsBtn')).not.toHaveAttribute('data-action', /.+/);
-  /* The accent-colour picker is gone: the app ships a fixed
-     black/white/gray palette. */
-  await expect(
-    popover.locator('#displayAccentColors, .color-swatch, #accentCustomInput'),
-  ).toHaveCount(0);
 
   await page.locator('#displayPrefsBtn').click();
   await expect(popover).toBeVisible();
 
-  await page.locator('#displayPrefsFontSegs [data-font="1.375"]').click();
-  await page.locator('#displayPrefsWidthSegs [data-width="1.7"]').click();
-  await page.locator('#gridToggle').click();
+  /* The footer popover is a quick theme switcher. Typography, width, grid and
+     background colours live only in Settings → Display. */
+  await expect(popover.locator('#displayPrefsFontSegs, #displayPrefsWidthSegs')).toHaveCount(0);
+  await expect(
+    popover.locator('#gridToggle, #displayPrefsBgDark, #displayPrefsBgLight'),
+  ).toHaveCount(0);
+  await expect(popover.locator('#displayThemeSegs')).toBeVisible();
+  await expect(popover.getByRole('button', { name: 'All display settings' })).toBeVisible();
 
-  await page.locator('#displayPrefsBgDark').evaluate((input) => {
-    input.value = '#123456';
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-  });
-  await page.locator('#displayPrefsBgLight').evaluate((input) => {
-    input.value = '#eeeeee';
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-  });
-
-  // P_display-prefs-no-dup — the segmented controls carry the value, so the
-  // selected radio is what states it.
-  await expect(page.locator('#displayPrefsFontSegs [aria-checked="true"]')).toHaveText('XL');
-  await expect(page.locator('#displayPrefsWidthSegs [aria-checked="true"]')).toHaveText('XL');
-  await expect(page.locator('#gridToggle')).toHaveClass(/on/);
-  await expect
-    .poll(() =>
-      page.evaluate(() => ({
-        display: JSON.parse(localStorage.getItem('socrates-display') || '{}'),
-        accentHue: localStorage.getItem('socrates-accent-hue'),
-        accentHex: localStorage.getItem('socrates-accent-hex'),
-      })),
-    )
-    .toMatchObject({
-      display: { font: 1.375, width: 1.7, darkBg: '#123456', lightBg: '#eeeeee', showGrid: true },
-      accentHue: null,
-      accentHex: null,
-    });
-
-  await page.locator('#displayPrefsBgDarkReset').click();
-  await page.locator('#displayPrefsBgLightReset').click();
-  await expect
-    .poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('socrates-display') || '{}')))
-    .toMatchObject({
-      darkBg: '',
-      lightBg: '',
-    });
+  await page.locator('#displayThemeSegs [data-theme-option="light"]').click();
+  await expect(page.locator('html')).toHaveAttribute('data-mode', 'light');
 
   const modeBefore = await page.locator('html').getAttribute('data-mode');
   await page.locator('#themeToggle').click();
@@ -79,4 +47,9 @@ test('display preferences own their controls without data-action delegation', as
   await page.getByRole('menuitem', { name: 'Display & theme' }).click();
   await expect(popover).toBeVisible();
   await expect(page.locator('#navMore')).toHaveAttribute('aria-expanded', 'false');
+
+  await popover.getByRole('button', { name: 'All display settings' }).click();
+  await expect(popover).toBeHidden();
+  await expect(page.locator('#settingsPage')).toBeVisible();
+  await expect(page.locator('#settingsPage')).toContainText('Display');
 });

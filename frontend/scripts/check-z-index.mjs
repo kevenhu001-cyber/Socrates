@@ -21,7 +21,7 @@
  * numbers — `1500` for a toast, `1600` for a tool card, `2400` for a tutor
  * overlay — and two surfaces silently fight for the top.
  *
- * legacy/ and restore/ are frozen historical zones and are exempt, exactly
+ * legacy/ is the frozen historical zone and is exempt, exactly
  * as in check-css-debt.mjs and check-button-sizes.mjs — see FROZEN_DIRS.
  *
  * Shrinking the baseline is an explicit act: run with --update.
@@ -38,7 +38,7 @@ const BASELINE = join(FRONTEND, 'scripts', 'z-index.baseline.json');
 const UPDATE = process.argv.includes('--update');
 
 /* Frozen historical zones — same split as check-css-debt.mjs. */
-const FROZEN_DIRS = new Set(['legacy', 'restore']);
+const FROZEN_DIRS = new Set(['legacy']);
 
 /* A z-index of 0–9 is local stacking inside one component and needs no
  * token. 10 and above reaches across components and must use a --ui-z-* rung. */

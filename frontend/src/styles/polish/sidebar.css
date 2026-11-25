@@ -5,13 +5,11 @@
  * Geometry owned by JS (--app-sidebar-width, drawer transform) untouched.
  */
 
-/* The parity layer pins the whole shell to --chatgpt-font (ui-sans-serif →
-   Segoe UI on Windows) while chat surfaces render Plus Jakarta Sans via
-   --cg-font — the brand wordmark and nav read as a different face from the
-   conversation. Converge the shell on the bundled brand stack. */
+/* Converge the shell, composer tools and sidebar on the one bundled
+   --font-sans stack declared in themes.css. */
 #appShell,
 #composerToolsMenu {
-  font-family: var(--cg-font);
+  font-family: var(--font-sans);
 }
 
 #appShell .sidebar-view-btn {
@@ -200,4 +198,9 @@
 }
 #appShell .recents-search-all button:hover {
   text-decoration: underline;
+}
+
+/* The API-settings gear is a footer control, not a topbar-only action. */
+#appShell #apiSettingsBtn {
+  display: flex;
 }

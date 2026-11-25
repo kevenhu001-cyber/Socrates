@@ -9,13 +9,6 @@
 /* foundations/fonts.css owns the locally hosted brand
    fonts. Keep this compatibility layer free of independent font imports. */
 
-:root {
-  --always-white: 0 0% 100%;
-  --always-black: 0 0% 0%;
-  --keyboard-inset: 0px; /* defaults — displayPrefs.js writes the real values at runtime */
-  --app-font-scale: 1;
-  --app-width-scale: 1;
-}
 /* Shared timing tokens for composer focus expansion. Keyboard avoidance is
    deliberately not part of this CSS timeline: legacy/keyboard/index.ts owns the
    inset animation frame by frame so a browser resize cannot drop the input
@@ -161,9 +154,9 @@ body {
   --tool-card-border: hsla(222, 12%, 10%, 0.11);
   --tool-card-border-strong: hsla(222, 12%, 10%, 0.19);
   --tool-card-text: hsl(var(--text-200));
-  --tool-card-text-muted: hsl(var(--text-350, var(--text-400)));
+  --tool-card-text-muted: hsl(var(--text-400));
   --tool-card-text-subtle: hsl(var(--text-500));
-  --tool-card-icon: hsl(var(--text-350, var(--text-400)));
+  --tool-card-icon: hsl(var(--text-400));
   --tool-card-icon-hover: hsl(var(--text-100));
   --tool-card-focus: hsla(222, 12%, 10%, 0.35);
 }

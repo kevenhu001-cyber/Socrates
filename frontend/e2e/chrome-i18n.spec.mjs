@@ -11,7 +11,8 @@
  * i.e. what a user actually hovers / a screen reader announces, rather than
  * only that the hooks exist.
  */
-import { test, expect } from '@playwright/test';
+import { test } from './_state-fixture.mjs';
+import { expect } from '@playwright/test';
 import { gotoAndSettle, setLang } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -33,7 +34,6 @@ test('static shell chrome localizes to Chinese', async ({ page }) => {
   expect(await attr(page, '#themeToggle', 'title')).toBe('切换主题');
   expect(await attr(page, '#displayPrefsBtn', 'title')).toBe('显示设置');
   expect(await attr(page, '#displayPrefsBtn', 'aria-label')).toBe('显示设置');
-  expect(await attr(page, '#gridToggle', 'aria-label')).toBe('切换背景网格');
   expect(await attr(page, '#composerToolsBtn', 'title')).toBe('添加工具与文件');
   expect(await attr(page, '#sidebarResizeHandle', 'aria-label')).toBe('拖动调整侧栏宽度');
 
@@ -42,16 +42,9 @@ test('static shell chrome localizes to Chinese', async ({ page }) => {
   expect(await attr(page, '#usageOverlay', 'aria-label')).toBe('Token 用量');
   expect(await attr(page, '#shareOverlay', 'aria-label')).toBe('分享对话');
 
-  // Display popover section labels are translated text nodes, not attributes.
-  await expect(
-    page.locator('.display-prefs-label span[data-i18n-key="sidebar.textSize"]'),
-  ).toHaveText('文字大小');
-  await expect(
-    page.locator('.display-prefs-label span[data-i18n-key="sidebar.contentWidth"]'),
-  ).toHaveText('内容宽度');
-  await expect(
-    page.locator('.display-prefs-label span[data-i18n-key="chrome.backgroundGrid"]'),
-  ).toHaveText('背景网格');
+  // The footer popover is the quick theme switcher; the remaining display
+  // controls live in Settings → Display.
+  await expect(page.locator('.display-prefs-all')).toHaveText('全部显示设置');
 });
 
 test('static shell chrome localizes back to English', async ({ page }) => {
@@ -63,17 +56,15 @@ test('static shell chrome localizes back to English', async ({ page }) => {
   expect(await attr(page, '#displayPrefsBtn', 'title')).toBe('Display settings');
   expect(await attr(page, '#composerToolsBtn', 'title')).toBe('Add tools and files');
   expect(await attr(page, '#cmdKOverlay', 'aria-label')).toBe('Command palette');
-  await expect(
-    page.locator('.display-prefs-label span[data-i18n-key="sidebar.textSize"]'),
-  ).toHaveText('Text size');
+  await expect(page.locator('.display-prefs-all')).toHaveText('All display settings');
 });
 
 test('auth gate default views localize', async ({ page }) => {
   // The gate is hidden in an authed mock; reveal it the same way the auth
   // module does, then assert the first screen a zh user actually sees.
   await page.evaluate(() => {
-    window.__socratesLegacy.auth.showGate?.();
-    window.__socratesLegacy.auth.showAuthSignin?.();
+    window.__socratesTestState.actions.showGate?.();
+    window.__socratesTestState.actions.showAuthSignin?.();
   });
   await expect(page.locator('#authGate')).toBeVisible();
   await setLang(page, 'zh');

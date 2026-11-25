@@ -1,5 +1,8 @@
 import { useMemo } from 'react';
 import { fill, t } from './text';
+import { getLegacyActions } from '../legacy/gateway.ts';
+import { Button } from '../ui/shadcn/button';
+import { toggleTheme } from '../../displayPrefs.ts';
 import type { CmdKDoc, CmdKHit } from '../../legacy/cmdKState.ts';
 
 interface CommandPaletteResultsProps {
@@ -98,7 +101,44 @@ export function CommandPaletteResults({
   if (!hasQuery)
     return (
       <div className="cmd-k-empty">
-        {t('chrome.cmdkEmpty', 'Type to search across all your sessions.')}
+        <span>{t('chrome.cmdkEmpty', 'Type to search across all your sessions.')}</span>
+        <div className="cmd-k-quick">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const actions = getLegacyActions();
+              actions.cmdK.closeCmdK();
+              void actions.navigation.startNewChat();
+            }}
+          >
+            {t('chrome.cmdkNewChat', 'New chat')}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const actions = getLegacyActions();
+              actions.cmdK.closeCmdK();
+              void actions.navigation.openSettings();
+            }}
+          >
+            {t('chrome.cmdkSettings', 'Settings')}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              getLegacyActions().cmdK.closeCmdK();
+              toggleTheme();
+            }}
+          >
+            {t('chrome.cmdkToggleTheme', 'Toggle theme')}
+          </Button>
+        </div>
       </div>
     );
   if (hitViews.length === 0) {

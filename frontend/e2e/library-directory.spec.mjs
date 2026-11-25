@@ -6,7 +6,8 @@
 //   2. The thumbnail box renders a glyph for the item's file type
 //      (via files.kind, falling back to the filename extension).
 
-import { test, expect } from '@playwright/test';
+import { test } from './_state-fixture.mjs';
+import { expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -136,7 +137,7 @@ test('directory headings and actions align without occupying the phone app bar',
   }
   await page.evaluate(() => {
     if (!document.querySelector('#sidebar').classList.contains('collapsed'))
-      window.__socratesLegacy.navigation.toggleSidebar();
+      window.__socratesTestState.actions.toggleSidebar();
   });
   await page.locator('.library-new-pill').click();
   await expect(page.locator('.library-new-menu')).toBeInViewport();
@@ -223,10 +224,10 @@ test('thumbnail box renders a file-type glyph', async ({ page }) => {
   const csv = await shapes('country_risk_data.csv');
   expect(csv).toEqual({ rect: 1, circle: 0, path: 1 });
 
-  // Image → picture frame + sun (circle).
+  // Image → the single compound picture-frame path from the icon registry.
   const png = await shapes('grid_mapping.png');
-  expect(png.rect).toBe(1);
-  expect(png.circle).toBe(1);
+  expect(png.path).toBe(1);
+  expect(png.circle).toBe(0);
 
   // Documents → page outline with fold + text lines.
   const pdf = await shapes('lecture_notes.pdf');
@@ -260,7 +261,7 @@ test('phone library filters actual images and selects only visible rows', async 
   await page.evaluate(() => {
     const sidebar = document.getElementById('sidebar');
     if (sidebar && !sidebar.classList.contains('collapsed'))
-      window.__socratesLegacy.navigation.toggleSidebar?.();
+      window.__socratesTestState.actions.toggleSidebar?.();
   });
   // The phone drawer is min(420px, 80vw) wide and parks one control step
   // outside the viewport when closed: -(312 + 32) = -344 at 390px.
@@ -306,8 +307,9 @@ test('library remains readable at narrow and tablet widths', async ({ page }) =>
   }
 });
 
-
-test('file name opens the preview with keyboard and renaming stays in the action menu', async ({ page }) => {
+test('file name opens the preview with keyboard and renaming stays in the action menu', async ({
+  page,
+}) => {
   await page.route(/\/files\/f1\/content/, (route) =>
     route.fulfill({ json: { ok: true, text: 'Preview content' } }),
   );
@@ -320,5 +322,7 @@ test('file name opens the preview with keyboard and renaming stays in the action
   await page.locator('.detail-close').click();
   await file.locator('.library-row-more-btn').click();
   await expect(page.locator('.library-row-menu')).toBeVisible();
-  await expect(page.locator('.library-row-menu [data-icon-source="openai-apps-sdk"]')).toHaveCount(2);
+  await expect(page.locator('.library-row-menu [data-icon-source="openai-apps-sdk"]')).toHaveCount(
+    2,
+  );
 });

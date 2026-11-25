@@ -3,7 +3,8 @@
 // recents filter chips are owned by React. Both navigation and filter
 // state are held by typed stores and have no published snapshot aliases.
 
-import { test, expect } from '@playwright/test';
+import { test } from './_state-fixture.mjs';
+import { expect } from '@playwright/test';
 import { ACTIVE_CLASS, gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -60,7 +61,7 @@ test('typed recents filter updates while the compact drawer hides chips', async 
   await page.evaluate(() => {
     const sidebar = document.getElementById('sidebar');
     if (sidebar?.classList.contains('collapsed'))
-      window.__socratesLegacy.navigation.toggleSidebar?.();
+      window.__socratesTestState.actions.toggleSidebar?.();
   });
   await page.waitForTimeout(400);
   await page.evaluate(() => localStorage.setItem('socrates-recents-filter', 'algebra'));
