@@ -52,8 +52,8 @@
     transform: scale(0.94);
   }
   #appShell #sidebarCloseBtn svg {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
   }
 
   #appShell #sidebarNav {
@@ -61,7 +61,7 @@
     padding: 2px 8px 8px;
   }
   #appShell #sidebarNav .sidebar-nav-btn {
-    border-radius: var(--ui-radius-row);
+    border-radius: 10px;
     transition:
       background-color var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1),
       color var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1),
@@ -71,17 +71,17 @@
     background: var(--ui-fill);
   }
   #appShell #sidebarNav .sidebar-nav-btn:active {
-    transform: scale(0.98);
+    --sidebar-nav-bg: var(--ui-bg-active);
   }
   /* The desktop row look moved into react/sidebar/SidebarNavButton.tsx: the
      control ladder, the 10px --ui-radius-row and the ghost hover now live as
      --ui-* utilities on the shadcn button (ADR 0024). The collapsed rail and
      the phone drawer keep their structural rules below. */
-  /* Grouping comes from breathing room, not another line in the rail. */
+  /* A quiet inset divider separates destinations and chat history. */
   #appShell #sidebar .sidebar-nav-sep {
-    height: 0;
-    margin: 5px 14px 7px;
-    background: transparent;
+    height: 1px;
+    margin: 8px 16px 10px;
+    background: var(--ui-sidebar-border);
   }
 
   #appShell #sidebar .sidebar-search-row {
