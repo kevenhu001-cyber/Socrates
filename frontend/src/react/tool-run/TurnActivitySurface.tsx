@@ -12,7 +12,7 @@ import { i18n } from '../../ui/legacyI18n.ts';
 import { tf } from '../../legacy/toolPresentationModel.ts';
 import { useLocaleRefresh, WebUiTheme } from '../rn/WebUiTheme';
 import { MathText } from '../rn/useInlineMath';
-import { ToolActivityIcon, ToolSiteMarks, turnActivitySites } from './ToolActivityIcon';
+import { ToolActivityIcon, toolActivitySites } from './ToolActivityIcon';
 import { ToolRunRow } from './ToolRunRow';
 import { ToolRunGroupRow } from './ToolRunGroupRow';
 import { useElapsed } from './useElapsed';
@@ -52,15 +52,28 @@ function SummaryStep({ step }: { step: ThinkingStep }) {
   );
 }
 
-function activityLabel(props: TurnActivitySurfaceProps, hasSummary: boolean) {
-  if (props.isLive) return props.statusLabel || i18n('think.thinking', 'Thinking…');
+function activityLabel(
+  props: TurnActivitySurfaceProps,
+  hasSummary: boolean,
+  latestStep?: ThinkingStep,
+  latestTool?: ToolCallRecord,
+) {
+  if (props.isLive) {
+    return props.statusLabel || props.status?.label || i18n('think.thinking', 'Thinking…');
+  }
+  // Once settled, keep the headline on the final event rather than turning it
+  // into a count of the entire hidden history.
+  if (latestTool) return toolRunView(latestTool).label;
   const seconds = props.reasoningDurationSec;
   if (typeof seconds === 'number' && Number.isFinite(seconds) && seconds > 0) {
     return tf('think.thoughtDuration', 'Thought for {sec}s', {
       sec: Math.max(1, Math.round(seconds)),
     });
   }
-  if (hasSummary) return i18n('think.reasoningSummary', 'Thinking summary');
+  if (hasSummary) {
+    return latestStep?.title || i18n('think.reasoningSummary', 'Thinking summary');
+  }
+  if (latestStep) return i18n('think.complete', 'Finished thinking');
   if (props.calls.length)
     return tf(
       props.calls.length === 1 ? 'think.summaryToolTitle' : 'think.summaryToolsTitle',
@@ -180,18 +193,25 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
   }, [steps, calls, activities, reasoningLabel, reasoningDone]);
   const hasSummary = steps.length > 0 || Boolean(intent);
   const expandable = timeline.length > 0 || Boolean(intent);
+  const latestEntry = timeline[timeline.length - 1];
+  const latestStep = latestEntry?.kind === 'step' ? latestEntry.step : undefined;
+  const latestTools = latestEntry?.kind === 'tools' ? latestEntry.tools : undefined;
+  const latestTool = latestTools?.[latestTools.length - 1];
   const live = Boolean(props.isLive);
+  const liveToolPhase = live && (status?.phase === 'tool-running' || status?.phase === 'tool-awaiting');
+  const headerTool = live ? (liveToolPhase ? activeTool : undefined) : latestTool;
   const working = live && status?.phase !== 'answering' && status?.phase !== 'tool-awaiting';
   const startedAt =
     status?.phase === 'tool-running' ? runStartedAt(activeTool) : props.activityStartedAt || 0;
   const elapsedMs = useElapsed(startedAt, working);
   const elapsedSec = elapsedMs > 0 ? elapsedMs / 1000 : status?.elapsedSec;
-  const label = activityLabel(props, hasSummary);
-  const toolName = live ? status?.toolName : undefined;
-  const sites = useMemo(() => turnActivitySites(calls), [calls]);
+  const label = activityLabel(props, hasSummary, latestStep, latestTool);
+  const toolName = headerTool?.name || (liveToolPhase ? status?.toolName : undefined);
+  const headerIcon = toolName ? (
+    <ToolActivityIcon name={toolName} sites={headerTool ? toolActivitySites(headerTool) : []} />
+  ) : undefined;
+  const currentActivity = live ? status?.phase || 'working' : latestTool ? 'tool' : latestStep ? 'thinking' : 'complete';
   if (!live && !expandable && !props.reasoningDurationSec) return null;
-  const headerIcon = toolName ? <ToolActivityIcon name={toolName} /> : undefined;
-  const trailing = sites.length ? <ToolSiteMarks sites={sites} /> : undefined;
   const durationLabel =
     working && elapsedSec
       ? tf('think.rn.elapsed', '{sec}s', { sec: Math.max(1, Math.round(elapsedSec)) })
@@ -203,6 +223,7 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
       data-turn-surface-part="activity"
       data-live={working ? 'true' : undefined}
       data-phase={live ? status?.phase : undefined}
+      data-current-activity={currentActivity}
       data-activity-timeline={expandable ? 'true' : undefined}
       data-answer-started={props.answerStarted ? 'true' : undefined}
       data-open={open ? 'true' : 'false'}
@@ -216,7 +237,6 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
           live={working}
           icon={headerIcon}
           iconWidth={18}
-          trailing={trailing}
           expandable={expandable}
           open={open}
           onToggle={() => setOpen((value) => !value)}
