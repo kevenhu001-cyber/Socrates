@@ -9,6 +9,7 @@ interface PluginDetailHeaderProps {
   connectable: boolean;
   isConnected: boolean;
   canUseInChat: boolean;
+  launching: boolean;
   renderMark: (id: string, name: string) => React.ReactNode;
   onBack: () => void;
   onConnect: () => void;
@@ -22,6 +23,7 @@ export function PluginDetailHeader({
   connectable,
   isConnected,
   canUseInChat,
+  launching,
   renderMark,
   onBack,
   onConnect,
@@ -84,7 +86,8 @@ export function PluginDetailHeader({
               variant="default"
               size="lg"
               className="plugin-detail-btn-primary min-w-0 flex-1 rounded-full"
-              disabled={!canUseInChat || !connectable}
+              disabled={!canUseInChat || !connectable || launching}
+              aria-busy={launching || undefined}
               onClick={onUseInChat}
             >
               {i18n('plugins.detail.useInChat', 'Use in chat')}
