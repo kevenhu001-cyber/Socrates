@@ -110,6 +110,14 @@ export async function streamChatCompletion(
           }
 
           const errBody = await response.text().catch(() => '');
+          if (response.status === 400) {
+            console.warn('[LLM] rejected stream request', JSON.stringify({
+              model: opts.model,
+              variant: variant.reason,
+              fields: Object.keys(variant.body),
+              toolCount: Array.isArray(tools) ? tools.length : 0,
+            }));
+          }
           const delayMs = upstreamRetryDelayMs(
             response.status,
             attempt,
