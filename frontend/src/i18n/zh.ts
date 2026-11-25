@@ -829,6 +829,7 @@ export const zh = {
   'plugins.public': '公开',
   'plugins.personal': '个人',
   'plugins.popular': '热门',
+  'plugins.searchResults': '搜索结果',
   'plugins.detail.back': '返回插件目录',
   'plugins.detail.backLabel': '插件',
   'plugins.detail.connected': '已连接',
