@@ -7,6 +7,7 @@ import { i18n, installedRank, PlusIcon } from './workspaceUi';
 import { PluginDirectoryCard } from './PluginDirectoryCard';
 import { InstalledPluginStrip } from './InstalledPluginStrip';
 import { dedupePlugins } from './pluginDirectory.data';
+import { actionDescription, actionTitle, detailText, pluginDescription } from './pluginDetailContent';
 import { PageEmptyState } from '../../ui/page/PageEmptyState';
 import { PageFrame } from '../../ui/page/PageFrame';
 import { PageHeader } from '../../ui/page/PageHeader';
@@ -97,7 +98,7 @@ function PluginDirectoryBody({
       {newPlugins.length > 0 ? (
         <section className="ui-page-section plugin-directory-section">
           <div className="ui-page-section-head">
-            <h2>{i18n('plugins.new', 'New and notable')}</h2>
+            <h2>{detailText('More apps', '更多插件')}</h2>
           </div>
           <div className="plugin-directory-list">
             {newPlugins.map((plugin) => (
@@ -131,7 +132,17 @@ export function PluginDirectory({
     return catalog.filter((plugin) => {
       if (scope === 'personal' && !isInstalled(plugin)) return false;
       if (!needle) return true;
-      return [plugin.name, plugin.description, ...(plugin.capabilities || [])]
+      return [
+        plugin.name,
+        plugin.id,
+        pluginDescription(plugin),
+        ...(plugin.chatActions?.flatMap((action) => [
+          action.name,
+          action.description,
+          actionTitle(action.name),
+          actionDescription(action),
+        ]) || plugin.capabilities || []),
+      ]
         .filter(Boolean)
         .join(' ')
         .toLowerCase()
@@ -188,7 +199,7 @@ export function PluginDirectory({
 
       <PluginDirectoryBody
         visiblePlugins={visiblePlugins}
-        sectionTitle={query.trim() ? i18n('plugins.searchResults', 'Search results') : scope === 'personal' ? i18n('plugins.installed', 'Installed') : i18n('plugins.popular', 'Popular')}
+        sectionTitle={query.trim() ? i18n('plugins.searchResults', 'Search results') : scope === 'personal' ? i18n('plugins.installed', 'Installed') : detailText('Featured', '精选插件')}
         popularPlugins={popularPlugins}
         newPlugins={newPlugins}
         configured={configured}

@@ -78,3 +78,38 @@ test('React auth gate owns view transitions, form feedback, and submit actions',
   await expect(page.locator('#authGate')).toBeHidden();
   await expect.poll(() => apiKeyRefreshes.length).toBeGreaterThan(refreshesBeforeSignIn);
 });
+
+for (const mode of ['light', 'dark']) {
+  test(`flat auth form uses monochrome theme and fits narrow screens: ${mode}`, async ({ page }) => {
+    await page.emulateMedia({ colorScheme: mode });
+    await page.addInitScript((value) => {
+      localStorage.setItem('socrates-theme', value);
+      localStorage.setItem('socrates-theme-style', 'socrates');
+    }, mode);
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await mockAuthedApp(page, { lang: 'en' });
+    await gotoAndSettle(page, '/');
+    await expect(page.locator('#authGate')).toBeHidden();
+    await page.evaluate(() => {
+      window.__socratesLegacy.auth.showGate();
+      window.__socratesLegacy.auth.showAuthSignin();
+    });
+    const gate = page.locator('#authGate');
+    const card = gate.locator('.auth-card');
+    const canvas = mode === 'dark' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
+    const ink = mode === 'dark' ? 'rgb(255, 255, 255)' : 'rgb(0, 0, 0)';
+    await expect(gate).toBeVisible();
+    await expect(gate).toHaveCSS('background-color', canvas);
+    await expect(gate).toHaveCSS('background-image', 'none');
+    await expect(card).toHaveCSS('border-width', '0px');
+    await expect(card.locator('#authSigninEmail')).toHaveCSS('color', ink);
+    await expect(card.locator('#authSigninBtn')).toHaveCSS('background-color', ink);
+    await expect(card.locator('#authSigninBtn')).toHaveCSS('color', canvas);
+    await expect(card.locator('#authGithubBtn')).toHaveCSS('color', ink);
+    await page.screenshot({ path: `test-results/auth-${encodeURIComponent(mode)}-desktop.png` });
+    await page.setViewportSize({ width: 320, height: 568 });
+    await expect(card.locator('#authSigninEmail')).toBeVisible();
+    expect(await gate.evaluate((node) => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(1);
+    await page.screenshot({ path: `test-results/auth-${encodeURIComponent(mode)}-mobile.png` });
+  });
+}

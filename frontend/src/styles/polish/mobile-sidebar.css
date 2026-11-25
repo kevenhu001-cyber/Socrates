@@ -381,7 +381,7 @@
 @media (max-width: 768px) {
   #appShell .sidebar-footer .icon-btn {
     border-radius: var(--ui-radius-control, 8px);
-    color: var(--ui-text-tertiary);
+    color: var(--foreground);
   }
 }
 
@@ -650,7 +650,7 @@
     color: var(--muted-foreground);
   }
   #appShell .recents-head-btn {
-    color: var(--ui-text-tertiary);
+    color: var(--foreground);
   }
   #appShell .sidebar-nav-sep {
     display: block;
@@ -828,38 +828,7 @@
     min-height: var(--ui-control-touch);
     font-size: var(--ui-mobile-font-nav);
   }
-  /* Dark reference drawer tones: row glyphs and labels #cacaca, the header's
-     search / collapse glyphs the secondary #b0b0b0, the wordmark and the
-     account name the ink. The ancestor pair is written once and reused via
-     :is() — repeating "#appShell #sidebar" on every line is the stacked-id
-     debt the css-debt ratchet tracks. */
-  [data-mode='dark'] #appShell #sidebar svg:not(.sidebar-mobile-new-chat svg) {
-    color: var(--foreground);
-
-    stroke-linecap: round;
-    stroke-linejoin: round;
-  }
-  [data-mode='dark'] #appShell #sidebarHeader .btn-icon svg {
-    color: var(--muted-foreground);
-  }
-  [data-mode='dark']
-    #appShell
-    :is(#sidebar)
-    :is(
-      #sidebarNav .sidebar-nav-btn,
-      .recent-item,
-      .recent-item-text,
-      .nav-new-badge,
-      #sidebarSearch,
-      #sidebarSearch::placeholder
-    ) {
-    color: var(--foreground);
-  }
-  [data-mode='dark'] #appShell :is(#sidebar) .sidebar-logo,
-  [data-mode='dark'] #appShell #sidebarUserRow :is(.sidebar-account-trigger, .user-name) {
-    color: var(--ui-sidebar-glyph);
-  }
-
+  /* Navigation follows shared ink; brand marks and metadata retain their roles. */
   /* Keep the account identity compact on narrow screens. */
   #appShell #sidebarUserRow .sidebar-account-static {
     gap: 6px;

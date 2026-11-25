@@ -651,10 +651,6 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background-image:
-    linear-gradient(to right, hsl(var(--bg-200)) 1px, transparent 1px),
-    linear-gradient(to bottom, hsl(var(--bg-200)) 1px, transparent 1px);
-  background-size: 32px 32px;
   overflow-y: auto;
 }
 .auth-gate.hidden {
@@ -675,9 +671,7 @@ html[data-boot-state='app'] #authGate {
 html[data-boot-state='auth'] #appShell {
   display: none !important;
 }
-/* Pre-boot loading shell — covers the viewport while the auth check
-   is in flight. Uses the same dotted background as the auth gate so
-   the transition is invisible when /me resolves to "auth". */
+/* Pre-boot loading shell uses the same flat page color as auth. */
 .boot-loading {
   position: fixed;
   inset: 0;
@@ -687,16 +681,9 @@ html[data-boot-state='auth'] #appShell {
   align-items: center;
   justify-content: center;
   gap: 14px;
-  background: hsl(var(--bg-100));
-  background-image:
-    linear-gradient(to right, hsl(var(--bg-200)) 1px, transparent 1px),
-    linear-gradient(to bottom, hsl(var(--bg-200)) 1px, transparent 1px);
-  background-size: 32px 32px;
+  background: var(--ui-bg-page);
   opacity: 1;
   transition: opacity 0.25s var(--ease-out);
-}
-html[data-show-grid='false'] .boot-loading {
-  background-image: none;
 }
 html[data-boot-state='app'] .boot-loading,
 html[data-boot-state='auth'] .boot-loading {
@@ -711,7 +698,7 @@ html[data-boot-state='auth'] .boot-loading {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: hsl(var(--text-300));
+  color: var(--foreground);
   font-weight: var(--ui-font-weight-semibold);
   font-size: calc(15px * var(--app-font-scale, 1));
   letter-spacing: -0.02em;
@@ -721,232 +708,7 @@ html[data-boot-state='auth'] .boot-loading {
   flex-shrink: 0;
   color: hsl(var(--brand-000));
 }
-.auth-card {
-  width: 100%;
-  max-width: 420px;
-  padding: 32px 28px;
-}
-/* P4.5 — transient banner shown at the top of the auth gate when a
-   401 from any background apiFetch triggers handleAuthExpired(). */
-.auth-expired-banner {
-  background: hsl(var(--accent-900));
-  color: hsl(var(--accent-100));
-  padding: 10px 18px;
-  border-radius: 10px;
-  font-size: 13px;
-  text-align: center;
-  margin: 0 auto 12px;
-  max-width: 420px;
-  border: 0.5px solid hsl(var(--accent-000) / 0.4);
-}
-.auth-brand {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  justify-content: center;
-  font-weight: var(--ui-font-weight-semibold);
-  font-size: calc(17px * var(--app-font-scale, 1));
-  margin-bottom: 24px;
-}
-.auth-brand svg {
-  color: hsl(var(--accent-000));
-}
-.auth-tabs {
-  display: flex;
-  border-bottom: 0.5px solid hsl(var(--border-300) / 0.18);
-  margin-bottom: 22px;
-}
-.auth-tab {
-  appearance: none;
-  flex: 1;
-  text-align: center;
-  padding: 10px 0;
-  font: var(--ui-font-weight-medium) calc(13px * var(--app-font-scale, 1))/1.2 var(--font-sans);
-  color: hsl(var(--text-400));
-  border: 0;
-  border-bottom: 2px solid transparent;
-  background: transparent;
-  cursor: pointer;
-  font-weight: var(--ui-font-weight-medium);
-  transition:
-    color 0.1s,
-    border-color 0.1s;
-}
-.auth-tab:hover {
-  color: hsl(var(--text-200));
-}
-.auth-tab.active {
-  color: hsl(var(--text-100));
-  border-bottom-color: hsl(var(--accent-000));
-}
-.auth-view {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.auth-lede {
-  font-size: calc(13px * var(--app-font-scale, 1));
-  color: hsl(var(--text-400));
-  line-height: 1.55;
-  margin: 0 0 12px;
-  text-align: center;
-}
-.auth-title {
-  font-size: calc(20px * var(--app-font-scale, 1));
-  font-weight: var(--ui-font-weight-medium);
-  text-align: center;
-  margin: 4px 0 8px;
-  line-height: 1.3;
-}
-.auth-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: hsl(var(--accent-000) / 0.1);
-  color: hsl(var(--accent-000));
-  margin: 0 auto 12px;
-}
-.auth-icon-warn {
-  background: hsl(0 60% 50%/0.1);
-  color: hsl(0 60% 65%);
-}
-.auth-icon-ok {
-  background: var(--ui-fill);
-  color: var(--ui-ink);
-}
-.auth-label {
-  font-size: calc(11px * var(--app-font-scale, 1));
-  font-weight: var(--ui-font-weight-medium);
-  color: hsl(var(--text-400));
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin: 6px 0 2px;
-}
-.auth-input {
-  width: 100%;
-  padding: 10px 12px;
-  font-size: calc(14px * var(--app-font-scale, 1));
-  outline: none;
-  margin-bottom: 4px;
-}
-.auth-input:focus {
-  border-color: hsl(var(--accent-000) / 0.5);
-}
-.auth-input::placeholder {
-  color: hsl(var(--text-500));
-}
-.auth-error {
-  font-size: calc(12px * var(--app-font-scale, 1));
-  color: hsl(0 60% 70%);
-  min-height: 14px;
-  line-height: 1.4;
-  padding: 2px 0;
-}
-.auth-btn {
-  padding: 10px 18px;
-  border-radius: 10px;
-  font-size: calc(14px * var(--app-font-scale, 1));
-  font-weight: var(--ui-font-weight-medium);
-  cursor: pointer;
-  transition:
-    background 0.1s,
-    color 0.1s;
-  border: 0;
-  margin-top: 10px;
-}
-.auth-btn.primary {
-  background: hsl(var(--accent-000));
-  color: hsl(var(--oncolor-100));
-}
-.auth-btn.primary:hover {
-  background: hsl(var(--accent-100));
-}
-.auth-btn.primary:disabled {
-  background: hsl(var(--bg-300));
-  color: hsl(var(--text-500));
-  cursor: not-allowed;
-}
-.auth-btn.secondary {
-  background: transparent;
-  color: hsl(var(--text-200));
-  border: 0.5px solid hsl(var(--border-300) / 0.3);
-}
-.auth-btn.secondary:hover {
-  background: hsl(var(--bg-200));
-  color: hsl(var(--text-100));
-}
-.auth-foot {
-  text-align: center;
-  font-size: calc(12px * var(--app-font-scale, 1));
-  margin-top: 14px;
-}
-.auth-foot a {
-  text-decoration: none;
-}
-.auth-foot a:hover {
-  text-decoration: underline;
-}
-.auth-inline-link {
-  font-size: calc(12px * var(--app-font-scale, 1));
-  text-decoration: none;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-.auth-inline-link:hover {
-  text-decoration: underline;
-}
-.auth-back-link {
-  font-size: calc(12px * var(--app-font-scale, 1));
-  color: hsl(var(--text-500));
-  text-decoration: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  margin-bottom: 6px;
-}
-.auth-back-link:hover {
-  color: hsl(var(--text-200));
-}
-.auth-code-input {
-  font-family: var(--font-mono, monospace);
-  font-size: calc(22px * var(--app-font-scale, 1));
-  letter-spacing: 8px;
-  text-align: center;
-  padding: 10px 12px;
-  font-weight: var(--ui-font-weight-semibold);
-}
-.auth-view-separator {
-  text-align: center;
-  font-size: calc(11px * var(--app-font-scale, 1));
-  margin: 10px 0 6px;
-  position: relative;
-}
-.auth-view-separator::before,
-.auth-view-separator::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  width: calc(50% - 24px);
-  height: 0.5px;
-  background: hsl(var(--border-300) / 0.18);
-}
-.auth-view-separator::before {
-  left: 0;
-}
-.auth-view-separator::after {
-  right: 0;
-}
-.auth-msg {
-  font-size: calc(13px * var(--app-font-scale, 1));
-  color: hsl(var(--text-400));
-  line-height: 1.5;
-  margin: 4px 0 10px;
-  text-align: center;
-}
+/* Form surfaces are owned by polish/auth.css. */
 
 /* "Jump to bottom" floating button. Shown whenever the user has
    scrolled away from the bottom of the chat — even mid-reveal. */

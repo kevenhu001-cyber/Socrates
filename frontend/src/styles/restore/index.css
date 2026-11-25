@@ -78,16 +78,9 @@
  * focus / press values; 1280px keeps the component's inline palette because
  * the variable is only set inside the phone media query.
  *
- * Plugin directory (2026-09-30): the historical `!important` blocks for
- * .plugin-directory* in chatgpt-ui.css, ref-baseline.css and the desktop
- * half of chatgpt-parity.css were retired. They were overriding
- * features/surfaces.css purely by cascade order (restore/ is imported after
- * features/), which left the canonical owner dead. Only genuinely shared
- * selectors (e.g. .workspace-icon-action, .plugin-directory-search svg) are
- * still declared here; the ≤768px directory geometry (36px search, 40px
- * tabs/tiles) is now owned by polish/mobile-directories.css and asserted by
- * the smoke specs (this comment previously named mobile-parity.css and a
- * 42px pill that no longer exists).
+ * Plugin directory and auth migration: directory surfaces use app-pages.css,
+ * shared controls use Page Kit, and phone layout uses mobile-directories.css.
+ * Auth uses polish/auth.css, with only boot visibility in legacy/.
  *
  * Rule: visual parity tweaks go in fixes.css; feature-page styles in
  * creation-surfaces.css; do not ADD rules to the historical files 1-6.

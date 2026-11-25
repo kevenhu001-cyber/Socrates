@@ -10,6 +10,7 @@ import { Button } from '../ui/shadcn/button';
 import { Input } from '../ui/shadcn/input';
 import { Label } from '../ui/shadcn/label';
 import { AuthCard } from '../ui/page/AuthCard';
+import { Icon } from '../../legacy/Icon';
 import {
   focusAuthTab,
   resendAuthCode,
@@ -469,19 +470,7 @@ function BackLink() {
       href="#"
       onClick={(event) => handleAuthLink(event, showAuthSignin)}
     >
-      <svg
-        width={14}
-        height={14}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <line x1="19" y1="12" x2="5" y2="12" />
-        <polyline points="12 19 5 12 12 5" />
-      </svg>
+      <Icon name="chevronLeft" size={16} />
       <span data-i18n-key="auth.backToSignIn">Back to sign in</span>
     </a>
   );

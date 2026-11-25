@@ -6,7 +6,7 @@
   width: 100%;
   min-height: 100%;
   color: var(--foreground);
-  background: var(--background) !important;
+  background: var(--ui-bg-page);
 }
 #appShell #sitesPanel {
   margin: 0 auto;
@@ -50,7 +50,7 @@
 #appShell .creation-site-banner button {
   margin-left: auto;
   min-height: var(--ui-control-desktop);
-  border-radius: var(--radius-lg);
+  border-radius: var(--ui-radius-pill);
   font-size: var(--ui-font-size-sm);
   font-weight: var(--ui-font-weight-medium);
 }
@@ -159,16 +159,6 @@
 /* The header search reuses the shared .workspace-search-field pill
    (magnifier + input); the bare-input chrome above would otherwise draw a
    second frame inside it. */
-#appShell .creation-empty {
-  padding: 68px 20px;
-  border-top: 1px solid var(--border);
-  text-align: center;
-  color: var(--muted-foreground);
-  font-size: var(--ui-font-size-sm);
-}
-#appShell .creation-table {
-  border-top: 1px solid var(--border);
-}
 #appShell .creation-table-head,
 #appShell .creation-row {
   display: grid;
@@ -201,10 +191,10 @@
 #appShell .creation-publish-controls button {
   min-height: var(--ui-control-sm);
   border: 1px solid transparent;
-  border-radius: var(--radius-md);
+  border-radius: var(--ui-radius-pill);
   padding: 0 10px;
   background: transparent;
-  color: var(--muted-foreground);
+  color: var(--foreground);
   font: inherit;
   font-size: var(--ui-font-size-sm);
   cursor: pointer;
@@ -220,11 +210,11 @@
 #appShell .creation-image-form {
   max-width: 680px;
   margin: 48px auto 72px;
-  padding: 15px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
-  background: var(--card);
-  color: var(--card-foreground);
+  padding: var(--ui-space-md);
+  border: 1px solid var(--ui-border-default);
+  border-radius: var(--ui-radius-composer-desktop);
+  background: var(--ui-bg-composer);
+  color: var(--foreground);
 }
 #appShell .creation-image-form textarea {
   display: block;
@@ -250,21 +240,12 @@
   max-width: 220px;
   background: transparent;
 }
-#appShell .creation-gallery {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-}
 #appShell .creation-image-card {
   display: block;
   min-width: 0;
   padding: 0;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
   text-align: left;
-  color: var(--card-foreground);
-  background: var(--card);
+  color: var(--foreground);
   cursor: pointer;
 }
 #appShell .creation-image-card img {
@@ -321,7 +302,7 @@
   height: var(--ui-control-sm);
   border: 0;
   border-radius: var(--radius-md);
-  color: var(--muted-foreground);
+  color: var(--foreground);
   background: transparent;
   font-size: 20px;
   cursor: pointer;
@@ -350,7 +331,7 @@
   height: var(--ui-control-sm);
   border: 0;
   border-radius: var(--radius-md);
-  color: var(--muted-foreground);
+  color: var(--foreground);
   background: transparent;
   font-size: 22px;
   cursor: pointer;
@@ -431,10 +412,6 @@
   #appShell .creation-sites-table.is-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  #appShell .creation-gallery {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 9px;
-  }
   #appShell .creation-image-form {
     margin: 20px auto 40px;
   }
@@ -453,15 +430,7 @@
 #appShell #sitesPanel .creation-sites-new {
   min-width: 72px;
 }
-/* Layout only — .creation-sites-search also carries the shared
-   .workspace-search-field class, so flex/gap/icon/input chrome comes from
-   the same rules that drive the plugin-directory pill. */
-#appShell #sitesPanel .creation-sites-search {
-  width: 100%;
-  min-height: 42px;
-  padding: 0 14px;
-  border-radius: var(--ui-radius-pill);
-}
+/* Sites search is provided by the shared PageSearchField. */
 #appShell #sitesPanel .creation-site-banner-icon svg {
   width: 23px;
   height: 23px;
@@ -482,9 +451,6 @@
 @media (max-width: 768px) {
   #appShell #sitesPanel {
     padding: 18px 16px 48px !important;
-  }
-  #appShell #sitesPanel .creation-sites-search input {
-    width: 100%;
   }
   #appShell #sitesPanel .creation-site-banner {
     display: grid;

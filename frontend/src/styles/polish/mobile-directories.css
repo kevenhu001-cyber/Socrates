@@ -1,27 +1,6 @@
-/* One phone owner for Library and Plugins. Desktop rules are shared from
-   surfaces.css/polish/workspace.css; no compatibility geometry overrides. */
+/* Phone-only layout for Library and Plugins. Shared search controls and desktop
+   directory surfaces are owned by Page Kit and polish/app-pages.css. */
 @media (max-width: 768px) {
-  body.workspace-active #appShell .plugin-directory-search {
-    display: flex;
-    align-items: center;
-    flex: 1;
-    min-width: 0;
-    height: var(--ui-control-touch);
-    min-height: var(--ui-control-touch);
-    padding: 0 var(--ui-space-md);
-    border: 1px solid transparent;
-    border-radius: var(--ui-radius-pill);
-    background: var(--ui-bg-field);
-  }
-  body.workspace-active #appShell :is(.plugin-directory-search, .library-search-pill):focus-within {
-    border-color: var(--ui-border-strong);
-  }
-
-  body.workspace-active #appShell .plugin-directory-search input {
-    min-width: 0;
-    width: 100%;
-    font-size: max(1rem, var(--ui-font-size-md));
-  }
   body.workspace-active #appShell .plugin-directory-add-btn {
     display: grid;
     place-items: center;
@@ -44,38 +23,12 @@
     border: 0;
     background: transparent;
   }
-  body.workspace-active #appShell .plugin-installed-label {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: var(--foreground);
-    font-size: var(--ui-font-size-sm);
-    font-weight: var(--ui-font-weight-medium);
-  }
-  body.workspace-active #appShell .plugin-installed-caret {
-    color: var(--ui-text-tertiary);
-  }
   body.workspace-active #appShell .plugin-installed-icons {
     display: flex;
     gap: 10px;
     width: 100%;
     overflow-x: auto;
     scrollbar-width: none;
-  }
-  body.workspace-active #appShell .plugin-installed-icons .workspace-row-icon {
-    display: grid;
-    place-items: center;
-    width: var(--ui-control-md);
-    min-width: var(--ui-control-md);
-    height: var(--ui-control-md);
-    padding: 0;
-    border: 0;
-    border-radius: var(--ui-radius-lg);
-    background: var(--ui-bg-surface);
-    overflow: hidden;
   }
   body.workspace-active #appShell .plugin-installed-icons svg {
     width: 100%;
@@ -85,12 +38,6 @@
     display: flex;
     flex-direction: column;
     gap: 0;
-  }
-  body.workspace-active #appShell .plugin-directory-section h3 {
-    margin: 0;
-    font-size: var(--ui-font-size-sm);
-    line-height: 20px;
-    font-weight: var(--ui-font-weight-medium);
   }
   body.workspace-active #appShell .plugin-directory-row {
     display: flex;
@@ -115,10 +62,10 @@
   body.workspace-active #appShell .plugin-directory-row .connector-icon {
     display: grid;
     place-items: center;
-    width: var(--ui-control-md);
-    min-width: var(--ui-control-md);
-    height: var(--ui-control-md);
-    min-height: var(--ui-control-md);
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    min-height: 40px;
     flex: 0 0 40px;
     padding: 0;
     border: 0;
@@ -232,21 +179,6 @@
     height: 20px;
     background: var(--border);
   }
-  body.workspace-active #appShell .library-search-pill {
-    flex: 1;
-    min-width: 0;
-    height: var(--ui-control-touch);
-    min-height: var(--ui-control-touch);
-    padding: 0 var(--ui-space-md);
-    border: 1px solid transparent;
-    border-radius: var(--ui-radius-pill);
-    background: var(--ui-bg-field);
-  }
-  body.workspace-active #appShell .library-search-pill input {
-    width: 100%;
-    min-width: 0;
-    font-size: max(1rem, var(--ui-font-size-md));
-  }
   body.workspace-active #appShell .library-desktop-table-head {
     display: block;
     padding: 0 0 6px;
@@ -342,7 +274,7 @@
     padding: 0;
     border: 0;
     background: transparent;
-    color: var(--ui-text-muted);
+    color: var(--foreground);
   }
 
   /* The default phone library is a flat list
@@ -392,7 +324,7 @@
     background: transparent;
     border: 0;
     padding: var(--ui-space-xs);
-    color: var(--ui-text-secondary);
+    color: var(--ui-file-color, var(--foreground));
   }
   body.workspace-active #appShell .library-list.view-grid .workspace-row-copy {
     grid-column: 1 / -1;

@@ -485,7 +485,7 @@
   justify-content: center;
   border-radius: var(--ui-button-radius);
   box-shadow: none;
-  color: var(--ui-text-secondary);
+  color: var(--foreground);
 }
 #appShell .msg-body .code-block-actions > button:hover {
   color: var(--ui-text-primary);

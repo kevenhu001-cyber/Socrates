@@ -75,8 +75,8 @@ test('capture light mode sidebar screenshots', async ({ page }) => {
   console.log('DESKTOP LIGHT STYLES:', JSON.stringify(styles, null, 2));
 
   // Assert desktop light styles
-  expect(styles.navTextColor).toBe('rgb(13, 13, 13)');
-  expect(styles.recentTextColor).toBe('rgb(23, 23, 23)');
+  expect(styles.navTextColor).toBe('rgb(0, 0, 0)');
+  expect(styles.recentTextColor).toBe('rgb(0, 0, 0)');
 
   await page.screenshot({ path: 'test-results/sidebar-desktop-light.png' });
 
@@ -103,11 +103,9 @@ test('capture light mode sidebar screenshots', async ({ page }) => {
   console.log('MOBILE LIGHT STYLES:', JSON.stringify(mobileStyles, null, 2));
 
   // Assert mobile light styles
-  // The phone drawer paints its labels with --ui-text-nav, which in light
-  // mode resolves to --ui-text-primary (the theme's ink, #171717) rather
-  // than the desktop rail's darker step.
-  expect(mobileStyles.navTextColor).toBe('rgb(23, 23, 23)');
-  expect(mobileStyles.recentTextColor).toBe('rgb(23, 23, 23)');
+  // Desktop and phone share the same primary monochrome ink.
+  expect(mobileStyles.navTextColor).toBe('rgb(0, 0, 0)');
+  expect(mobileStyles.recentTextColor).toBe('rgb(0, 0, 0)');
 
   await page.screenshot({ path: 'test-results/sidebar-mobile-light.png' });
 });

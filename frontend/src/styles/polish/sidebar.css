@@ -214,7 +214,7 @@
   }
   #appShell #sidebar .recent-item-overflow {
     border-radius: var(--ui-radius-sm);
-    color: var(--ui-text-muted);
+    color: var(--foreground);
     transition:
       background-color var(--ui-duration-hover) ease,
       color var(--ui-duration-hover) ease;
@@ -477,7 +477,7 @@
 }
 #appShell .sidebar-account-chevron {
   margin-inline-start: auto;
-  color: var(--ui-text-secondary);
+  color: var(--foreground);
 }
 #appShell .collapsed .sidebar-account-chevron {
   display: none;

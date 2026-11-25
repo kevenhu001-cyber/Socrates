@@ -50,7 +50,7 @@ html[data-main-view='settingsPage'] #settingsPage .account-page-header {
   height: 64px;
   padding: 0 clamp(24px, 4vw, 48px);
   border-color: var(--ui-account-border);
-  background: var(--ui-account-panel);
+  background: var(--ui-bg-page);
 }
 
 /* Settings focuses the title when the page opens; it is a heading, not a
@@ -70,7 +70,7 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
     min-height: 0;
     margin: auto;
     border: 1px solid var(--ui-border-subtle);
-    border-radius: var(--ui-radius-xl);
+    border-radius: var(--ui-radius-dialog);
     overflow: hidden;
     background: var(--background);
   }
@@ -105,7 +105,7 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
     gap: var(--ui-space-sm);
     min-height: 36px;
     padding: 6px 10px;
-    border-radius: var(--ui-radius-row);
+    border-radius: var(--ui-radius-sidebar-row);
     color: var(--foreground);
   }
 
@@ -138,9 +138,9 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
   }
 
   .settings-page .settings-pane > h2 {
-    padding-bottom: 16px;
+    padding-bottom: 12px;
     border-bottom: 1px solid var(--ui-border-subtle);
-    font-size: var(--ui-text-page);
+    font-size: var(--ui-font-size-lg);
     font-weight: var(--ui-font-weight-semibold);
   }
 
@@ -188,7 +188,7 @@ html[data-main-view='settingsPage'] #settingsPage .settings-section:not(.setting
   margin: 0;
   padding: 0 0 var(--ui-space-xl);
   border: 0;
-  border-bottom: 1px solid var(--ui-account-border);
+  border-bottom: 1px solid var(--ui-border-subtle);
   border-radius: 0;
   background: transparent;
 }
@@ -214,7 +214,7 @@ html[data-main-view='settingsPage'] #settingsPage .provider-workbench {
   overflow: hidden;
   border: 1px solid var(--ui-border-subtle);
   border-radius: var(--ui-radius-lg);
-  background: var(--ui-bg-surface);
+  background: transparent;
 }
 
 html[data-main-view='settingsPage'] #settingsPage .provider-workbench-nav {
@@ -225,7 +225,7 @@ html[data-main-view='settingsPage'] #settingsPage .provider-workbench-nav {
   padding: 10px 8px;
   overflow-y: auto;
   border-inline-end: 1px solid var(--ui-border-subtle);
-  background: var(--ui-bg-raised);
+  background: transparent;
   scrollbar-width: thin;
 }
 
@@ -239,7 +239,7 @@ html[data-main-view='settingsPage'] #settingsPage .provider-nav-item {
   border: 0;
   border-radius: var(--ui-radius-control);
   background: transparent;
-  color: var(--ui-text-secondary);
+  color: var(--foreground);
   font: inherit;
   font-size: var(--ui-font-size-sm);
   text-align: start;
@@ -359,7 +359,7 @@ html[data-main-view='settingsPage']
 
 html[data-main-view='settingsPage'] #settingsPage .settings-nav-item.active {
   background: var(--ui-bg-selected);
-  border-radius: var(--ui-radius-row);
+  border-radius: var(--ui-radius-sidebar-row);
   box-shadow: none;
 }
 html[data-main-view='settingsPage'] #settingsPage .settings-nav-item.active:focus-visible {

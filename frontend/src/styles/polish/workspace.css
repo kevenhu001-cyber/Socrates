@@ -70,7 +70,11 @@
 #appShell .library-file-icon svg {
   width: 22px;
   height: 22px;
-  stroke: hsl(var(--always-white));
+  /* Official glyphs are filled outlines; do not add an extra stroke. */
+}
+
+#appShell .library-file-icon svg:not([data-icon-source='openai-apps-sdk']) {
+  stroke: currentColor;
 }
 
 /* ------------------------------------------------------------------ */
@@ -80,7 +84,6 @@
 #appShell .plugin-detail-view {
   display: flex;
   flex-direction: column;
-  max-width: 760px;
   width: 100%;
   margin: 0 auto;
 }
@@ -113,7 +116,7 @@
   border-radius: var(--ui-radius-lg);
   display: grid;
   place-items: center;
-  background: var(--cg-surface-raised);
+  background: var(--ui-bg-surface);
   overflow: hidden;
   padding: 0;
 }
@@ -163,19 +166,30 @@
 #appShell .plugin-detail-body {
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: var(--ui-space-xl);
 }
 
 #appShell .plugin-detail-section {
   display: flex;
   flex-direction: column;
+  gap: var(--ui-space-sm);
+  min-width: 0;
+  padding-bottom: var(--ui-space-xl);
+  border-bottom: 1px solid var(--ui-border-subtle);
+}
+
+#appShell .plugin-detail-section:last-child {
+  border-bottom: 0;
 }
 
 #appShell .plugin-detail-section-title {
-  font-size: 15px;
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-sm);
+  font-size: var(--ui-font-size-md);
   font-weight: var(--ui-font-weight-semibold);
   color: var(--foreground);
-  margin: 0 0 10px;
+  margin: 0;
   letter-spacing: -0.01em;
 }
 
@@ -190,38 +204,47 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
 }
 
 #appShell .plugin-detail-prompt-card {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 12px;
   width: 100%;
+  box-sizing: border-box;
   padding: 12px 14px;
-  background: var(--cg-surface-raised);
+  background: transparent;
   border: 1px solid var(--ui-border-subtle);
   border-radius: var(--ui-radius-lg);
   color: var(--foreground);
-  text-align: left;
-  cursor: pointer;
-  transition:
-    background-color var(--ui-duration-fast) ease,
-    border-color var(--ui-duration-fast) ease;
+  text-align: start;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
-#appShell .plugin-detail-prompt-card:hover {
-  background: var(--accent);
-  border-color: var(--border);
+#appShell .plugin-detail-prompt-card > svg {
+  flex: none;
+  color: var(--foreground);
+}
+
+#appShell button.plugin-detail-prompt-card:hover {
+  background: var(--ui-bg-hover);
 }
 
 #appShell .plugin-detail-prompt-text {
+  flex: 1;
+  min-width: 0;
   font-size: var(--ui-font-size-sm);
   line-height: 1.4;
   color: var(--foreground);
 }
 
 #appShell .plugin-detail-prompt-arrow {
+  margin-inline-start: auto;
   color: var(--ui-text-tertiary);
   font-size: var(--ui-font-size-sm);
   flex-shrink: 0;
@@ -238,11 +261,12 @@
 
 #appShell .plugin-detail-feature-item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
+  padding-block: var(--ui-space-xs);
   font-size: var(--ui-font-size-sm);
   color: var(--muted-foreground);
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
 #appShell .plugin-detail-feature-icon {
@@ -252,41 +276,80 @@
 }
 
 #appShell .plugin-detail-security-card {
-  padding: 16px;
-  background: var(--cg-surface-raised);
-  border-radius: var(--ui-radius-lg);
-  border: 1px solid var(--ui-border-subtle);
+  margin: 0;
+  padding: 0;
+  background: transparent;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 0;
 }
 
 #appShell .plugin-detail-security-field {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  font-size: var(--ui-font-size-xs);
+  align-items: baseline;
+  gap: var(--ui-space-md);
+  min-width: 0;
+  padding-block: var(--ui-space-sm);
+  border-bottom: 1px solid var(--ui-border-subtle);
+  font-size: var(--ui-font-size-sm);
 }
 
-#appShell .plugin-detail-security-label {
+#appShell .plugin-detail-security-field dt {
   color: var(--ui-text-tertiary);
 }
 
-#appShell .plugin-detail-security-value {
+#appShell .plugin-detail-security-field dd {
+  margin: 0;
+  min-width: 0;
+  text-align: end;
+  overflow-wrap: anywhere;
   color: var(--foreground);
   font-weight: var(--ui-font-weight-medium);
 }
 
 #appShell .plugin-detail-privacy-note {
   margin: 6px 0 0;
-  padding-top: 10px;
-  border-top: 1px solid var(--ui-border-subtle);
   font-size: var(--ui-font-size-xs);
   line-height: 1.5;
   color: var(--ui-text-tertiary);
 }
 
 /* ------------------------------------------------------------------ */
+/* Action details share the same restrained disclosure grammar as tool activity. */
+#appShell .plugin-detail-action-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+#appShell .plugin-detail-action-copy strong {
+  color: var(--foreground);
+  font-weight: var(--ui-font-weight-medium);
+}
+#appShell .plugin-detail-feature-item > svg {
+  flex: none;
+  margin-top: 3px;
+}
+#appShell .plugin-detail-count {
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-font-weight-regular);
+}
+#appShell .plugin-detail-note {
+  margin: 0;
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-sm);
+  line-height: 1.5;
+}
+#appShell .plugin-detail-more-actions summary {
+  cursor: pointer;
+  color: var(--foreground);
+  font-size: var(--ui-font-size-sm);
+  min-height: var(--ui-control-touch);
+  align-content: center;
+}
+
 /*  Workspace Loading & Skeletons                                     */
 /* ------------------------------------------------------------------ */
 
@@ -608,9 +671,9 @@
   }
 
   #appShell .plugin-detail-page-header .account-page-actions {
-    flex: 1 0 calc(100% - 108px);
+    flex: 1 0 100%;
     min-width: 0;
-    margin-inline-start: 108px;
+    margin-inline-start: 0;
   }
 
   #appShell .plugin-detail-cta-group {

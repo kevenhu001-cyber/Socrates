@@ -1,15 +1,8 @@
 import type React from 'react';
 import type { useWorkspaceDispatch } from './workspace.hooks';
+import type { PluginItem } from './types';
 
-export interface WorkspacePluginBasic {
-  id: string;
-  name: string;
-  description?: string;
-  capabilities?: string[];
-  authType?: string;
-  connection?: { status?: string; displayName?: string } | null;
-  available?: boolean;
-}
+export type WorkspacePluginBasic = PluginItem;
 
 export interface PluginDetailViewProps {
   plugin: WorkspacePluginBasic;

@@ -1,4 +1,4 @@
-import { Search } from 'lucide-react';
+import { Icon } from '../../../legacy/Icon';
 import { Input } from '../shadcn/input';
 import { Label } from '../shadcn/label';
 import { cn } from 'cn';
@@ -17,7 +17,7 @@ export function PageSearchField({
 }) {
   return (
     <Label className={cn('ui-page-search', className)}>
-      <Search aria-hidden="true" />
+      <Icon name="search" size={18} />
       <Input
         type="search"
         value={query}

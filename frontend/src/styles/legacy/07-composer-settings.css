@@ -475,35 +475,11 @@
   flex-direction: column;
   gap: 24px;
 }
-.admin-login {
-  max-width: 400px;
-  margin: 64px auto;
-  padding: 28px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  background: var(--ui-bg-raised);
-  border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-card);
-  box-shadow: var(--ui-shadow-dialog);
-}
-.admin-login .admin-hint {
-  margin-bottom: 4px;
-}
-.admin-login form {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
 @media (max-width: 640px) {
   .admin-panel {
     padding: 20px 16px 40px;
   }
-  .admin-login {
-    margin: 32px auto;
-    padding: 22px;
   }
-}
 
 .settings-actions {
   display: flex;

@@ -30,14 +30,14 @@
 
 /* Icon buttons: quiet ghost controls, hairline-free until hover. */
 #appShell .top-bar .toggle-sidebar {
-  color: var(--ui-text-tertiary);
+  color: var(--foreground);
   transition:
     background-color var(--ui-duration-fast) var(--ui-ease-apple, ease),
     color var(--ui-duration-fast) var(--ui-ease-apple, ease);
 }
 @media (max-width: 768px) {
   #appShell .top-bar .icon-btn {
-    color: var(--ui-text-tertiary);
+    color: var(--foreground);
     transition:
       background-color var(--ui-duration-fast) var(--ui-ease-apple, ease),
       color var(--ui-duration-fast) var(--ui-ease-apple, ease);

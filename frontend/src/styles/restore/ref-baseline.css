@@ -316,12 +316,6 @@ body.workspace-active #appShell .main-page {
     z-index: 10 !important;
   }
 
-  #appShell .workspace-search-field,
-  #appShell .plugin-directory-search {
-    padding-inline: 14px;
-    border-radius: 999px;
-    font-size: 13px;
-  }
 
   /* OpenConnector directory, restyled as the reference's two-column list. */
 
@@ -390,12 +384,6 @@ body.workspace-active #appShell .main-page {
     padding-top: 27px !important;
   }
 
-  #appShell .plugin-directory-tabs button {
-    min-height: 36px !important;
-    height: 36px;
-    padding-inline: 17px !important;
-  }
-
   /* Scheduled directory geometry moved to features/surfaces.css.
      This block used to pin the page to the 768px chat column, hide the
      subtitle, force a single-column recommendation list, chip the section
@@ -422,20 +410,7 @@ body.workspace-active #appShell .main-page {
      --cg-page so the safe-area strip below the composer matches the page
      in both modes. */
 
-  /* Mobile header controls: the hardcoded dark-on-light palette only
-     works on the black phone canvas. In light mode invert the circle
-     buttons and give the icon-only actions a dark glyph. */
-  [data-mode='light'] #appShell #sidebarOpenBtn {
-    border-color: rgb(0 0 0 / 10%) !important;
-    background: hsl(0 0% 100% / 96%) !important;
-    color: hsl(0 0% 14%) !important;
-    box-shadow: 0 1px 3px rgb(0 0 0 / 8%) !important;
-  }
 
-  [data-mode='light'] #appShell #sidebarOpenBtn:hover {
-    background: hsl(0 0% 93%) !important;
-    color: hsl(0 0% 4%) !important;
-  }
 }
 
 /* Mobile sidebar nav background states are owned by
@@ -496,12 +471,6 @@ body.workspace-active #appShell .main-page {
   }
 }
 
-#appShell .workspace-search-field,
-#appShell .plugin-directory-search {
-  border-color: var(--cg-border-strong);
-  background: var(--cg-surface);
-  box-shadow: none;
-}
 
 /* Search-field icons are intentionally absent here: this group's 22px
    height collided with chatgpt-ui.css's flex-basis:18px, rendering the
@@ -514,81 +483,7 @@ body.workspace-active #appShell .main-page {
   stroke-linejoin: round;
 }
 
-#appShell .plugin-installed-icons .connector-icon,
-#appShell .plugin-directory-row .connector-icon,
-#appShell .project-icon,
-#appShell .task-row .workspace-row-icon {
-  width: 40px !important;
-  min-width: 40px !important;
-  height: 40px !important;
-  min-height: 40px !important;
-  border-radius: var(--ui-radius-lg) !important;
-  background: var(--cg-surface-raised) !important;
-}
-
-#appShell .plugin-directory-row,
-#appShell .project-row,
-#appShell .scheduled-recommendation,
-#appShell .task-row {
-  border-bottom: 1px solid rgb(255 255 255 / 7%);
-}
-
-#appShell .plugin-directory-row:last-child,
-#appShell .project-row:last-child,
-#appShell .scheduled-recommendation:last-child,
-#appShell .task-row:last-child {
-  border-bottom-color: transparent;
-}
-
-#appShell .project-row .workspace-row-copy strong,
-#appShell .scheduled-recommendation-copy strong,
-#appShell .task-row .workspace-row-copy strong {
-  color: var(--cg-text) !important;
-  font-size: 16px !important;
-  font-weight: var(--ui-font-weight-medium) !important;
-  line-height: 1.4 !important;
-}
-
-@media (min-width: 769px) {
-  #appShell .plugin-directory-row .workspace-row-copy strong {
-    font-size: 16px;
-    font-weight: var(--ui-font-weight-medium);
-    line-height: 1.4;
-  }
-}
-
-#appShell .plugin-directory-row .workspace-row-copy span,
-#appShell .project-row .workspace-row-copy span,
-#appShell .scheduled-recommendation-copy small,
-#appShell .task-row .workspace-row-copy span {
-  color: var(--cg-text-secondary) !important;
-  font-size: 14px !important;
-  line-height: 1.45 !important;
-}
-
-/* Icon-only square action used by the projects / scheduled surfaces. The
-   plugin directory is deliberately absent: its action is a labelled
-   "Connect" / "Manage" pill owned by features/surfaces.css. */
-#appShell .workspace-icon-action,
-#appShell .scheduled-recommendation-add {
-  width: 32px;
-  min-width: 32px;
-  height: 32px;
-  min-height: 32px;
-  color: var(--cg-text-secondary) !important;
-  border: 0;
-  border-radius: 50%;
-  background: transparent !important;
-}
-
-#appShell .workspace-icon-action:hover,
-#appShell .scheduled-recommendation-add:hover,
-#appShell .workspace-icon-action:focus-visible,
-#appShell .scheduled-recommendation-add:focus-visible {
-  color: var(--cg-text) !important;
-  background: var(--cg-surface-hover) !important;
-  outline: none;
-}
+/* Directory icon sizing, typography and row surfaces are owned by polish/app-pages.css. */
 
 @media (min-width: 769px) {
   body.workspace-active
@@ -608,18 +503,7 @@ body.workspace-active #appShell .main-page {
     margin-inline: auto !important;
   }
 
-  #appShell .workspace-search-field,
-  #appShell .plugin-directory-search {
-    width: 240px;
-    height: 42px;
-  }
 
-  #appShell .plugin-directory-row,
-  #appShell .project-row,
-  #appShell .scheduled-recommendation,
-  #appShell .task-row {
-    min-height: 72px !important;
-  }
 
 
 }
@@ -632,12 +516,6 @@ body.workspace-active #appShell .main-page {
   --ref-muted: #757575;
 }
 
-[data-mode='light'] #appShell .plugin-directory-row,
-[data-mode='light'] #appShell .project-row,
-[data-mode='light'] #appShell .scheduled-recommendation,
-[data-mode='light'] #appShell .task-row {
-  border-bottom-color: rgb(0 0 0 / 8%);
-}
 
 /* Plugin chips add a real content row above the editor.  Keep that state
    inside the rounded composer instead of letting the legacy single-row lock

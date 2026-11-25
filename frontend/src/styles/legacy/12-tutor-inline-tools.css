@@ -183,12 +183,6 @@ body[data-app-mode='chat'] .tutor-only {
   .diag-text {
     font-size: calc(14px * var(--app-font-scale, 1));
   }
-  .auth-gate {
-    padding: 24px 12px;
-  }
-  .auth-card {
-    padding: 24px 16px;
-  }
   .new-reply-pill {
     right: 10px;
     bottom: calc(96px + env(safe-area-inset-bottom, 0px) + var(--keyboard-inset, 0px) + 12px);

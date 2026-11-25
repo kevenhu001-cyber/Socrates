@@ -1,11 +1,12 @@
 import { getLegacyActions } from '../../legacy/gateway.ts';
 import { PageFrame } from '../../ui/page/PageFrame';
-import { focusComposer } from '../../composer-input';
+import { focusComposer, setComposerMarkdown } from '../../composer-input';
 import { toggleComposerPlugin } from '../../../composer/pluginSelection.ts';
 import { getConnectorIconMarkup } from '../../../connector-icons';
 import type { PluginDetailViewProps } from './pluginDetail.types';
 import { PluginDetailHeader } from './PluginDetailHeader';
 import { PluginDetailSections } from './PluginDetailSections';
+import { pluginDescription } from './pluginDetailContent';
 import { reportSwallow as reportEmptyCatch } from '../../../util/reportSwallow.ts';
 
 export function PluginDetailView({
@@ -32,7 +33,8 @@ export function PluginDetailView({
 
   const handleManage = () => dispatch.openPluginForm(plugin.id);
 
-  const handleUseInChat = async () => {
+  const handleUseInChat = async (prompt?: string) => {
+    if (!isConnected || !connectable || plugin.chatActions?.length === 0) return;
     try {
       /* Reset first because starting a new chat clears the composer plugin
          selection. A false result means the user cancelled confirmation. */
@@ -43,8 +45,8 @@ export function PluginDetailView({
         {
           id: plugin.id,
           name: plugin.name,
-          description: plugin.description || '',
-          capabilities,
+          description: pluginDescription(plugin),
+          capabilities: plugin.chatActions?.map((action) => action.description) ?? capabilities,
           authType: plugin.authType || 'oauth',
           configured: true,
           connectionStatus: 'connected',
@@ -52,6 +54,7 @@ export function PluginDetailView({
         },
         getConnectorIconMarkup(plugin.id) || '',
       );
+      if (prompt) setComposerMarkdown('topic', prompt);
       focusComposer('topic');
     } catch (error) {
       reportEmptyCatch(
@@ -72,15 +75,22 @@ export function PluginDetailView({
         plugin={plugin}
         connectable={connectable}
         isConnected={isConnected}
+        canUseInChat={plugin.chatActions?.length !== 0}
         renderMark={renderMark}
         onBack={onBack}
         onConnect={handleConnect}
         onManage={handleManage}
+        onRefresh={() => dispatch.refreshPlugin(plugin.id)}
         onUseInChat={() => {
           void handleUseInChat();
         }}
       />
-      <PluginDetailSections plugin={plugin} capabilities={capabilities} />
+      <PluginDetailSections
+        plugin={plugin}
+        capabilities={capabilities}
+        connectable={connectable}
+        onUseExample={isConnected && connectable ? (prompt) => { void handleUseInChat(prompt); } : undefined}
+      />
     </PageFrame>
   );
 }

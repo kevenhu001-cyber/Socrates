@@ -8,6 +8,7 @@ const CONNECTORS = [
     name: 'GitHub',
     description: 'Bring repositories, issues, pull requests, and CI context into a chat.',
     capabilities: ['Repositories', 'Issues'],
+    chatActions: [{ name: 'github.get_current_user', description: 'Get the authenticated GitHub user.' }],
     authType: 'oauth',
     connection: { status: 'connected', displayName: 'Study org' },
   },
@@ -66,6 +67,51 @@ async function openConnectedPluginDetail(page) {
   await expect(page.locator('#plugin-detail-title')).toHaveAttribute('data-page-title', '');
 }
 
+test('plugin directory search and card surfaces follow shared responsive tokens', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await mockAuthedApp(page, { lang: 'en' });
+  await mockConnectedCatalog(page);
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+  await page.locator('#navPlugins').click();
+  const search = page.locator('.plugin-directory-search');
+  const row = page.locator('.plugin-directory-row').first();
+  await expect(search).toBeVisible();
+  await expect(search).toHaveCSS('border-radius', '999px');
+  await expect(row).toHaveCSS('display', 'flex');
+  await expect(row.locator('.connector-icon')).toHaveCSS('width', '40px');
+  await expect(row.locator('.connector-icon')).toHaveCSS('height', '40px');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(search).toHaveCSS('height', '44px');
+  await expect(row.locator('.connector-icon')).toHaveCSS('width', '40px');
+  const overflow = await page.locator('.plugin-directory').evaluate(
+    (node) => node.scrollWidth - node.clientWidth,
+  );
+  expect(overflow).toBeLessThanOrEqual(1);
+});
+
+for (const theme of ['light', 'dark']) {
+  test(`plugin action ink and official glyphs stay crisp in ${theme} mode`, async ({ page }) => {
+    await page.addInitScript((value) => localStorage.setItem('socrates-theme', value), theme);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openConnectedPluginDetail(page);
+    await expect(page.locator('html')).toHaveAttribute('data-mode', theme);
+    const ink = theme === 'dark' ? 'rgb(255, 255, 255)' : 'rgb(0, 0, 0)';
+    const inverse = theme === 'dark' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
+    await expect(page.locator('#plugin-detail-title')).toHaveCSS('color', ink);
+    const back = page.locator('.plugin-detail-back-btn');
+    await expect(back).toHaveCSS('color', ink);
+    await expect(back.locator('svg')).toHaveCSS('color', ink);
+    const primary = page.locator('.plugin-detail-btn-primary');
+    await expect(primary).toHaveCSS('color', inverse);
+    await expect(primary).toHaveCSS('background-color', ink);
+    await expect(page.locator('.plugin-detail-btn-secondary')).toHaveCSS('color', ink);
+    await expect(page.locator('.plugin-detail-prompt-card svg').first()).toHaveCSS('color', ink);
+    const description = await page.locator('.plugin-detail-desc').first().evaluate((node) => getComputedStyle(node).color);
+    expect(description).not.toBe(ink);
+  });
+}
+
 test('plugin detail header and actions fit a phone viewport', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 780 });
   await openConnectedPluginDetail(page);
@@ -77,6 +123,18 @@ test('plugin detail header and actions fit a phone viewport', async ({ page }) =
   expect(bounds.scrollWidth).toBeLessThanOrEqual(bounds.width + 1);
   expect(bounds.actionsWidth).toBeGreaterThan(120);
   await expect(page.locator('.plugin-detail-btn-primary')).toBeVisible();
+});
+
+test('plugin detail shows only verified chat actions and connection requirements', async ({ page }) => {
+  await openConnectedPluginDetail(page);
+  const detail = page.locator('.plugin-detail-view');
+  await expect(detail.getByRole('heading', { name: /What you can do/ })).toBeVisible();
+  await expect(detail.locator('.plugin-detail-feature-item')).toHaveCount(1);
+  await expect(detail.locator('.plugin-detail-feature-item')).toContainText('Get the authenticated GitHub user.');
+  await expect(detail.locator('.plugin-detail-feature-item')).not.toContainText('Issues');
+  await expect(detail.locator('.plugin-detail-prompts-list')).toContainText('Which GitHub account');
+  await expect(detail.locator('.plugin-detail-security-card')).toContainText('OAuth 2.0');
+  await expect(detail.locator('.plugin-detail-security-card')).toContainText('Study org');
 });
 
 test('using a connected plugin waits for the chat reset to succeed', async ({ page }) => {
@@ -91,6 +149,14 @@ test('using a connected plugin waits for the chat reset to succeed', async ({ pa
   expect(await page.evaluate(() => '__socratesComposerPluginSelectionBridge' in window)).toBe(
     false,
   );
+});
+
+test('plugin example opens a draft without submitting the request', async ({ page }) => {
+  await openConnectedPluginDetail(page);
+  await page.locator('button.plugin-detail-prompt-card').first().click();
+  await expect(page.locator('#topicSetup')).toBeVisible();
+  await expect(page.locator('#composerInputWrap .composer-plugin-chip-label')).toHaveText(['GitHub']);
+  await expect(page.locator('#composerInputWrap')).toContainText('Which GitHub account am I connected to?');
 });
 
 test('canceling the chat reset keeps the connected plugin unselected', async ({ page }) => {

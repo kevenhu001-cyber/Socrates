@@ -10317,12 +10317,32 @@
               "type": "string"
             }
           },
+          "chatActions": {
+            "type": "array",
+            "description": "Reviewed chat actions registered for this exact connector",
+            "items": {
+              "type": "object",
+              "required": [
+                "name",
+                "description"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                }
+              }
+            }
+          },
           "authType": {
             "type": "string",
             "enum": [
               "oauth",
               "api_key",
-              "custom_credential"
+              "custom_credential",
+              "no_auth"
             ]
           },
           "credentialInput": {

@@ -119,7 +119,7 @@ body #composerToolsMenu.composer-tools-menu {
   height: 20px;
   border-radius: var(--ui-radius-xs);
   background: none;
-  color: var(--ui-text-secondary);
+  color: var(--foreground);
   transition: color var(--ui-duration-fast) ease;
 }
 #composerToolsMenu .composer-tools-item:hover .composer-tools-icon,

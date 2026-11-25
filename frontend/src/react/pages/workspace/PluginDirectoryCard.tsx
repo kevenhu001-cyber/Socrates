@@ -2,6 +2,7 @@ import { Icon } from '../../../legacy/Icon';
 import { Button } from '../../ui/shadcn/button';
 import { i18n, MoreIcon, PlusIcon } from './workspaceUi';
 import { ConnectorMark } from './ConnectorMark';
+import { pluginDescription } from './pluginDetailContent';
 import type { useWorkspaceDispatch } from './workspace.hooks';
 import type { PluginItem } from './types';
 
@@ -92,7 +93,7 @@ export function PluginDirectoryCard({
   onSelect,
 }: PluginDirectoryCardProps) {
   const connectedLabel = i18n('plugins.connected', 'Connected');
-  const description = plugin.description || i18n('plugins.noDescription', 'Use this app in chat');
+  const description = pluginDescription(plugin);
   return (
     <article
       className="connector-row plugin-directory-row"
