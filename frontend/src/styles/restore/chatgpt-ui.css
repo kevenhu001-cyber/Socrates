@@ -390,10 +390,6 @@ body,
   color: var(--cg-accent);
 }
 
-#composerToolsMenu {
-  overscroll-behavior: contain;
-}
-
 /* Workspace pages */
 
 body.workspace-active #appShell .main-page {

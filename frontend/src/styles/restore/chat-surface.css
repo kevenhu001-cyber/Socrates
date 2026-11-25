@@ -122,18 +122,6 @@ body,
  * dedicated fifth column when voice controls are visible. */
 
 /* Tools stay tied to the composer rather than turning into a separate page. */
-body #composerToolsMenu {
-  border: 1px solid var(--conversation-border) !important;
-  background: var(--conversation-control) !important;
-  color: var(--conversation-text);
-  box-shadow: var(--ui-shadow-popover) !important;
-}
-
-body #composerToolsMenu .composer-tools-item:hover,
-body #composerToolsMenu .composer-tools-plugin-item:hover {
-  background: var(--ui-bg-hover-ghost) !important;
-}
-
 /* Conversation ----------------------------------------------------------- */
 
 #appShell#appShell #chatView,

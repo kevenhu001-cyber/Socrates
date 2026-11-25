@@ -61,6 +61,7 @@ body #composerToolsMenu.composer-tools-menu {
   border-radius: var(--ui-radius-tools-card);
   border: 1px solid var(--ui-border-subtle);
   background: var(--ui-bg-surface);
+  color: var(--foreground);
   box-shadow: var(--ui-shadow-menu);
   animation: none;
 }
@@ -268,14 +269,7 @@ body #composerToolsMenu.composer-tools-menu {
     background: var(--ui-bg-surface);
     overflow-y: auto;
     overscroll-behavior: contain;
-    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.35);
-  }
-  [data-mode='dark'] body #composerToolsMenu.composer-tools-menu {
-    background: var(--ui-bg-surface);
-    border-color: rgba(255, 255, 255, 0.08);
-  }
-  [data-mode='light'] body #composerToolsMenu.composer-tools-menu {
-    background: var(--ui-bg-surface);
+    box-shadow: var(--ui-shadow-menu);
   }
   body #composerToolsMenu.composer-tools-menu::before {
     content: none;
