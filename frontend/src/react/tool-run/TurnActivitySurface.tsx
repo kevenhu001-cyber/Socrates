@@ -9,7 +9,8 @@ import { useLocaleRefresh } from '../rn/WebUiTheme';
 import { MathText } from '../rn/useInlineMath';
 import { ToolActivityIcon, toolActivitySites } from './ToolActivityIcon';
 import { ToolRunRow } from './ToolRunRow';
-import { approvalViewOf, runStartedAt, type ToolCallRecord } from './toolRunModel';
+import { useElapsed } from './useElapsed';
+import { runStartedAt, type ToolCallRecord } from './toolRunModel';
 
 export interface TurnActivitySurfaceProps {
   /** Only provider-approved public summaries, never raw reasoning. */
@@ -59,7 +60,6 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
   const [open, setOpen] = useState(false);
   const id = useId();
   const intentRef = useRef('');
-  const hadActivity = useRef(false);
   useLocaleRefresh();
   if (props.intentSummary?.trim()) intentRef.current = props.intentSummary.trim();
   const intent = intentRef.current;
@@ -79,17 +79,17 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
   const expandable = timeline.length > 0 || Boolean(intent);
   const live = Boolean(props.isLive);
   const working = live && status?.phase !== 'answering' && status?.phase !== 'tool-awaiting';
-  const show = working || expandable || Boolean(props.reasoningDurationSec);
-  // Do not flash an empty status row on ordinary completed answers.
-  if (show) hadActivity.current = true;
-  if (!show && !hadActivity.current) return null;
-  if (!show) return null;
+  const startedAt = status?.phase === 'tool-running' ? runStartedAt(activeTool) : props.activityStartedAt || 0;
+  const elapsedMs = useElapsed(startedAt, working);
+  const elapsedSec = elapsedMs > 0 ? elapsedMs / 1000 : status?.elapsedSec;
+  if (!live && !expandable && !props.reasoningDurationSec) return null;
   const label = activityLabel(props, hasSummary);
   const toolName = live ? status?.toolName : undefined;
   const caption = (
     <>
       {toolName ? <ToolActivityIcon name={toolName} sites={toolActivitySites(activeTool)} /> : null}
       <span className="activity-caption" data-testid="turn-activity-label" role={working ? 'status' : undefined}>{label}</span>
+      {working && elapsedSec ? <span className="activity-duration" data-testid="turn-activity-duration" aria-live="off">{tf('think.rn.elapsed', '{sec}s', { sec: Math.max(1, Math.round(elapsedSec)) })}</span> : null}
       {expandable ? <Icon name="chevronRight" size={12} className="activity-chevron" /> : null}
     </>
   );
@@ -121,7 +121,7 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
                 <SummaryStep key={entry.step.id} step={entry.step} />
               ) : (
                 entry.tools.map((call) => <ToolRunRow key={call.id} call={call} messageId={messageId}
-                  readOnly={readOnly} live={live} approvalOutside={approvalViewOf(call)?.state === 'pending'} />)
+                  readOnly={readOnly} live={live} approvalOutside />)
               ))}
             </div>
           </div>
