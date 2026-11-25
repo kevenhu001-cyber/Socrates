@@ -1171,3 +1171,22 @@ test('settings preference controls use capsule selects and reachable switches', 
   expect(thumbRect.x).toBeGreaterThanOrEqual(trackRect.x);
   expect(thumbRect.x + thumbRect.width).toBeLessThanOrEqual(trackRect.x + trackRect.width);
 });
+
+
+test('desktop settings has a compact neutral panel with aligned category glyphs', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
+  const panel = page.locator('#settingsPage .settings-page');
+  await expect(panel).toBeVisible();
+  const box = await panel.boundingBox();
+  expect(box.width).toBeLessThanOrEqual(880);
+  expect(box.height).toBeLessThanOrEqual(680);
+  const row = panel.locator('.settings-nav-item[data-section="general"]');
+  const glyph = row.locator('.settings-category-icon svg');
+  const [r, g] = await Promise.all([row.boundingBox(), glyph.boundingBox()]);
+  expect(g.width).toBe(20);
+  expect(g.height).toBe(20);
+  expect(Math.abs(r.y + r.height / 2 - g.y - g.height / 2)).toBeLessThanOrEqual(1);
+  await expect(panel.locator('.settings-index-group-label')).toHaveCount(0);
+  await page.screenshot({ path: 'test-results/settings-web-compact.png' });
+});
