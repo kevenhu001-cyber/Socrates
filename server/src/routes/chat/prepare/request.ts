@@ -9,7 +9,7 @@
 import { z } from 'zod';
 import type { Request, Response } from 'express';
 import { ApiError } from '../../../lib/errors.js';
-import { getActiveApiKey } from '../../../services/core/apiKey.js';
+import { getActiveApiKey, getSelectedApiKey } from '../../../services/core/apiKey.js';
 import { validateThinkingMode } from '../../../services/core/llmProtocol.js';
 import { DEFAULT_MAX_TOKENS } from '../../../services/core/llm/types.js';
 import { estimateContextMessageTokens } from '../../../services/core/usageTracker.js';
@@ -106,7 +106,9 @@ export async function prepareChatRequest(
     throw new ApiError(400, 'INVALID_REQUEST', 'Invalid or conflicting sessionId');
   }
   const context = splitPromptContext(messages, mode);
-  const providerPromise = getActiveApiKey(req.userId);
+  const providerPromise = parsed.providerId
+    ? getSelectedApiKey(req.userId, parsed.providerId)
+    : getActiveApiKey(req.userId);
   const ragPromise = resolveRagContext(
     messages,
     parsed.ragSessionId,
@@ -261,6 +263,7 @@ export async function prepareChatRequest(
   // Started alongside the context lookups above ().
   const provider = await providerPromise;
   if (!provider) {
+    if (parsed.providerId) throw new ApiError(400, 'NO_PROVIDER', 'The selected model is no longer available. Select a configured model.', undefined, false);
     throw new ApiError(503, 'NO_PROVIDER', 'No active LLM provider configured');
   }
   if (!provider.keyPlaintext) {

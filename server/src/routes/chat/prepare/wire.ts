@@ -50,6 +50,7 @@ export const ChatPayloadSchema = z
     ragSessionId: z.string().max(64).optional(),
     assistantId: z.string().uuid().optional(),
     sessionId: z.string().uuid().optional(),
+    providerId: z.union([z.literal('beagle-built-in'), z.string().uuid()]).optional(),
     /* DeepSeek SDK flags that flip chain-of-
      thought on. The frontend sends these when the active model
      looks like a DeepSeek-family reasoning model. We forward

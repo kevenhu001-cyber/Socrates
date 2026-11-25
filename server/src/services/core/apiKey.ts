@@ -78,6 +78,23 @@ function keyHintFor(key: string): string {
  * Get the active API key/provider for a user.
  * Returns { url, model, keyPlaintext, keyHint } or null.
  */
+/** Explicit selection belongs to the requesting user, never a different tenant.
+ * Bypass the active-provider cache so switching models cannot race a chat POST. */
+export async function getSelectedApiKey(userId: string | null, providerId: string) {
+  if (providerId !== 'beagle-built-in' && !userId) return null;
+  const [key] = await getDb()
+    .select()
+    .from(apiKeys)
+    .where(
+      providerId === 'beagle-built-in'
+        ? and(eq(apiKeys.isBuiltIn, true), eq(apiKeys.isActive, true), isNotNull(apiKeys.keyCiphertext))
+        : and(eq(apiKeys.id, providerId), eq(apiKeys.userId, userId!), eq(apiKeys.isBuiltIn, false), isNotNull(apiKeys.keyCiphertext)),
+    )
+    .orderBy(apiKeys.createdAt)
+    .limit(1);
+  return key ? decryptProvider(key) : null;
+}
+
 export async function getActiveApiKey(userId: string | null) {
   const now = Date.now();
   /* short-circuit before the DB round-trip when

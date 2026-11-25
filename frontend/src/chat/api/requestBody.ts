@@ -20,6 +20,7 @@ export interface ChatRequestBody {
   max_tokens?: number;
   mode: 'tutor' | 'chat';
   response_speed: string;
+  providerId?: string;
   sessionId?: string;
   projectId?: string;
   ragSessionId?: string;
@@ -103,6 +104,8 @@ export function buildChatRequestBody(
     mode: appMode === 'tutor' ? 'tutor' : 'chat',
     response_speed: getStoredResponseSpeed(),
   };
+  const activeId = getProviderConfigSnapshot().activeId;
+  if (activeId && !activeId.startsWith('new-')) body.providerId = activeId;
   attachSessionContext(body);
   prependCustomInstructions(body);
   attachReasoningOptions(body);

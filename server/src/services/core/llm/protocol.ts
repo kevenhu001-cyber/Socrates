@@ -131,6 +131,12 @@ export function requestBodyVariants(opts: ChatCompletionRequestOptions, stream: 
         response_speed === 'fast' && capability.supportsServiceTier ? 'fast' : 'standard',
     });
   }
+  // Temperature is a sampling hint, not a user-selected reasoning mode.
+  // A compatibility endpoint may reject it even when the model registry allows it.
+  if ('temperature' in withTools) {
+    const { temperature: _temperature, ...withoutTemperature } = withTools;
+    variants.push({ body: withoutTemperature, reason: 'provider-400-with-temperature', speedApplied: variants[0].speedApplied });
+  }
   if (hasTools) {
     const { tools: _tools, tool_choice: _toolChoice, ...withoutTools } = compatibilityBase;
     // A tools-specific fallback must not contaminate reasoning/usage fallbacks.
