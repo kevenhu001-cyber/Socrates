@@ -128,7 +128,7 @@ test('intent stays in the unified activity and completed observations do not dup
   await toggle.click();
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
   await expect(bubble.locator(TURN.stepTitle).first()).toHaveText('Task overview');
-  await expect(bubble.locator('.thinking-step-preview')).toHaveText('Preparing the comparison.');
+  await expect(bubble.locator('.thinking-step-summary')).toHaveText('Preparing the comparison.');
   await page.evaluate(() =>
     window.__pushThinkingFrame('', {
       choices: [{ delta: { reasoning_content: 'another private thought' } }],
@@ -160,9 +160,10 @@ test('the running tool names itself on its row, and its detail opens inline', as
       { id: 'search-inline', name: 'web_search', input: { query: 'public query' } },
     ]),
   );
+  await openActivity(bubble);
   const row = toolRow(bubble, 'search-inline');
   await expect(row).toHaveAttribute('data-state', 'running');
-  await expect(bubble.locator(TURN.surface)).toHaveCount(0);
+  await expect(bubble.locator(TURN.surface)).toHaveCount(1);
   await expect(bubble.locator('.stream-cursor')).toHaveCount(0);
   await expect(row.locator(TURN.spinner)).toBeVisible();
   await expect(bubble.locator(TURN.indicator)).toHaveCount(0);
@@ -236,6 +237,7 @@ test('a plugin keeps its brand while running and after it finishes', async ({ pa
     ]),
   );
   const brand = '.is-connector-brand svg';
+  await openActivity(bubble);
   const row = toolRow(bubble, 'github-live');
   await expect(row.locator(brand)).toBeVisible();
   await expect(row.locator(TURN.spinner)).toBeVisible();
@@ -263,6 +265,7 @@ test('a web fetch identifies its target site before the result arrives', async (
       { id: 'read-site', name: 'web_fetch', input: { url: 'https://guide.test/learn' } },
     ]),
   );
+  await openActivity(bubble);
   const row = toolRow(bubble, 'read-site');
   const mark = row.getByTestId('tool-site-mark');
   await expect(mark.locator('img')).toHaveAttribute(
@@ -284,6 +287,7 @@ test('parallel tools keep their order, DOM identity, and open details as later c
       { id: 'second-fast', name: 'web_search', input: { query: 'fast source' } },
     ]),
   );
+  await openActivity(bubble);
   const first = toolRow(bubble, 'first-slow');
   await expect(first).toBeVisible();
   const handle = await first.elementHandle();
@@ -365,14 +369,14 @@ test('a task preview keeps one quiet settled header on a plain answer', async ({
     }),
   );
   await openActivity(bubble);
-  await expect(bubble.locator('.thinking-step-preview')).toHaveText('Preparing an answer.');
+  await expect(bubble.locator('.thinking-step-summary')).toHaveText('Preparing an answer.');
   await page.evaluate(() => window.__finishPlain());
   await expect(bubble).toContainText('A direct answer.');
   /* The header is the turn's own line, so it stays when the run settles.
      Removing it here shrank the answer row and moved every line under it. */
   await expect(bubble.locator(TURN.surface)).toHaveCount(1);
-  await expect(bubble.locator(TURN.label)).toHaveText('Activity');
-  await expect(bubble.locator('.thinking-step-preview')).toBeVisible();
+  await expect(bubble.locator(TURN.label)).toHaveText('Thinking summary');
+  await expect(bubble.locator('.thinking-step-summary')).toBeVisible();
 });
 
 test('a long public summary has a short disclosure title, without repeating the body', async ({
@@ -387,16 +391,10 @@ test('a long public summary has a short disclosure title, without repeating the 
     text,
   );
   await openActivity(bubble);
-  const step = bubble.locator(TURN.step).first();
-  await expect(step).toHaveText('Thinking summary');
-  await expect(bubble.locator('.thinking-step-preview')).toHaveText(/^Comparing.*…$/);
-  await step.focus();
-  await page.keyboard.press('Enter');
   await expect(bubble.locator(TURN.stepSummary)).toHaveText(text);
   await expect(bubble.locator(TURN.stepSummary)).toBeVisible();
-  await expect(bubble.locator('.thinking-step-preview')).toHaveCount(0);
-  await page.keyboard.press('Space');
-  await expect(bubble.locator(TURN.stepSummary)).toHaveCount(0);
+  await bubble.locator(TURN.toggle).click();
+  await expect(bubble.locator(TURN.stepSummary)).toBeHidden();
   await page.evaluate(() => window.__finishThinking());
 });
 
@@ -469,11 +467,11 @@ for (const theme of ['light', 'dark']) {
       expect(new URL(page.url()).pathname).toBe('/');
       const bubble = page.locator('.msg.assistant').last();
       await expect(bubble).not.toContainText('private reasoning');
-      const burstToggle = bubble.locator('.tool-activity-burst-toggle');
+      const burstToggle = bubble.locator('[data-testid="turn-activity-toggle"]');
       await expect(burstToggle).toHaveAttribute('aria-expanded', 'false');
       await burstToggle.click();
       await expect(bubble.locator(TURN.row)).toHaveCount(3);
-      await expect(bubble.locator(TURN.toggle)).toHaveCount(0);
+      await expect(bubble.locator(TURN.toggle)).toHaveCount(1);
       for (const row of await bubble.locator(`${TURN.row} button.tool-run-trigger`).all()) {
         await expect(row).toBeVisible();
         await expect(row).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
@@ -608,6 +606,6 @@ test('the running row spins on the compositor and stops when the turn settles', 
   });
   await expect(bubble.locator(TURN.spinner)).toHaveCount(0);
   await expect(bubble.locator(TURN.indicator)).toHaveCount(0);
-  await expect(bubble.locator(TURN.toggle)).toHaveCount(0);
+  await expect(bubble.locator(TURN.toggle)).toHaveCount(1);
   await expect(toolRow(bubble, 'spinning-tool')).toHaveAttribute('data-state', 'done');
 });
