@@ -263,6 +263,17 @@ body #composerToolsMenu.composer-tools-menu {
   padding: 4px 6px 10px;
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  .chat-config-pop {
+    transition: opacity var(--ui-duration-fast) var(--ui-ease-out);
+  }
+  @starting-style {
+    .chat-config-pop {
+      opacity: 0;
+    }
+  }
+}
+
 .composer-tools-backdrop {
   position: fixed;
   inset: 0;
