@@ -33,6 +33,10 @@ export function GeneralSettingsPane({
     <section className="settings-pane" hidden={hidden}>
       <h2>{label('通用', 'General')}</h2>
       <section className="settings-section" aria-label={label('主题与语言', 'Theme & language')}>
+        <div className="settings-section-head">
+          <h3>{label('外观与语言', 'Appearance & language')}</h3>
+          <p>{label('调整界面显示和回答语言。', 'Choose how the interface looks and which language replies use.')}</p>
+        </div>
         <FieldGroup className="settings-preference-fields">
           <PreferenceSelect
             id="settings-appearance"

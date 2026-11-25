@@ -39,7 +39,7 @@ const officialCategoryIcons: Partial<Record<SettingsSection, IconProps['name']>>
   account: 'user',
 };
 
-const mobileGroups = [
+const settingsGroups = [
   ['general', 'display', 'personalization', 'notifications'],
   ['models', 'apps'],
   ['data', 'account'],
@@ -104,7 +104,6 @@ function MobileAppearance({
               void savePreference({ theme: mode });
             }}
           >
-            <span className="settings-theme-preview" data-preview={mode} aria-hidden />
             <span>{name}</span>
           </Button>
         ))}
@@ -230,11 +229,16 @@ export function SettingsNavigation({
   };
 
   const showOverview = mobile && !query.trim();
-  const groups = mobile
-    ? mobileGroups.map((keys) =>
-        keys.flatMap((key) => categories.filter((category) => category.key === key && (!showOverview || key !== 'account'))),
-      )
-    : [];
+  const groups = settingsGroups.map((keys) =>
+    keys.flatMap((key) =>
+      categories.filter((category) => category.key === key && (!showOverview || key !== 'account')),
+    ),
+  );
+  const groupLabels = [
+    label('偏好设置', 'Preferences'),
+    label('模型与服务', 'Models & services'),
+    label('数据与账户', 'Data & account'),
+  ];
 
   return (
     <nav className="settings-nav" aria-label={label('设置分类', 'Settings categories')}>
@@ -249,7 +253,7 @@ export function SettingsNavigation({
           onChange={(event) => onQueryChange(event.target.value)}
         />
         <InputGroupAddon>
-          <SearchIcon aria-hidden />
+          <Icon name="search" size={18} />
         </InputGroupAddon>
       </InputGroup>
       <div
@@ -258,33 +262,23 @@ export function SettingsNavigation({
         aria-label={label('设置类别', 'Settings categories')}
         onKeyDown={mobile ? undefined : onCategoryKeyDown}
       >
-        {mobile
-          ? groups.map((group, index) =>
-              group.length ? (
-                <div className="settings-index-group" key={mobileGroups[index][0]}>
-                  {showOverview ? (
-                    <p className="settings-index-group-label">
-                      {[
-                        label('偏好设置', 'Preferences'),
-                        label('模型与服务', 'Models & services'),
-                        label('数据与账户', 'Data & account'),
-                      ][index]}
-                    </p>
-                  ) : null}
-                  {showOverview && index === 0 ? (
-                    <MobileAppearance label={label} savePreference={savePreference} />
-                  ) : null}
-                  {group.map(renderCategory)}
-                </div>
-              ) : null,
-            )
-          : categories.map(renderCategory)}
+        {groups.map((group, index) =>
+          group.length ? (
+            <div className="settings-index-group" key={settingsGroups[index][0]}>
+              {!query.trim() ? (
+                <p className="settings-index-group-label">{groupLabels[index]}</p>
+              ) : null}
+              {group.map(renderCategory)}
+            </div>
+          ) : null,
+        )}
         {categories.length === 0 ? (
           <p className="settings-nav-empty" role="status">
             {label('没有匹配的设置。', 'No matching settings.')}
           </p>
         ) : null}
       </div>
+      {showOverview ? <MobileAppearance label={label} savePreference={savePreference} /> : null}
     </nav>
   );
 }

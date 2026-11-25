@@ -1091,3 +1091,29 @@ test('wide settings keeps a readable form width and announces one empty search s
   ).toHaveCount(1);
   await expect(pane).toHaveCount(0);
 });
+
+test('redesigned settings navigation and preference rows fit desktop and phone', async ({ page }) => {
+  const overlay = page.locator('#settingsPage');
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
+  await expect(overlay.locator('.settings-index-group-label')).toHaveCount(3);
+  await expect(overlay.locator('.settings-nav [data-section="general"]')).toHaveAttribute(
+    'aria-current', 'page',
+  );
+  await expect(overlay.locator('.settings-pane:visible h2')).toBeVisible();
+  await page.screenshot({ path: 'test-results/settings-redesign-desktop.png', animations: 'disabled' });
+  await page.setViewportSize({ width: 360, height: 780 });
+  const back = overlay.locator('#settingsMobileBack');
+  if (await back.isVisible()) await back.click();
+  await expect(overlay.locator('.settings-nav')).toBeVisible();
+  await expect(overlay.locator('.settings-theme-options button')).toHaveCount(3);
+  await expect(overlay.locator('.settings-theme-options button[aria-pressed="true"]')).toHaveCount(1);
+  await expect(overlay.locator('.settings-theme-preview')).toHaveCount(0);
+  await overlay.locator('.settings-nav [data-section="general"]').click();
+  await expect(overlay.locator('.settings-pane:visible h2')).toBeVisible();
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  );
+  expect(overflow).toBeLessThanOrEqual(1);
+  await page.screenshot({ path: 'test-results/settings-redesign-mobile.png', animations: 'disabled' });
+});
