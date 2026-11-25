@@ -26,14 +26,6 @@ const GLYPHS: Record<NavButtonSpec['key'], UiGlyphName> = {
   more: 'more',
 } as Record<NavButtonSpec['key'], UiGlyphName>;
 
-const MOBILE_GLYPHS: Partial<Record<NavButtonSpec['key'], UiGlyphName>> = {
-  images: 'drawer-images',
-  library: 'drawer-library',
-  projects: 'drawer-folder',
-  sites: 'drawer-sites',
-  more: 'drawer-more',
-};
-
 /* The label size is a CSS role so the phone drawer can take the reference's
    phone step (polish/mobile-sidebar.css sets --nav-label-size under
    768px); everywhere else it resolves to the shared 14px body-sm step. */
@@ -61,14 +53,16 @@ export function SidebarNavButton({
 }) {
   const mobile = useMobileViewport();
   const label = i18n(item.i18nKey, item.label);
-  const glyph = (mobile ? MOBILE_GLYPHS[item.key] : undefined) ?? GLYPHS[item.key] ?? 'compose';
+  // The web renderer selects the verified OpenAI geometry for these keys.
+  // Viewport size changes the footprint, never the icon's shape.
+  const glyph = GLYPHS[item.key] ?? 'compose';
   return (
     <SidebarNavRow
       id={navButtonId(item.key)}
       navKey={item.key}
       icon={glyph}
       iconSize={mobile ? 24 : 20}
-      iconStrokeWidth={mobile ? 2 : 1.75}
+      iconStrokeWidth={1.5}
       label={label}
       i18nKey={item.i18nKey}
       badge={item.badgeKey ? i18n(item.badgeKey, 'New') : undefined}
