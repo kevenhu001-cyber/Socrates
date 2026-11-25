@@ -7,7 +7,7 @@ import { tf } from '../../legacy/toolPresentationModel.ts';
 import { Icon } from '../../legacy/Icon';
 import { useLocaleRefresh } from '../rn/WebUiTheme';
 import { MathText } from '../rn/useInlineMath';
-import { ToolActivityIcon, toolActivitySites } from './ToolActivityIcon';
+import { ToolActivityIcon, ToolSiteMarks, turnActivitySites } from './ToolActivityIcon';
 import { ToolRunRow } from './ToolRunRow';
 import { useElapsed } from './useElapsed';
 import { runStartedAt, type ToolCallRecord } from './toolRunModel';
@@ -87,14 +87,16 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
   const startedAt = status?.phase === 'tool-running' ? runStartedAt(activeTool) : props.activityStartedAt || 0;
   const elapsedMs = useElapsed(startedAt, working);
   const elapsedSec = elapsedMs > 0 ? elapsedMs / 1000 : status?.elapsedSec;
-  if (!live && !expandable && !props.reasoningDurationSec) return null;
   const label = activityLabel(props, hasSummary);
   const toolName = live ? status?.toolName : undefined;
+  const sites = useMemo(() => turnActivitySites(calls), [calls]);
+  if (!live && !expandable && !props.reasoningDurationSec) return null;
   const caption = (
     <>
-      {toolName ? <ToolActivityIcon name={toolName} sites={toolActivitySites(activeTool)} /> : null}
+      {toolName ? <ToolActivityIcon name={toolName} /> : null}
       <span className="activity-caption" data-testid="turn-activity-label" role={working ? 'status' : undefined}>{label}</span>
       {working && elapsedSec ? <span className="activity-duration" data-testid="turn-activity-duration" aria-live="off">{tf('think.rn.elapsed', '{sec}s', { sec: Math.max(1, Math.round(elapsedSec)) })}</span> : null}
+      {sites.length ? <ToolSiteMarks sites={sites} /> : null}
       {expandable ? <Icon name="chevronRight" size={12} className="activity-chevron" /> : null}
     </>
   );
