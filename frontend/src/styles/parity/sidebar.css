@@ -214,6 +214,8 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
        between them (docs/ref/chatgpt-parity.md, captured over CDP at
        1440×900). The spacing scale has no 6px step, so the gap is literal. */
     gap: 6px;
+    height: var(--sidebar-row);
+    min-height: var(--sidebar-row);
     box-sizing: border-box;
     width: 100%;
     margin: 0;
@@ -222,8 +224,7 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
        doubled to the baseline's 6px. */
     padding: 6px 10px;
     border: 0;
-    /* The baseline's 10px row radius — the token that was written for it. */
-    border-radius: var(--ui-radius-row);
+    border-radius: var(--ui-radius-sidebar-row);
     background: transparent;
     /* The reference sets its destination labels in the primary ink, not a
        secondary grey: the rail is a list of places to go, and the rail's
@@ -382,14 +383,6 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     padding-top: 0;
   }
 
-  /* ChatGPT parity (docs/ref/chatgpt-parity.md): single-line 36px history rows.
-     Clean, compact, with titles truncated and meta hidden at rest so the list
-     is calm, readable, and perfectly matches the reference design. */
-  #appShell #sidebar .recent-item {
-    gap: 6px;
-    height: var(--sidebar-row);
-    min-height: var(--sidebar-row);
-  }
   #appShell #sidebar .recent-item-glyph {
     display: none;
   }
