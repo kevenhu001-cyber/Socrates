@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react';
 import { getLegacyActions } from '../../legacy/gateway.ts';
 import { PageFrame } from '../../ui/page/PageFrame';
 import { focusComposer, setComposerMarkdown } from '../../composer-input';
@@ -25,6 +26,8 @@ export function PluginDetailView({
     : [];
 
   const canUseInChat = isConnected && connectable && Boolean(plugin.chatActions?.length);
+  const launchInFlight = useRef(false);
+  const [launching, setLaunching] = useState(false);
 
   const handleConnect = () => {
     if (plugin.authType === 'api_key' || plugin.authType === 'custom_credential') {
@@ -37,7 +40,9 @@ export function PluginDetailView({
   const handleManage = () => dispatch.openPluginForm(plugin.id);
 
   const handleUseInChat = async (prompt?: string) => {
-    if (!canUseInChat) return;
+    if (!canUseInChat || launchInFlight.current) return;
+    launchInFlight.current = true;
+    setLaunching(true);
     try {
       /* Reset first because starting a new chat clears the composer plugin
          selection. A false result means the user cancelled confirmation. */
@@ -65,7 +70,13 @@ export function PluginDetailView({
         'empty catch: react/pages/workspace/PluginDetailView.tsx',
         'expected',
       );
-      showToast(detailText('Could not open this app in chat. Please try again.', '无法在对话中打开此插件，请重试。'), { variant: 'error' });
+      showToast(
+        detailText('Could not open this app in chat. Please try again.', '无法在对话中打开此插件，请重试。'),
+        { variant: 'error' },
+      );
+    } finally {
+      launchInFlight.current = false;
+      setLaunching(false);
     }
   };
 
@@ -79,6 +90,7 @@ export function PluginDetailView({
         connectable={connectable}
         isConnected={isConnected}
         canUseInChat={canUseInChat}
+        launching={launching}
         renderMark={renderMark}
         onBack={onBack}
         onConnect={handleConnect}
@@ -92,6 +104,7 @@ export function PluginDetailView({
         plugin={plugin}
         capabilities={capabilities}
         connectable={connectable}
+        launching={launching}
         onUseExample={canUseInChat ? (prompt) => { void handleUseInChat(prompt); } : undefined}
       />
     </PageFrame>
