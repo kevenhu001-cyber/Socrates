@@ -252,3 +252,15 @@ test('the request body follows the capability the server published', async () =>
   );
   reset();
 });
+
+
+test('chat request pins the selected provider rather than relying on server active state', async () => {
+  reset();
+  const { buildChatRequestBody } = await import('../src/chat/api/requestBody.ts');
+  const id = 'a9fcb19b-47cc-4b68-a993-7e5d8b5cb299';
+  store.publishProviderConfig({ providers: [{ id, model: 'custom', label: 'Custom', hasKey: true }], activeId: id });
+  assert.equal(buildChatRequestBody([{ role: 'user', content: 'Hello' }], 100, 0.7).providerId, id);
+  store.publishProviderConfig({ providers: [{ id: 'beagle-built-in', model: '', label: 'Beagle', hasKey: true }], activeId: 'beagle-built-in' });
+  assert.equal(buildChatRequestBody([{ role: 'user', content: 'Hello' }], 100, 0.7).providerId, 'beagle-built-in');
+  reset();
+});
