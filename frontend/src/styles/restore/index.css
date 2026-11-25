@@ -48,7 +48,8 @@
  *     only.
  *   Composer frame (#composerInputWrap) parity/composer-unified.css (all
  *     widths); editor internals (.composer-editor-root/.tiptap)
- *     components/composer.css.
+ *     components/composer.css; attachment row and its image/file states
+ *     polish/composer.css.
  *   Composer tools menu                 components/menu.css owns the frame,
  *     paint, radius and motion; the React menu controller owns placement
  *     and sheet state. Historical frame overrides
