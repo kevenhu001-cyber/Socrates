@@ -316,6 +316,21 @@ test('Page Kit and menu component own their shared base presentation', async () 
   assert.doesNotMatch(overlays, /\.chat-config-pop\s*\{|\.chat-config-row\s*\{/);
 });
 
+test('formula scrolling uses canonical theme tokens and one geometry owner', async () => {
+  const [chat, legacy, scaffolds, interactive] = await Promise.all([
+    read('src/styles/components/chat.css'),
+    read('src/styles/legacy/09-viz-markdown.css'),
+    read('src/styles/features/learn-scaffolds.css'),
+    read('src/styles/components/intelligent-ui.css'),
+  ]);
+  assert.doesNotMatch(legacy, /\.katex(?:-display)?\s*\{|\.math-stream-pending\s*\{/);
+  assert.match(chat, /\.katex-display > \.katex\s*\{[^}]*width: max-content;/);
+  assert.match(chat, /scrollbar-color: var\(--ui-scrollbar-thumb-hover\) transparent/);
+  assert.match(chat, /\.math-stream-pending\s*\{[^}]*var\(--ui-text-tertiary\)/);
+  assert.doesNotMatch(scaffolds, /\.sc-rich \.katex-display\s*\{[^}]*overflow-x:/);
+  assert.doesNotMatch(interactive, /\.katex-display > \.katex\s*\{[^}]*font-size:/);
+});
+
 test('legacy button utilities use paint-only press feedback and tag editor has one input owner', async () => {
   const [buttons, menu, overlays] = await Promise.all([
     read('src/styles/polish/buttons.css'),
