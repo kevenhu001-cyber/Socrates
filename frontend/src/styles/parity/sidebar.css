@@ -142,7 +142,6 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     color: var(--foreground);
     font-family: var(--font-sans);
     font-size: var(--ui-font-size-lg);
-    font-weight: var(--ui-font-weight-semibold);
     line-height: 26px;
     letter-spacing: -0.015em;
     white-space: nowrap;
@@ -171,7 +170,6 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
      the state colors and icon drawing size here. */
   #appShell #sidebarCloseBtn {
     background: transparent;
-    color: var(--foreground);
     cursor: pointer;
     transition:
       background-color var(--ui-duration-hover) ease,
@@ -181,10 +179,7 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     background: var(--ui-bg-hover);
     color: var(--foreground);
   }
-  #appShell #sidebarCloseBtn svg {
-    width: 20px;
-    height: 20px;
-  }
+  
 
   /* ── Rows (primary nav, search, history) ─────────────────────────────── */
   #appShell #sidebarNav {
@@ -203,10 +198,8 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
      divider between two lists rather than a full-bleed rule. */
   #appShell #sidebar .sidebar-nav-sep {
     flex: 0 0 auto;
-    height: 1px;
     margin: 4px 10px 8px;
     border: 0;
-    background: var(--ui-sidebar-border);
   }
   #appShell #sidebar.collapsed .sidebar-nav-sep {
     margin-inline: 8px;
@@ -253,18 +246,13 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     cursor: pointer;
     transition: background-color var(--ui-duration-hover) ease;
   }
-  #appShell #sidebar .recent-item:hover,
-  #appShell #sidebar .recent-item:focus-within {
-    background: var(--ui-bg-hover);
-    color: var(--foreground);
-  }
+  
   /* Selected is one step stronger than the hover wash (8% ink over the rail),
      so the current chat stays marked while the pointer moves over its
      neighbours. */
   #appShell #sidebar .recent-item.active,
   #appShell #sidebar .recent-item[aria-current='true'] {
     background: color-mix(in srgb, var(--ui-ink) 8%, transparent);
-    color: var(--foreground);
   }
   /* Secondary destinations remain available from More. */
   #appShell #sidebarNav #navImages.sidebar-nav-btn,
@@ -314,12 +302,9 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
       border-color var(--ui-duration-hover) ease;
   }
   #appShell #sidebar .sidebar-search:hover {
-    border-color: transparent;
     background: var(--ui-bg-hover);
   }
   #appShell #sidebar .sidebar-search:focus-within {
-    border-color: transparent;
-    background: transparent;
     box-shadow: inset 0 0 0 1px var(--ui-hairline-strong);
   }
   #appShell #sidebar .sidebar-search svg {
@@ -336,7 +321,6 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     border: 0;
     outline: none;
     background: transparent;
-    color: var(--foreground);
     font: inherit;
     font-size: var(--ui-text-ui);
     line-height: var(--ui-text-ui-line);
@@ -345,9 +329,7 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     color: var(--ui-text-tertiary);
     opacity: 1;
   }
-  #appShell #sidebarSearch:focus::placeholder {
-    color: var(--ui-text-placeholder);
-  }
+  
   /* The search field is a bare input inside a ghost pill — it has no frame
      of its own, so the global focus contract painted a hard ring around
      something that looks like a label, and the ring read as a box drawn
@@ -369,7 +351,6 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     margin: 0;
     padding: 0 6px 8px;
     overflow-y: auto;
-    scrollbar-width: thin;
   }
   #appShell #recentsPanel.hidden {
     display: none;
@@ -399,9 +380,7 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
   }
   #appShell #sidebar .recents-time-label {
     padding: 12px 10px 4px;
-    color: var(--ui-text-muted);
     font-size: var(--ui-font-size-xxs);
-    font-weight: var(--ui-font-weight-medium);
     line-height: 16px;
   }
   #appShell #sidebar .recents-list-content > .recents-time-label:first-child {
@@ -419,9 +398,7 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
   #appShell #sidebar .recent-item-glyph {
     display: none;
   }
-  #appShell #sidebar .recent-mode-badge {
-    display: none;
-  }
+  
   #appShell #sidebar .recent-item-main {
     display: flex;
     flex: 1 1 auto;
@@ -438,10 +415,7 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     flex: 1 1 auto;
     min-width: 0;
     overflow: hidden;
-    color: var(--foreground);
-    font-size: var(--ui-text-ui);
     font-weight: var(--ui-font-weight-regular);
-    line-height: var(--ui-text-ui-line);
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -455,7 +429,6 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     gap: 2px;
     margin: 0;
     opacity: 0;
-    transition: opacity var(--ui-duration-hover) ease;
   }
   #appShell #sidebar .recent-item:hover .recent-item-actions,
   #appShell #sidebar .recent-item:focus-within .recent-item-actions,
@@ -483,13 +456,9 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     border: 0;
     border-radius: var(--ui-radius-sm, 6px);
     background: transparent;
-    color: var(--foreground);
     cursor: pointer;
   }
-  #appShell #sidebar .recent-item-overflow:hover {
-    background: var(--accent);
-    color: var(--foreground);
-  }
+  
   #appShell #sidebar .recent-item-overflow svg {
     width: 16px;
     height: 16px;
@@ -986,7 +955,6 @@ html[data-detail-open='true'][data-detail-layout='docked'] #appShell .main {
     height: var(--ui-control-desktop);
     min-height: var(--ui-control-desktop);
     padding: 6px 10px;
-    border-radius: var(--ui-radius-sidebar-row);
     text-align: start;
     white-space: nowrap;
     cursor: pointer;
