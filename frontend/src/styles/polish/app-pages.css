@@ -42,12 +42,6 @@ html:not([data-main-view='settingsPage']) #appShell .main-page .ui-page-frame.pl
   margin-bottom: var(--ui-space-lg);
 }
 
-#appShell .ui-page-search {
-  flex: 1 1 320px;
-  max-width: none;
-  min-width: 0;
-}
-
 /* Projects keeps a compact search field beside its filter rail instead of
  * stretching the field across the whole page column. */
 #appShell .projects-directory .ui-page-search {
@@ -798,25 +792,6 @@ body.workspace-active #appShell .ui-page-card.project-card {
 
 #appShell .admin-console .ui-section-card {
   border-radius: var(--ui-radius-xl);
-}
-
-/* ── Empty states ───────────────────────────────────────────────────── */
-
-#appShell .ui-page-empty[data-slot='empty'] {
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 220px;
-  padding: var(--ui-space-xxl) var(--ui-space-lg);
-  border: 0;
-  background: transparent;
-}
-
-#appShell .ui-page-empty [data-slot='empty-title'] {
-  color: var(--ui-text-primary);
-  font-size: var(--ui-font-size-md);
-  font-weight: var(--ui-font-weight-medium);
 }
 
 /* ── Phone ──────────────────────────────────────────────────────────── */
