@@ -218,6 +218,7 @@ test('detail-free rows are static and native UI output is outside disclosure', a
   const before = await page.locator('.intui').innerText();
   await page.getByRole('button', { name: 'Add one', exact: true }).click();
   await expect.poll(() => page.locator('.intui').innerText()).not.toBe(before);
+  await page.getByTestId('turn-activity-toggle').click();
   await page.getByTestId('tool-row-ui').click();
   await expect(page.getByTestId('tool-detail')).toBeVisible();
   // The native UI lives outside the disclosure, so opening and closing the
@@ -289,7 +290,7 @@ test('native UI survives a tool-only settled turn and recovers raw streamed argu
   await expect(message.locator('[data-intui-id="value"]')).toContainText('7');
 });
 
-test('native UI can mount from cumulative arguments before the tool result arrives', async ({
+test('uncommitted native UI arguments remain hidden until a result arrives', async ({
   page,
 }) => {
   const document = {
@@ -324,9 +325,7 @@ test('native UI can mount from cumulative arguments before the tool result arriv
 
   const message = page.locator('#msgList .msg.assistant[data-client-id="native-ui-arguments"]');
   await expect(message).toHaveCount(1);
-  await expect(message.locator('.intui')).toBeVisible();
-  await expect(message.locator('.intui')).toHaveAttribute('data-intui-streaming', 'true');
-  await expect(message.locator('[data-intui-id="progress"]')).toContainText('40%');
+  await expect(message.locator('.intui')).toHaveCount(0);
 });
 
 test('the browser states the effort intent and leaves MiniMax specifics to the server', async ({
