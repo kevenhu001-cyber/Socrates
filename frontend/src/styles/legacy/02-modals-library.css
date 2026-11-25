@@ -21,20 +21,6 @@
   font-size: 15px;
   font-weight: var(--ui-font-weight-semibold);
 }
-.modal-close {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  background: transparent;
-  border: 0;
-  font-size: 18px;
-  color: hsl(var(--text-400));
-  cursor: pointer;
-}
-.modal-close:hover {
-  background: hsl(var(--bg-200));
-  color: hsl(var(--text-100));
-}
 .modal-foot {
   display: flex;
   align-items: center;
