@@ -1,3 +1,4 @@
+import { Button } from '../ui/Button';
 import { useId, useMemo, useRef, useState } from 'react';
 import { activityTimeline, publicSummariesOf, stepsWithFallback, type ThinkingStep } from '@socrates/ui/turn';
 import type { TurnActivityEntry } from '@socrates/contracts';
@@ -111,10 +112,10 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
     >
       <div data-testid="turn-activity">
         {expandable ? (
-          <button type="button" className="rn-turn-activity-toggle" data-testid="turn-activity-toggle"
+          <Button type="button" className="rn-turn-activity-toggle" data-testid="turn-activity-toggle"
             aria-expanded={open} aria-controls={id} onClick={() => setOpen((value) => !value)}>
             {caption}
-          </button>
+          </Button>
         ) : (
           <div className="rn-turn-activity-toggle" data-testid="turn-activity-toggle">{caption}</div>
         )}
