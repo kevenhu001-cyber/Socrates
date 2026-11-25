@@ -107,6 +107,18 @@ for (const theme of ['light', 'dark']) {
     await expect(primary).toHaveCSS('background-color', ink);
     await expect(page.locator('.plugin-detail-btn-secondary')).toHaveCSS('color', ink);
     await expect(page.locator('.plugin-detail-prompt-card svg').first()).toHaveCSS('color', ink);
+    const example = page.locator('button.plugin-detail-prompt-card').first();
+    await expect(example).toHaveCSS('border-radius', '0px');
+    await expect(example).toHaveCSS('border-top-width', '0px');
+    await expect(example).toHaveCSS('border-inline-start-width', '0px');
+    const examples = await page.locator('.plugin-detail-prompts-list').boundingBox();
+    const capabilities = await page.locator('.plugin-detail-features-list').boundingBox();
+    expect(examples.y + examples.height).toBeLessThan(capabilities.y);
+    await page.screenshot({
+      path: `test-results/plugin-detail-flat-${theme}.png`,
+      animations: 'disabled',
+      caret: 'hide',
+    });
     const description = await page.locator('.plugin-detail-desc').first().evaluate((node) => getComputedStyle(node).color);
     expect(description).not.toBe(ink);
   });
