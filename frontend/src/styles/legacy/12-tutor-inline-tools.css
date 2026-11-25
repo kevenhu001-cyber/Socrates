@@ -257,9 +257,6 @@ body[data-app-mode='chat'] .tutor-only {
    artifacts). Sits immediately after the .tool-inline row so the
    output stays embedded at the point in the answer where the tool
    fired instead of piling up at the bubble bottom. */
-.tool-inline-attachments:empty {
-  display: none;
-}
 /* One output failed to render: the fallback stays inside the output slot so
    the rest of the turn is untouched, and Retry re-mounts only this renderer. */
 .tool-output-error {
