@@ -38,7 +38,7 @@ export function formatToolResultContent(toolName: string, result: ToolResult): s
       lines.push(`[error: ${result.errorMessage || result.error || result.status}]`);
       if (!retryable) {
         lines.push(
-          'This call is not retryable. STOP retrying this exact code. Do not repeat the error text in your answer; the tool card already shows it. Continue with a corrected approach in prose, or state the limitation in one plain sentence.',
+          'This call is not retryable. STOP retrying this exact code. Do not quote internal diagnostics in your answer. Continue with a corrected approach in prose, or state the limitation in one plain sentence.',
         );
       }
       const diagnostic = [result.errorCode, result.errorMessage, result.error, result.stderr].filter(Boolean).join('\n');
@@ -58,7 +58,7 @@ export function formatToolResultContent(toolName: string, result: ToolResult): s
       ];
       const fix = fixes.find(([pattern]) => pattern.test(diagnostic));
       if (fix) lines.push('Suggested fix: ' + fix[1]);
-      lines.push('Do not repeat this error text in your answer; the tool card already shows it.');
+      lines.push('Treat diagnostics as internal feedback; retry safely if permitted, otherwise state only a material limitation.');
     }
     lines.push('--- stdout ---');
     lines.push(result.stdout || '(empty)');
@@ -81,21 +81,23 @@ export function formatToolResultContent(toolName: string, result: ToolResult): s
       return `[status: completed]\n[${kind} card rendered]\n${result.output || ''}\nThe ${kind} card is now shown in the conversation. Refer to it briefly in prose; do not paste the whole ${kind} again. Reply in the user's language.`;
     }
     return (
-      result.correction ||
-      `[status: failed]\n[error_code: ${result.errorCode || 'plan_spec_invalid'}]\n[retryable: ${result.retryable ? 'yes' : 'no'}]\n[field_errors: ${JSON.stringify(result.detail || [])}]\nDo not repeat these field errors in your answer; the tool card already shows them.`
+      (retryable ? result.correction : undefined) ||
+      `[status: failed]\n[error_code: ${result.errorCode || 'plan_spec_invalid'}]\n[retryable: ${result.retryable ? 'yes' : 'no'}]\n[field_errors: ${JSON.stringify(result.detail || [])}]\nKeep field errors internal; correct the call if permitted, otherwise continue in prose.`
     );
   }
 
   if (toolName === 'workspace_agent') {
     return result.status === 'completed'
       ? `[status: completed]\n[run_id: ${result.runId || 'unknown'}]\n[workspace_id: ${result.workspaceId || 'unknown'}]\n${result.output || result.stdout || '(no output)'}\nThe workspace run is rendered inline. Summarize the concrete changes, tests, and artifacts in the user's language.`
-      : `[status: ${result.status || 'failed'}]\n[run_id: ${result.runId || 'unknown'}]\n[error_code: ${result.errorCode || 'workspace_agent_failed'}]\n${result.error || 'The workspace agent did not complete.'}\nDo not start a duplicate run; continue with a corrected task. Do not paste the error text into your answer; the tool card already shows it.`;
+      : `[status: ${result.status || 'failed'}]\n[run_id: ${result.runId || 'unknown'}]\n[error_code: ${result.errorCode || 'workspace_agent_failed'}]\n${result.error || 'The workspace agent did not complete.'}\nDo not start a duplicate run; continue with a corrected task. Keep diagnostics internal; state only a material limitation.`;
   }
 
   if (result.correction) {
     /* Schema + copy-ready example, already assembled by
        toolCorrectionMessage for this rejection. */
-    return result.correction;
+    return retryable
+      ? `[status: failed]\n[retryable: yes]\n${result.correction}`
+      : `[status: failed]\n[retryable: no]\n[error_code: ${result.errorCode || 'tool_failed'}]\nDo not call this tool again for this turn. Continue with verified results and mention only a material limitation.`;
   }
 
   if (result.status !== 'completed' && toolName === 'web_search') {
@@ -126,7 +128,7 @@ export function formatToolResultContent(toolName: string, result: ToolResult): s
     const isImageSubmission = toolName === 'oc_jimeng_ai_submit_image_generation_4_6';
     const context = nonIdempotentOpenConnectorAction
       ? 'The action has an uncertain outcome. Do not claim it completed or that the provider did nothing.'
-      : 'The connector could not provide results. Do not fabricate results. Do not repeat the provider error in your answer; the tool card already shows it. Answer what you can and state the limitation only if it matters.';
+      : 'The connector could not provide results. Do not fabricate results. Do not quote internal provider diagnostics. Answer what you can and state the limitation only if it matters.';
     const nextStep = nonIdempotentOpenConnectorAction
       ? isImageSubmission
         ? 'This request may have created an image task even though its response failed. Do not submit it again automatically; state that the outcome is uncertain and ask before creating another task, without quoting the provider error.'
@@ -142,5 +144,5 @@ export function formatToolResultContent(toolName: string, result: ToolResult): s
     result.detail === undefined || result.detail === null
       ? ''
       : `\n[detail: ${String(result.detail).slice(0, 1200)}]`;
-  return `[status: ${result.status || 'failed'}]\n[error_code: ${result.errorCode || 'tool_failed'}]\n[retryable: ${retryable ? 'yes' : 'no'}]\n[error: ${result.errorMessage || result.error || result.status || 'Tool failed.'}]${detail}\nDo not repeat this error text in your answer; the tool card already shows it.`;
+  return `[status: ${result.status || 'failed'}]\n[error_code: ${result.errorCode || 'tool_failed'}]\n[retryable: ${retryable ? 'yes' : 'no'}]\n[error: ${result.errorMessage || result.error || result.status || 'Tool failed.'}]${detail}\nTreat diagnostics as internal feedback; retry safely if permitted, otherwise state only a material limitation.`;
 }
