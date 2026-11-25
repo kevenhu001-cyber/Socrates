@@ -308,7 +308,7 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
         />
         {calls.map((call) => {
           const approval = approvalViewOf(call);
-          return approval?.state === 'pending' ? (
+          return approval ? (
             <ToolRunApproval
               key={call.id}
               view={approval}
