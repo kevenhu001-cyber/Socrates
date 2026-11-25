@@ -65,26 +65,27 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
     box-sizing: border-box;
     flex: 1 1 auto;
     width: 100%;
-    max-width: 1040px;
-    height: min(760px, calc(100% - 64px));
+    max-width: 880px;
+    height: min(680px, calc(100% - 48px));
     min-height: 0;
     margin: auto;
     border: 1px solid var(--ui-border-subtle);
-    border-radius: var(--ui-radius-2xl);
+    border-radius: var(--ui-radius-xl);
     overflow: hidden;
     background: var(--background);
   }
 
   html[data-main-view='settingsPage'] #settingsPage .settings-shell {
-    grid-template-columns: clamp(196px, 24%, 240px) minmax(0, 1fr);
+    grid-template-columns: clamp(176px, 25%, 210px) minmax(0, 1fr);
     min-height: 0;
     flex: 1;
   }
 
   html[data-main-view='settingsPage'] #settingsPage .account-page-header {
-    padding: 0 var(--ui-space-lg) 0 var(--ui-space-xl);
+    height: 56px;
+    padding: 0 var(--ui-space-lg);
     background: transparent;
-    border-bottom: 1px solid var(--ui-border-subtle);
+    border-bottom: 0;
   }
 
   .settings-page .account-page-header > [data-slot='button'] {
@@ -93,19 +94,19 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
   }
 
   html[data-main-view='settingsPage'] #settingsPage .settings-nav {
-    gap: var(--ui-space-lg);
-    padding: var(--ui-space-lg) var(--ui-space-md);
-    border-color: var(--ui-border-subtle);
-    background: var(--ui-bg-raised);
+    gap: var(--ui-space-sm);
+    padding: 4px 12px 20px;
+    border: 0;
+    background: transparent;
     overflow-y: auto;
   }
 
   html[data-main-view='settingsPage'] #settingsPage .settings-nav-item {
     gap: var(--ui-space-sm);
-    min-height: var(--ui-control-md);
-    padding: var(--ui-space-xs) var(--ui-space-sm);
-    border-radius: var(--ui-radius-md);
-    color: var(--ui-text-secondary);
+    min-height: 36px;
+    padding: 6px 10px;
+    border-radius: var(--ui-radius-row);
+    color: var(--foreground);
   }
 
   html[data-main-view='settingsPage'] #settingsPage .settings-nav-item:hover,
@@ -127,7 +128,7 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
   }
 
   html[data-main-view='settingsPage'] #settingsPage .settings-body {
-    padding: var(--ui-space-xl) clamp(20px, 4vw, 40px) var(--ui-space-xxl);
+    padding: 4px clamp(20px, 3vw, 32px) 32px;
     overflow-y: auto;
     overscroll-behavior: contain;
   }
@@ -137,8 +138,8 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
   }
 
   .settings-page .settings-pane > h2 {
-    padding-bottom: 0;
-    border: 0;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--ui-border-subtle);
     font-size: var(--ui-text-page);
     font-weight: var(--ui-font-weight-semibold);
   }
@@ -146,6 +147,14 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
   .settings-page .settings-index-group {
     display: grid;
     gap: 2px;
+  }
+  .settings-page .settings-nav-categories {
+    gap: 10px;
+  }
+  .settings-page .settings-category-icon svg {
+    width: 20px;
+    height: 20px;
+    display: block;
   }
   .settings-page .settings-index-group-label {
     margin: var(--ui-space-sm) var(--ui-space-sm) var(--ui-space-xs);
@@ -159,7 +168,7 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
 .settings-page .settings-preference-fields [data-slot='select-trigger'] {
   border-color: var(--ui-account-border);
   border-radius: var(--ui-radius-pill);
-  background: var(--ui-account-field);
+  background: transparent;
 }
 
 .settings-page .settings-preference-fields {
@@ -167,7 +176,7 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
 }
 
 html[data-main-view='settingsPage'] #settingsPage .settings-pane {
-  gap: var(--ui-space-xl);
+  gap: var(--ui-space-lg);
   min-width: 0;
   margin-inline: auto;
 }
@@ -347,7 +356,7 @@ html[data-main-view='settingsPage']
 
 html[data-main-view='settingsPage'] #settingsPage .settings-nav-item.active {
   background: var(--ui-bg-selected);
-  border-radius: var(--ui-radius-md);
+  border-radius: var(--ui-radius-row);
   box-shadow: none;
 }
 html[data-main-view='settingsPage'] #settingsPage .settings-nav-item.active:focus-visible {
@@ -455,7 +464,7 @@ html[data-main-view='settingsPage'] #settingsPage .settings-choice {
     min-height: calc(var(--ui-control-touch) + 8px);
     padding: var(--ui-space-xs) var(--ui-space-md);
     border-radius: var(--ui-radius-lg);
-    border-color: transparent;
+    border: 0;
     background: transparent;
   }
   .settings-page .settings-nav-item:not(:last-child) {
@@ -468,9 +477,13 @@ html[data-main-view='settingsPage'] #settingsPage .settings-choice {
     background: var(--ui-fill-hover);
   }
   .settings-page .settings-category-icon {
-    width: var(--ui-control-sm);
-    height: var(--ui-control-sm);
+    width: 24px;
+    height: 24px;
     background: transparent;
+  }
+  .settings-page .settings-category-icon svg {
+    width: 22px;
+    height: 22px;
   }
   .settings-page .settings-category-name,
   .settings-index-appearance-title {
@@ -482,9 +495,9 @@ html[data-main-view='settingsPage'] #settingsPage .settings-choice {
   }
   .settings-index-appearance {
     padding: var(--ui-space-md);
-    border: 1px solid var(--ui-border-subtle);
-    border-radius: var(--ui-radius-xl);
-    background: var(--ui-bg-raised);
+    border: 0;
+    border-radius: 0;
+    background: transparent;
   }
   .settings-index-appearance-title {
     display: flex;
