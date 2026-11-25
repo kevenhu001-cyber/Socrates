@@ -1,4 +1,4 @@
-import { ArrowLeftIcon } from 'lucide-react';
+import { Icon } from '../../../legacy/Icon';
 import { Button } from '../../ui/shadcn/button';
 import { PageHeader } from '../../ui/page/PageHeader';
 import { i18n } from './workspaceUi';
@@ -47,7 +47,7 @@ export function PluginDetailHeader({
             onClick={onBack}
             aria-label={i18n('plugins.detail.back', 'Back to plugins')}
           >
-            <ArrowLeftIcon aria-hidden />
+            <Icon name="chevronLeft" size={18} />
             <span>{i18n('plugins.detail.backLabel', 'Plugins')}</span>
           </Button>
           <div className={'plugin-detail-logo-tile connector-icon connector-' + plugin.id}>
