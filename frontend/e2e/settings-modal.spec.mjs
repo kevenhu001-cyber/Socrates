@@ -1121,8 +1121,21 @@ test('redesigned settings navigation and preference rows fit desktop and phone',
   const back = overlay.locator('#settingsMobileBack');
   if (await back.isVisible()) await back.click();
   await expect(overlay.locator('.settings-nav')).toBeVisible();
-  await expect(overlay.locator('.settings-theme-options button')).toHaveCount(3);
-  await expect(overlay.locator('.settings-theme-options button[aria-pressed="true"]')).toHaveCount(1);
+  const themeOptions = overlay.locator('.settings-theme-options[data-slot="toggle-group"]');
+  await expect(themeOptions.locator('button')).toHaveCount(3);
+  const selectedTheme = themeOptions.locator('button[aria-pressed="true"]');
+  await expect(selectedTheme).toHaveCount(1);
+  expect(
+    await selectedTheme.evaluate((element) => {
+      const radius = parseFloat(getComputedStyle(element).borderTopLeftRadius);
+      return radius >= element.getBoundingClientRect().height / 2;
+    }),
+  ).toBe(true);
+  await selectedTheme.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(themeOptions.locator('button:focus')).toHaveCount(1);
+  await page.keyboard.press('Space');
+  await expect(themeOptions.locator('button:focus')).toHaveAttribute('aria-pressed', 'true');
   await expect(overlay.locator('.settings-theme-preview')).toHaveCount(0);
   await overlay.locator('.settings-nav [data-section="general"]').click();
   await expect(overlay.locator('.settings-pane:visible h2')).toBeVisible();
