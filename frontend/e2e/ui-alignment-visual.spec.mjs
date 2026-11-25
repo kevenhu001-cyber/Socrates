@@ -111,3 +111,71 @@ for (const [device, viewport] of Object.entries(WORKBENCH_VIEWPORTS)) {
     });
   }
 }
+
+/* Review the migrated surfaces together at the same viewport and theme.
+ * Attach real browser captures to the advisory visual report. */
+for (const [device, viewport] of Object.entries(WORKBENCH_VIEWPORTS)) {
+  for (const theme of ['light', 'dark']) {
+    test(`page kit captures: ${device} ${theme}`, async ({ page }, info) => {
+      await page.addInitScript((mode) => {
+        localStorage.setItem('socrates-theme', mode);
+        localStorage.setItem('socrates-theme-style', 'socrates');
+      }, theme);
+      await prepareChatWorkbench(page, { viewport, lang: 'en' });
+      await page.route(/\/api\/(?:v2\/)?files(?:\?|$)/, (route) =>
+        route.fulfill({
+          json: {
+            files: [
+              { id: 'review-pdf', name: 'Research notes.pdf', kind: 'pdf', size: 10240 },
+              { id: 'review-image', name: 'Diagram.png', kind: 'image', size: 8192 },
+            ],
+            hasMore: false,
+          },
+        }),
+      );
+      await page.route(/\/api\/(?:v2\/)?creations\/items\/sites(?:\?|$)/, (route) =>
+        route.fulfill({ json: { items: [] } }),
+      );
+      const capturePage = async (name, panel) => {
+        await expect(panel).toBeVisible();
+        await expectNoGlobalError(page);
+        await expect.poll(() => panel.evaluate((element) => {
+          const rect = element.getBoundingClientRect();
+          return rect.left >= -1 && rect.right <= innerWidth + 1;
+        })).toBe(true);
+        expect((await snapshotWorkbenchGeometry(page)).overflow).toBeLessThanOrEqual(1);
+        await info.attach(`${device}-${theme}-${name}`, {
+          body: await page.screenshot({ animations: 'disabled', caret: 'hide' }),
+          contentType: 'image/png',
+        });
+      };
+
+      await page.evaluate(() => window.__socratesLegacy.navigation.openNav('library'));
+      const library = page.locator('.library-directory');
+      await expect(library.locator('.library-row')).toHaveCount(2);
+      const views = library.locator('.ui-page-view-toggle [data-slot="toggle-group-item"]');
+      await views.nth(0).click();
+      await expect(views.nth(0)).toHaveAttribute('aria-pressed', 'true');
+      await capturePage('library-grid', library);
+      await views.nth(1).click();
+      await expect(views.nth(1)).toHaveAttribute('aria-pressed', 'true');
+      await capturePage('library-list', library);
+
+      await page.evaluate(() => window.__socratesLegacy.navigation.openNav('sites'));
+      const sites = page.locator('#sitesPanel');
+      await expect(sites.locator('.ui-page-view-toggle')).toBeVisible();
+      await capturePage('sites', sites);
+
+      await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
+      const settings = page.locator('#settingsPage');
+      const back = settings.locator('#settingsMobileBack');
+      if (device === 'mobile') {
+        if (await back.isVisible()) await back.click();
+        await capturePage('settings-index', settings);
+      }
+      await settings.locator('.settings-nav [data-section="display"]').click();
+      await expect(settings.locator('.settings-choice--segmented .ui-page-tabs')).toHaveCount(2);
+      await capturePage('settings-display', settings);
+    });
+  }
+}
