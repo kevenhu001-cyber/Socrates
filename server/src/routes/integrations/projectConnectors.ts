@@ -23,6 +23,9 @@ import {
 } from '../../services/integrations/openConnectorCatalog.js';
 import { OPEN_CONNECTOR_CLOUD_AUTH } from '../../services/integrations/openConnectorCloudAuth.generated.js';
 
+import { projectConnectorChatActions } from '../../services/integrations/projectConnectorTools.js';
+import { OPEN_CONNECTOR_CHAT_TOOLS } from '../../services/integrations/openConnectorChatToolCatalog.js';
+
 const router = Router();
 const CONNECTION_NAME = 'socrates';
 
@@ -109,6 +112,9 @@ router.get('/', requireAuth, async (req, res, next) => {
 
     const openConnectors = filteredOpenConnectors.map((item) => ({
       ...item,
+      chatActions: OPEN_CONNECTOR_CHAT_TOOLS.filter((tool) => tool.service === item.service).map(
+        (tool) => ({ name: tool.actionId, description: tool.description }),
+      ),
       connection: publicConnection(byProvider.get(item.id)),
     }));
 
@@ -119,6 +125,7 @@ router.get('/', requireAuth, async (req, res, next) => {
       connectors: [
         ...PROJECT_CONNECTOR_CATALOG.map((item) => ({
           ...item,
+          chatActions: projectConnectorChatActions(item.id),
           connection: publicConnection(byProvider.get(item.id) || byProvider.get(`oc_${item.id}`)),
         })),
         ...openConnectors,
