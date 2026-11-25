@@ -94,14 +94,15 @@
 
 /* Shared page search: one 42px pill, same chrome as Library. The inner
  * input drops its own frame and lets the wrapper carry the focus ring. */
-.ui-page-search {
+#appShell .ui-page-search {
   display: flex;
-  flex: 1 1 240px;
+  flex: 1 1 320px;
+  min-width: 0;
   align-items: center;
   gap: var(--ui-space-sm);
   box-sizing: border-box;
   width: 100%;
-  max-width: 420px;
+  max-width: none;
   height: var(--ui-control-search);
   padding: 0 var(--ui-space-md);
   border: 1px solid var(--ui-border-subtle);
@@ -221,16 +222,23 @@
 
 /* ── Empty state ─────────────────────────────────────────────────────── */
 
-.ui-page-empty[data-slot='empty'] {
+#appShell .ui-page-empty[data-slot='empty'] {
+  box-sizing: border-box;
+  display: flex;
   flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
   gap: var(--ui-space-md);
-  padding-block: var(--ui-space-xxl);
+  min-height: 220px;
+  padding: var(--ui-space-xxl) var(--ui-space-lg);
+  border: 0;
+  background: transparent;
 }
 
-.ui-page-empty [data-slot='empty-title'] {
+#appShell .ui-page-empty [data-slot='empty-title'] {
   color: var(--ui-text-primary);
   font-size: var(--ui-font-size-md);
-  font-weight: var(--ui-font-weight-semibold);
+  font-weight: var(--ui-font-weight-medium);
   line-height: 1.5;
 }
 
@@ -616,8 +624,7 @@
     margin-bottom: var(--ui-space-md);
   }
 
-  .ui-page-search {
-    max-width: none;
+  #appShell .ui-page-search {
     min-height: var(--ui-control-touch);
   }
 
