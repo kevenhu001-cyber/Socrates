@@ -427,3 +427,58 @@ body #composerToolsMenu.composer-tools-menu {
     display: none;
   }
 }
+
+/* "+" open animation — same motion language as the rest of the overlay
+   system: a 2px anchored lift and the shared scale / duration / easing.
+   The menu lives on <body> and is shown by removing .hidden (display:none),
+   so the panel stays in the DOM and the whole open/close pair can be one
+   transition: `allow-discrete` holds the box for the fade before `display`
+   flips, and `@starting-style` supplies the first frame of the next open.
+   Browsers without support keep the instant toggle. */
+body #composerToolsMenu.composer-tools-menu {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transform-origin: top left;
+  transition:
+    opacity var(--ui-duration-fast) var(--ui-ease-out),
+    transform var(--ui-duration-fast) var(--ui-ease-out),
+    display var(--ui-duration-fast) allow-discrete;
+}
+body #composerToolsMenu.composer-tools-menu.hidden {
+  opacity: 0;
+  transform: translateY(var(--_ct-dir, -2px)) scale(var(--_ct-scale, var(--ui-overlay-enter-scale)));
+}
+body #composerToolsMenu.composer-tools-menu[data-menu-side='above'] {
+  --_ct-dir: 2px;
+  transform-origin: bottom left;
+}
+body #composerToolsMenu.composer-tools-menu[data-menu-side='sheet'] {
+  --_ct-dir: var(--ui-step-150);
+  --_ct-scale: 1;
+}
+@starting-style {
+  body #composerToolsMenu.composer-tools-menu:not(.hidden) {
+    opacity: 0;
+    transform: translateY(var(--_ct-dir, -2px))
+      scale(var(--_ct-scale, var(--ui-overlay-enter-scale)));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  body #composerToolsMenu.composer-tools-menu {
+    transition: none;
+  }
+}
+
+/* Reference phone sheet is a flat action list — group labels stay in the
+   DOM for the group aria-labels and the compat specs, but clip out of the
+   painted sheet on phones. */
+@media (max-width: 768px) {
+  body #composerToolsMenu .composer-tools-mobile-items .composer-tools-group-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
