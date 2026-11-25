@@ -61,7 +61,7 @@
     padding: 2px 8px 8px;
   }
   #appShell #sidebarNav .sidebar-nav-btn {
-    border-radius: 10px;
+    border-radius: var(--ui-radius-sidebar-row);
     transition:
       background-color var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1),
       color var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1),
