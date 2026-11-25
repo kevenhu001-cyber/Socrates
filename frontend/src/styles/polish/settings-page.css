@@ -60,7 +60,7 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
   box-shadow: none;
 }
 
-@media (min-width: 721px) {
+@media (min-width: 769px) {
   html[data-main-view='settingsPage'] #settingsPage .settings-page {
     box-sizing: border-box;
     flex: 0 1 auto;
@@ -320,7 +320,7 @@ html[data-main-view='settingsPage']
   min-width: 0;
 }
 
-@media (min-width: 721px) and (max-width: 1050px) {
+@media (min-width: 769px) and (max-width: 1050px) {
   html[data-main-view='settingsPage'] #settingsPage .provider-workbench {
     grid-template-columns: minmax(128px, 168px) minmax(0, 1fr);
   }
@@ -332,7 +332,7 @@ html[data-main-view='settingsPage']
   }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 768px) {
   html[data-main-view='settingsPage'] #settingsPage .provider-workbench {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -369,7 +369,7 @@ html[data-main-view='settingsPage'] #settingsPage .settings-choice {
   min-height: 56px;
   border-bottom-color: var(--ui-border-subtle);
 }
-@media (max-width: 720px) {
+@media (max-width: 768px) {
   html[data-main-view='settingsPage'] #settingsPage .account-page-header {
     display: grid;
     grid-template-columns: var(--ui-control-touch) minmax(0, 1fr) var(--ui-control-touch);
@@ -536,12 +536,12 @@ html[data-main-view='settingsPage'] #settingsPage .settings-choice {
 
 /* On a short desktop viewport the card uses the full available height. The
    page remains a normal navigation destination; no second modal or focus trap. */
-@media (min-width: 721px) and (max-height: 600px) {
+@media (min-width: 769px) and (max-height: 600px) {
   #settingsPage .settings-page {
     max-height: 100%;
   }
 }
-@media (max-width: 720px) {
+@media (max-width: 768px) {
   #settingsPage .settings-mobile-back {
     min-height: var(--ui-control-touch);
     padding-inline: 0;
