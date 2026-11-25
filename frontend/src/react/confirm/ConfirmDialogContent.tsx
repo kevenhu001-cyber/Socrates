@@ -1,4 +1,4 @@
-import { Button as UiButton } from '../ui/Button';
+import { Button } from '../ui/shadcn/button';
 import { useCallback, useRef } from 'react';
 import {
   FoundationDialog,
@@ -53,17 +53,23 @@ export function ConfirmDialogContent({ snapshot }: { snapshot: ConfirmSnapshot }
         {content.msg}
       </FoundationDialogDescription>
       <div className="confirm-actions" id="confirmActions">
-        <FoundationDialogClose className="confirm-btn cancel" id="confirmCancelBtn">
+        <FoundationDialogClose
+          render={<Button variant="outline" size="touch" />}
+          className="confirm-btn cancel"
+          id="confirmCancelBtn"
+        >
           {i18n('common.cancel', 'Cancel')}
         </FoundationDialogClose>
-        <UiButton
+        <Button
           type="button"
+          variant={content.danger ? 'destructive' : 'default'}
+          size="touch"
           className={`confirm-btn ${content.danger ? 'danger' : 'primary'}`}
           id="confirmOkBtn"
           onClick={() => getLegacyActions().confirm.closeConfirm(true)}
         >
           {content.danger ? i18n('common.delete', 'Delete') : i18n('common.ok', 'OK')}
-        </UiButton>
+        </Button>
       </div>
     </FoundationDialog>
   );
