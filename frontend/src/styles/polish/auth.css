@@ -309,6 +309,39 @@
   }
 }
 
+/* The administrator credential gate uses the same quiet form, not a
+ * special dashboard card. It remains a distinct admin login flow. */
+.admin-login.auth-card {
+  max-width: 24rem;
+  margin: var(--ui-space-xxl) auto;
+  padding: var(--ui-space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-md);
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.admin-login .admin-hint {
+  margin: 0;
+  color: var(--ui-text-secondary);
+}
+
+.admin-login form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-md);
+}
+
+.admin-login :is(input, .admin-save) {
+  min-height: var(--ui-control-touch);
+}
+
+.admin-login .admin-save {
+  border-radius: var(--ui-radius-pill);
+}
+
 /* Scoped top-layer browser-to-Android account confirmation. */
 .browser-login-handoff {
   margin: auto;
