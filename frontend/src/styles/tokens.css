@@ -60,6 +60,12 @@
   /* Chat Demo menu geometry; covered by composer-tools visual snapshots. */
   --ui-radius-tools-card: 12px;
   --ui-radius-tools-row: 8px;
+  /* Apps SDK UI control geometry, adapted to the existing theme contract. */
+  --ui-button-radius: var(--ui-radius-row);
+  --ui-menu-gutter: 6px;
+  --ui-menu-item-gap: 6px;
+  --ui-menu-item-padding: 6px 8px;
+  --ui-shimmer-delay: 600ms;
 
   /* Controls and responsive shell. Lobe's 28/36/40 ladder is available as
      foundation metrics. Socrates retains its product density and the 44px

@@ -451,7 +451,7 @@ for (const theme of ['light', 'dark']) {
         );
         expect(overflow).toBeLessThanOrEqual(1);
         await page.screenshot({
-          path: `test-results/page-audit-${name}-${theme}-${width}-${lang}.png`,
+          path: `test-results/page-audit-${encodeURIComponent(name)}-${encodeURIComponent(theme)}-${encodeURIComponent(width)}-${encodeURIComponent(lang)}.png`,
           animations: 'disabled',
         });
       };

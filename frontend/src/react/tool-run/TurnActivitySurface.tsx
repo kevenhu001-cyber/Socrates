@@ -15,7 +15,6 @@ import type { TurnActivityStatus } from '../../legacy/turnActivityModel';
 import { i18n } from '../../ui/legacyI18n.ts';
 import { WebUiTheme, useLocaleRefresh } from '../rn/WebUiTheme';
 import { ToolActivityIcon, toolActivitySites } from './ToolActivityIcon';
-import { ThinkingSpark } from './ThinkingSpark';
 import { useElapsed } from './useElapsed';
 import { runStartedAt, type ToolCallRecord } from './toolRunModel';
 import { tf } from '../../legacy/toolPresentationModel.ts';
@@ -232,7 +231,6 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
           label={label}
           durationLabel={durationLabel}
           live={showLiveCaption}
-          indicator={showActivityCue ? <ThinkingSpark /> : undefined}
           icon={icon}
           iconWidth={iconWidth}
           expandable={hasDetails}

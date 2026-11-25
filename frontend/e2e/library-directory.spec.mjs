@@ -296,7 +296,7 @@ test('library remains readable at narrow and tablet widths', async ({ page }) =>
     );
     expect(overflow).toBeLessThanOrEqual(1);
     await page.screenshot({
-      path: `test-results/page-audit-library-${width}.png`,
+      path: `test-results/page-audit-library-${encodeURIComponent(width)}.png`,
       animations: 'disabled',
     });
   }

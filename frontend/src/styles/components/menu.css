@@ -55,25 +55,14 @@ body #composerToolsMenu.composer-tools-menu {
   min-width: 0;
   max-width: calc(100vw - 24px);
   max-height: min(75dvh, 520px);
-  padding: 6px;
+  padding: var(--ui-menu-gutter);
   overflow-y: auto;
   overscroll-behavior: contain;
   border-radius: var(--ui-radius-tools-card);
   border: 1px solid var(--ui-border-subtle);
   background: var(--ui-bg-surface);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow: var(--ui-shadow-menu, 0 12px 32px rgba(0, 0, 0, 0.18));
-  animation: none;
-}
-[data-mode='dark'] body #composerToolsMenu.composer-tools-menu {
-  box-shadow:
-    0 0 1px rgba(0, 0, 0, 0.6),
-    0 0 4px rgba(0, 0, 0, 0.3),
-    0 16px 36px rgba(0, 0, 0, 0.45);
-}
-[data-mode='light'] body #composerToolsMenu.composer-tools-menu {
   box-shadow: var(--ui-shadow-menu);
+  animation: none;
 }
 
 #composerToolsMenu .composer-tools-desktop-items,
@@ -94,8 +83,8 @@ body #composerToolsMenu.composer-tools-menu {
   width: 100%;
   min-height: var(--ui-control-md);
   margin: 0;
-  padding: 8px 10px;
-  gap: 10px;
+  padding: var(--ui-menu-item-padding);
+  gap: var(--ui-menu-item-gap);
   border: 0;
   border-radius: var(--ui-radius-tools-row);
   background: transparent;
