@@ -64,103 +64,8 @@
 #appShell .library-row .library-mobile-meta {
   color: var(--ui-text-tertiary);
 }
-#appShell .scheduled-recommendation-add {
-  visibility: visible;
-}
 
 /* Plugin directory layout is owned by polish/app-pages.css. */
-
-/* Scheduled directory — Page Kit owns the page header, toolbar, range tabs
-   and empty state; this file keeps the suggestion grid and task rows. */
-#appShell .scheduled-recommendations {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 12px;
-  margin: 0 0 32px;
-}
-#appShell .scheduled-recommendation {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-  min-height: 72px;
-  padding: 16px;
-  border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-xl);
-  background: var(--ui-bg-raised);
-  color: var(--foreground);
-  text-align: left;
-  cursor: pointer;
-}
-#appShell .scheduled-recommendation:hover {
-  border-color: var(--border);
-  background: var(--accent);
-}
-#appShell .scheduled-recommendation-icon {
-  display: grid;
-  place-items: center;
-  flex: 0 0 40px;
-  width: 40px;
-  height: 40px;
-  padding: 7px;
-  border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-lg);
-  background: var(--ui-bg-surface);
-  color: var(--muted-foreground);
-}
-#appShell .scheduled-recommendation-icon svg {
-  width: 24px;
-  height: 24px;
-}
-#appShell .scheduled-recommendation-copy {
-  display: flex;
-  flex: 1 1 auto;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-#appShell .scheduled-recommendation-copy strong {
-  overflow: hidden;
-  color: var(--foreground);
-  font-size: 15px;
-  font-weight: var(--ui-font-weight-semibold);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-#appShell .scheduled-recommendation-copy small {
-  display: -webkit-box;
-  overflow: hidden;
-  color: var(--ui-text-tertiary);
-  font-size: var(--ui-font-size-sm);
-  line-height: 1.4;
-  /* restore/chatgpt-ui.css leaves `white-space: nowrap` on this unscoped
-     selector. The plugin card's description wraps to two lines, so the
-     template cards have to wrap too or the copy reads as truncated. */
-  white-space: normal;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-}
-#appShell .scheduled-recommendation-add {
-  display: grid;
-  place-items: center;
-  flex: 0 0 auto;
-  width: 32px;
-  min-width: 32px;
-  height: 32px;
-  min-height: 32px;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--muted-foreground);
-  font-size: 22px;
-  font-weight: var(--ui-font-weight-regular);
-  visibility: visible;
-}
-#appShell .scheduled-recommendation-add:hover {
-  background: var(--accent);
-  color: var(--foreground);
-}
 
 /* Task rows share the raised card material too, so the list reads as one
    system with the plugin and site directories. */
@@ -311,21 +216,6 @@
     overscroll-behavior: contain;
   }
   #appShell .scheduled-section-heading {
-    font-size: var(--ui-font-size-md);
-  }
-  #appShell .scheduled-recommendations {
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
-  #appShell .scheduled-recommendation {
-    gap: 10px;
-    padding: 14px;
-    border-radius: var(--ui-radius-lg);
-  }
-  #appShell .scheduled-recommendation-copy {
-    gap: 3px;
-  }
-  #appShell .scheduled-recommendation-copy strong {
     font-size: var(--ui-font-size-md);
   }
 }
