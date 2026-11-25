@@ -203,7 +203,7 @@ test('buildToolErrorFeedback embeds field errors, schema and a copyable example'
   assert.match(feedback.modelMessage, /"query":"Python 3\.13 release date"/);
   assert.match(feedback.modelMessage, /no `input`\/`arguments` wrapper/);
   assert.match(feedback.modelMessage, /Send one corrected call/);
-  assert.match(feedback.modelMessage, /tool card already shows it/);
+  assert.match(feedback.modelMessage, /Treat this error as internal feedback/);
   assert.match(feedback.detail, /example: \{"query"/);
   assert.match(feedback.userMessage, /正确格式示例/);
 });
@@ -218,7 +218,7 @@ test('buildToolErrorFeedback tells the model to stop when retries are exhausted'
   });
   assert.match(feedback.modelMessage, /Do not repeat this call/);
   assert.doesNotMatch(feedback.modelMessage, /Send one corrected call/);
-  assert.match(feedback.modelMessage, /tool card already shows it/);
+  assert.match(feedback.modelMessage, /Treat this error as internal feedback/);
 });
 
 test('tool correction feedback can replace a generic example with the rejected visualization template', () => {
