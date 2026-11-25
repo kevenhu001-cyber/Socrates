@@ -3,6 +3,7 @@
  */
 import {
   applyProviderControls,
+  modelCapability,
   isPermanentQuotaError,
   providerHeaders,
   providerPayloadFailure,
@@ -62,7 +63,7 @@ export async function callChatCompletion(opts: ChatCompletionRequestOptions) {
       const errBody = await response.text().catch(() => '');
       if (response.status === 400) {
         console.warn('[LLM] rejected completion request', JSON.stringify({
-          model: opts.model,
+          capability: modelCapability(opts.model).id,
           variant: variant.reason,
           fields: Object.keys(variant.body),
           toolCount: Array.isArray(tools) ? tools.length : 0,
