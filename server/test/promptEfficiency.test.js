@@ -1,10 +1,16 @@
-import test from 'node:test';
+import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
 import { rankMemoryTexts, memoryQuery } from '../src/services/embeddings/memoryRanker.js';
 import { promptCacheFields, cacheProvider } from '../src/services/core/llm/cachePolicy.js';
 import { requestBodyVariants, nextCompatibilityVariant } from '../src/services/core/llm/protocol.js';
 import { addDeferredCoreTools, splitInitialToolNames } from '../src/services/integrations/connectorCatalog.js';
 import { selectDeferredCoreTools } from '../src/routes/chat/pipeline/toolContext.js';
+
+import { shutdownPubsub } from '../src/lib/pubsub.js';
+
+after(async () => {
+  await shutdownPubsub();
+});
 
 const base = { apiKey: 'test-secret', userId: 'user-a', cacheSessionId: 'session-a', model: 'deepseek/deepseek-v3', apiBase: 'https://openrouter.ai/api/v1', messages: [{ role: 'user', content: 'hello' }] };
 
