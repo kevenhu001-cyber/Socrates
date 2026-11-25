@@ -1,18 +1,11 @@
 import { interfaceIcon } from '../../legacy/icons/interfaceIcons';
 import { setDeepResearchEnabled } from '../../config/deepResearchMode.ts';
+import { getActiveTemplate } from '../../chat/templateSystemPrompt.ts';
 // frontend/src/extensions/modules/deepResearch.ts
 
 import type { ExtensionDefinition } from '../types';
 
 export const DEEP_RESEARCH_ICON = interfaceIcon('research', 18);
-
-interface DeepResearchWindow {
-  _activeTemplate?: { extensionKey?: string } | null;
-}
-
-function dw(): DeepResearchWindow {
-  return window as unknown as DeepResearchWindow;
-}
 
 /* Deep Research is a mode toggle, not a prompt template: when armed, the
  * next send routes through agent/researchAgent.ts (plan → search → read →
@@ -43,7 +36,7 @@ export const deepResearchExtension: ExtensionDefinition = {
   },
   onDeactivate(ctx) {
     setDeepResearchEnabled(false);
-    const active = dw()._activeTemplate;
+    const active = getActiveTemplate();
     if (active && active.extensionKey === 'deepResearch') {
       ctx.clearTemplate();
     }

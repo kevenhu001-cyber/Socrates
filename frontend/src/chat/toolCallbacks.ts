@@ -1,26 +1,12 @@
 /* chat/toolCallbacks — workflow/agent event publishers + stream tool-callback adapter.
- * extracted from legacy entry. Zero-behavior-change lift. Template state reads via
- * window._activeTemplate (mirrored by setActiveTemplate in app entry).
+ * Workflow context is read from the canonical active template.
  */
 import { callBridge } from '../store/index.ts';
 import { publishAgentRun } from '../extensions/agentRunStore.ts';
 import type { AgentRunEvent } from '../extensions/types.ts';
 import type { StreamingTurnController } from './turn/state.ts';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
-
-/** Bridges read from the legacy shell. */
-interface ToolCallbacksWindow extends Window {
-  _activeTemplate?: { runId?: string; workflow?: string } | null;
-}
-
-function activeTemplate(): { runId?: string; workflow?: string } | null {
-  try {
-    if (typeof window === 'undefined') return null;
-    return (window as ToolCallbacksWindow)._activeTemplate || null;
-  } catch {
-    return null;
-  }
-}
+import { getActiveTemplate } from './templateSystemPrompt.ts';
 
 function publishEvent(event: AgentRunEvent, extra?: Partial<AgentRunEvent> | null): void {
   const merged: AgentRunEvent = extra ? Object.assign({}, event, extra) : event;
@@ -41,7 +27,7 @@ export function publishActiveWorkflowEvent(
   status: AgentRunEvent['status'],
   extra?: Partial<AgentRunEvent> | null,
 ): void {
-  const tmpl = activeTemplate();
+  const tmpl = getActiveTemplate();
   if (!tmpl || !tmpl.runId || !tmpl.workflow) return;
   /* Template-authored workflow strings feed this event; the bridge union
      covers the known workflows and unknown ones stay a runtime value. */
@@ -133,7 +119,7 @@ export function toolCallbacksForStream(
           },
         );
       }
-      const tmpl = activeTemplate();
+      const tmpl = getActiveTemplate();
       if (result && result.id && tmpl && tmpl.runId) {
         publishActiveWorkflowEvent('reading', 'running', {
           message: 'Reading results…',

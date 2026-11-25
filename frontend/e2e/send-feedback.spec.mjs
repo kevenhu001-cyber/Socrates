@@ -138,7 +138,9 @@ test('home upload and the writing template keep the mobile rail usable', async (
   /* Writing is a composer tool, not a separate home shortcut. */
   await page.locator('#composerToolsBtn').click();
   await page.locator('#composerToolsMenu [data-composer-action="write"]:visible').first().click();
-  await expect.poll(() => page.evaluate(() => window._activeTemplate?.extensionKey)).toBe('write');
+  await expect
+    .poll(() => page.evaluate(() => window.__socratesTestState.activeTemplate()?.extensionKey))
+    .toBe('write');
   await page.screenshot({ path: 'test-results/performance-home-shortcuts-desktop.png' });
 
   await page.setViewportSize({ width: 390, height: 844 });

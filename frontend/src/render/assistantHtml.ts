@@ -26,6 +26,7 @@ import { extractScaffoldWidgets, type ScaffoldWidgets } from './scaffoldPipeline
 import { scheduleWidgetMounts } from './widgetScheduler.ts';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 import { ensureKatex } from '../vendor/lazy.ts';
+import { getActiveTemplate } from '../chat/templateSystemPrompt.ts';
 
 /** Mistake-book entry written for <mistake> practice blocks. */
 export interface PracticeMistakeRecord {
@@ -175,10 +176,7 @@ export function buildAssistantHtml(rawText: unknown): string {
      entry that finish() seeded just before calling renderAssistantHTML
      (the session message's canvasId); that keeps DOM and state in lock-step
      across re-renders. */
-  const w = window as unknown as {
-    _activeTemplate?: { outputMode?: string; extensionKey?: string } | null;
-  };
-  const activeTpl = (typeof window !== 'undefined' && w._activeTemplate) || null;
+  const activeTpl = getActiveTemplate();
   if (activeTpl && activeTpl.outputMode === 'canvas') {
     const extKey = activeTpl.extensionKey || 'canvas';
     let cid = 'canvas-' + Math.random().toString(36).slice(2, 10);

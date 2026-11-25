@@ -9,6 +9,7 @@ import {
   uiStore,
 } from '../store/index.ts';
 import { subscribeLegacyState } from '../store/legacyListeners.ts';
+import { getActiveTemplate } from '../chat/templateSystemPrompt.ts';
 
 const testState = Object.freeze({
   session: sessionStore.getState,
@@ -17,6 +18,10 @@ const testState = Object.freeze({
   ui: uiStore.getState,
   exam: examStore.getState,
   snapshot: composeRootState,
+  activeTemplate: () => {
+    const template = getActiveTemplate();
+    return template ? { ...template } : null;
+  },
   patch: dispatchPatches,
   dispatchSession,
   subscribe: subscribeLegacyState,

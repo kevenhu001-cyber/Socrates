@@ -3,19 +3,12 @@ import { interfaceIcon } from '../../legacy/icons/interfaceIcons';
 
 import type { ExtensionDefinition } from '../types';
 import { reportSwallow } from '../../util/reportSwallow.ts';
+import { setExtensiveThinkingOn } from '../../config/providers.ts';
+import { getActiveTemplate } from '../../chat/templateSystemPrompt.ts';
 
 export const EXTENSIVE_THINKING_ICON = interfaceIcon('thinking', 18);
 
 const STORAGE_KEY = 'socrates-extensive-thinking';
-
-interface ExtensiveThinkingWindow {
-  extensiveThinkingOn?: boolean;
-  _activeTemplate?: { extensionKey?: string } | null;
-}
-
-function ew(): ExtensiveThinkingWindow {
-  return window as unknown as ExtensiveThinkingWindow;
-}
 
 export const extensiveThinkingExtension: ExtensionDefinition = {
   key: 'extensiveThinking',
@@ -29,7 +22,7 @@ export const extensiveThinkingExtension: ExtensionDefinition = {
   body: '',
   placement: { picker: 1 },
   onActivate(ctx) {
-    ew().extensiveThinkingOn = true;
+    setExtensiveThinkingOn(true);
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(true));
     } catch (error) {
@@ -45,13 +38,13 @@ export const extensiveThinkingExtension: ExtensionDefinition = {
     });
   },
   onDeactivate(ctx) {
-    ew().extensiveThinkingOn = false;
+    setExtensiveThinkingOn(false);
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(false));
     } catch (error) {
       reportSwallow(error, 'extensions/modules/extensiveThinking.ts:48', 'expected');
     }
-    const active = ew()._activeTemplate;
+    const active = getActiveTemplate();
     if (active && active.extensionKey === 'extensiveThinking') {
       ctx.clearTemplate();
     }

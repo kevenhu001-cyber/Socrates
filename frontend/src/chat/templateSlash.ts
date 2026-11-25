@@ -1,8 +1,6 @@
 /* chat/templateSlash.ts — extracted from legacy entry.
  * Template mode state + slash-command palette + composer blur helper.
- * Zero-behavior-change lift. Template state is module-local; the
- * window._activeTemplate mirror is maintained for legacy readers
- * (toolCallbacks, streaming finish, send paths).
+ * Template state is module-local. Consumers read it via templateSystemPrompt.ts.
  */
 import { ActiveTemplate, configureTemplateSystemPrompt } from './templateSystemPrompt.ts';
 import { toggleWebSearch } from './webSearchToggle.ts';
@@ -162,16 +160,9 @@ export function setActiveTemplate(input: object | null) {
   const prevExt = typeof previousExtension === 'string' ? previousExtension : null;
   const nextExt = typeof nextExtension === 'string' ? nextExtension : null;
   if (prevExt !== nextExt) _applyExtensionSideEffects(prevExt, nextExt);
-  try {
-    (window as unknown as { _activeTemplate?: unknown })._activeTemplate = _activeTemplate;
-  } catch (e) {
-    reportSwallow(e, 'templateSlash.setActiveTemplate.mirrorGlobal');
-  }
   renderTemplateModeChip();
 }
 export function clearActiveTemplate() {
-  const prevExt = (_activeTemplate && _activeTemplate.extensionKey) || null;
-  if (prevExt) _applyExtensionSideEffects(prevExt, null);
   setActiveTemplate(null);
 }
 /* Keep the selected workflow inside both rich editors. The token is an

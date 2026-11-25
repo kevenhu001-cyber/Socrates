@@ -3,6 +3,7 @@ import { turnState } from '../turn/state.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { showToast } from '../../legacy/toast.js';
 import { stripTemplateBodyPrefix, blurChatComposer } from '../templateSlash.ts';
+import { getActiveTemplate } from '../templateSystemPrompt.ts';
 import { clearComposer, focusComposer, getComposerMarkdown } from '../../composer/controller.ts';
 import { selectedComposerPlugins } from '../../composer/pluginSelection.ts';
 import { serializeSelectedPluginContext } from '../../composer/pluginCatalog.ts';
@@ -54,7 +55,6 @@ export interface CommitSendOptions {
 
 /** Legacy bridges the send path reads. */
 interface SendInputWindow extends Window {
-  _activeTemplate?: unknown;
   attachments?: unknown[] | null;
   publishReactChatRuntime?: (event: { type: string; reason: string }) => void;
 }
@@ -62,7 +62,7 @@ interface SendInputWindow extends Window {
 export function captureSendInput(textOverride?: string | null): SendInput | null {
   const rawText = textOverride != null ? textOverride : getComposerMarkdown('chat');
   let text = rawText.trim();
-  if ((window as SendInputWindow)._activeTemplate && textOverride == null) {
+  if (getActiveTemplate() && textOverride == null) {
     text = stripTemplateBodyPrefix(rawText).trim();
     if (!text) {
       try {

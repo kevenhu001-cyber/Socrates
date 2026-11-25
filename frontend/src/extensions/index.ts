@@ -9,6 +9,7 @@
 import { registry } from './registry';
 import { buildExtensionContext } from './context';
 import { getVisibleComposerSurface } from '../composer/controller.ts';
+import { getActiveTemplate } from '../chat/templateSystemPrompt.ts';
 
 import { writeExtension } from './modules/write';
 import { exploreExtension } from './modules/explore';
@@ -57,8 +58,7 @@ export function dispatchExtension(key: string): boolean {
   const def = registry.get(key);
   if (!def || typeof def.onActivate !== 'function') return false;
   const ctx = createContextForKey();
-  const activeKey = (window as unknown as { _activeTemplate?: { extensionKey?: string } | null })
-    ._activeTemplate?.extensionKey;
+  const activeKey = getActiveTemplate()?.extensionKey;
   if (def.kind === 'toggle' && activeKey === key) {
     def.onDeactivate?.(ctx);
   } else {

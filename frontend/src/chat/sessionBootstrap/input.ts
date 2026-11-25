@@ -5,7 +5,7 @@ import { serializeSelectedPluginContext } from '../../composer/pluginCatalog.ts'
 import { attachments, snapshotAttachments } from '../../attachments/index.ts';
 import { detectLanguage } from '../lang.ts';
 import { isSlashCommandPaletteOpen } from '../templateSlash.ts';
-import { reportSwallow } from '../../util/reportSwallow.ts';
+import { getActiveTemplate } from '../templateSystemPrompt.ts';
 import { getAppMode } from './runtime.ts';
 import { getCurrentLanguage } from '../../i18n/languageState.ts';
 import { isDeepResearchEnabled } from '../../config/deepResearchMode.ts';
@@ -22,11 +22,6 @@ export interface SessionStartContext {
   tutorExploration: { enabled: boolean; count: number };
 }
 
-/** Legacy bridges read during capture. */
-interface SessionStartWindow extends Window {
-  _activeTemplate?: Record<string, unknown> | null;
-}
-
 function resolveSessionTopic(): string | null {
   let topic = getComposerMarkdown('topic').trim();
   const hasAttachments = Array.isArray(attachments) && attachments.length > 0;
@@ -39,14 +34,8 @@ function resolveSessionTopic(): string | null {
 }
 
 function captureActiveTemplate(): Record<string, unknown> | null {
-  let activeTemplate: Record<string, unknown> | null = null;
-  try {
-    const win = window as SessionStartWindow;
-    if (win._activeTemplate) activeTemplate = Object.assign({}, win._activeTemplate);
-  } catch (error) {
-    reportSwallow(error, 'chat/sessionBootstrap.captureTemplate');
-  }
-  return activeTemplate;
+  const activeTemplate = getActiveTemplate();
+  return activeTemplate ? { ...activeTemplate } : null;
 }
 
 async function captureTutorExploration(

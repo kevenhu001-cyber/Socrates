@@ -6,8 +6,8 @@
  * both the chat turn assembly and the tutor prompt builders, so it lives
  * in chat/ rather than either consumer.
  *
- * The active template state itself stays in app entry; this module reads
- * it through the configured getter (same pattern as promptSuffixes).
+ * The active template state is owned by templateSlash.ts. All consumers use
+ * the configured module reader, without a browser-global mirror.
  */
 
 import type { PromptMessage } from './promptSuffixes.ts';
@@ -36,9 +36,14 @@ export interface TemplateSystemPromptDeps {
 
 let activeTemplateReader: () => ActiveTemplate | null | undefined = () => null;
 
-/** Provide the active-template reader owned by application bootstrap. */
+/** Provide the active-template reader owned by templateSlash.ts. */
 export function configureTemplateSystemPrompt(deps: TemplateSystemPromptDeps): void {
   activeTemplateReader = deps.getActiveTemplate;
+}
+
+/** Read the canonical active template without importing the composer runtime. */
+export function getActiveTemplate(): ActiveTemplate | null {
+  return activeTemplateReader() ?? null;
 }
 
 /**
@@ -49,7 +54,7 @@ export function configureTemplateSystemPrompt(deps: TemplateSystemPromptDeps): v
  * is a no-op).
  */
 export function injectTemplateSystemPrompt(messages: PromptMessage[]): PromptMessage[] {
-  const activeTemplate = activeTemplateReader();
+  const activeTemplate = getActiveTemplate();
   if (!activeTemplate || !activeTemplate.systemPrompt) return messages;
   const marker = '[template:' + activeTemplate.id + ']';
   /* If we already injected this template's prompt on a
