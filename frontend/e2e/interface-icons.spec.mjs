@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
-const officialNav = ['navNew', 'navSearch', 'navLibrary', 'navProjects', 'navScheduled'];
+const officialNav = ['navNew', 'navSearch', 'navLibrary', 'navProjects', 'navScheduled', 'navPlugins', 'navSites', 'navMore'];
 
 test('React-owned navigation renders a glyph for every primary destination', async ({ page }) => {
   await mockAuthedApp(page);
@@ -75,7 +75,6 @@ for (const theme of ['light', 'dark']) {
             const style = getComputedStyle(svg);
             const box = svg.getBBox();
             return {
-              noStroke: style.stroke === 'none',
               official: svg.getAttribute('data-icon-source') === 'openai-apps-sdk',
               fill: style.fill,
               stroke: style.strokeWidth,
@@ -89,7 +88,7 @@ for (const theme of ['light', 'dark']) {
     expect(icons.length).toBeGreaterThanOrEqual(5);
     for (const icon of icons) {
       /* RN-7 图标统一 1.5px 线宽（UI_ICON_STROKE，non-scaling）。 */
-      if (icon.official || icon.noStroke) {
+      if (icon.official) {
         expect(icon.color).toBe('none');
         expect(icon.fill).toBe(ink);
       } else {
