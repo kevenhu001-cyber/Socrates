@@ -88,8 +88,9 @@
   #appShell .sidebar {
     position: fixed;
     inset: 0 auto 0 0;
-    border-start-end-radius: var(--ui-radius-xl);
-    border-end-end-radius: var(--ui-radius-xl);
+    border-start-end-radius: 0;
+    border-end-end-radius: 0;
+    border-right: 1px solid var(--ui-sidebar-border);
     transform: translateX(0);
     transition: transform var(--ui-duration-drawer) var(--ui-ease-out);
     z-index: var(--ui-z-drawer);
@@ -97,7 +98,7 @@
   [data-mode='dark'] #appShell .sidebar {
     box-shadow:
       1px 0 0 var(--ui-border-subtle),
-      4px 0 28px -4px rgb(0 0 0 / 55%);
+      4px 0 18px -6px rgb(0 0 0 / 35%);
   }
   #appShell .sidebar.collapsed {
     /* Keep the static edge shadow outside the viewport as well. */
@@ -155,7 +156,7 @@
   /* Keep row actions tappable even on devices that report mouse hover
      support as well as touch. Brighten them when the row is in use. */
   #appShell .recent-item-actions {
-    opacity: 0.7;
+    opacity: 0.4;
     transition: opacity var(--ui-duration-hover) ease;
   }
   #appShell .recent-item:hover .recent-item-actions,
@@ -439,22 +440,26 @@
     --ui-ink: var(--ui-text-nav);
     --ui-card: var(--ui-bg-panel);
     --ui-elevation-raised: none;
-    background: var(--background);
+    background: #f5f5f5;
+  }
+  [data-mode='dark'] #appShell #sidebar {
+    background: #212121;
   }
   #appShell .sidebar-inner {
-    padding: 0 16px;
+    box-sizing: border-box;
+    padding: 0 clamp(14px, 5.6vw, 24px);
   }
   #appShell #sidebarHeader {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    min-height: calc(var(--ui-control-touch) + 24px + env(safe-area-inset-top, 0px));
+    min-height: calc(var(--ui-control-touch) + 28px + env(safe-area-inset-top, 0px));
     padding: env(safe-area-inset-top, 0px) 0 0;
   }
   #appShell .sidebar-logo {
     display: flex;
     align-items: center;
-    padding: 0 7px;
+    padding: 0 4px;
     gap: 4px;
     min-width: 0;
   }
@@ -503,9 +508,20 @@
     height: 20px;
   }
   #appShell #sidebarHeader #sidebarSearchBtn {
-    border: 0;
-    border-radius: var(--ui-radius-control);
-    background: transparent;
+    border: 1px solid var(--ui-border-subtle);
+    border-radius: var(--ui-radius-pill);
+    background: color-mix(in srgb, var(--foreground) 5%, transparent);
+  }
+  #appShell #sidebarHeader #sidebarSearchBtn svg {
+    width: 24px;
+    height: 24px;
+    color: var(--foreground);
+  }
+  #appShell #sidebarHeader #sidebarCloseBtn {
+    border-radius: var(--ui-radius-pill);
+  }
+  #appShell #sidebarHeader #sidebarSearchBtn[aria-expanded='true'] {
+    background: var(--ui-bg-selected);
   }
   #appShell .sidebar-search input {
     font-size: var(--ui-font-size-md);
@@ -520,19 +536,19 @@
   /* The nav label is a shared UiText (bodySm) whose size reads this role
      (SidebarNavButton); on the phone it takes the reference's 14px step. */
   #appShell #sidebarNav {
-    --nav-label-size: var(--ui-font-size-md);
+    --nav-label-size: calc(16px * var(--app-type-scale));
   }
   #appShell #sidebarNav .sidebar-nav-btn {
     display: grid;
-    grid-template-columns: 20px minmax(0, 1fr) auto;
+    grid-template-columns: 24px minmax(0, 1fr) auto;
     align-items: center;
-    column-gap: 14px;
+    column-gap: 12px;
     width: 100%;
     min-height: var(--ui-control-touch);
     height: var(--ui-control-touch);
-    padding: 0 10px;
+    padding: 0 4px;
     border-radius: var(--ui-radius-row);
-    font-size: var(--ui-mobile-font-nav);
+    font-size: var(--nav-label-size);
     font-weight: var(--ui-font-weight-regular);
     line-height: 24px;
     color: var(--ui-text-nav);
@@ -547,8 +563,8 @@
     background: var(--ui-bg-active);
   }
   #appShell #sidebarNav .sidebar-nav-btn svg {
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
   }
   #appShell #sidebarNav .nav-label {
     line-height: 24px;
@@ -641,9 +657,9 @@
   #appShell .sidebar-nav-sep {
     display: block;
     height: 1px;
-    margin: 12px 0 10px;
+    margin: 18px 4px 12px;
     border: 0;
-    background: var(--ui-hairline-faint);
+    background: var(--ui-sidebar-border);
   }
   #appShell .recent-item {
     display: flex;
@@ -651,9 +667,9 @@
     height: var(--ui-control-touch);
     min-height: var(--ui-control-touch);
     gap: var(--ui-space-sm);
-    padding: 0 6px 0 10px;
+    padding: 0 0 0 4px;
     border-radius: var(--ui-radius-row);
-    font-size: var(--ui-mobile-font-nav);
+    font-size: calc(16px * var(--app-type-scale));
     color: var(--ui-text-nav);
     transition:
       background-color var(--ui-duration-hover) ease,
@@ -676,8 +692,9 @@
   }
   #appShell .recents-search-all {
     display: inline-flex;
-    padding-inline: 10px;
-    color: var(--ui-text-secondary);
+    padding-inline: 4px;
+    color: var(--muted-foreground);
+    font-size: calc(15px * var(--app-type-scale));
   }
   #appShell .recent-item-overflow {
     display: grid;
@@ -709,8 +726,8 @@
   }
   #appShell #sidebarFooter {
     flex: 0 0 auto;
-    padding: 12px 0 max(16px, env(safe-area-inset-bottom, 0px));
-    border-top: 1px solid var(--ui-hairline-faint);
+    padding: 14px 4px max(20px, env(safe-area-inset-bottom, 0px));
+    border-top: 0;
     gap: 0;
   }
   #appShell #sidebarFooter .sidebar-footer-actions {
@@ -736,15 +753,20 @@
   }
   #appShell #sidebarUserRow .sidebar-account-trigger {
     display: flex;
-    flex: 1 1 auto;
-    justify-content: flex-start;
-    gap: var(--ui-space-sm);
-    height: var(--ui-control-touch);
-    min-width: 0;
-    padding: 0 var(--ui-space-xs);
-    border: 0;
-    border-radius: var(--ui-radius-row);
-    background: transparent;
+    flex: 0 0 46px;
+    justify-content: center;
+    gap: 0;
+    width: 46px;
+    height: 46px;
+    min-width: 46px;
+    padding: 0;
+    border: 1px solid var(--ui-border-subtle);
+    border-radius: var(--ui-radius-pill);
+    background: color-mix(in srgb, var(--foreground) 5%, transparent);
+  }
+  #appShell #sidebarUserRow .sidebar-account-trigger .user-identity,
+  #appShell #sidebarUserRow .sidebar-account-chevron {
+    display: none;
   }
   #appShell #sidebarUserRow .sidebar-account-trigger:hover,
   #appShell #sidebarUserRow .sidebar-account-trigger[aria-expanded='true'] {
@@ -760,13 +782,13 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    height: var(--ui-control-touch);
-    padding: 0 16px 0 12px;
+    gap: 8px;
+    height: 46px;
+    padding: 0 20px;
     border-radius: var(--ui-radius-pill);
-    background: var(--foreground);
-    color: var(--background);
-    font-size: var(--ui-font-size-sm);
+    background: #2f63e9;
+    color: #fff;
+    font-size: calc(16px * var(--app-type-scale));
     font-weight: var(--ui-font-weight-medium);
     letter-spacing: -0.01em;
     border: none;
@@ -780,9 +802,9 @@
     opacity: 0.85;
   }
   #appShell .sidebar-mobile-new-chat svg {
-    width: 16px;
-    height: 16px;
-    stroke-width: 2.25;
+    width: 22px;
+    height: 22px;
+    stroke-width: 2;
     color: inherit;
   }
   /* Reference account lockup: name 15px, plan 13px. */
@@ -814,7 +836,7 @@
      :is() — repeating "#appShell #sidebar" on every line is the stacked-id
      debt the css-debt ratchet tracks. */
   [data-mode='dark'] #appShell #sidebar svg:not(.sidebar-mobile-new-chat svg) {
-    color: var(--ui-text-nav);
+    color: var(--foreground);
 
     stroke-linecap: round;
     stroke-linejoin: round;
@@ -833,7 +855,7 @@
       #sidebarSearch,
       #sidebarSearch::placeholder
     ) {
-    color: var(--ui-text-nav);
+    color: var(--foreground);
   }
   [data-mode='dark'] #appShell :is(#sidebar) .sidebar-logo,
   [data-mode='dark'] #appShell #sidebarUserRow :is(.sidebar-account-trigger, .user-name) {
