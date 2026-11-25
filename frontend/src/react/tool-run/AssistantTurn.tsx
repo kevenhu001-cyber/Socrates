@@ -163,7 +163,7 @@ function ToolActivityBurst({
   const bodyId = useId();
   const running = live && members.some((call) => toolRunStateOf(call) === 'running');
   // Approval is user input, not a log: never hide a pending decision.
-  const canFold = members.every((call) => toolRunStateOf(call) !== 'awaiting');
+  const canFold = members.length > 1 && members.every((call) => toolRunStateOf(call) !== 'awaiting');
   const open = openOverride ?? members.some((call) => expandedIds?.has(call.id));
   const folded = canFold && !open;
   const label = running
