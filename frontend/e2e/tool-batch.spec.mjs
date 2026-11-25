@@ -3,7 +3,7 @@ import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 import { toolRow, toolRowButton } from './_turn-ui.mjs';
 
-test('each tool in a burst is visible and individually expandable', async ({ page }) => {
+test('a large tool burst collapses to one summary and preserves individual details', async ({ page }) => {
   await mockAuthedApp(page, { lang: 'en' });
   await page.route('**/api/**/chat/stream', async (route) => {
     const frames = [];
@@ -51,10 +51,21 @@ test('each tool in a burst is visible and individually expandable', async ({ pag
   });
 
   const turn = page.locator('.msg.assistant').last();
+  await expect(turn.locator('.rn-tool-row')).toHaveCount(1);
+  const activityToggle = turn.getByTestId('turn-activity-toggle');
+  await expect(activityToggle).toHaveAttribute('aria-expanded', 'false');
+  await activityToggle.click();
+
+  const group = turn.getByTestId('tool-group-batch-a');
+  await expect(group).toBeVisible();
+  await expect(group).toHaveAttribute('aria-expanded', 'false');
+  await expect(group).toContainText('4 actions');
+  await expect(group).not.toContainText('failed');
+  await expect(toolRow(turn, 'batch-error')).toHaveAttribute('data-state', 'error');
+  await group.click();
+
   await expect(turn.locator('.rn-tool-row')).toHaveCount(5);
-  await expect(turn.getByTestId('turn-activity-toggle')).toHaveAttribute('aria-expanded', 'false');
-  await turn.getByTestId('turn-activity-toggle').click();
-  for (const id of ['batch-a', 'batch-b', 'batch-c', 'batch-d']) {
+  for (const id of ['batch-a', 'batch-b', 'batch-c', 'batch-d', 'batch-error']) {
     await expect(toolRowButton(turn, id)).toBeVisible();
   }
   const first = toolRowButton(turn, 'batch-a');

@@ -382,6 +382,94 @@
   gap: var(--ui-space-xs);
 }
 
+/* A long consecutive burst gets one quiet summary row. Its children
+   retain the ordinary per-tool trigger and detail surfaces. */
+.tool-run-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+}
+.tool-run-group-trigger {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: var(--ui-space-sm);
+  min-width: 0;
+  max-width: 100%;
+  min-height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ui-radius-sm);
+  background: transparent;
+  color: var(--ui-text-secondary);
+  font: inherit;
+  font-size: var(--ui-font-size-xs);
+  line-height: 20px;
+  text-align: start;
+  cursor: pointer;
+  transition: color var(--ui-duration-fast) var(--ui-ease-out);
+}
+.tool-run-group-trigger:hover {
+  color: var(--foreground);
+}
+.tool-run-group-trigger:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-focus-shadow);
+}
+.tool-run-group-trigger > svg {
+  flex: none;
+}
+.tool-run-group-icon {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  color: inherit;
+}
+.tool-run-group-icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.tool-run-group-trigger :is(.tool-site-marks, .is-connector-brand) {
+  flex: none;
+}
+.tool-run-group-label {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tool-run-group-meta {
+  flex: none;
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xxs);
+  line-height: 18px;
+  white-space: nowrap;
+}
+.tool-run-group[data-state='error'] .tool-run-group-icon,
+.tool-run-group[data-state='error'] .tool-run-group-meta {
+  color: var(--destructive);
+}
+.tool-run-group-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-xs);
+  min-width: 0;
+  margin-block-start: var(--ui-space-xs);
+  padding-inline-start: calc(18px + var(--ui-space-sm));
+}
+.tool-run-group-body[hidden] {
+  display: none;
+}
+
+/* Failures stay legible without turning a tool row into an alert card. */
+.rn-tool-row[data-error='1'] .tool-inline-tool-icon,
+.rn-tool-row[data-error='1'] .tool-run-state {
+  color: var(--destructive);
+}
+
 /* Expanding a tool is a disclosure, not a page jump: the detail arrives on
  * the same short opacity/offset clock as the other overlays. */
 .tool-run-detail-body {
@@ -511,6 +599,9 @@
   color: var(--foreground);
 }
 @media (max-width: 768px) {
+  .tool-run-group-trigger {
+    min-height: var(--ui-control-touch);
+  }
   .rn-tool-row .tool-run-trigger {
     min-height: var(--ui-control-touch);
   }
