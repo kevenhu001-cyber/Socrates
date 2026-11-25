@@ -1,6 +1,5 @@
 import { Icon } from '../../../legacy/Icon';
 import { Button } from '../../ui/shadcn/button';
-import { Button as UiButton } from '../../ui/Button';
 import { i18n, MoreIcon, PlusIcon } from './workspaceUi';
 import { ConnectorMark } from './ConnectorMark';
 import type { useWorkspaceDispatch } from './workspace.hooks';
@@ -100,25 +99,27 @@ export function PluginDirectoryCard({
       data-connector-id={plugin.id}
       key={plugin.id}
     >
-      <UiButton
+      <Button
         type="button"
-        className="plugin-directory-card-main"
+        variant="ghost"
+        size="surface"
+        className="plugin-directory-card-main justify-start whitespace-normal"
         onClick={() => onSelect(plugin.id)}
         aria-label={plugin.name}
       >
-      <span className={'workspace-row-icon connector-icon connector-' + plugin.id}>
-        <ConnectorMark id={plugin.id} name={plugin.name} />
-      </span>
-      <div className="workspace-row-copy">
-        <div className="plugin-directory-card-title-row">
-          <strong>{plugin.name}</strong>
-          {plugin.connection?.status === 'connected' ? (
-            <span className="plugin-directory-card-status">{connectedLabel}</span>
-          ) : null}
-        </div>
-        <p className="plugin-directory-card-desc">{description}</p>
-      </div>
-      </UiButton>
+        <span className={'workspace-row-icon connector-icon connector-' + plugin.id}>
+          <ConnectorMark id={plugin.id} name={plugin.name} />
+        </span>
+        <span className="workspace-row-copy">
+          <span className="plugin-directory-card-title-row">
+            <strong>{plugin.name}</strong>
+            {plugin.connection?.status === 'connected' ? (
+              <span className="plugin-directory-card-status">{connectedLabel}</span>
+            ) : null}
+          </span>
+          <span className="plugin-directory-card-desc">{description}</span>
+        </span>
+      </Button>
       <div className="plugin-directory-row-action">
         <PluginConnectionAction plugin={plugin} configured={configured} dispatch={dispatch} />
       </div>

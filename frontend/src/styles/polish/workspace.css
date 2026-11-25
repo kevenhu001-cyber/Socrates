@@ -104,7 +104,6 @@
   margin-inline-start: -8px;
 }
 
-
 #appShell .plugin-detail-logo-tile {
   flex: 0 0 64px;
   width: 64px;
@@ -575,6 +574,10 @@
   font-size: var(--ui-font-size-sm);
 }
 
+#appShell .workspace-chunk-retry {
+  align-self: flex-start;
+}
+
 #appShell .workspace-chunk-loading-line {
   /* The lazy chunk resolves into a full-width page, so its placeholder lines
      span the same measure instead of sitting as a narrow centred block. */
@@ -584,7 +587,7 @@
 }
 
 #appShell .workspace-chunk-loading-line-short {
-  width: 100%;
+  width: 62%;
 }
 
 @media (max-width: 768px) {
@@ -632,14 +635,13 @@
     }
   }
 
-   #appShell .workspace-skeleton-scheduled-cards {
+  #appShell .workspace-skeleton-scheduled-cards {
     grid-template-columns: 1fr;
   }
 
   #appShell .scheduled-skeleton-row {
     padding: 14px;
   }
-
 }
 
 /* Both directory headings live inside the page beneath the app header. */

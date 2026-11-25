@@ -1,3 +1,4 @@
+import { t } from '../../../i18n/index';
 import { reportSwallow } from '../../../util/reportSwallow';
 import { hasOwnedRoot } from './ownedRoot';
 
@@ -28,7 +29,8 @@ export function loadPage(
     if (!current.loaded) {
       host.classList.remove('visually-hidden');
       host.innerHTML =
-        '<div class="workspace-chunk-loading" role="status"><span class="workspace-chunk-loading-label shimmer-text">Loading…</span><span class="workspace-chunk-loading-line workspace-skeleton-shimmer"></span><span class="workspace-chunk-loading-line workspace-skeleton-shimmer workspace-chunk-loading-line-short"></span></div>';
+        '<div class="workspace-chunk-loading" role="status"><span class="workspace-chunk-loading-label shimmer-text"></span><span class="workspace-chunk-loading-line workspace-skeleton-shimmer"></span><span class="workspace-chunk-loading-line workspace-skeleton-shimmer workspace-chunk-loading-line-short"></span></div>';
+      host.querySelector('.workspace-chunk-loading-label')!.textContent = t('common.loading');
       host.setAttribute('aria-busy', 'true');
     }
     current.pending = Promise.resolve()
@@ -43,7 +45,19 @@ export function loadPage(
         reportSwallow(error, `react:page:${hostId}`);
         // Never replace an already-mounted React tree with an error string.
         if (isCurrentHost() && !current.loaded && !hasOwnedRoot(host)) {
-          host.textContent = 'Could not load this page. Please try again.';
+          const panel = document.createElement('div');
+          panel.className = 'workspace-chunk-loading';
+          const message = document.createElement('span');
+          message.className = 'workspace-chunk-loading-label';
+          message.setAttribute('role', 'alert');
+          message.textContent = t('page.loadFailed');
+          const retry = document.createElement('button');
+          retry.type = 'button';
+          retry.className = 'btn workspace-chunk-retry';
+          retry.textContent = t('common.retry');
+          retry.addEventListener('click', () => void loadPage(hostId, load, afterMount));
+          panel.append(message, retry);
+          host.replaceChildren(panel);
         }
         return false;
       })

@@ -234,8 +234,8 @@ export function createTurnEventController(
         generated = true;
         publish({ type: 'generation', phase: 'streaming' });
       }
-      // Only the startup wait ends on prose. Real process work has its own track.
-      if (process?.kind === 'waiting') endProcess();
+      // Prose ends the preceding wait, reasoning, or synthesis interval.
+      endProcess();
     },
     toolArguments(
       delta: { id?: string | null; name?: string | null; arguments?: string },

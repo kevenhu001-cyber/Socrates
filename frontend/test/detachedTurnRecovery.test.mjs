@@ -73,7 +73,7 @@ test('open detached turn replays typed events and completes after turn_done', as
       return eventStreamResponse(
         [
           eventFrame(1, 'content', { delta: 'Recovered answer.' }),
-          eventFrame(2, 'tool_use', [{ id: 'tool-1', name: 'web_search' }]),
+          eventFrame(2, 'tool_use', { value: [{ id: 'tool-1', name: 'web_search' }] }),
           eventFrame(3, 'turn_done', {}),
         ].join(''),
       );
@@ -162,8 +162,10 @@ test('reconnect suppresses already visible content and duplicate durable frames'
           eventFrame(2, 'content', { delta: 'answer continues' }),
           eventFrame(2, 'content', { delta: 'answer continues' }),
           eventFrame(3, 'content', { delta: '.' }),
-          eventFrame(4, 'turn_done', {}),
-          eventFrame(5, 'content', { delta: 'must not appear' }),
+          eventFrame(4, 'reasoning', { delta: 'Known thought' }),
+          eventFrame(5, 'reasoning', { delta: ' continued.' }),
+          eventFrame(6, 'turn_done', {}),
+          eventFrame(7, 'content', { delta: 'must not appear' }),
         ].join(''),
       );
     }
@@ -171,10 +173,14 @@ test('reconnect suppresses already visible content and duplicate durable frames'
   };
   const { recoverDetachedTurn } = await import('../src/chat/detachedTurnRecovery.ts');
   const emitted = [];
+  const reasoning = [];
   const result = await recoverDetachedTurn('turn-1', {
     currentFull: 'Known answer ',
+    currentReasoning: 'Known thought',
     onDelta: (text) => emitted.push(text),
+    onThinking: (text) => reasoning.push(text),
   });
+  assert.deepEqual(reasoning, [' continued.']);
   assert.deepEqual(emitted, ['continues', '.']);
   assert.equal(result.text, 'Known answer continues.');
 });

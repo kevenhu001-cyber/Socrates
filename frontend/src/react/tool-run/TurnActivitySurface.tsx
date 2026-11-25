@@ -1,6 +1,11 @@
 import { Button } from '../ui/Button';
 import { useId, useMemo, useRef, useState } from 'react';
-import { activityTimeline, publicSummariesOf, stepsWithFallback, type ThinkingStep } from '@socrates/ui/turn';
+import {
+  activityTimeline,
+  publicSummariesOf,
+  stepsWithFallback,
+  type ThinkingStep,
+} from '@socrates/ui/turn';
 import type { TurnActivityEntry } from '@socrates/contracts';
 import type { TurnActivityStatus } from '../../legacy/turnActivityModel';
 import { i18n } from '../../ui/legacyI18n.ts';
@@ -33,8 +38,16 @@ export interface TurnActivitySurfaceProps {
 function SummaryStep({ step }: { step: ThinkingStep }) {
   return (
     <div className="activity-summary-step" data-testid="thinking-step">
-      {step.title ? <div data-testid="thinking-step-title" className="activity-summary-title"><MathText text={step.title} /></div> : null}
-      {step.summary ? <p className="thinking-step-summary"><MathText text={step.summary} /></p> : null}
+      {step.title ? (
+        <div data-testid="thinking-step-title" className="activity-summary-title">
+          <MathText text={step.title} />
+        </div>
+      ) : null}
+      {step.summary ? (
+        <p className="thinking-step-summary">
+          <MathText text={step.summary} />
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -43,14 +56,17 @@ function activityLabel(props: TurnActivitySurfaceProps, hasSummary: boolean) {
   if (props.isLive) return props.statusLabel || i18n('think.thinking', 'Thinking…');
   const seconds = props.reasoningDurationSec;
   if (typeof seconds === 'number' && Number.isFinite(seconds) && seconds > 0) {
-    return tf('think.thoughtDuration', 'Thought for {sec}s', { sec: Math.max(1, Math.round(seconds)) });
+    return tf('think.thoughtDuration', 'Thought for {sec}s', {
+      sec: Math.max(1, Math.round(seconds)),
+    });
   }
   if (hasSummary) return i18n('think.reasoningSummary', 'Thinking summary');
-  if (props.calls.length) return tf(
-    props.calls.length === 1 ? 'think.summaryToolTitle' : 'think.summaryToolsTitle',
-    props.calls.length === 1 ? 'Used {n} tool' : 'Used {n} tools',
-    { n: props.calls.length },
-  );
+  if (props.calls.length)
+    return tf(
+      props.calls.length === 1 ? 'think.summaryToolTitle' : 'think.summaryToolsTitle',
+      props.calls.length === 1 ? 'Used {n} tool' : 'Used {n} tools',
+      { n: props.calls.length },
+    );
   return i18n('think.complete', 'Finished thinking');
 }
 
@@ -68,6 +84,8 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
     () => stepsWithFallback(publicSummariesOf(activities), props.publicSummary),
     [activities, props.publicSummary],
   );
+  const reasoningLabel = i18n('think.observedReasoning', 'Model reasoning');
+  const reasoningDone = i18n('think.observedReasoningDone', 'Reasoning finished');
   const timeline = useMemo(() => {
     const toolStarts = new Map<string, number>();
     for (const entry of activities || []) {
@@ -75,17 +93,33 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
         toolStarts.set(entry.toolCallId, entry.startedAt);
       }
     }
-    return activityTimeline(steps, calls.filter((call) => call.id && call.name).map((call) => ({
-      id: call.id,
-      startedAt: toolStarts.get(call.id) ?? (runStartedAt(call) || undefined),
-      item: call,
-    })));
-  }, [steps, calls, activities]);
+    const reasoningSteps = steps.length
+      ? steps
+      : (activities || [])
+          .filter((entry) => entry.kind === 'reasoning')
+          .map((entry) => ({
+            id: entry.id,
+            title: entry.phase === 'done' ? reasoningDone : reasoningLabel,
+            summary: '',
+            startedAt: entry.startedAt,
+          }));
+    return activityTimeline(
+      reasoningSteps,
+      calls
+        .filter((call) => call.id && call.name)
+        .map((call) => ({
+          id: call.id,
+          startedAt: toolStarts.get(call.id) ?? (runStartedAt(call) || undefined),
+          item: call,
+        })),
+    );
+  }, [steps, calls, activities, reasoningLabel, reasoningDone]);
   const hasSummary = steps.length > 0 || Boolean(intent);
   const expandable = timeline.length > 0 || Boolean(intent);
   const live = Boolean(props.isLive);
   const working = live && status?.phase !== 'answering' && status?.phase !== 'tool-awaiting';
-  const startedAt = status?.phase === 'tool-running' ? runStartedAt(activeTool) : props.activityStartedAt || 0;
+  const startedAt =
+    status?.phase === 'tool-running' ? runStartedAt(activeTool) : props.activityStartedAt || 0;
   const elapsedMs = useElapsed(startedAt, working);
   const elapsedSec = elapsedMs > 0 ? elapsedMs / 1000 : status?.elapsedSec;
   const label = activityLabel(props, hasSummary);
@@ -95,14 +129,25 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
   const caption = (
     <>
       {toolName ? <ToolActivityIcon name={toolName} /> : null}
-      <span className="activity-caption" data-testid="turn-activity-label" role={working ? 'status' : undefined}>{label}</span>
-      {working && elapsedSec ? <span className="activity-duration" data-testid="turn-activity-duration" aria-live="off">{tf('think.rn.elapsed', '{sec}s', { sec: Math.max(1, Math.round(elapsedSec)) })}</span> : null}
+      <span
+        className="activity-caption"
+        data-testid="turn-activity-label"
+        role={working ? 'status' : undefined}
+      >
+        {label}
+      </span>
+      {working && elapsedSec ? (
+        <span className="activity-duration" data-testid="turn-activity-duration" aria-live="off">
+          {tf('think.rn.elapsed', '{sec}s', { sec: Math.max(1, Math.round(elapsedSec)) })}
+        </span>
+      ) : null}
       {sites.length ? <ToolSiteMarks sites={sites} /> : null}
       {expandable ? <Icon name="chevronRight" size={12} className="activity-chevron" /> : null}
     </>
   );
   return (
-    <div className={`rn-turn-activity${live ? ' is-live' : ''}`}
+    <div
+      className={`rn-turn-activity${live ? ' is-live' : ''}`}
       data-turn-surface-part="activity"
       data-live={working ? 'true' : undefined}
       data-phase={live ? status?.phase : undefined}
@@ -112,23 +157,53 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
     >
       <div data-testid="turn-activity">
         {expandable ? (
-          <Button type="button" className="rn-turn-activity-toggle" data-testid="turn-activity-toggle"
-            aria-expanded={open} aria-controls={id} onClick={() => setOpen((value) => !value)}>
+          <Button
+            type="button"
+            className="rn-turn-activity-toggle"
+            data-testid="turn-activity-toggle"
+            aria-expanded={open}
+            aria-controls={id}
+            onClick={() => setOpen((value) => !value)}
+          >
             {caption}
           </Button>
         ) : (
-          <div className="rn-turn-activity-toggle" data-testid="turn-activity-toggle">{caption}</div>
+          <div className="rn-turn-activity-toggle" data-testid="turn-activity-toggle">
+            {caption}
+          </div>
         )}
-        <div id={id} data-testid="turn-activity-body"
+        <div
+          id={id}
+          data-testid="turn-activity-body"
           className={`ui-collapse activity-disclosure${open ? '' : ' collapsed'}`}
-          aria-hidden={!open} inert={!open}>
+          aria-hidden={!open}
+          inert={!open}
+        >
           <div className="ui-collapse-inner">
             <div className="activity-timeline" data-testid="thinking-timeline">
-              {intent ? <SummaryStep step={{ id: 'intent', title: i18n('think.taskOverview', 'Task overview'), summary: intent }} /> : null}
-              {timeline.flatMap((entry) => entry.kind === 'step' ? [
-                <SummaryStep key={`summary-${entry.step.id}`} step={entry.step} />,
-              ] : entry.tools.map((call) => <ToolRunRow key={`tool-${call.id}`} call={call} messageId={messageId}
-                  readOnly={readOnly} live={live} approvalOutside />))}
+              {intent ? (
+                <SummaryStep
+                  step={{
+                    id: 'intent',
+                    title: i18n('think.taskOverview', 'Task overview'),
+                    summary: intent,
+                  }}
+                />
+              ) : null}
+              {timeline.flatMap((entry) =>
+                entry.kind === 'step'
+                  ? [<SummaryStep key={`summary-${entry.step.id}`} step={entry.step} />]
+                  : entry.tools.map((call) => (
+                      <ToolRunRow
+                        key={`tool-${call.id}`}
+                        call={call}
+                        messageId={messageId}
+                        readOnly={readOnly}
+                        live={live}
+                        approvalOutside
+                      />
+                    )),
+              )}
             </div>
           </div>
         </div>

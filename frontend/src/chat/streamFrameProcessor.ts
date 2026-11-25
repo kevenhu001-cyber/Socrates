@@ -39,6 +39,9 @@ export interface StreamProcessorContext {
 
 interface ProcessorState {
   full: string;
+  reasoning: string;
+  receivedDone: boolean;
+  hasToolOutput: boolean;
   formattedHtml: { html: string; widgets?: unknown[] } | null;
   semanticActivity: boolean;
   streamError: ChatApiError | null;
@@ -82,6 +85,16 @@ function parseFrame(frame: string): ParsedFrame {
   return { eventName, dataParts };
 }
 
+function isSuccessfulToolResult(value: unknown): boolean {
+  if (!value || typeof value !== 'object') return false;
+  const result = value as Record<string, unknown>;
+  return (
+    typeof result.id === 'string' &&
+    result.ok !== false &&
+    !['failed', 'error', 'stopped', 'cancelled'].includes(String(result.status))
+  );
+}
+
 function dispatchCallbackEvent(
   state: ProcessorState,
   context: StreamProcessorContext,
@@ -93,12 +106,20 @@ function dispatchCallbackEvent(
   if (eventName !== 'turn_activity' && eventName !== 'turn_event') state.semanticActivity = true;
   const callback =
     context.opts && (context.opts as Record<string, unknown>)[CALLBACK_BY_EVENT[eventName]!];
-  if (typeof callback === 'function' && dataParts.length) {
-    /* A tool row's text offset must include visible text held for a possible
-       split <think> opening tag. */
-    if (eventName === 'tool_use') state.thinkScanner.flushVisibleTail();
+  if (dataParts.length) {
     try {
-      (callback as (payload: unknown) => void)(JSON.parse(dataParts.join('\n')));
+      const payload = JSON.parse(dataParts.join('\n'));
+      if (
+        eventName === 'tool_approval' ||
+        (eventName === 'tool_result' && isSuccessfulToolResult(payload))
+      ) {
+        state.hasToolOutput = true;
+      }
+      if (typeof callback === 'function') {
+        // Include any visible text held for a possible split <think> tag.
+        if (eventName === 'tool_use') state.thinkScanner.flushVisibleTail();
+        (callback as (payload: unknown) => void)(payload);
+      }
     } catch (error) {
       warnBadFrame(eventName, error);
     }
@@ -171,6 +192,7 @@ function emitReasoning(
 ): void {
   if (typeof reasoning !== 'string' || !reasoning.length) return;
   state.semanticActivity = true;
+  state.reasoning += reasoning;
   if (typeof context.onThinking !== 'function') return;
   try {
     context.onThinking(reasoning);
@@ -274,7 +296,11 @@ function processDataPayload(
   context: StreamProcessorContext,
   payload: string,
 ): void {
-  if (!payload || payload === '[DONE]' || payload === '__FORMATTED__') return;
+  if (payload === '[DONE]') {
+    state.receivedDone = true;
+    return;
+  }
+  if (!payload || payload === '__FORMATTED__') return;
 
   /* The final server-rendered response is an object with an actual string
      `html` property. Do not mistake fenced HTML inside a text delta for it. */
@@ -294,6 +320,7 @@ function processDataPayload(
 }
 
 function processFrame(state: ProcessorState, context: StreamProcessorContext, frame: string): void {
+  if (state.receivedDone) return;
   const { eventName, dataParts } = parseFrame(frame);
   if (dispatchCallbackEvent(state, context, eventName, dataParts)) return;
   if (handleControlEvent(state, context, eventName, dataParts)) return;
@@ -308,6 +335,9 @@ function finishFrame(state: ProcessorState): void {
 export function createStreamFrameProcessor(context: StreamProcessorContext) {
   const state: ProcessorState = {
     full: '',
+    reasoning: '',
+    receivedDone: false,
+    hasToolOutput: false,
     formattedHtml: null,
     semanticActivity: false,
     streamError: null,
@@ -323,7 +353,7 @@ export function createStreamFrameProcessor(context: StreamProcessorContext) {
         console.warn('[API stream] onDelta threw:', error && (error as Error).message);
       }
     },
-    onThinking: context.onThinking,
+    onThinking: context.onThinking ? (text) => emitReasoning(state, context, text) : undefined,
   });
 
   return {
@@ -335,6 +365,15 @@ export function createStreamFrameProcessor(context: StreamProcessorContext) {
     },
     get full() {
       return state.full;
+    },
+    get reasoning() {
+      return state.reasoning;
+    },
+    get receivedDone() {
+      return state.receivedDone;
+    },
+    get hasToolOutput() {
+      return state.hasToolOutput;
     },
     get formattedHtml() {
       return state.formattedHtml;

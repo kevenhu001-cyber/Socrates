@@ -24,7 +24,7 @@ interface StreamAttemptContext {
   setLastCallError(error: string | null): void;
 }
 type Processor = ReturnType<typeof createStreamFrameProcessor>;
-type ProcessorView = Pick<Processor, 'full' | 'formattedHtml'>;
+type ProcessorView = Pick<Processor, 'full' | 'formattedHtml' | 'reasoning'>;
 type Reader = ReadableStreamDefaultReader<Uint8Array>;
 interface StreamRead {
   gotAnyData: boolean;
@@ -189,7 +189,7 @@ async function handleRequestFailure(
     return cancelled(emptyCancelledResult());
   }
   if (isClaimConflictError(error as ChatApiError) || isClaimConflictError(requestError)) {
-    return recoverClaimConflict(error, { full: '', formattedHtml: null }, context);
+    return recoverClaimConflict(error, { full: '', formattedHtml: null, reasoning: '' }, context);
   }
   const retryOutcome = await retryOrCancel(context, requestError);
   if (retryOutcome) return retryOutcome;
@@ -281,6 +281,7 @@ async function recoverAfterReadError(
     let recoveredFull = processor.full;
     return await recoverDetachedTurn(turnId, {
       currentFull: processor.full,
+      currentReasoning: processor.reasoning,
       onDelta: context.onDelta
         ? (delta) => {
             recoveredFull += delta;
@@ -376,19 +377,13 @@ async function consumeStream(reader: Reader, processor: Processor) {
   let gotAnyData = false;
 
   try {
-    while (true) {
+    while (!processor.receivedDone) {
       const step = await reader.read();
       if (step.done) break;
       bytesReceived += step.value.byteLength;
       gotAnyData = gotAnyData || step.value.byteLength > 0;
       buffer += decoder.decode(step.value, { stream: true });
       buffer = consumeSseBuffer(buffer, processor.processFrame);
-    }
-    /* Return the HTTP/2 stream slot to the browser connection pool. */
-    try {
-      reader.releaseLock();
-    } catch (error) {
-      reportSwallow(error, 'chat/streamAttempt.releaseReader');
     }
     buffer += decoder.decode();
     /* A server may close without its final SSE delimiter. */
@@ -397,6 +392,12 @@ async function consumeStream(reader: Reader, processor: Processor) {
     return { bytesReceived, gotAnyData, error: null };
   } catch (error) {
     return { bytesReceived, gotAnyData, error };
+  } finally {
+    try {
+      reader.releaseLock();
+    } catch (error) {
+      reportSwallow(error, 'chat/streamAttempt.releaseReader');
+    }
   }
 }
 
@@ -426,7 +427,7 @@ async function finishEmptyStream(
   stream: StreamRead,
   context: StreamAttemptContext,
 ) {
-  if (processor.semanticActivity) {
+  if (processor.hasToolOutput) {
     return completed({
       text: processor.full || '',
       html: (processor.formattedHtml && processor.formattedHtml.html) || null,
@@ -434,6 +435,10 @@ async function finishEmptyStream(
       cancelled: false,
       semanticActivity: true,
     });
+  }
+  if (processor.semanticActivity) {
+    context.setLastCallError(t('chat.noAnswer'));
+    return failed();
   }
   const message = stream.gotAnyData
     ? 'empty stream (server returned no content)'
@@ -452,7 +457,7 @@ async function finishStreamResponse(
   context: StreamAttemptContext,
 ) {
   if (processor.streamError) return finishStreamError(processor, context);
-  if (!processor.full && !processor.formattedHtml)
+  if (!processor.full.trim() && !processor.formattedHtml)
     return finishEmptyStream(processor, stream, context);
 
   return completed({
@@ -480,6 +485,13 @@ async function readStreamResponse(response: Response, context: StreamAttemptCont
   if (stream.error)
     return handleReadError(stream.error as ChatApiError, reader, processor, context);
   cancelResponseBody(response.body);
+  if (!processor.receivedDone && !processor.streamError && context.activeTurn.current) {
+    const recovered = await recoverAfterReadError(null, processor, context);
+    if (recovered) return completed(recovered);
+    if (context.turnSignal.aborted) return cancelled(cancelledStreamResult(processor));
+    context.setLastCallError(t('chat.streamInterrupted'));
+    return failed();
+  }
   return finishStreamResponse(processor, stream, context);
 }
 

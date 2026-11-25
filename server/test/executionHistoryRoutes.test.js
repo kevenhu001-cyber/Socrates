@@ -89,7 +89,7 @@ test('real HTTP history endpoints authenticate and isolate run, job, execution, 
   ids.turns.push(turn.id, foreignTurn.id);
   await f.db.insert(chatTurnEvents).values([
     { turnId: turn.id, sequence: 1, event: 'content', payload: { delta: 'hello' } },
-    { turnId: turn.id, sequence: 2, event: 'done', payload: {} },
+    { turnId: turn.id, sequence: 2, event: 'turn_done', payload: {} },
   ]);
 
   for (const path of [
@@ -133,6 +133,15 @@ test('real HTTP history endpoints authenticate and isolate run, job, execution, 
   assert.equal((await f.request(`/api/chat-turns/${turn.id}`)).body.events.length, 2);
   assert.equal((await f.request(`/api/chat-turns/${foreignTurn.id}`)).status, 404);
   assert.equal((await f.request(`/api/chat-turns/${turn.id}/events?after=-1`)).status, 400);
+
+  const turnStream = await fetch(`${f.url}/api/chat-turns/${turn.id}/events?after=1`, {
+    headers: { Cookie: `sid=${f.owner.sid}` },
+    signal: AbortSignal.timeout(5000),
+  });
+  assert.equal(turnStream.status, 200);
+  const replay = await turnStream.text();
+  assert.match(replay, /event: turn_done/);
+  assert.doesNotMatch(replay, /hello/); // The resume cursor skips already delivered content.
 
   const stream = await f.request(`/api/executions/${execution.id}/stream`);
   assert.equal(stream.status, 200);

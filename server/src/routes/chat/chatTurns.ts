@@ -165,6 +165,11 @@ router.get('/:id/events', async (req, res, next) => {
           if (closed) break;
           sendTurnEvent(res, row);
           cursor = row.sequence;
+          if (['turn_done', 'turn_failed', 'turn_interrupted'].includes(row.event)) {
+            cleanup();
+            res.end();
+            return;
+          }
         }
         if (rows.length < 500) break;
       }

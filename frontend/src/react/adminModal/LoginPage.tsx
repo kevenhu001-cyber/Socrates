@@ -4,6 +4,8 @@ import { Button as UiButton } from '../ui/shadcn/button';
 import { AuthCard } from '../ui/page/AuthCard';
 import { useState, type SyntheticEvent } from 'react';
 
+import { t } from '../../i18n/index';
+
 import { loginAdmin } from './adminApi';
 
 export function LoginPage({ onReady }: { onReady: () => void }) {
@@ -19,7 +21,7 @@ export function LoginPage({ onReady }: { onReady: () => void }) {
       await loginAdmin(password);
       onReady();
     } catch (cause) {
-      setError((cause as Error).message || 'Login failed.');
+      setError((cause as Error).message || t('auth.signinError'));
     } finally {
       setBusy(false);
     }
@@ -28,15 +30,13 @@ export function LoginPage({ onReady }: { onReady: () => void }) {
   return (
     <AuthCard className="admin-login">
       <h1 id="admin-console-title" className="admin-login-title" data-page-title>
-        Admin console
+        {t('admin.title')}
       </h1>
-      <p className="admin-hint">
-        Enter the operator password to manage the system model and embedding provider.
-      </p>
+      <p className="admin-hint">{t('admin.loginHint')}</p>
       <form onSubmit={submit}>
         <FieldGroup>
           <Field>
-            <FieldLabel htmlFor="admin-loginpage-1">Admin password</FieldLabel>
+            <FieldLabel htmlFor="admin-loginpage-1">{t('admin.password')}</FieldLabel>
             <ShadcnInput
               id="admin-loginpage-1"
               type="password"
@@ -58,7 +58,7 @@ export function LoginPage({ onReady }: { onReady: () => void }) {
             className="admin-save"
             disabled={busy || !password}
           >
-            {busy ? 'Signing in…' : 'Sign in'}
+            {busy ? t('auth.signingIn') : t('auth.signIn')}
           </UiButton>
         </FieldGroup>
       </form>

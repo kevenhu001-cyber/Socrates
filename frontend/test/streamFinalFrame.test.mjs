@@ -76,3 +76,63 @@ test('final SSE frame without trailing newline is still parsed', async () => {
   assert.equal(result.text, 'Hello world GOODBYE');
   assert.equal(full, 'Hello world GOODBYE');
 });
+
+test(
+  'DONE settles the answer even if the server keeps the response open',
+  { timeout: 2000 },
+  async () => {
+    installEnvironment([]);
+    let cancelled = false;
+    globalThis.fetch = async () =>
+      new Response(
+        new ReadableStream({
+          start(controller) {
+            controller.enqueue(
+              encoder.encode(
+                'data: {"choices":[{"delta":{"content":"Complete answer."}}]}\n\ndata: [DONE]\n\n',
+              ),
+            );
+          },
+          cancel() {
+            cancelled = true;
+          },
+        }),
+      );
+    const { callAPIStream } = await import('../src/chat/stream.ts');
+    const result = await callAPIStream([{ role: 'user', content: 'hi' }], 256, null, null, {
+      maxAttempts: 1,
+    });
+    assert.equal(result.text, 'Complete answer.');
+    assert.equal(cancelled, true);
+  },
+);
+
+test('clean EOF on a bound stream recovers the missing answer instead of finalizing its prefix', async () => {
+  installEnvironment([]);
+  globalThis.fetch = async (url) => {
+    if (String(url).includes('/chat-turns/')) {
+      return Response.json({ turn: { status: 'completed', fullText: 'A complete answer.' } });
+    }
+    return new Response(
+      'event: turn_bound\ndata: {"turnId":"bound-1"}\n\n' +
+        'data: {"choices":[{"delta":{"content":"A complete"}}]}\n\n',
+    );
+  };
+  const { callAPIStream } = await import('../src/chat/stream.ts');
+  const result = await callAPIStream([{ role: 'user', content: 'hi' }], 256, null, null, {
+    maxAttempts: 1,
+  });
+  assert.equal(result.text, 'A complete answer.');
+});
+
+test('a reasoning-only response never reports success', async () => {
+  installEnvironment([
+    'data: {"choices":[{"delta":{"reasoning_content":"Internal text"}}]}\n\n',
+    'data: [DONE]\n\n',
+  ]);
+  const { callAPIStream } = await import('../src/chat/stream.ts');
+  const result = await callAPIStream([{ role: 'user', content: 'hi' }], 256, null, null, {
+    maxAttempts: 1,
+  });
+  assert.equal(result, null);
+});

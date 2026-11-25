@@ -63,6 +63,10 @@ export const ERROR_COPY: Readonly<Record<string, ErrorCopy>> = Object.freeze({
     en: 'This model does not support Instant. Select Low, Medium or High thinking, or choose a model that supports Instant.',
     zh: '当前模型不支持「即时」模式，请改用低/中/高思考档位，或选择支持即时模式的模型。',
   },
+  CHAT_NO_ANSWER: {
+    en: 'The model ended without an answer. Try again or switch models.',
+    zh: '模型结束了生成，但没有给出回答。请重试或切换模型。',
+  },
   TURN_IDLE_TIMEOUT: {
     en: 'The model stopped making progress and the turn was cancelled.',
     zh: '模型长时间没有新进展，本轮对话已取消，请重试或更换模型。',

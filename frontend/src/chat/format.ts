@@ -3,6 +3,7 @@
  */
 
 import { callBridge, dispatchCall } from '../store/index.ts';
+import { isUserAbort } from './retryPolicy.ts';
 import { scheduleTurnToTopForMessage } from './turn/anchor/schedule.ts';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
@@ -166,11 +167,7 @@ function handleChatApiResult(
       ? 'Turn execution conflict. Please click Retry to create a new turn.'
       : lastCallError;
     const reason: string = sanitizedError || 'empty response (no error detail)';
-    const isCancel =
-      /cancel|user-stop|superseded|new-session|session-switch|session-expired|session-deleted|session-purged|session-reset|archived-session|msg-edit|msg-regen|signout/i.test(
-        reason,
-      );
-    if (isCancel) {
+    if (isUserAbort({ reason })) {
       dispatchCall({ type: 'call/set', key: 'lastCallSource', value: 'cancelled' });
       ctl.abort();
     } else if (sanitizedError) {

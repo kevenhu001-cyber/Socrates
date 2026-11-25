@@ -465,7 +465,10 @@ test('plugin detail preserves directory query and themed SVG tiles', async ({ pa
     else
       await page.screenshot({ path: 'test-results/plugin-tile-dark.png', animations: 'disabled' });
   }
-  await page.locator('[data-connector-id="github"]').click();
+  const trigger = page.getByRole('button', { name: 'GitHub', exact: true });
+  await trigger.focus();
+  await trigger.press('Enter');
+  await expect(page.locator('.plugin-detail-view')).toBeVisible();
   await page.locator('.plugin-detail-back-btn').click();
   await expect(search).toHaveValue('GitHub');
   await expect(page.locator('[data-connector-id="github"]')).toBeVisible();

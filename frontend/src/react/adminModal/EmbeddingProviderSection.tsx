@@ -1,6 +1,7 @@
 import { Field, FieldGroup, FieldLabel } from '../ui/shadcn/field';
 import { Input as ShadcnInput } from '../ui/shadcn/input';
 import { Button as UiButton } from '../ui/shadcn/button';
+import { t } from '../../i18n/index';
 import { SectionCard } from '../ui/page/SectionCard';
 import type { SyntheticEvent } from 'react';
 
@@ -39,7 +40,7 @@ function EmbeddingProviderForm({
     <form onSubmit={onSubmit}>
       <FieldGroup>
         <Field>
-          <FieldLabel htmlFor="admin-embeddingprovidersection-1">Display name</FieldLabel>
+          <FieldLabel htmlFor="admin-embeddingprovidersection-1">{t('provider.label')}</FieldLabel>
           <ShadcnInput
             id="admin-embeddingprovidersection-1"
             type="text"
@@ -50,7 +51,9 @@ function EmbeddingProviderForm({
           />
         </Field>
         <Field>
-          <FieldLabel htmlFor="admin-embeddingprovidersection-2">OpenAI-compatible URL</FieldLabel>
+          <FieldLabel htmlFor="admin-embeddingprovidersection-2">
+            {t('admin.compatibleUrl')}
+          </FieldLabel>
           <ShadcnInput
             id="admin-embeddingprovidersection-2"
             type="url"
@@ -62,7 +65,7 @@ function EmbeddingProviderForm({
           />
         </Field>
         <Field>
-          <FieldLabel htmlFor="admin-embeddingprovidersection-3">Model ID</FieldLabel>
+          <FieldLabel htmlFor="admin-embeddingprovidersection-3">{t('provider.model')}</FieldLabel>
           <ShadcnInput
             id="admin-embeddingprovidersection-3"
             type="text"
@@ -74,7 +77,9 @@ function EmbeddingProviderForm({
           />
         </Field>
         <Field>
-          <FieldLabel htmlFor="admin-embeddingprovidersection-4">Dimensions</FieldLabel>
+          <FieldLabel htmlFor="admin-embeddingprovidersection-4">
+            {t('admin.dimensions')}
+          </FieldLabel>
           <ShadcnInput
             id="admin-embeddingprovidersection-4"
             type="number"
@@ -92,10 +97,11 @@ function EmbeddingProviderForm({
         </Field>
         <Field>
           <FieldLabel htmlFor="admin-embeddingprovidersection-5">
-            API key{' '}
+            {t('provider.key')}
             {form.hasKey && (
               <span className="admin-key-present">
-                (configured{form.keyHint ? `: ${form.keyHint}…` : ''})
+                ({t('admin.configured')}
+                {form.keyHint ? `: ${form.keyHint}…` : ''})
               </span>
             )}
           </FieldLabel>
@@ -104,13 +110,13 @@ function EmbeddingProviderForm({
             type="password"
             value={apiKey}
             onChange={(event) => onApiKeyChange(event.target.value)}
-            placeholder={form.hasKey ? 'Leave blank to keep' : 'Paste the provider key'}
+            placeholder={form.hasKey ? t('admin.keepKey') : t('admin.pasteKey')}
             autoComplete="off"
           />
         </Field>
         <div className="admin-actions">
           <UiButton variant="default" type="submit" className="admin-save" disabled={saving}>
-            {saving ? 'Saving…' : 'Save embedding'}
+            {saving ? t('common.saving') : t('admin.saveEmbedding')}
           </UiButton>
           {form.id && (
             <UiButton
@@ -120,7 +126,7 @@ function EmbeddingProviderForm({
               onClick={onRemove}
               disabled={saving}
             >
-              Remove
+              {t('tag.remove')}
             </UiButton>
           )}
         </div>
@@ -141,8 +147,8 @@ export function EmbeddingProviderSection({
   return (
     <SectionCard
       className="admin-section"
-      title="Embedding provider (vector retrieval)"
-      description="Backs the session RAG hybrid search. Leave the key blank to keep the existing one. Remove the provider to degrade to BM25-only."
+      title={t('admin.embeddingTitle')}
+      description={t('admin.embeddingDescription')}
     >
       {!form ? (
         <UiButton
@@ -162,7 +168,7 @@ export function EmbeddingProviderSection({
             })
           }
         >
-          Configure embedding provider
+          {t('admin.configureEmbedding')}
         </UiButton>
       ) : (
         <EmbeddingProviderForm

@@ -79,7 +79,7 @@ export interface ToolLoopInput {
   clearTurnTimer: () => void;
 }
 
-export async function runToolLoop(input: ToolLoopInput): Promise<void> {
+export async function runToolLoop(input: ToolLoopInput): Promise<'failed' | void> {
   const {
     req,
     emitter,
@@ -206,7 +206,7 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
         : 2;
     let lengthContinues = 0;
 
-    for (let iter = 0; iter <= MAX_TOOL_ITERATIONS; iter++) {
+    for (let iter = 0; iter <= MAX_TOOL_ITERATIONS && !abortController.signal.aborted; iter++) {
       const toolsAllowed = toolPolicy.toolsAllowed(iter);
       toolPolicy.noteIteration();
       /* Withdrawn tools are removed from both the request and the prompt,
@@ -262,6 +262,7 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
          degrade the next hop into re-asking the question. */
       let iterContent = '';
       let iterReasoning = '';
+      let iterReasoningDetails: Record<string, unknown>[] | undefined;
 
       let upstreamErr: Error | null = null;
       /* One span per upstream call. A tool-using turn makes several, so the
@@ -328,14 +329,15 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
             // provider's `usage` object when it sent one. The tool loop can run
             // several upstream calls per turn, so usage accumulates across
             // iterations rather than being overwritten by the last one.
-            ({ finishReason, usage }: { finishReason: string | null; usage?: unknown }) => {
+            ({ finishReason, usage, reasoningDetails }) => {
               iterFinishReason = finishReason;
+              iterReasoningDetails = reasoningDetails;
               addProviderUsage(usage);
             },
             // onError
             (err: Error) => {
               upstreamErr = err;
-              emitter.fatal(err);
+              if (!abortController.signal.aborted) emitter.fatal(err);
             },
             // onReasoning — emit reasoning_content as SSE delta so the
             // client renders the thinking pill. Also accumulate so
@@ -364,6 +366,7 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
             // finish_reason='tool_calls'. The frontend correlates the
             // delta to the eventual tool_use frame via the tool_call id.
             (delta: ToolCallDelta) => {
+              watchdog.touch();
               emitter.toolCallDelta(delta);
               turnEvents.toolArguments(delta, fullText.length);
             },
@@ -381,7 +384,7 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
         'llm.tool_calls': toolCallsThisTurn.length,
       });
 
-      if (upstreamErr) {
+      if (upstreamErr && !abortController.signal.aborted) {
         // Error path already wrote [DONE] and ended the response.
         if (
           req.userId &&
@@ -410,13 +413,31 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
             await setChatTurnStatus(turnId, 'failed', {
               fullText: fullText || null,
               fullReasoning: fullReasoning || null,
+              toolCalls: executedToolCalls,
               turnRuntime: state.turnRuntime,
               error: (upstreamErr as Error).message,
             }).catch(() => {});
           }
         }
-        return;
+        return 'failed';
       }
+
+      if (abortController.signal.aborted) break;
+      // Only explicitly typed summaries may appear in the public activity log.
+      const summary = iterReasoningDetails
+        ?.filter(
+          (detail) => detail.type === 'reasoning.summary' && typeof detail.summary === 'string',
+        )
+        .map((detail) => detail.summary)
+        .join('')
+        .trim()
+        .slice(0, 500);
+      if (summary) activity.publicSummary(summary);
+      const reasoningForNextHop = iterReasoningDetails?.length
+        ? { reasoning_details: iterReasoningDetails }
+        : iterReasoning
+          ? { reasoning_content: iterReasoning }
+          : {};
 
       const boundedToolCalls = normalizeToolCalls(toolCallsThisTurn, {
         iteration: iter,
@@ -436,14 +457,8 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
           !abortController.signal.aborted
         ) {
           lengthContinues += 1;
-          const continueAssistant: StreamMessage = { role: 'assistant', content: iterContent };
-          if (iterReasoning) {
-            continueAssistant.reasoning_content = iterReasoning;
-            // Official MiniMax/DeepSeek chat contracts replay reasoning_content,
-            // not an invented duplicate reasoning_details representation.
-          }
           workingMessages = workingMessages.concat([
-            continueAssistant,
+            { role: 'assistant', content: iterContent, ...reasoningForNextHop },
             {
               role: 'user',
               content:
@@ -454,13 +469,7 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
         }
         break;
       }
-      if (!toolsAllowed) {
-        emitter.event('error', {
-          error: 'tool_iteration_limit_reached',
-          message: 'Tool iteration limit reached; finishing without another execution.',
-        });
-        break;
-      }
+      if (!toolsAllowed) break;
 
       /* ── Resolve names and repair arguments once per batch ──────────
        * Models address tools by synonyms (`search`, `functions.web_search`)
@@ -661,15 +670,8 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
           type: 'function',
           function: t.function,
         })),
+        ...reasoningForNextHop,
       };
-      if (iterReasoning) {
-        /* Reasoning providers require the thinking that produced the
-           tool_calls to survive the round-trip: DeepSeek reads
-           `reasoning_content`, MiniMax requires `reasoning_details`
-           entries. Providers that emit neither never see these fields. */
-        assistantToolMessage.reasoning_content = iterReasoning;
-        // Preserve one canonical reasoning representation on subsequent hops.
-      }
       workingMessages = workingMessages.concat([assistantToolMessage]);
 
       // Abort guard — if the client disconnected during this turn's
@@ -715,16 +717,8 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
       displayOutputs.clear();
       executionResults.clear();
 
-      /* An exhausted call or time budget ends the tool phase deliberately:
-         the next hop runs without tools so the turn still produces a
-         written answer instead of stopping mid-flight. */
-      const exhausted = toolPolicy.budgetExhausted();
-      if (exhausted) {
-        emitter.event('error', {
-          error: exhausted.code,
-          message: exhausted.message,
-        });
-      }
+      // The policy withholds tools on the next hop when its budget is spent.
+      // That hop can still write the answer, so no terminal error is emitted here.
     }
   } finally {
     Object.assign(state, {

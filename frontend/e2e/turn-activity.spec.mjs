@@ -1,5 +1,12 @@
 import { test, expect } from './_state-fixture.mjs';
-import { prepareChatWorkbench } from './_chat-workbench.mjs';
+import {
+  completeFrame,
+  namedFrame,
+  prepareChatWorkbench,
+  reasoningFrame,
+  textFrame,
+  WORKBENCH_VIEWPORTS,
+} from './_chat-workbench.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 import { gotoAndSettle, publishChatRuntime } from './_lib.mjs';
 
@@ -34,7 +41,10 @@ test('activity hands the same message body to the first answer token', async ({ 
   await expect(status.getByTestId('turn-activity-duration')).toContainText(/\d/);
   await expect(status.getByTestId('thinking-step-spinner')).toHaveCount(0);
   await expect(status.getByTestId('turn-activity-indicator')).toHaveCount(0);
-  await expect(status.getByTestId('turn-activity-label')).toHaveCSS('animation-name', 'socrates-caption-shimmer');
+  await expect(status.getByTestId('turn-activity-label')).toHaveCSS(
+    'animation-name',
+    'socrates-caption-shimmer',
+  );
   const before = await status.boundingBox();
 
   await page.evaluate(() => window.__thinkingController.append('回答从同一个消息正文位置开始。'));
@@ -67,7 +77,10 @@ test('waiting time is separate from observed model reasoning', async ({ page }) 
   await expect(status).toHaveAttribute('data-phase', 'waiting');
   await expect(status.getByTestId('turn-activity-label')).toHaveText('Waiting for the response.');
   await expect(status.getByTestId('turn-activity-indicator')).toHaveCount(0);
-  await expect(status.getByTestId('turn-activity-label')).toHaveCSS('animation-name', 'socrates-caption-shimmer');
+  await expect(status.getByTestId('turn-activity-label')).toHaveCSS(
+    'animation-name',
+    'socrates-caption-shimmer',
+  );
   await expect(status.getByTestId('thinking-step-spinner')).toHaveCount(0);
   await page.evaluate(() => window.__advanceReasoningClock());
   await expect(status.getByTestId('turn-activity-duration')).toContainText(/[5-9]\s?(s|秒)/);
@@ -76,7 +89,10 @@ test('waiting time is separate from observed model reasoning', async ({ page }) 
   await expect(status).toHaveAttribute('data-phase', 'thinking');
   await expect(status.getByTestId('turn-activity-label')).toHaveText('Thinking…');
   await expect(status.getByTestId('turn-activity-indicator')).toHaveCount(0);
-  await expect(status.getByTestId('turn-activity-label')).toHaveCSS('animation-name', 'socrates-caption-shimmer');
+  await expect(status.getByTestId('turn-activity-label')).toHaveCSS(
+    'animation-name',
+    'socrates-caption-shimmer',
+  );
   const duration = await page.evaluate(
     () => window.__socratesTestState.session().messages.at(-1).reasoningDurationSec,
   );
@@ -290,9 +306,7 @@ test('native UI survives a tool-only settled turn and recovers raw streamed argu
   await expect(message.locator('[data-intui-id="value"]')).toContainText('7');
 });
 
-test('uncommitted native UI arguments remain hidden until a result arrives', async ({
-  page,
-}) => {
+test('uncommitted native UI arguments remain hidden until a result arrives', async ({ page }) => {
   const document = {
     version: 1,
     nodes: [
@@ -371,4 +385,85 @@ test('the browser states the effort intent and leaves MiniMax specifics to the s
   expect(sentBody.extra_body).toBeUndefined();
   expect(sentBody.reasoning_effort).toBe('low');
   await expect(page.locator('#msgList .msg.assistant').last()).toContainText('M3 answer.');
+});
+
+test('streamed observations and tool results are inspectable without exposing private reasoning', async ({
+  page,
+}) => {
+  const now = Date.now();
+  const activity = {
+    id: 'reasoning-1',
+    kind: 'reasoning',
+    phase: 'done',
+    startedAt: now - 110,
+    endedAt: now,
+  };
+  await prepareChatWorkbench(page, {
+    viewport: WORKBENCH_VIEWPORTS.mobile,
+    streamBody: [
+      reasoningFrame('PRIVATE PROVIDER REASONING'),
+      namedFrame('turn_event', {
+        version: 1,
+        turnId: 'browser-turn',
+        seq: 1,
+        at: now,
+        type: 'activity.upsert',
+        activity,
+      }),
+      namedFrame('tool_use', [
+        { id: 'search-1', name: 'web_search', input: { query: 'official numbers' } },
+      ]),
+      namedFrame('tool_result', {
+        id: 'search-1',
+        name: 'web_search',
+        ok: true,
+        status: 'completed',
+        output: 'Found it.',
+      }),
+      textFrame('The final answer is 42.'),
+      completeFrame(),
+    ].join(''),
+  });
+  await page.evaluate(() => window.submitChatMessage('Find the official numbers.'));
+  const message = page.locator('#msgList .msg.assistant').last();
+  await expect(message).toContainText('The final answer is 42.');
+  const toggle = message.getByTestId('turn-activity-toggle');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await toggle.click();
+  await expect(message.getByText('Reasoning finished')).toBeVisible();
+  await expect(message.locator('[data-tcid="search-1"]')).toBeVisible();
+  await expect(message).not.toContainText('PRIVATE PROVIDER REASONING');
+  await page.screenshot({ path: 'test-results/streamed-activity-mobile.png' });
+});
+
+test('reasoning without an answer leaves a visible retry action', async ({ page }) => {
+  await prepareChatWorkbench(page, {
+    streamBody: reasoningFrame('PRIVATE PROVIDER REASONING') + completeFrame(),
+  });
+  await page.evaluate(() => window.submitChatMessage('Explain the result.'));
+  const message = page.locator('#msgList .msg.assistant').last();
+  await expect(message).toContainText('The model ended without an answer.');
+  await expect(message.getByRole('button', { name: 'Retry' })).toBeVisible();
+  await expect(message).not.toContainText('PRIVATE PROVIDER REASONING');
+});
+
+test('a watchdog timeout leaves the partial answer and an actionable retry', async ({ page }) => {
+  const detail = 'The model stopped making progress and the turn was cancelled.';
+  await prepareChatWorkbench(page, {
+    streamBody: [
+      textFrame('Partial answer before the timeout.'),
+      namedFrame('error', {
+        code: 'TURN_IDLE_TIMEOUT',
+        message: detail,
+        status: 504,
+        retryable: true,
+      }),
+      completeFrame(),
+    ].join(''),
+  });
+  await page.evaluate(() => window.submitChatMessage('Explain the result.'));
+  const message = page.locator('#msgList .msg.assistant').last();
+  await expect(message).toContainText('Partial answer before the timeout.');
+  await expect(message).toContainText(detail);
+  await expect(message.getByRole('button', { name: 'Retry' })).toBeVisible();
 });

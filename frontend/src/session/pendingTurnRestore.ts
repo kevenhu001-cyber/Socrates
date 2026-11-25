@@ -1,6 +1,6 @@
 /* Re-attach detached chat turns after reload or reconnect. The session loader
  * owns when this runs; this module owns pending-turn transport and replay. */
-import { sessionBridge } from '../store/index.ts';
+import { sessionBridge, updateSessionMessage } from '../store/index.ts';
 import { quietTurn } from '../chat/turn/ui.ts';
 import { buildUserContentParts } from '../chat/history.ts';
 import { publishReactChatRuntime } from '../legacy/reactBridge.ts';
@@ -12,6 +12,7 @@ import {
   loadPendingTurn,
   savePendingTurn,
   subscribeChatTurnEvents,
+  toolCallsFromEvent,
   type ChatTurn,
   type TurnEventFrame,
 } from '../chat/turn/client.ts';
@@ -22,6 +23,7 @@ interface StreamingTurnController {
   append(delta: string): void;
   appendThinking(delta: string): void;
   recordToolUse(call: unknown): void;
+  recordTurnEvent?(event: unknown): void;
   recordToolResult(data: unknown): void;
   recordToolApproval?(data: unknown): void;
   recordToolProgress?(data: unknown): void;
@@ -36,7 +38,7 @@ interface StreamingTurnController {
 
 /** Chat bridges published by the legacy shell (app entrypoint / legacyBridge.js). */
 interface PendingRestoreWindow extends Window {
-  addMessage?: (role: string, text: string) => void;
+  addMessage?: (role: string, text: string) => string;
   addStreamingMessage?: (options: { onRetry: () => void }) => Promise<StreamingTurnController>;
   askChatTurn?: (text: string, parts: unknown) => unknown;
 }
@@ -106,7 +108,16 @@ function restoreCompletedTurn(
     if (!full) {
       runFallback();
     } else if (typeof win.addMessage === 'function' && !hasAssistantMessage(full)) {
-      win.addMessage('assistant', full);
+      const clientId = win.addMessage('assistant', full);
+      const rows = sessionBridge.getSnapshot().messages;
+      const index = rows.findIndex((row) => row.clientId === clientId);
+      if (index >= 0) {
+        updateSessionMessage(index, clientId, {
+          reasoningContent: turn.fullReasoning ?? null,
+          toolCalls: turn.toolCalls ?? [],
+          turnRuntime: turn.turnRuntime ?? null,
+        });
+      }
       try {
         publishReactChatRuntime({ type: 'state-synced', reason: 'pending-turn-completed' });
       } catch (error) {
@@ -180,7 +191,7 @@ function showTurnFailure(
 type TurnEventApplier = (data: Record<string, unknown>, context: FrameReplayContext) => boolean;
 
 function replayToolUse(data: Record<string, unknown>, context: FrameReplayContext): boolean {
-  const calls: unknown[] = Array.isArray(data) ? data : (data.calls as unknown[]) || [data];
+  const calls = toolCallsFromEvent(data);
   calls.forEach((call) => {
     try {
       context.ctl.recordToolUse(call);
@@ -205,6 +216,11 @@ function completeRecoveredTurn(
   return true;
 }
 
+const failRecoveredTurn: TurnEventApplier = (_data, { sessionId, ctl, retryThisTurn, signal }) => {
+  showTurnFailure(sessionId, ctl, retryThisTurn, signal);
+  return true;
+};
+
 const turnEventAppliers: Record<string, TurnEventApplier> = {
   content: (data, { ctl }) => {
     if (typeof data.delta === 'string') ctl.append(data.delta);
@@ -212,6 +228,10 @@ const turnEventAppliers: Record<string, TurnEventApplier> = {
   },
   reasoning: (data, { ctl }) => {
     if (typeof data.delta === 'string') ctl.appendThinking(data.delta);
+    return false;
+  },
+  turn_event: (data, { ctl }) => {
+    ctl.recordTurnEvent?.(data);
     return false;
   },
   tool_use: replayToolUse,
@@ -240,10 +260,8 @@ const turnEventAppliers: Record<string, TurnEventApplier> = {
     return false;
   },
   turn_done: completeRecoveredTurn,
-  turn_failed: (_data, { sessionId, ctl, retryThisTurn, signal }) => {
-    showTurnFailure(sessionId, ctl, retryThisTurn, signal);
-    return true;
-  },
+  turn_interrupted: failRecoveredTurn,
+  turn_failed: failRecoveredTurn,
 };
 
 function applyTurnEvent(frame: TurnEventFrame, context: FrameReplayContext): boolean {
@@ -266,8 +284,8 @@ function createFrameApplier(
       return;
     }
     try {
-      if (applyTurnEvent(frame, context)) return;
       if (typeof frame.sequence !== 'number' || frame.sequence <= maxSeq) return;
+      if (applyTurnEvent(frame, context)) return;
       maxSeq = frame.sequence;
       try {
         bumpPendingSeq(context.sessionId, maxSeq);
@@ -315,7 +333,7 @@ async function followPendingTurn(
   const signal = new AbortController();
   const replay = createFrameApplier(
     { sessionId, ctl, retryThisTurn: retry, signal },
-    Number(pending.lastSeq) || 0,
+    0, // A fresh renderer needs the full log, even if an earlier page saw it.
   );
   try {
     for (const frame of snapshot.events || []) replay.applyFrame(frame);
@@ -329,10 +347,8 @@ async function followPendingTurn(
     }
     await subscribeChatTurnEvents(pending.turnId, replay.getSequence(), signal.signal, {
       onEvent: replay.applyFrame,
-      onError: function () {
-        /* empty-catch: intentional — replay errors are reported by the outer catch */
-      },
     });
+    if (!signal.signal.aborted) settleDisconnectedTurn(sessionId, ctl, retry, signal);
   } catch (error) {
     reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~18');
     settleDisconnectedTurn(sessionId, ctl, retry, signal);

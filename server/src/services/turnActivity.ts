@@ -11,6 +11,7 @@ export function createTurnActivityController(emit: (activity: PublicTurnActivity
   };
   return {
     thinking: () => publish({ type: 'thinking' }),
+    publicSummary: (text: string) => publish({ type: 'public_reasoning_summary', text }),
     synthesizing: () => publish({ type: 'synthesizing' }),
     tool: (toolCallId: string, toolName: string) => publish({ type: 'tool', toolCallId, toolName }),
     done: (durationMs: number) => publish({ type: 'done', durationMs }),

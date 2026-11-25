@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index';
 import type { EmbeddingProviderConfig, SystemModelConfig } from './types';
 import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 
@@ -122,15 +123,15 @@ export async function loadAdminConfiguration(): Promise<{
   if (systemResponse.status === 403 || embeddingResponse.status === 403) {
     throw new AdminUnauthorizedError();
   }
-  const systemModel = systemResponse.ok
-    ? await responsePayload<SystemModelConfig | null>(systemResponse, null)
-    : null;
-  const embeddingPayload = embeddingResponse.ok
-    ? await responsePayload<EmbeddingProviderConfig | EmbeddingProviderConfig[] | null>(
-        embeddingResponse,
-        null,
-      )
-    : null;
+  if (!systemResponse.ok) throw await responseError(systemResponse, t('admin.loadFailed'));
+  if (!embeddingResponse.ok) throw await responseError(embeddingResponse, t('admin.loadFailed'));
+  const [systemModel, embeddingPayload] = await Promise.all([
+    responsePayload<SystemModelConfig | null>(systemResponse, null),
+    responsePayload<EmbeddingProviderConfig | EmbeddingProviderConfig[] | null>(
+      embeddingResponse,
+      null,
+    ),
+  ]);
   const embedding = Array.isArray(embeddingPayload)
     ? (embeddingPayload[0] ?? null)
     : embeddingPayload;

@@ -1,6 +1,8 @@
 import { Button as UiButton } from '../ui/shadcn/button';
 import { PageFrame } from '../ui/page/PageFrame';
 import { PageHeader } from '../ui/page/PageHeader';
+import { t } from '../../i18n/index';
+import { useLocaleRefresh } from '../rn/WebUiTheme';
 /** The standalone /admin operator console page. */
 
 import { createRootSlot } from '../lib/boot/ownedRoot';
@@ -12,14 +14,15 @@ import { SystemModelSection } from './SystemModelSection';
 import { useAdminConsole } from './useAdminConsole';
 
 export function AdminPage() {
+  useLocaleRefresh();
   const admin = useAdminConsole();
 
   if (admin.authed === null) {
     return (
       <PageFrame className="admin-console" aria-labelledby="admin-console-title" aria-busy="true">
-        <PageHeader titleId="admin-console-title" title="Admin console" />
+        <PageHeader titleId="admin-console-title" title={t('admin.title')} />
         <div className="admin-loading" role="status">
-          Loading…
+          {t('common.loading')}
         </div>
       </PageFrame>
     );
@@ -29,10 +32,14 @@ export function AdminPage() {
   }
 
   return (
-    <PageFrame className="admin-console">
+    <PageFrame
+      className="admin-console"
+      aria-labelledby="admin-console-title"
+      aria-busy={admin.snapshot.loading}
+    >
       <PageHeader
         titleId="admin-console-title"
-        title="Admin console"
+        title={t('admin.title')}
         actions={
           <UiButton
             variant="destructive"
@@ -40,35 +47,42 @@ export function AdminPage() {
             className="admin-remove"
             onClick={admin.signOut}
           >
-            Sign out
+            {t('profile.signOut')}
           </UiButton>
         }
       />
-      {admin.snapshot.loading && <div className="admin-loading">Loading…</div>}
+      {admin.snapshot.loading && (
+        <div className="admin-loading" role="status">
+          {t('common.loading')}
+        </div>
+      )}
       {admin.snapshot.error && (
         <div className="admin-error" role="alert">
           {admin.snapshot.error}
         </div>
       )}
-      <div className="admin-body">
-        <SystemModelSection
-          form={admin.systemForm}
-          apiKey={admin.systemKey}
-          saving={admin.snapshot.savingSystem}
-          onFormChange={admin.setSystemForm}
-          onApiKeyChange={admin.setSystemKey}
-          onSubmit={admin.submitSystem}
-        />
-        <EmbeddingProviderSection
-          form={admin.embeddingForm}
-          apiKey={admin.embeddingKey}
-          saving={admin.snapshot.savingEmbedding}
-          onFormChange={admin.setEmbeddingForm}
-          onApiKeyChange={admin.setEmbeddingKey}
-          onSubmit={admin.submitEmbedding}
-          onRemove={admin.removeEmbedding}
-        />
-      </div>
+      {!admin.snapshot.loading &&
+      (!admin.snapshot.error || admin.systemForm || admin.embeddingForm) ? (
+        <div className="admin-body">
+          <SystemModelSection
+            form={admin.systemForm}
+            apiKey={admin.systemKey}
+            saving={admin.snapshot.savingSystem}
+            onFormChange={admin.setSystemForm}
+            onApiKeyChange={admin.setSystemKey}
+            onSubmit={admin.submitSystem}
+          />
+          <EmbeddingProviderSection
+            form={admin.embeddingForm}
+            apiKey={admin.embeddingKey}
+            saving={admin.snapshot.savingEmbedding}
+            onFormChange={admin.setEmbeddingForm}
+            onApiKeyChange={admin.setEmbeddingKey}
+            onSubmit={admin.submitEmbedding}
+            onRemove={admin.removeEmbedding}
+          />
+        </div>
+      ) : null}
     </PageFrame>
   );
 }

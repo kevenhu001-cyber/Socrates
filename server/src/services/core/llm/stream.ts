@@ -33,12 +33,16 @@ import {
   mergeToolArgumentDelta,
   mergeToolNameDelta,
 } from './toolArgs.js';
-import { reasoningText } from './values.js';
+import { isRecord, reasoningText } from './values.js';
 
 export async function streamChatCompletion(
   opts: ChatCompletionRequestOptions,
   onChunk: (chunk: string) => void,
-  onDone: (info: { finishReason: string | null; usage?: unknown }) => void,
+  onDone: (info: {
+    finishReason: string | null;
+    usage?: unknown;
+    reasoningDetails?: Record<string, unknown>[];
+  }) => void,
   onError: (err: Error) => void,
   onReasoning?: (reasoning: string) => void,
   onToolUse?: (tc: {
@@ -218,7 +222,9 @@ export async function streamChatCompletion(
     reader = response!.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
+    let bareJson = '';
     let finishReason: string | null = null;
+    const reasoningDetails: Record<string, unknown>[] = [];
     /* Raw `usage` object from the upstream, if it sent one. Kept raw rather
        than normalised here so services/core/usageTracker.ts owns the per-provider
        shape handling in exactly one place. */
@@ -327,156 +333,84 @@ export async function streamChatCompletion(
       _emitToolDelta(next);
     };
 
+    // Both complete lines and the final unterminated line use the same parser.
+    const consumeLine = (line: string): 'continue' | 'done' | 'error' => {
+      const trimmed = line.trim();
+      const isData = trimmed.startsWith('data:');
+      if (!isData && !bareJson && !trimmed.startsWith('{')) return 'continue';
+      const payload = isData ? trimmed.slice(5).trimStart() : bareJson + trimmed;
+      bareJson = '';
+      if (payload === '[DONE]') return 'done';
+      let json;
+      try {
+        json = JSON.parse(payload);
+      } catch {
+        // Some gateways return a pretty-printed error body with HTTP 200.
+        // Bound this buffer and reset it as soon as real SSE data arrives.
+        if (!isData && payload.length < 65_536) bareJson = payload;
+        return 'continue';
+      }
+      if (!isRecord(json)) return 'continue';
+      const failure = providerPayloadFailure(json);
+      if (failure) {
+        onError(new LlmProviderError(failure.status, failure.body));
+        return 'error';
+      }
+      if (!isData) return 'continue';
+      // Usage may arrive in a frame with no choices, after the final delta.
+      if (isRecord(json.usage)) providerUsage = json.usage;
+      const choice = Array.isArray(json.choices) ? json.choices[0] : undefined;
+      if (!isRecord(choice)) return 'continue';
+      if (typeof choice.finish_reason === 'string' && choice.finish_reason) {
+        finishReason = choice.finish_reason;
+      }
+      const delta = choice.delta;
+      if (!isRecord(delta)) return 'continue';
+      const details = Array.isArray(delta.reasoning_details)
+        ? delta.reasoning_details.filter(isRecord)
+        : [];
+      // Keep provider blocks unchanged and ordered for the next tool hop.
+      reasoningDetails.push(...details);
+      const reasoning =
+        reasoningText(delta) ||
+        details
+          .filter((detail) => detail.type === 'reasoning.text' && typeof detail.text === 'string')
+          .map((detail) => detail.text)
+          .join('');
+      if (reasoning && onReasoning) {
+        try {
+          onReasoning(reasoning);
+        } catch {
+          /* empty-catch: intentional — a reasoning listener must not break stream parsing */
+        }
+      }
+      if (Array.isArray(delta.tool_calls)) {
+        for (let i = 0; i < delta.tool_calls.length; i++) {
+          const call = delta.tool_calls[i];
+          if (isRecord(call)) _accumulateToolCall(call, i, delta.tool_calls.length);
+        }
+      }
+      if (isRecord(delta.function_call)) _accumulateToolCall(delta.function_call);
+      if (typeof delta.content === 'string' && delta.content) onChunk(delta.content);
+      return 'continue';
+    };
+
     readStream: while (true) {
       const { done, value } = await reader.read();
-      if (done) break;
-      if (!value || value.byteLength === 0) continue;
+      if (done) {
+        if (consumeLine(buffer + decoder.decode()) === 'error') return;
+        break;
+      }
+      if (!value?.byteLength) continue;
 
       buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split('\n');
       buffer = lines.pop() || '';
-
       for (const line of lines) {
-        const trimmed = line.trim();
-        if (trimmed.startsWith('data:') && trimmed.slice(5).trim() === '[DONE]') {
-          // The protocol is complete even if the gateway keeps its body open.
-          // Ignore any bytes after DONE; usage must precede this marker.
-          buffer = '';
-          break readStream;
-        }
-        if (!trimmed) continue;
-        if (!trimmed.startsWith('data:')) {
-          if (trimmed.startsWith('{')) {
-            try {
-              const errObj = JSON.parse(trimmed);
-              const failure = providerPayloadFailure(errObj);
-              if (failure) {
-                onError(new LlmProviderError(failure.status, failure.body));
-                return;
-              }
-            } catch {
-              /* empty-catch: intentional — the line looked like JSON but is not a provider error payload */
-            }
-          }
-          continue;
-        }
-
-        try {
-          const json = JSON.parse(trimmed.slice(5).trimStart());
-          const failure = providerPayloadFailure(json);
-          if (failure) {
-            onError(new LlmProviderError(failure.status, failure.body));
-            return;
-          }
-          /* Usage arrives in its OWN frame, after the last content delta,
-             with `choices: []`. It must be read BEFORE the `!delta` guard
-             below — that guard is why `stream_options.include_usage` data
-             was silently discarded even on providers that honour it, leaving
-             usageTracker with nothing but a chars/4 estimate. */
-          if (json.usage && typeof json.usage === 'object') providerUsage = json.usage;
-          const delta = json.choices?.[0]?.delta;
-          if (!delta) {
-            /* Still worth checking for finish_reason: some gateways send a
-               final choices entry with no delta. */
-            const finalChoice = json.choices?.[0];
-            if (finalChoice && finalChoice.finish_reason) finishReason = finalChoice.finish_reason;
-            continue;
-          }
-          /* reasoning_content arrives on a separate
-             field on DeepSeek-family models when the request included
-             `extra_body.thinking.type: enabled`. Surface it through a
-             dedicated callback so the client can render it as a
-             thinking pill and persist it on the assistant message
-             for the next turn. */
-          if (typeof onReasoning === 'function') {
-            const reasoning = reasoningText(delta);
-            if (reasoning.length > 0) {
-              try {
-                onReasoning(reasoning);
-              } catch {
-                /* empty-catch: intentional — a reasoning listener threw; the stream must keep parsing */
-              }
-            }
-          }
-          /* Tool-call deltas. Each entry carries a partial id/name/
-             arguments; we accumulate by `index` and flush once the
-             upstream signals finish_reason='tool_calls'. We also
-             forward a throttled delta to onToolCallDelta so the
-             client can stream the in-progress JSON (e.g. Python
-             source) live instead of waiting for completion. */
-          if (Array.isArray(delta.tool_calls) && delta.tool_calls.length > 0) {
-            /* Pass the array position as the fallback index: providers
-               that omit `index` but pack several tool_calls into one
-               delta must not collapse every entry into slot 0. */
-            for (let i = 0; i < delta.tool_calls.length; i++) {
-              _accumulateToolCall(delta.tool_calls[i], i, delta.tool_calls.length);
-            }
-          }
-          /* Older OpenAI-compatible gateways use the pre-tools
-             `delta.function_call` shape. Treat it as tool index 0 so a
-             `finish_reason: function_call` response still reaches the same
-             validation and execution path as native tool_calls. */
-          if (delta.function_call && typeof delta.function_call === 'object') {
-            _accumulateToolCall(delta.function_call as Record<string, unknown>);
-          }
-          /* finish_reason only appears on the last chunk of a stream.
-             Capture it so onDone can dispatch the tool loop. */
-          const choice = json.choices?.[0];
-          if (choice && choice.finish_reason) finishReason = choice.finish_reason;
-          const content = delta.content || '';
-          if (content) onChunk(content);
-        } catch {
-          // empty-catch: intentional — skip malformed SSE frames from the provider
-        }
-      }
-    }
-
-    // Flush remaining buffer. Trim before the prefix check: upstreams
-    // that end the stream with "\ndata: {...}" (no trailing newline)
-    // leave leading whitespace in the buffer, and the old
-    // `buffer.startsWith('data: ')` guard silently dropped that final
-    // frame — truncating the tail of a streamed tool call.
-    const tail = buffer.trim();
-    if (tail.startsWith('data:') || tail.startsWith('{')) {
-      try {
-        const json = JSON.parse(tail.startsWith('data:') ? tail.slice(5).trimStart() : tail);
-        const failure = providerPayloadFailure(json);
-        if (failure) {
-          onError(new LlmProviderError(failure.status, failure.body));
-          return;
-        }
-        /* The usage frame is the LAST frame of the stream, so it very often
-           ends up here rather than in the loop above — the buffer keeps it
-           when the upstream closes without a trailing newline. Read it
-           before the `if (delta)` guard for the same reason as above. */
-        if (json.usage && typeof json.usage === 'object') providerUsage = json.usage;
-        const delta = json.choices?.[0]?.delta;
-        if (delta) {
-          if (typeof onReasoning === 'function') {
-            const reasoning = reasoningText(delta);
-            if (reasoning.length > 0) {
-              try {
-                onReasoning(reasoning);
-              } catch {
-                /* empty-catch: intentional — a reasoning listener threw; the non-stream path must keep parsing */
-              }
-            }
-          }
-          if (Array.isArray(delta.tool_calls) && delta.tool_calls.length > 0) {
-            for (let i = 0; i < delta.tool_calls.length; i++) {
-              _accumulateToolCall(delta.tool_calls[i], i, delta.tool_calls.length);
-            }
-          }
-          if (delta.function_call && typeof delta.function_call === 'object') {
-            _accumulateToolCall(delta.function_call as Record<string, unknown>);
-          }
-          const choice = json.choices?.[0];
-          if (choice && choice.finish_reason) finishReason = choice.finish_reason;
-          const content = delta.content || '';
-          if (content) onChunk(content);
-        }
-      } catch {
-        /* empty-catch: intentional — skip a malformed frame from the non-stream payload */
+        const terminal = consumeLine(line);
+        if (terminal === 'error') return;
+        // The gateway can keep the body open after the protocol terminator.
+        if (terminal === 'done') break readStream;
       }
     }
 
@@ -547,9 +481,13 @@ export async function streamChatCompletion(
     }
 
     observePromptCacheUsage(providerUsage);
-    onDone({ finishReason, usage: providerUsage });
+    onDone({
+      finishReason,
+      usage: providerUsage,
+      ...(reasoningDetails.length ? { reasoningDetails } : {}),
+    });
   } catch (err) {
-    if ((signal && signal.aborted) || (err as Error | undefined)?.name === 'AbortError') {
+    if (signal?.aborted) {
       onDone({ finishReason: null });
     } else {
       const normalized =

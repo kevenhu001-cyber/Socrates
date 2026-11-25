@@ -81,7 +81,7 @@ test('admin console signs in, saves both providers, removes embedding, and signs
   await waitForAppShell(page);
   await page.evaluate(() => window.__socratesLegacy.navigation.openNav('admin'));
   await expect(page.locator('.admin-login')).toBeVisible();
-  await expect(page.locator('.admin-login')).toHaveAttribute('data-auth-card', '');
+  await expect(page.locator('.admin-login[data-auth-card]')).toBeVisible();
   await expect(page.locator('.admin-login h1[data-page-title]')).toHaveCount(1);
   await page.getByLabel('Admin password').fill('operator-secret');
   await page.getByRole('button', { name: 'Sign in' }).click();
@@ -129,4 +129,51 @@ test('admin console signs in, saves both providers, removes embedding, and signs
 
   await page.getByRole('button', { name: 'Sign out' }).click();
   await expect(page.locator('.admin-login')).toBeVisible();
+});
+
+test('Chinese console distinguishes unavailable configuration and can add the first system model', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockAuthedApp(page, { lang: 'zh' });
+  await page.addInitScript(() =>
+    sessionStorage.setItem('socrates_admin_token', 'smoke-admin-token'),
+  );
+  await page.route('**/api/admin-auth/**', (route) =>
+    route.fulfill({ json: { configured: true, ipAllowed: true, valid: true } }),
+  );
+  await page.route('**/api/embedding-config**', (route) => route.fulfill({ json: null }));
+  let systemAvailable = false;
+  let saved;
+  await page.route('**/api/system-models', (route) => {
+    if (route.request().method() === 'GET') {
+      return systemAvailable
+        ? route.fulfill({ json: null })
+        : route.fulfill({ status: 503, json: {} });
+    }
+    saved = route.request().postDataJSON();
+    return route.fulfill({ json: { id: 'first-model', ...saved, hasKey: true } });
+  });
+
+  await gotoAndSettle(page, '/admin');
+  await waitForAppShell(page);
+  await expect(page.getByRole('heading', { name: '管理控制台' })).toBeVisible();
+  await expect(page.getByRole('alert').filter({ hasText: '无法加载管理配置' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '配置系统模型' })).toHaveCount(0);
+
+  systemAvailable = true;
+  await page.reload();
+  await page.getByRole('button', { name: '配置系统模型' }).click();
+  await page.getByLabel('兼容 OpenAI 的 API 地址').fill('https://provider.example/v1');
+  await page.getByLabel('模型 ID').fill('first-model');
+  await page.getByLabel('API 密钥').fill('test-key');
+  await page.getByRole('button', { name: '保存系统模型' }).click();
+  await expect
+    .poll(() => saved)
+    .toMatchObject({
+      label: 'Beagle',
+      url: 'https://provider.example/v1',
+      model: 'first-model',
+      key: 'test-key',
+    });
 });

@@ -12,6 +12,8 @@ import { setChatTurnStatus } from '../../../services/core/chatTurns.js';
 import { estimateTokens, recordUsage, resolveUsage } from '../../../services/core/usageTracker.js';
 import { sanitizePlainText, sanitizeStoredHtml } from '../../../lib/sanitize.js';
 import { indexMessageChunks } from '../../../services/embeddings/chunkIndex.js';
+import { ApiError } from '../../../lib/errors.js';
+import { watchdogError, watchdogExpiryFromReason } from '../../../lib/turnWatchdog.js';
 import { completedActivitySummary } from '../../../services/turnSummary.js';
 import type { SseEmitter } from './sseEmitter.js';
 import type { ChatStreamPipelineContext } from './types.js';
@@ -74,13 +76,28 @@ export async function finalizeTurn(input: FinalizeTurnInput): Promise<void> {
   } = input;
   let turnRuntime = input.turnRuntime;
 
+  const watchdogExpiry = watchdogExpiryFromReason(abortController.signal.reason);
+  const failure = watchdogExpiry
+    ? watchdogError(watchdogExpiry)
+    : !abortController.signal.aborted &&
+        !fullText.trim() &&
+        !executedToolCalls.some((call) => !call.isError)
+      ? new ApiError(
+          502,
+          'CHAT_NO_ANSWER',
+          'The model ended without an answer. Try again or switch models.',
+          null,
+          false,
+        )
+      : null;
+
   /* Abort guard — with no turn bound, a client disconnect during tool
    * execution skips finalisation (writing [DONE] to a closed socket would
    * throw, and the recordUsage below would charge for an incomplete
    * response). With a turn bound the socket close only detached the feed
-   * (see the req.on('close') handler): the run continues detached unless
+   * (see the response close handler): the run continues detached unless
    * the abort came from an explicit Stop (turn_interrupted). */
-  if (abortController.signal.aborted && !turnId) {
+  if (!failure && abortController.signal.aborted && !turnId) {
     turnRuntime = settleTurnRuntime(turnRuntime, 'stopped');
     /* Still record partial usage so the operator can see incomplete
      * responses in the heatmap and diagnose client-drop patterns. */
@@ -104,7 +121,7 @@ export async function finalizeTurn(input: FinalizeTurnInput): Promise<void> {
     }
     return;
   }
-  if (abortController.signal.aborted && turnId) {
+  if (!failure && abortController.signal.aborted && turnId) {
     turnEvents.done('stopped', Date.now() - activityStartedAt);
     // Explicit Stop on a bound turn: persist the partial answer so a
     // re-attach sees what had streamed, then stop. The row itself was
@@ -186,18 +203,18 @@ export async function finalizeTurn(input: FinalizeTurnInput): Promise<void> {
     toolCalls: executedToolCalls,
     hasReasoning: Boolean(fullReasoning.trim()),
   });
-  const emptyTurn = !fullText && !fullReasoning && executedToolCalls.length === 0;
-  turnEvents.done(
-    abortController.signal.aborted ? 'stopped' : emptyTurn ? 'failed' : 'done',
-    Date.now() - activityStartedAt,
-  );
-  activity.done(Date.now() - activityStartedAt);
-  if (turnSummary) emitter.event('turn_summary', { summary: turnSummary });
+  if (failure) {
+    emitter.fatal(failure);
+  } else {
+    turnEvents.done('done', Date.now() - activityStartedAt);
+    activity.done(Date.now() - activityStartedAt);
+    if (turnSummary) emitter.event('turn_summary', { summary: turnSummary });
+    emitter.finish();
+  }
 
   /* Done — record usage, clear streaming text, and close the stream.
    * Both chat_turns and sessions.messages are now persisted server-side
    * so client disconnection mid-stream never drops dialogue history. */
-  emitter.finish();
   if (req.userId) {
     /* Prefer what the provider says it billed. resolveUsage falls back to
        the chars/4 estimate when the upstream reported nothing (gateway
@@ -220,21 +237,15 @@ export async function finalizeTurn(input: FinalizeTurnInput): Promise<void> {
   if (turnId) {
     clearTurnTimer();
     checkpointTurn();
-    const isBlank = !fullText && !fullReasoning && executedToolCalls.length === 0;
-    await setChatTurnStatus(
-      turnId,
-      isBlank && !abortController.signal.aborted ? 'failed' : 'completed',
-      {
-        fullText: fullText || null,
-        fullReasoning: fullReasoning || null,
-        toolCalls: executedToolCalls,
-        turnRuntime,
-        ...(isBlank && !abortController.signal.aborted
-          ? { error: 'Upstream returned no content' }
-          : {}),
-      },
-    ).catch(() => {});
+    await setChatTurnStatus(turnId, failure ? 'failed' : 'completed', {
+      fullText: fullText || null,
+      fullReasoning: fullReasoning || null,
+      toolCalls: executedToolCalls,
+      turnRuntime: !failure ? turnRuntime : settleTurnRuntime(turnRuntime, 'failed'),
+      ...(failure ? { error: failure.message } : {}),
+    }).catch(() => {});
   }
+  if (failure) return;
   //  & backend persistence — save completed assistant message to messages table
   if (sessionIdFromQuery && req.userId && (fullText || executedToolCalls.length > 0)) {
     const db = getDb();

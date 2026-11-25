@@ -189,7 +189,11 @@ function finishChatTurn(
 ): void {
   handleChatApiResult(result, controller, userText, retryTurn);
   try {
-    if (pending.sessionId && result && (result.text || result.cancelled)) {
+    if (
+      pending.sessionId &&
+      result &&
+      (result.text || result.cancelled || result.semanticActivity)
+    ) {
       clearPendingTurn(pending.sessionId, pending.clientTurn.id);
     }
   } catch (error) {

@@ -84,7 +84,8 @@ test('failed imports retry and late navigation failures preserve a mounted page'
       }),
       false,
     );
-    assert.match(document.getElementById('page').textContent, /Could not load/);
+    assert.match(document.querySelector('[role="alert"]').textContent, /Could not load|无法加载/);
+    assert.match(document.querySelector('button').textContent, /Retry|重试/);
     assert.equal(
       await loadPage('page', async () => (host) => {
         host.innerHTML = '<button>Keep me</button>';
@@ -114,4 +115,25 @@ test('failed imports retry and late navigation failures preserve a mounted page'
       false,
     );
     assert.equal(document.querySelector('button'), button);
+  }));
+
+test('the error state offers an in-place retry', async () =>
+  inPage(async (document) => {
+    let attempts = 0;
+    let resolveMounted;
+    const mounted = new Promise((resolve) => {
+      resolveMounted = resolve;
+    });
+    const load = async () => {
+      if (++attempts === 1) throw new Error('offline');
+      return (host) => {
+        host.textContent = 'Ready';
+      };
+    };
+    assert.equal(await loadPage('page', load, resolveMounted), false);
+    document.querySelector('button').click();
+    await mounted;
+    assert.equal(attempts, 2);
+    assert.equal(document.getElementById('page').textContent, 'Ready');
+    assert.equal(document.getElementById('page').hasAttribute('aria-busy'), false);
   }));

@@ -39,6 +39,16 @@ export interface TurnEventFrame {
   data: Record<string, unknown>;
 }
 
+/** Durable tool batches have historically been wrapped as { value: calls }. */
+export function toolCallsFromEvent(data: unknown): unknown[] {
+  if (Array.isArray(data)) return data;
+  if (!data || typeof data !== 'object') return [];
+  const frame = data as Record<string, unknown>;
+  if (Array.isArray(frame.calls)) return frame.calls;
+  if (Array.isArray(frame.value)) return frame.value;
+  return typeof frame.id === 'string' ? [frame] : [];
+}
+
 interface ChatTurnCreateResponse {
   turn: ChatTurn;
   created?: boolean;

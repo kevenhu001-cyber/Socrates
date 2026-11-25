@@ -2,6 +2,7 @@ import { Field, FieldGroup, FieldLabel } from '../ui/shadcn/field';
 import { Input as ShadcnInput } from '../ui/shadcn/input';
 import { Checkbox } from '../ui/shadcn/checkbox';
 import { Button as UiButton } from '../ui/shadcn/button';
+import { t } from '../../i18n/index';
 import { SectionCard } from '../ui/page/SectionCard';
 import type { SyntheticEvent } from 'react';
 
@@ -27,14 +28,14 @@ export function SystemModelSection({
   return (
     <SectionCard
       className="admin-section"
-      title="System model (built-in / Beagle)"
-      description="The LLM anonymous visitors and users without their own key use. Leave the key blank to keep the existing one."
+      title={t('admin.systemTitle')}
+      description={t('admin.systemDescription')}
     >
       {form ? (
         <form onSubmit={onSubmit}>
           <FieldGroup>
             <Field>
-              <FieldLabel htmlFor="admin-systemmodelsection-1">Display name</FieldLabel>
+              <FieldLabel htmlFor="admin-systemmodelsection-1">{t('provider.label')}</FieldLabel>
               <ShadcnInput
                 id="admin-systemmodelsection-1"
                 type="text"
@@ -45,7 +46,9 @@ export function SystemModelSection({
               />
             </Field>
             <Field>
-              <FieldLabel htmlFor="admin-systemmodelsection-2">OpenAI-compatible URL</FieldLabel>
+              <FieldLabel htmlFor="admin-systemmodelsection-2">
+                {t('admin.compatibleUrl')}
+              </FieldLabel>
               <ShadcnInput
                 id="admin-systemmodelsection-2"
                 type="url"
@@ -57,7 +60,7 @@ export function SystemModelSection({
               />
             </Field>
             <Field>
-              <FieldLabel htmlFor="admin-systemmodelsection-3">Model ID</FieldLabel>
+              <FieldLabel htmlFor="admin-systemmodelsection-3">{t('provider.model')}</FieldLabel>
               <ShadcnInput
                 id="admin-systemmodelsection-3"
                 type="text"
@@ -70,10 +73,11 @@ export function SystemModelSection({
             </Field>
             <Field>
               <FieldLabel htmlFor="admin-systemmodelsection-4">
-                API key{' '}
+                {t('provider.key')}
                 {form.hasKey && (
                   <span className="admin-key-present">
-                    (configured{form.keyHint ? `: ${form.keyHint}…` : ''})
+                    ({t('admin.configured')}
+                    {form.keyHint ? `: ${form.keyHint}…` : ''})
                   </span>
                 )}
               </FieldLabel>
@@ -82,8 +86,9 @@ export function SystemModelSection({
                 type="password"
                 value={apiKey}
                 onChange={(event) => onApiKeyChange(event.target.value)}
-                placeholder={form.hasKey ? 'Leave blank to keep' : 'Paste the provider key'}
+                placeholder={form.hasKey ? t('admin.keepKey') : t('admin.pasteKey')}
                 autoComplete="off"
+                required={!form.id}
               />
             </Field>
             <Field orientation="horizontal">
@@ -92,15 +97,36 @@ export function SystemModelSection({
                 checked={form.isMultimodal}
                 onCheckedChange={(checked) => onFormChange({ ...form, isMultimodal: checked })}
               />
-              <FieldLabel htmlFor="admin-system-multimodal">Accepts images (multimodal)</FieldLabel>
+              <FieldLabel htmlFor="admin-system-multimodal">{t('admin.acceptsImages')}</FieldLabel>
             </Field>
             <UiButton variant="default" type="submit" className="admin-save" disabled={saving}>
-              {saving ? 'Saving…' : 'Save system model'}
+              {saving ? t('common.saving') : t('admin.saveSystem')}
             </UiButton>
           </FieldGroup>
         </form>
       ) : (
-        <p className="admin-empty">Not configured yet — fill the form and save.</p>
+        <div>
+          <p className="admin-empty">{t('admin.systemEmpty')}</p>
+          <UiButton
+            variant="default"
+            type="button"
+            className="admin-save"
+            onClick={() =>
+              onFormChange({
+                id: '',
+                label: 'Beagle',
+                url: '',
+                model: '',
+                keyHint: null,
+                isActive: true,
+                isMultimodal: false,
+                hasKey: false,
+              })
+            }
+          >
+            {t('admin.configureSystem')}
+          </UiButton>
+        </div>
       )}
     </SectionCard>
   );

@@ -61,7 +61,7 @@ export function startSseStream({
         /* empty-catch: intentional — res.flush is absent on some compression stacks */
       }
     } catch {
-      /* empty-catch: intentional — socket already closed; the req.on('close') guard below handles it */
+      /* empty-catch: intentional — socket already closed; the response close guard below handles it */
     }
   }
 

@@ -27,7 +27,6 @@ import {
   createTurnWatchdog,
   turnWatchdogLimits,
   watchdogAbortReason,
-  watchdogError,
   watchdogExpiryFromReason,
   WATCHDOG_CHECK_INTERVAL_MS,
 } from '../../../lib/turnWatchdog.js';
@@ -213,8 +212,9 @@ async function executeChatStreamPipeline(
     clearInterval(watchdogTimer);
   });
 
-  req.on('close', () => {
+  const onResponseClose = () => {
     trackSseConnection(req.app, -1);
+    if (res.writableEnded) return;
     if (turnId) {
       // Detached mode: keep the run alive, drop only the socket feed.
       sseDetached = true;
@@ -240,7 +240,10 @@ async function executeChatStreamPipeline(
           console.error('[chat/stream] save streaming text on close failed:', err.message),
         );
     }
-  });
+  };
+  // The request body can finish before a single response byte is generated.
+  if (res.destroyed) onResponseClose();
+  else res.once('close', onResponseClose);
 
   const emitter = new SseEmitter(
     res,
@@ -333,15 +336,12 @@ async function executeChatStreamPipeline(
   });
   const emitFatal = emitter.fatal.bind(emitter);
   emitter.fatal = (error) => {
+    const expiry = watchdogExpiryFromReason(abortController.signal.reason);
     turnEvents.done(
-      abortController.signal.aborted ? 'stopped' : 'failed',
+      abortController.signal.aborted && !expiry ? 'stopped' : 'failed',
       Date.now() - activityStartedAt,
     );
-    /* when the watchdog aborted the turn, the upstream
-       surfaces a bare AbortError. Replace it with the explicit timeout so
-       the client sees WHY the turn ended and can decide to retry. */
-    const expiry = watchdogExpiryFromReason(abortController.signal.reason);
-    emitFatal(expiry ? watchdogError(expiry, errorLocale) : error);
+    emitFatal(error);
   };
   const uiInputs = new Map<string, unknown>();
   const emitEvent = emitter.event.bind(emitter);
@@ -374,7 +374,7 @@ async function executeChatStreamPipeline(
   };
   activity.thinking();
 
-  await runToolLoop({
+  const outcome = await runToolLoop({
     req,
     emitter,
     timing,
@@ -401,10 +401,7 @@ async function executeChatStreamPipeline(
     clearTurnTimer,
   });
 
-  const { fullText, fullReasoning, executedToolCalls, completionTokens, sawProviderUsage } =
-    toolState;
-  let turnRuntime = toolState.turnRuntime;
-  const accumulatedProviderUsage = () => readAccumulatedProviderUsage(toolState);
+  if (outcome === 'failed') return;
 
   await finalizeTurn({
     req,
@@ -431,4 +428,5 @@ async function executeChatStreamPipeline(
     },
     activityStartedAt,
   });
+  if (abortController.signal.aborted && !sseDetached && !res.writableEnded) res.end();
 }

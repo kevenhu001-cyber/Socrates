@@ -18,7 +18,17 @@ const frame = (value) => `data: ${JSON.stringify(value)}\n\n`;
 test(
   'pipeline publishes the first validated node before upstream arguments finish, then commits and resumes prose',
   { timeout: 15000 },
-  async () => {
+  async (t) => {
+    const previousBudget = process.env.CHAT_MAX_TOOL_CALLS_TOTAL;
+    process.env.CHAT_MAX_TOOL_CALLS_TOTAL = '1';
+    t.after(() => {
+      if (previousBudget === undefined) delete process.env.CHAT_MAX_TOOL_CALLS_TOTAL;
+      else process.env.CHAT_MAX_TOOL_CALLS_TOTAL = previousBudget;
+    });
+    const details = [
+      { type: 'reasoning.summary', summary: 'Checked the inputs.', index: 0 },
+      { type: 'reasoning.encrypted', data: 'opaque-token', index: 1 },
+    ];
     const encoder = new TextEncoder();
     const root = { id: 'root', type: 'panel', title: 'Progressive result' };
     const child = { id: 'value', parent: 'root', type: 'metric', label: 'Count', value: 42 };
@@ -97,17 +107,20 @@ test(
     };
     globalThis.fetch = async (_url, init) => {
       requests++;
+      const body = JSON.parse(init.body);
       if (requests === 1) {
-        const body = JSON.parse(init.body);
         assert.ok(body.tools.some((tool) => tool.function.name === 'render_intelligent_ui'));
       }
-      if (requests > 1)
+      if (requests > 1) {
+        assert.equal(body.tools, undefined, 'the last hop answers within the tool budget');
+        assert.deepEqual(body.messages.find((m) => m.tool_calls)?.reasoning_details, details);
         return new Response(
           frame({ choices: [{ delta: { content: 'The completed result.' } }] }) +
             frame({ choices: [{ delta: {}, finish_reason: 'stop' }] }) +
             'data: [DONE]\n\n',
           { headers: { 'Content-Type': 'text/event-stream' } },
         );
+      }
       return new Response(
         new ReadableStream({
           start(controller) {
@@ -118,6 +131,7 @@ test(
                   choices: [
                     {
                       delta: {
+                        reasoning_details: details,
                         tool_calls: [
                           {
                             index: 0,
@@ -182,6 +196,10 @@ test(
     assert.ok(commit, 'validated UI must commit after the tool result');
     assert.deepEqual(commit.nodes, [root, child]);
     assert.equal(events.at(-1).type, 'turn.done');
+    assert.ok(events.some((event) => event.activity?.text === 'Checked the inputs.'));
+    assert.ok(
+      !frames.some((text) => text.includes('opaque-token') || text.startsWith('event: error')),
+    );
     assert.ok(frames.some((text) => text.includes('The completed result.')));
     assert.equal(requests, 2);
   },
@@ -313,5 +331,107 @@ test(
       events.map((event) => event.seq),
       events.map((_, index) => index + 1),
     );
+  },
+);
+
+test(
+  'an upstream completion with reasoning but no answer ends as one explicit failure',
+  { timeout: 5000 },
+  async () => {
+    const req = new EventEmitter();
+    req.app = { locals: {} };
+    const messages = [{ role: 'user', content: 'What is 2 + 2?' }];
+    req.body = { messages };
+    req.headers = { 'accept-language': 'zh-CN' };
+    const res = new EventEmitter();
+    const frames = [];
+    res.writeHead = () => res;
+    res.flushHeaders = () => {};
+    res.write = (data) => frames.push(data);
+    res.end = () => {
+      res.writableEnded = true;
+      res.emit('finish');
+      res.emit('close');
+    };
+    globalThis.fetch = async () => {
+      req.emit('close'); // Request input ended, but the response is still open.
+      return new Response(
+        frame({
+          choices: [{ delta: { reasoning_content: 'Thinking' }, finish_reason: 'length' }],
+        }) + 'data: [DONE]\n\n',
+      );
+    };
+    await runChatStreamPipeline({
+      req,
+      res,
+      prep: {
+        payload: {
+          messages,
+          provider: {
+            url: 'https://provider.example/v1',
+            keyPlaintext: 'test',
+            model: 'test-model',
+          },
+          mode: 'chat',
+        },
+      },
+      sessionIdFromQuery: null,
+      projectIdFromBody: null,
+      turnId: null,
+    });
+    assert.ok(frames.some((data) => data.includes('reasoning_content')));
+    assert.equal(frames.filter((data) => data.startsWith('event: error')).length, 1);
+    assert.equal(frames.filter((data) => data.startsWith('data: [DONE]')).length, 1);
+    assert.ok(frames.some((data) => data.includes('CHAT_NO_ANSWER') && data.includes('请重试')));
+    assert.equal(req.app.locals.sseCount, 0);
+  },
+);
+
+test(
+  'a watchdog abort reports timeout and closes a still-connected stream',
+  { timeout: 5000 },
+  async () => {
+    const req = new EventEmitter();
+    req.app = { locals: {} };
+    const messages = [{ role: 'user', content: 'What is 2 + 2?' }];
+    req.body = { messages };
+    const res = new EventEmitter();
+    const frames = [];
+    res.writeHead = () => res;
+    res.flushHeaders = () => {};
+    res.write = (data) => frames.push(data);
+    res.end = () => {
+      res.writableEnded = true;
+      res.emit('finish');
+      res.emit('close');
+    };
+    const execution = new AbortController();
+    globalThis.fetch = async (_url, { signal }) => {
+      execution.abort('turn_idle_timeout');
+      signal.throwIfAborted();
+    };
+    await runChatStreamPipeline({
+      req,
+      res,
+      prep: {
+        payload: {
+          messages,
+          provider: {
+            url: 'https://provider.example/v1',
+            keyPlaintext: 'test',
+            model: 'test-model',
+          },
+          mode: 'chat',
+        },
+      },
+      sessionIdFromQuery: null,
+      projectIdFromBody: null,
+      turnId: null,
+      executionSignal: execution.signal,
+    });
+    assert.ok(
+      frames.some((data) => data.startsWith('event: error') && data.includes('TURN_IDLE_TIMEOUT')),
+    );
+    assert.equal(res.writableEnded, true);
   },
 );

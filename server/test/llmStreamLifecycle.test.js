@@ -84,6 +84,7 @@ test(
 for (const text of [
   frame({ error: { message: 'provider failure' } }),
   '{"error":{"message":"provider failure"}}\n',
+  JSON.stringify({ error: { message: 'provider failure' } }, null, 2) + '\n',
 ]) {
   test(`upstream error releases an open body: ${text.trim()}`, async () => {
     let cancels = 0;
@@ -92,7 +93,7 @@ for (const text of [
     });
     const result = await collect(body);
     assert.equal(result.errors.length, 1);
-    assert.match(result.errors[0].message, /provider failure/);
+    assert.equal(result.errors[0].message, 'LLM API error 502');
     assert.deepEqual(result.done, []);
     assert.equal(cancels, 1);
     assert.equal(body.locked, false);
