@@ -70,7 +70,7 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
     min-height: 0;
     margin: auto;
     border: 1px solid var(--ui-border-subtle);
-    border-radius: var(--ui-radius-xl);
+    border-radius: var(--ui-radius-dialog);
     overflow: hidden;
     background: var(--background);
   }
@@ -105,7 +105,7 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
     gap: var(--ui-space-sm);
     min-height: 36px;
     padding: 6px 10px;
-    border-radius: var(--ui-radius-row);
+    border-radius: var(--ui-radius-sidebar-row);
     color: var(--foreground);
   }
 
@@ -138,9 +138,9 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
   }
 
   .settings-page .settings-pane > h2 {
-    padding-bottom: 16px;
+    padding-bottom: 12px;
     border-bottom: 1px solid var(--ui-border-subtle);
-    font-size: var(--ui-text-page);
+    font-size: var(--ui-text-lg);
     font-weight: var(--ui-font-weight-semibold);
   }
 
@@ -359,7 +359,7 @@ html[data-main-view='settingsPage']
 
 html[data-main-view='settingsPage'] #settingsPage .settings-nav-item.active {
   background: var(--ui-bg-selected);
-  border-radius: var(--ui-radius-row);
+  border-radius: var(--ui-radius-sidebar-row);
   box-shadow: none;
 }
 html[data-main-view='settingsPage'] #settingsPage .settings-nav-item.active:focus-visible {
