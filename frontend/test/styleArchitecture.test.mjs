@@ -296,6 +296,26 @@ test('Page Kit owns shared section, collection and card defaults', async () => {
   }
 });
 
+test('Page Kit and menu component own their shared base presentation', async () => {
+  const [kit, pages, menu, overlays] = await Promise.all([
+    read('src/styles/features/page-kit.css'),
+    read('src/styles/polish/app-pages.css'),
+    read('src/styles/components/menu.css'),
+    read('src/styles/polish/overlays.css'),
+  ]);
+  for (const selector of [
+    '#appShell .ui-page-search {',
+    "#appShell .ui-page-empty[data-slot='empty'] {",
+    "#appShell .ui-page-empty [data-slot='empty-title'] {",
+  ]) {
+    assert.ok(kit.includes(selector), `Missing Page Kit owner: ${selector}`);
+    assert.ok(!pages.split('\n').includes(selector), `Duplicate desktop base: ${selector}`);
+  }
+  assert.match(menu, /\.chat-config-pop\s*\{/);
+  assert.match(menu, /\.chat-config-row\s*\{/);
+  assert.doesNotMatch(overlays, /\.chat-config-pop\s*\{|\.chat-config-row\s*\{/);
+});
+
 test('legacy button utilities use paint-only press feedback and tag editor has one input owner', async () => {
   const [buttons, menu, overlays] = await Promise.all([
     read('src/styles/polish/buttons.css'),
