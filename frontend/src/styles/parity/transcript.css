@@ -198,8 +198,9 @@
       .tool-run-trigger,
       .tool-activity-burst-toggle,
       .intui-surface-more,
-      .intui-panel-more
-    ) {
+      .intui-panel-more,
+      [data-slot]
+    ):not(:where(.intui *, .intui-openui *, .visualization-card *, .viz *, .code-block-actions *)) {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -227,8 +228,9 @@
       .tool-run-trigger,
       .tool-activity-burst-toggle,
       .intui-surface-more,
-      .intui-panel-more
-    ):hover {
+      .intui-panel-more,
+      [data-slot]
+    ):not(:where(.intui *, .intui-openui *, .visualization-card *, .viz *, .code-block-actions *)):hover {
     background: color-mix(in srgb, var(--ui-action) 88%, white);
   }
   #appShell
@@ -239,8 +241,9 @@
       .tool-run-trigger,
       .tool-activity-burst-toggle,
       .intui-surface-more,
-      .intui-panel-more
-    ):active {
+      .intui-panel-more,
+      [data-slot]
+    ):not(:where(.intui *, .intui-openui *, .visualization-card *, .viz *, .code-block-actions *)):active {
     transform: scale(0.98);
   }
   #appShell
@@ -251,8 +254,9 @@
       .tool-run-trigger,
       .tool-activity-burst-toggle,
       .intui-surface-more,
-      .intui-panel-more
-    ):focus-visible {
+      .intui-panel-more,
+      [data-slot]
+    ):not(:where(.intui *, .intui-openui *, .visualization-card *, .viz *, .code-block-actions *)):focus-visible {
     box-shadow: var(--ui-focus-shadow);
   }
 
@@ -261,9 +265,10 @@
     display: flex;
     align-items: center;
     gap: 4px;
-    height: 36px;
+    min-height: 44px;
+    height: auto;
     margin: 0;
-    padding: 0 8px 0 16px;
+    padding: 4px 8px 4px 14px;
     border: 1px solid var(--ui-border-code);
     border-bottom: 0;
     border-radius: var(--ui-radius-lg) var(--ui-radius-lg) 0 0;
@@ -277,15 +282,15 @@
   #appShell #msgList .msg-body .code-block-header-lang {
     margin-right: auto;
     color: inherit;
-    font-family: var(--font-mono);
-    font-size: var(--ui-font-size-xxs);
+    font-family: var(--font-sans);
+    font-size: var(--ui-font-size-sm);
     font-weight: var(--ui-font-weight-medium);
     /* legacy/09 lowercases the raw fence id; the header now carries a
        product label (JavaScript, Python) and must keep its casing. */
     text-transform: none;
     letter-spacing: 0.02em;
   }
-  #appShell #msgList .msg-body pre:not(.tool-inline-detail-value) {
+  #appShell #msgList .msg-body pre:not(.tool-inline-detail-value, .viz-code-pane) {
     margin: 0 0 16px;
     padding: 16px;
     overflow-x: auto;
@@ -298,7 +303,7 @@
     line-height: 1.6;
   }
   #appShell #msgList .msg-body .code-block-header + pre {
-    padding-top: 4px;
+    padding-top: 12px;
     border-top: 0;
     border-radius: 0 0 var(--ui-radius-lg) var(--ui-radius-lg);
   }

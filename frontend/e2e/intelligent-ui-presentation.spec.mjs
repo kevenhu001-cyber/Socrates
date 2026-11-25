@@ -103,6 +103,19 @@ for (const format of ['native', 'openui']) {
       if (format === 'openui') {
         await expect(shell).toContainText('每周学习：21 小时');
         await expect(shell.locator('.iui-card')).toHaveCSS('border-top-width', '0px');
+        const reset = shell.getByRole('button', { name: '重置计划' });
+        await expect(reset).toBeVisible();
+        const isPrimaryBlue = await reset.evaluate((node) => {
+          const probe = document.createElement('span');
+          probe.style.backgroundColor = 'var(--ui-action)';
+          document.body.append(probe);
+          const same = getComputedStyle(node).backgroundColor === getComputedStyle(probe).backgroundColor;
+          probe.remove();
+          return same;
+        });
+        expect(isPrimaryBlue).toBe(false);
+        await reset.click();
+        await expect(slider).toHaveValue('2');
       } else {
         await expect(slider).toHaveCSS('outline-style', 'none');
       }

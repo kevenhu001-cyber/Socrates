@@ -8,7 +8,7 @@
   margin: var(--ui-space-sm) 0;
   padding: var(--ui-space-md);
   border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-lg);
+  border-radius: var(--ui-radius-xl);
   background: var(--ui-bg-surface);
   color: var(--foreground);
   font-family: var(--font-sans);
@@ -120,6 +120,13 @@
     height: 292px;
     padding: 2px;
   }
+}
+/* Keep inline ECharts skeletons at the same height as their finished stage. */
+.intui-surface-document .viz-state-skeleton[data-renderer='echarts'] .viz-skeleton-stage {
+  height: 200px;
+}
+.intui-surface-document .viz-state-skeleton[data-renderer='echarts'] .viz-skeleton-bars {
+  height: 140px;
 }
 /* The engine's card is in the host: it owns the footprint from here on. */
 .openui-visualization:has(> .openui-visualization-host > .visualization-card)

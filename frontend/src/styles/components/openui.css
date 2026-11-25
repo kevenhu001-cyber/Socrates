@@ -255,10 +255,27 @@
   flex-wrap: wrap;
   height: auto;
   max-width: 100%;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-bg-segment);
 }
 .intui-openui .iui-view-options [data-slot='tabs-trigger'] {
-  min-height: var(--ui-control-touch);
+  min-height: var(--ui-control-sm);
+  height: auto;
+  padding: 6px 12px;
+  border-radius: var(--ui-radius-pill);
   white-space: normal;
+  box-shadow: none;
+}
+.intui-openui .iui-view-options [data-slot='tabs-trigger'][data-active] {
+  background: var(--ui-bg-field);
+  color: var(--ui-text-primary);
+}
+@media (max-width: 768px) {
+  .intui-openui .iui-view-options [data-slot='tabs-trigger'] {
+    min-height: var(--ui-control-touch);
+  }
 }
 .intui-openui .iui-table-sort {
   display: inline-flex;
@@ -425,7 +442,10 @@
   text-align: start;
 }
 .intui-openui .iui-table-wrap {
+  min-width: 0;
+  max-width: 100%;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
 }
 .intui-openui .iui-svg {
   display: block;

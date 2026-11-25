@@ -19,8 +19,12 @@
    of dropping a black slab into the white phone transcript. */
 @media (max-width: 768px) {
   #appShell#appShell .msg-body .code-block-header {
+    min-height: 48px;
+    height: auto;
+    padding: 2px 6px 2px 14px;
+    margin-bottom: 0;
     background: var(--ui-bg-code-header);
-    color: var(--ui-text-tertiary);
+    color: var(--ui-text-secondary);
     border: 1px solid var(--ui-border-code);
     border-bottom: none;
     border-top-left-radius: var(--ui-radius-lg);
@@ -29,7 +33,7 @@
      desktop owner (parity/transcript.css) overrides to 12px but this phone
      block never did — so the label rendered 10.5px on phones and 12px
      everywhere else. */
-    font-size: var(--ui-font-size-xxs);
+    font-size: var(--ui-font-size-sm);
     /* legacy/09 dims the header to .85 until :hover — a state touch never
      reaches, so the label and copy action stayed below AA on phones. */
     opacity: 1;
@@ -38,12 +42,13 @@
 @media (max-width: 768px) {
   #appShell#appShell .msg-body .code-block-header-lang {
     color: var(--muted-foreground);
+    font-family: var(--font-sans);
     font-weight: var(--ui-font-weight-medium);
     text-transform: none;
   }
 }
 @media (max-width: 768px) {
-  #appShell#appShell .msg-body pre {
+  #appShell#appShell .msg-body pre:not(.viz-code-pane) {
     border-radius: var(--ui-radius-lg);
     border: 1px solid var(--ui-border-code);
     background: var(--ui-bg-code);
@@ -459,5 +464,29 @@
 @media (prefers-reduced-motion: reduce) {
   #appShell .find-bar:not(.hidden) {
     animation: none;
+  }
+}
+
+/* Compact code chrome belongs to the transcript, not the primary message
+   action styling. Keep both actions accessible without a wide label on phones. */
+#appShell .msg-body .code-block-actions {
+  gap: 2px;
+}
+#appShell .msg-body .code-block-actions > button {
+  box-shadow: none;
+  color: var(--ui-text-secondary);
+}
+#appShell .msg-body .code-block-actions > button:hover {
+  color: var(--ui-text-primary);
+}
+@media (max-width: 768px) {
+  #appShell .msg-body .code-block-actions > button {
+    width: var(--ui-hit-area);
+    min-width: var(--ui-hit-area);
+    height: var(--ui-hit-area);
+    padding: 0;
+  }
+  #appShell .msg-body .code-block-copy-label {
+    display: none;
   }
 }

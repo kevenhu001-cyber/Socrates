@@ -1,4 +1,5 @@
 import { useState, type MouseEvent } from 'react';
+import { Download, Expand, RotateCcw, Table2 } from 'lucide-react';
 import { Button } from '../ui/shadcn/button';
 
 export interface VisualizationActionsProps {
@@ -43,7 +44,7 @@ export function VisualizationActions({
     <div className="visualization-actions" data-viz-actions-root>
       <Button
         variant="ghost"
-        size="xs"
+        size="sm"
         data-viz-action="table"
         hidden={!tableAvailable}
         aria-expanded={tableOpen}
@@ -51,11 +52,12 @@ export function VisualizationActions({
         title={labels.table}
         onClick={toggleTable}
       >
-        {labels.table}
+        <Table2 aria-hidden="true" />
+        <span>{labels.table}</span>
       </Button>
       <Button
         variant="ghost"
-        size="xs"
+        size="icon-sm"
         data-viz-action="reset"
         hidden={!resetAvailable}
         aria-hidden={!resetAvailable || undefined}
@@ -63,29 +65,29 @@ export function VisualizationActions({
         title={labels.reset}
         onClick={onReset}
       >
-        {labels.reset}
+        <RotateCcw aria-hidden="true" />
       </Button>
       <Button
         variant="ghost"
-        size="xs"
+        size="icon-sm"
         data-viz-action="download"
         hidden={!downloadAvailable}
         aria-label={labels.download}
         title={labels.download}
         onClick={onDownload}
       >
-        {labels.download}
+        <Download aria-hidden="true" />
       </Button>
       <Button
         variant="ghost"
-        size="xs"
+        size="icon-sm"
         data-viz-action="fullscreen"
         hidden={!fullscreenAvailable}
         aria-label={labels.fullscreen}
         title={labels.fullscreen}
         onClick={onFullscreen}
       >
-        {labels.fullscreen}
+        <Expand aria-hidden="true" />
       </Button>
     </div>
   );
