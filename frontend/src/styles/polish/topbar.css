@@ -1,6 +1,6 @@
 /*
  * polish/topbar.css — top bar + mode pill refinement.
- * Height (52px) and geometry stay owned by restore/fixes.css.
+ * Header geometry belongs to parity/topbar.css and polish/mobile-shell.css.
  */
 
 @media (max-width: 768px) {
@@ -54,47 +54,5 @@
   }
 }
 
-/* Free-tier "升级" pill — removed. The mobile top bar no longer carries an
-   Upgrade button; the pricing entry point is the account menu's "Upgrade
-   plan" item, identical on desktop and phone. */
-@media (max-width: 768px) {
-  /* Plugin workspace tabs are a desktop-only header slot. The new-chat
-     button's phone visibility belongs to mobile-shell.css: it is shown in
-     an active conversation and hidden on the home/directory views. */
-  #appShell #pluginWorkspaceTabs {
-    display: none;
-  }
-}
-
-@media (max-width: 768px) {
-  #appShell #pluginWorkspaceTabs {
-    top: 50%;
-    transform: translate(-50%, -50%);
-    border: 1px solid var(--ui-border-subtle);
-    background: var(--ui-bg-raised);
-  }
-  #appShell #pluginWorkspaceTabs .plugin-workspace-tab {
-    border-radius: var(--ui-radius-pill);
-    font-size: var(--ui-font-size-xs);
-    font-weight: var(--ui-font-weight-medium);
-    color: var(--ui-text-tertiary);
-    transition:
-      color var(--ui-duration-fast) ease,
-      background-color var(--ui-duration-fast) ease;
-  }
-  #appShell #pluginWorkspaceTabs .plugin-workspace-tab.active {
-    color: var(--foreground);
-    font-weight: var(--ui-font-weight-semibold);
-  }
-  [data-mode='dark'] #appShell #pluginWorkspaceTabs .plugin-workspace-tab.active {
-    background: rgb(255 255 255 / 10%);
-  }
-  [data-mode='light'] #appShell #pluginWorkspaceTabs .plugin-workspace-tab.active {
-    background: var(--ui-bg-surface, rgb(255 255 255));
-    box-shadow:
-      0 1px 2px rgb(0 0 0 / 8%),
-      0 0 0 1px rgb(0 0 0 / 4%);
-  }
-}
-
-/* In-chat affordances (share/find/model) keep the same quiet skin. */
+/* Plugin workspace tabs are desktop-only; layout/app-shell.css owns their
+   hidden state on phones. */
