@@ -81,12 +81,14 @@ test('a long plain-prose tail skips the markdown pipeline without changing its t
   globalThis.document = dom.window.document;
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   let progressivePaints = 0;
+  let lastProgressiveText;
   let prose;
   window.__socratesLegacy = {
     render: {
       renderAssistantHTML: (text) => `<p>${text}</p>`,
       renderAssistantProgressive: (text) => {
         progressivePaints += 1;
+        lastProgressiveText = text;
         return `<p>${text}</p>`;
       },
     },
@@ -109,6 +111,19 @@ test('a long plain-prose tail skips the markdown pipeline without changing its t
 
     prose.tail(plain + '**bold**');
     assert.equal(progressivePaints, 1, 'markdown still uses the real renderer');
+
+    // A code example can mention the same classes as historical tool rows.
+    // Raw Markdown must reach its parser intact even when DOMParser exists.
+    const previousParser = globalThis.DOMParser;
+    globalThis.DOMParser = dom.window.DOMParser;
+    try {
+      const source = '```html\n<details class="tool-inline">example</details>\n```';
+      prose.tail(source);
+      assert.equal(lastProgressiveText, source);
+    } finally {
+      if (previousParser === undefined) delete globalThis.DOMParser;
+      else globalThis.DOMParser = previousParser;
+    }
   } finally {
     await act(() => root.unmount());
     resetBridgeCache();

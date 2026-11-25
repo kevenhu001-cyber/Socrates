@@ -1,6 +1,5 @@
 import { memo, useRef, useState, type RefObject } from 'react';
 
-import { hasTurnStructure, type ToolCallRecord } from '../tool-run/toolRunModel';
 import type { ChatMessage } from '../types/domain';
 import { deriveTurnPresentationState } from '../../legacy/turnActivityModel';
 import { useMessageContextMenu } from './useMessageContextMenu';
@@ -105,19 +104,8 @@ function isRenderable(message: ChatMessage, live: boolean): boolean {
   if (live) return true;
   if (typeof message.html === 'string' && message.html.length > 0) return true;
   if (typeof message.rawText === 'string' && message.rawText.length > 0) return true;
-  /* A native tool can be the entire assistant answer. Once streaming settles,
-     that turn still has visible declarative content even with zero prose.
-     Without this check the row (and Intelligent UI attached to it) disappears
-     exactly at the live -> settled boundary. */
-  if (
-    hasTurnStructure(
-      typeof message.rawText === 'string' ? message.rawText : '',
-      message.toolCalls as ReadonlyArray<ToolCallRecord> | undefined,
-    )
-  )
-    return true;
-  /* Older tool-only rows may not have a persisted textOffset. They still
-     have visible legacy HTML and must remain in the same assistant surface. */
+  /* Tool-only answers remain visible after settling, including historical
+     calls without a persisted textOffset. Layout owns offset recovery. */
   if (Array.isArray(message.toolCalls) && message.toolCalls.length > 0) return true;
   if (
     message.turnRuntime?.uiSurfaces.some(
