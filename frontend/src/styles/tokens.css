@@ -52,6 +52,7 @@
   --ui-radius-composer-desktop: 28px;
   /* chatgpt.com row radius: sidebar rows, menu items. */
   --ui-radius-row: 8px;
+  --ui-radius-sidebar-row: 10px;
   --ui-radius-bubble: 20px;
   --ui-radius-pill: 999px;
   /* Menus take the reference's 12px corner; dialogs keep the 24px sheet. */
