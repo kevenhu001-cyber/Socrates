@@ -210,16 +210,6 @@ body.composer-tools-open.composer-tools-open::after {
   transform-origin: top left;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .chat-config-pop {
-    transition: opacity var(--ui-duration-fast) var(--ui-ease-out);
-  }
-  @starting-style {
-    .chat-config-pop {
-      opacity: 0;
-    }
-  }
-}
 
 /* Their scrims share the clock: the dim holds while the card leaves, then
    both flip to `display: none` together. */
