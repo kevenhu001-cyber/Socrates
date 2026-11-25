@@ -1,4 +1,5 @@
-import { Button as UiButton } from '../ui/Button';
+import { Button } from '../ui/shadcn/button';
+import { Download, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import type { Message, ResearchJob } from '@socrates/contracts';
 import { fetchResearchReport } from '../../agent/researchJobsClient.ts';
@@ -247,22 +248,25 @@ export function ResearchReportDialog({ job, onClose }: ResearchReportDialogProps
           </FoundationDialogTitle>
         </div>
         <div className="research-report-header-actions">
-          <UiButton
+          <Button
             type="button"
+            variant="outline"
+            size="icon-sm"
             className="research-report-icon-button"
             onClick={() => downloadReport(text, job.query)}
             disabled={!text}
             aria-label={t('research.downloadReport')}
             title={t('research.downloadReport')}
           >
-            ↓
-          </UiButton>
+            <Download aria-hidden="true" />
+          </Button>
           <FoundationDialogClose
+            render={<Button variant="ghost" size="icon-sm" />}
             className="research-report-icon-button"
             onClick={onClose}
             aria-label={t('dialog.close', 'Close')}
           >
-            ×
+            <X aria-hidden="true" />
           </FoundationDialogClose>
         </div>
       </header>
