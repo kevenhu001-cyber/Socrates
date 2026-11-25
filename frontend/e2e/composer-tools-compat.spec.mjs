@@ -439,7 +439,10 @@ test('composer plugin catalog exposes a retry after a failed request', async ({ 
   await expect(menu.locator('.composer-tools-plugin-state')).toContainText(
     /could not be loaded|加载失败/,
   );
-  await menu.getByRole('menuitem', { name: /Try again|重试/ }).click();
+  const retry = menu.getByRole('menuitem', { name: /Try again|重试/ });
+  await expect(retry).toHaveAttribute('data-variant', 'outline');
+  await expect(retry).toHaveCSS('border-radius', '999px');
+  await retry.click();
   await expect(menu.locator('[data-composer-plugin="github"]')).toBeVisible();
   expect(requestCount).toBe(2);
 });
