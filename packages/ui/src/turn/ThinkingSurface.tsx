@@ -37,9 +37,11 @@ export interface ThinkingSurfaceProps {
   durationClassName?: string;
   /** Live working indicator, drawn alongside the caption. */
   indicator?: ReactNode;
-  /** A tool or site mark remains visible alongside the working indicator. */
+  /** A tool mark remains visible before the activity caption. */
   icon?: ReactNode;
   iconWidth?: number;
+  /** Optional site marks or other quiet metadata after the caption. */
+  trailing?: ReactNode;
   expandable: boolean;
   open: boolean;
   onToggle(): void;
@@ -61,6 +63,7 @@ export function ThinkingSurface({
   indicator,
   icon,
   iconWidth = 18,
+  trailing,
   expandable,
   open,
   onToggle,
@@ -148,6 +151,7 @@ export function ThinkingSurface({
             </UiText>
           </span>
         ) : null}
+        {trailing}
         {expandable ? <Chevron open={open} tone="tertiary" /> : null}
       </button>
       <div
