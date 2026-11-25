@@ -12,7 +12,6 @@ import {
   type ScaffoldTurnPlan,
 } from '@socrates/ui/learn-split';
 import { getLegacyActions } from '../legacy/gateway.ts';
-import { stripLegacyToolHtml } from './toolRunModel.js';
 import { getMathRenderRevision, subscribeMathRenderRevision } from '../../render/mathRevision.ts';
 import { getCurrentLang } from '../../ui/legacyI18n.ts';
 import { escHTML } from '../../render/text.ts';
@@ -86,15 +85,14 @@ export function useProseRenderer(live: boolean): ProseRenderer {
     const final = renderer.renderAssistantHTML;
     const progressive = renderer.renderAssistantProgressive;
     const paint = (text: string, complete: boolean): string => {
-      const clean = stripLegacyToolHtml(text);
-      if (!clean.trim()) return '';
+      if (!text.trim()) return '';
       try {
         // Closed cards mount as soon as their data arrives. Other prose keeps
         // the progressive parser and its DOM through the end of the turn.
-        const readyScaffold = hasCompleteScaffold(clean) && isStableMarkdownPrefix(clean);
+        const readyScaffold = hasCompleteScaffold(text) && isStableMarkdownPrefix(text);
         return live && progressive && !readyScaffold
-          ? progressive(clean, { complete })
-          : final(clean);
+          ? progressive(text, { complete })
+          : final(text);
       } catch {
         /* A segment failure must not blank the rest of the assistant answer. */
         return '';

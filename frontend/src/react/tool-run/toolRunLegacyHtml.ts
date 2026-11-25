@@ -1,11 +1,7 @@
-import { sortableToolCalls } from './toolRunLayout.ts';
-import type { ToolCallRecord } from './toolRunModel.types.ts';
-
 /* ── back-compat for HTML baked before this renderer existed ────────────── */
 
 const LEGACY_TOOL_SELECTORS = [
   'details.tool-inline',
-  'section.tool-run-group',
   '.tool-run-group',
   '.agent-tool-card',
   '.tool-inline-attachments',
@@ -20,8 +16,7 @@ const LEGACY_TOOL_SELECTORS = [
  * outerHTML straight into html. The new renderer draws those rows from
  * toolCalls[], so the baked copies have to go or every old turn shows its
  * tools twice. Content written after this change carries no tool markup at
- * all, so the pass is a no-op on it — that is why it is safe to run on every
- * render rather than gating on a migration flag.
+ * all. Call this only for stored HTML, never for raw Markdown or code fences.
  *
  * Returns the input untouched when no DOM parser is available: a silently
  * mangled transcript is worse than a duplicated row, and only the browser
@@ -60,18 +55,3 @@ function stripStoredMarkup(source: string, selectors: readonly string[]): string
   }
 }
 
-/**
- * True when a message needs the declarative turn renderer at all.
- *
- * Only tool rows route: a turn whose sole structure is thinking keeps the
- * legacy `message.html` path, because provider scratch work is never rendered
- * in the finalized answer (renderAssistantHTML strips it) and the live
- * thinking pill owns that surface. Anything else would mean re-rendering prose
- * through a second code path for no visible gain.
- */
-export function hasTurnStructure(
-  rawText: string,
-  toolCalls: ReadonlyArray<ToolCallRecord> | null | undefined,
-): boolean {
-  return sortableToolCalls(rawText, toolCalls).length > 0;
-}

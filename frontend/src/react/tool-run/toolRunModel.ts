@@ -33,4 +33,4 @@ export {
   truncateLines,
 } from './toolRunDetails.ts';
 export { groupViewOf, toolRunGroupView } from './toolRunGroupModel.ts';
-export { hasTurnStructure, stripLegacyToolHtml } from './toolRunLegacyHtml.ts';
+export { stripLegacyToolHtml } from './toolRunLegacyHtml.ts';

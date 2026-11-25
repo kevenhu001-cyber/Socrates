@@ -17,7 +17,6 @@ import {
   findThinkRanges,
   groupOutputCalls,
   groupViewOf,
-  hasTurnStructure,
   normalizeSources,
   sortableToolCalls,
   stripLegacyToolHtml,
@@ -836,17 +835,11 @@ test('a group surfaces a member failure in its own sections and meta', () => {
   assert.equal(errors[0].text, 'engine down');
 });
 
-/* ── routing predicate for MessageItem ─────────────────────────────────── */
-
-test('only turns with splicable tool rows route to the declarative renderer', () => {
-  assert.equal(hasTurnStructure('plain prose', []), false);
-  assert.equal(hasTurnStructure('plain prose', [call({ textOffset: 2 })]), true);
-  // Thinking alone must not flip the route: scratch work is never rendered in
-  // the finalized answer, so that case keeps the legacy html path.
-  assert.equal(hasTurnStructure('a\n\n<think>b</think>', []), false);
-  // A persisted call that fails the offset filter must not flip the route:
-  // rendering it declaratively would silently drop the row.
-  assert.equal(hasTurnStructure('short', [{ id: 'x', name: 'Read', textOffset: 999 }]), false);
+test('only calls with usable offsets enter the live layout', () => {
+  assert.equal(sortableToolCalls('plain prose', []).length, 0);
+  assert.equal(sortableToolCalls('plain prose', [call({ textOffset: 2 })]).length, 1);
+  assert.equal(sortableToolCalls('a\n\n<think>b</think>', []).length, 0);
+  assert.equal(sortableToolCalls('short', [{ id: 'x', name: 'Read', textOffset: 999 }]).length, 0);
 });
 
 /* ── legacy HTML back-compat ─────────────────────────────────────────── */
