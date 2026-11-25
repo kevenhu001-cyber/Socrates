@@ -52,7 +52,8 @@ test('each tool in a burst is visible and individually expandable', async ({ pag
 
   const turn = page.locator('.msg.assistant').last();
   await expect(turn.locator('.rn-tool-row')).toHaveCount(5);
-  await expect(turn.getByTestId('turn-activity-toggle')).toHaveCount(0);
+  await expect(turn.getByTestId('turn-activity-toggle')).toHaveAttribute('aria-expanded', 'false');
+  await turn.getByTestId('turn-activity-toggle').click();
   for (const id of ['batch-a', 'batch-b', 'batch-c', 'batch-d']) {
     await expect(toolRowButton(turn, id)).toBeVisible();
   }
