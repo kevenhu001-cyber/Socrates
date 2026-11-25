@@ -403,7 +403,7 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
   padding: var(--ui-tooltip-padding);
   border-radius: var(--ui-tooltip-radius);
   border: 1px solid var(--ui-border-subtle);
-  box-shadow: var(--ui-shadow-menu);
+  box-shadow: var(--ui-shadow-popover);
   white-space: nowrap;
   pointer-events: none;
   opacity: 0;
