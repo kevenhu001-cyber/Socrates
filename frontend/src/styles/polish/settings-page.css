@@ -42,7 +42,7 @@
   width: 28px;
   height: 28px;
   flex: none;
-  color: var(--foreground);
+  color: var(--ui-text-primary);
 }
 .settings-page .settings-category-icon svg {
   width: 17px;
@@ -85,7 +85,7 @@
   opacity: 1;
 }
 .settings-page .settings-nav-item.active .settings-category-icon {
-  color: var(--foreground);
+  color: var(--ui-text-primary);
 }
 .settings-page .settings-nav-empty {
   margin: 0;
@@ -120,7 +120,7 @@
 }
 .settings-page .settings-pane > h2 {
   margin: 0;
-  color: var(--foreground);
+  color: var(--ui-text-primary);
   font-size: var(--ui-font-size-xl);
   line-height: 28px;
   font-weight: var(--ui-font-weight-semibold);
@@ -163,7 +163,7 @@
   min-height: 48px;
   padding-block: 6px;
   border-bottom: 1px solid var(--ui-border-subtle);
-  color: var(--foreground);
+  color: var(--ui-text-primary);
   font-size: var(--ui-font-size-sm);
 }
 .settings-page .settings-choice:last-child {
@@ -176,7 +176,7 @@
   padding-block: 12px;
 }
 .settings-page .settings-choice-label {
-  color: var(--foreground);
+  color: var(--ui-text-primary);
   font-size: var(--ui-font-size-sm);
 }
 .settings-page :is(.settings-label, .settings-hint) {
@@ -196,7 +196,7 @@
 }
 .settings-page .settings-section-head > h3 {
   margin: 0;
-  color: var(--foreground);
+  color: var(--ui-text-primary);
   font-size: var(--ui-font-size-md);
   font-weight: var(--ui-font-weight-semibold);
 }
@@ -225,7 +225,7 @@
   border-top: 1px solid var(--ui-border-subtle);
 }
 .settings-page .settings-clear-api {
-  color: var(--destructive);
+  color: var(--ui-danger);
 }
 .settings-page .provider-empty {
   padding: 10px 4px;
@@ -269,7 +269,7 @@
   height: 42px;
   flex: none;
   border-radius: var(--ui-radius-md);
-  background: var(--secondary);
+  background: var(--ui-bg-control);
   color: var(--ui-text-secondary);
 }
 .settings-page .settings-info-icon svg {
@@ -282,7 +282,7 @@
 }
 .settings-page .settings-info-copy h3 {
   margin: 0;
-  color: var(--foreground);
+  color: var(--ui-text-primary);
   font-size: var(--ui-font-size-sm);
   font-weight: var(--ui-font-weight-semibold);
 }
@@ -296,7 +296,7 @@
   flex: none;
   padding: 4px 8px;
   border-radius: var(--ui-radius-pill);
-  background: var(--secondary);
+  background: var(--ui-bg-control);
   color: var(--ui-text-secondary);
   font-size: var(--ui-font-size-xxs);
 }
@@ -315,8 +315,8 @@
   margin-top: 0;
 }
 .settings-page .settings-danger-zone {
-  border-color: color-mix(in srgb, var(--destructive) 36%, var(--ui-border-subtle));
-  background: color-mix(in srgb, var(--destructive) 5%, var(--ui-bg-raised));
+  border-color: color-mix(in srgb, var(--ui-danger) 36%, var(--ui-border-subtle));
+  background: color-mix(in srgb, var(--ui-danger) 5%, var(--ui-bg-raised));
 }
 .settings-page .settings-mobile-back:focus-visible {
   box-shadow: var(--ui-focus-shadow);
@@ -381,7 +381,7 @@
   }
   .settings-page .settings-nav-item.active {
     border-color: var(--ring);
-    background: var(--secondary);
+    background: var(--ui-bg-control);
   }
   .settings-page .settings-category-icon {
     width: 36px;
@@ -562,7 +562,7 @@
   white-space: nowrap;
 }
 .settings-choice-value {
-  color: var(--muted-foreground);
+  color: var(--ui-text-secondary);
   font-size: var(--ui-font-size-xs);
   text-align: right;
 }
@@ -574,10 +574,10 @@
   font-size: var(--ui-font-size-xxs);
 }
 .settings-danger-zone .settings-section-head h3 {
-  color: var(--destructive);
+  color: var(--ui-danger);
 }
 .settings-danger-text {
-  color: var(--destructive);
+  color: var(--ui-danger);
 }
 
 /* ── Settings · Display pane — native color picker layout ── */
@@ -592,13 +592,13 @@
   align-items: center;
   gap: 8px;
   font-size: var(--ui-font-size-xs);
-  color: var(--muted-foreground);
+  color: var(--ui-text-secondary);
 }
 .settings-bg-picker input[type='color'] {
   width: 34px;
   height: 30px;
   padding: 2px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--ui-border-default);
   border-radius: var(--ui-radius-control, 8px);
   background: var(--ui-bg-surface);
   cursor: pointer;
@@ -616,7 +616,7 @@
   font-weight: var(--ui-font-weight-semibold);
 }
 .tone-preset-desc {
-  color: var(--muted-foreground);
+  color: var(--ui-text-secondary);
   font-size: var(--ui-font-size-xs);
   line-height: var(--ui-text-ui-line);
 }
@@ -636,7 +636,7 @@
   gap: 12px;
   padding: 8px 12px;
   border-radius: var(--ui-radius-control);
-  background: var(--secondary);
+  background: var(--ui-bg-control);
   border: 0.5px solid var(--ui-border-subtle);
 }
 .settings-memory-content {
@@ -659,7 +659,7 @@
 }
 .settings-memory-val {
   font-size: var(--ui-font-size-xs);
-  color: var(--foreground);
+  color: var(--ui-text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -681,7 +681,7 @@
 }
 .settings-empty-hint {
   font-size: var(--ui-font-size-xs);
-  color: var(--muted-foreground);
+  color: var(--ui-text-secondary);
   padding: 12px 4px;
   font-style: italic;
   line-height: 1.4;
@@ -761,7 +761,7 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
     border: 1px solid var(--ui-border-subtle);
     border-radius: var(--ui-radius-dialog);
     overflow: hidden;
-    background: var(--background);
+    background: var(--ui-bg-page);
   }
 
   html[data-main-view='settingsPage'] #settingsPage .settings-shell {
@@ -795,18 +795,18 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
     min-height: 36px;
     padding: 6px 10px;
     border-radius: var(--ui-radius-sidebar-row);
-    color: var(--foreground);
+    color: var(--ui-text-primary);
   }
 
   html[data-main-view='settingsPage'] #settingsPage .settings-nav-item:hover,
   html[data-main-view='settingsPage'] #settingsPage .settings-nav-item:focus-visible {
     background: var(--ui-fill);
-    color: var(--foreground);
+    color: var(--ui-text-primary);
   }
 
   html[data-main-view='settingsPage'] #settingsPage .settings-nav-item[aria-current='page'] {
     background: var(--ui-bg-hover);
-    color: var(--foreground);
+    color: var(--ui-text-primary);
     font-weight: var(--ui-font-weight-medium);
   }
 
@@ -928,7 +928,7 @@ html[data-main-view='settingsPage'] #settingsPage .provider-nav-item {
   border: 0;
   border-radius: var(--ui-radius-control);
   background: transparent;
-  color: var(--foreground);
+  color: var(--ui-text-primary);
   font: inherit;
   font-size: var(--ui-font-size-sm);
   text-align: start;
@@ -941,7 +941,7 @@ html[data-main-view='settingsPage'] #settingsPage .provider-nav-item {
 html[data-main-view='settingsPage'] #settingsPage .provider-nav-item:hover,
 html[data-main-view='settingsPage'] #settingsPage .provider-nav-item:focus-visible {
   background: var(--ui-fill);
-  color: var(--foreground);
+  color: var(--ui-text-primary);
 }
 
 html[data-main-view='settingsPage'] #settingsPage .provider-nav-item:focus-visible {
@@ -951,7 +951,7 @@ html[data-main-view='settingsPage'] #settingsPage .provider-nav-item:focus-visib
 
 html[data-main-view='settingsPage'] #settingsPage .provider-nav-item.selected {
   background: var(--ui-bg-selected);
-  color: var(--foreground);
+  color: var(--ui-text-primary);
   font-weight: var(--ui-font-weight-medium);
 }
 
@@ -975,7 +975,7 @@ html[data-main-view='settingsPage'] #settingsPage .provider-nav-error {
   height: 7px;
   flex: none;
   border-radius: var(--ui-radius-pill);
-  background: var(--destructive);
+  background: var(--ui-danger);
 }
 
 html[data-main-view='settingsPage'] #settingsPage .provider-workbench-detail {
