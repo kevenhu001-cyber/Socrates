@@ -147,20 +147,6 @@
     border-radius: 12px !important;
   }
 
-  #appShell .project-row,
-  #appShell .scheduled-recommendation,
-  #appShell .task-row {
-  }
-
-  #appShell .scheduled-recommendation-add {
-    width: 32px !important;
-    min-width: 32px !important;
-    height: 32px !important;
-    min-height: 32px !important;
-    font-size: 28px;
-    font-weight: var(--ui-font-weight-regular);
-  }
-
   /* Workspace plugin tabs live in the panel for backwards compatibility,
      but are promoted into the app header layer on phones.  The legacy top
      bar has its own stacking context, so keep the content layer above it or
