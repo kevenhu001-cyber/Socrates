@@ -38,7 +38,7 @@ body,
 
 @media (max-width: 768px) {
   #appShell#appShell .top-bar {
-    background: var(--conversation-page) !important;
+    background: var(--ui-phone-header-bg, var(--conversation-page)) !important;
     border-bottom: 0;
   }
 }
@@ -51,12 +51,12 @@ body,
 }
 
 #appShell#appShell #sidebarOpenBtn {
-  width: 40px !important;
-  min-width: 40px !important;
-  height: 40px !important;
-  min-height: 40px !important;
+  width: var(--ui-phone-drawer-size, 40px) !important;
+  min-width: var(--ui-phone-drawer-size, 40px) !important;
+  height: var(--ui-phone-drawer-size, 40px) !important;
+  min-height: var(--ui-phone-drawer-size, 40px) !important;
   border-radius: 50% !important;
-  background: transparent !important;
+  background: var(--ui-phone-drawer-bg, transparent) !important;
   color: var(
     --ui-icon-secondary,
     var(--conversation-text-secondary, var(--conversation-text-muted))
@@ -261,16 +261,6 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
   }
 }
 
-/* The chat input bar carries both the class and the id; the id-scoped legacy
-   rule (transparent) outranks the class gradient, so target the id. */
-@media (max-width: 768px) {
-  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
-    #appShell#appShell
-    #chatInputBar.chat-input-bar {
-    background: linear-gradient(to bottom, transparent, var(--conversation-page) 24px) !important;
-  }
-}
-
 /* ===========================================================================
  * Reference convergence — final geometry the visual specs pin.
  *
@@ -310,10 +300,6 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
      here — forcing the editor host into row 2 collapsed the editor row
      and painted the placeholder underneath the controls. */
 
-  /* The composer fade must land on the active page colour in either mode. */
-  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active) .chat-input-bar {
-    background: linear-gradient(to bottom, transparent, var(--conversation-page) 24px) !important;
-  }
 }
 
 /* Final desktop dark-canvas assertion. The legacy sidebar rule above is

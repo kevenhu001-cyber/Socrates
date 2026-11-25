@@ -34,8 +34,13 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
     max-width: calc(var(--ui-content-chat) + 40px);
     margin-inline: auto;
     gap: 24px;
-    padding: 28px 20px 24px;
-    scroll-padding-block: 24px;
+    /* Header overlap is a layout-only effect; retain padding at both ends
+       so the first and last message can be scrolled clear of the mask. */
+    --phone-transcript-top: calc(var(--ui-mobile-header) + env(safe-area-inset-top, 0px));
+    --phone-transcript-bottom: 32px;
+    scroll-padding-block: calc(var(--phone-transcript-top) + 12px) var(--phone-transcript-bottom);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 var(--phone-transcript-top), #000 calc(100% - var(--phone-transcript-bottom)), transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 var(--phone-transcript-top), #000 calc(100% - var(--phone-transcript-bottom)), transparent 100%);
   }
 }
 
@@ -172,7 +177,7 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
     #appShell
     #msgList {
     max-width: none;
-    padding: var(--ui-space-sm) var(--ui-mobile-page-gutter) var(--ui-space-lg);
+    padding: calc(var(--phone-transcript-top) + 12px) var(--ui-mobile-page-gutter) calc(var(--phone-transcript-bottom) + 8px);
   }
   body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
     #appShell

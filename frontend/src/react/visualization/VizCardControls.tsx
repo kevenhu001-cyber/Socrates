@@ -5,6 +5,7 @@ import { ToggleGroup, ToggleGroupItem } from '../ui/shadcn/toggle-group';
 
 export interface VizCardControlsProps {
   cardId: string;
+  diagram?: boolean;
   initialView: 'preview' | 'code';
   showSource: boolean;
   viewToggle: boolean;
@@ -16,6 +17,7 @@ export interface VizCardControlsProps {
 
 export function VizCardControls({
   cardId,
+  diagram = false,
   initialView,
   showSource,
   viewToggle,
@@ -80,28 +82,32 @@ export function VizCardControls({
           <FileCode2 aria-hidden="true" />
         </Button>
       )}
-      <Button
-        variant="ghost"
-        size="icon-xs"
-        className="viz-btn viz-btn-reload"
-        data-viz-card={cardId}
-        title="Reload"
-        aria-label="Reload"
-        onClick={onReload}
-      >
-        <RefreshCw aria-hidden="true" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon-xs"
-        className="viz-btn viz-btn-expand"
-        data-viz-card={cardId}
-        title="Expand"
-        aria-label="Expand"
-        onClick={onExpand}
-      >
-        <Expand aria-hidden="true" />
-      </Button>
+      {!diagram && (
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          className="viz-btn viz-btn-reload"
+          data-viz-card={cardId}
+          title="Reload"
+          aria-label="Reload"
+          onClick={onReload}
+        >
+          <RefreshCw aria-hidden="true" />
+          </Button>
+      )}
+      {!diagram && (
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          className="viz-btn viz-btn-expand"
+          data-viz-card={cardId}
+          title="Expand"
+          aria-label="Expand"
+          onClick={onExpand}
+        >
+          <Expand aria-hidden="true" />
+          </Button>
+      )}
     </>
   );
 }

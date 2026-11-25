@@ -159,6 +159,7 @@ function mountVizCardControls(host: Element | null) {
   const cardId = host.getAttribute('data-viz-card-id') || '';
   const content = createElement(VizCardControls, {
     cardId: cardId,
+    diagram: host.closest('.viz')?.getAttribute('data-viz-kind') === 'mermaid',
     initialView:
       host.closest('.viz')?.getAttribute('data-viz-view') === 'code' ? 'code' : 'preview',
     showSource: host.getAttribute('data-viz-show-source') === 'true',
@@ -167,6 +168,8 @@ function mountVizCardControls(host: Element | null) {
       const card = document.getElementById(cardId);
       if (!card) return;
       card.setAttribute('data-viz-view', view);
+      // Diagram view is local; it must not change the default for HTML canvases.
+      if (card.dataset.vizKind === 'mermaid') return;
       setVizViewPref(view);
       try {
         localStorage.setItem('socrates-viz-view', view);
