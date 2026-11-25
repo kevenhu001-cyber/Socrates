@@ -98,8 +98,9 @@
 }
 
 #appShell .plugin-detail-page-header .account-page-actions {
-  flex: 0 1 42%;
-  min-width: 200px;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 42%;
 }
 
 #appShell .plugin-detail-back-btn {
@@ -679,6 +680,7 @@
   #appShell .plugin-detail-page-header .account-page-actions {
     flex: 1 0 100%;
     min-width: 0;
+    max-width: none;
     margin-inline-start: 0;
   }
 
