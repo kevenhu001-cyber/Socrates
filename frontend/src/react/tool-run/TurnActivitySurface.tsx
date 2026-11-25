@@ -67,14 +67,19 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
     () => stepsWithFallback(publicSummariesOf(activities), props.publicSummary),
     [activities, props.publicSummary],
   );
-  const timeline = useMemo(() => activityTimeline(
-    steps,
-    calls.filter((call) => call.id && call.name).map((call) => ({
+  const timeline = useMemo(() => {
+    const toolStarts = new Map<string, number>();
+    for (const entry of activities || []) {
+      if (entry.kind === 'tool' && entry.toolCallId && Number.isFinite(entry.startedAt)) {
+        toolStarts.set(entry.toolCallId, entry.startedAt);
+      }
+    }
+    return activityTimeline(steps, calls.filter((call) => call.id && call.name).map((call) => ({
       id: call.id,
-      startedAt: runStartedAt(call) || undefined,
+      startedAt: toolStarts.get(call.id) ?? (runStartedAt(call) || undefined),
       item: call,
-    })),
-  ), [steps, calls]);
+    })));
+  }, [steps, calls, activities]);
   const hasSummary = steps.length > 0 || Boolean(intent);
   const expandable = timeline.length > 0 || Boolean(intent);
   const live = Boolean(props.isLive);
