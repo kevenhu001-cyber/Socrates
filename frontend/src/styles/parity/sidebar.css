@@ -5,7 +5,7 @@
  * solid hover wash, and a 52px icon rail when collapsed instead of sliding
  * off screen.
  *
- * Older sidebar rules in restore/, polish/ and components/ were moved behind
+ * Older sidebar rules in restore/ and components/ were moved behind
  * @media (max-width: 768px) by scripts/migrate-surface-css.mjs (surface
  * "sidebar"); legacy/01-sidebar.css still provides the base box and is
  * outranked here by specificity, so this file needs no !important.
@@ -959,5 +959,314 @@ html[data-detail-open='true'][data-detail-layout='docked'] #appShell .main {
     white-space: nowrap;
     cursor: pointer;
     user-select: none;
+  }
+}
+
+/* ── Desktop hierarchy — quiet chrome, stable geometry ──────────────────
+   Keep the parity contract (260/52 column, 36px rows, 200ms rail motion) and
+   change only visual weight. The goal is a sidebar that reads as navigation,
+   not a stack of competing cards: smaller branding, softer default labels,
+   whitespace instead of separators, and one neutral selected-row language. */
+@media (min-width: 769px) {
+  #appShell #sidebarHeader {
+    height: 52px;
+    padding: 0 8px 0 10px;
+  }
+  #appShell #sidebarHeader .sidebar-logo {
+    gap: 8px;
+    height: 36px;
+    padding: 0 6px;
+    font-weight: var(--ui-font-weight-semibold);
+    line-height: 20px;
+    letter-spacing: -0.01em;
+  }
+  #appShell #sidebarHeader .sidebar-logo-img {
+    border-radius: var(--ui-radius-xs);
+  }
+  #appShell #sidebarCloseBtn {
+    border-radius: var(--ui-radius-pill);
+    color: var(--foreground);
+    transition:
+      background-color var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1),
+      color var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1),
+      transform 120ms ease;
+  }
+  #appShell #sidebarCloseBtn:hover,
+  #appShell #sidebarCloseBtn:focus-visible {
+    background: var(--ui-bg-hover);
+    color: var(--foreground);
+  }
+  #appShell #sidebarCloseBtn:active {
+    transform: scale(0.94);
+  }
+  #appShell #sidebarCloseBtn svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  #appShell #sidebarNav {
+    gap: 1px;
+    padding: 2px 8px 8px;
+  }
+  #appShell #sidebarNav .sidebar-nav-btn {
+    border-radius: var(--ui-radius-sidebar-row);
+    transition:
+      background-color var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1),
+      color var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1),
+      transform 120ms ease;
+  }
+  #appShell #sidebarNav .sidebar-nav-btn:hover {
+    background: var(--ui-fill);
+  }
+  #appShell #sidebarNav .sidebar-nav-btn:active {
+    --sidebar-nav-bg: var(--ui-bg-active);
+  }
+  /* The desktop row look moved into react/sidebar/SidebarNavButton.tsx: the
+     control ladder, the 10px --ui-radius-row and the ghost hover now live as
+     --ui-* utilities on the shadcn button (ADR 0024). The collapsed rail and
+     the phone drawer keep their structural rules below. */
+  /* A quiet inset divider separates destinations and chat history. */
+  #appShell #sidebar .sidebar-nav-sep {
+    height: 1px;
+    margin: 8px 16px 10px;
+    background: var(--ui-sidebar-border);
+  }
+
+  #appShell #sidebar .sidebar-search-row {
+    margin-inline: 8px;
+  }
+  #appShell #sidebar .sidebar-search {
+    gap: 8px;
+    padding-inline: 8px;
+    /* Geist input: the system radius, the default hairline and the raised
+       surface. The field used to be a transparent nav row that only gained
+       a fill on hover, which made it hard to read as a text field at rest. */
+    /* Border, radius and fill are owned by parity/sidebar.css. Keep
+       geometry and palette single-sourced to satisfy surface ownership. */
+    color: var(--foreground);
+    box-shadow: none;
+    transition:
+      background-color var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1),
+      color var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1),
+      border-color var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  #appShell #sidebar .sidebar-search:hover {
+    border-color: transparent;
+    color: var(--foreground);
+    box-shadow: none;
+  }
+  /* The pill carries the focus treatment for its bare input (the input has
+     no frame of its own, so a ring around it read as a box drawn around the
+     sidebar). The treatment is neutral: the field's own hairline deepens and
+     the surface steps up — never `--ui-focus-shadow`, whose blue ring is the
+     keyboard indicator for controls and reads as a coloured glow wrapped
+     around a text field. parity/sidebar.css owns that hairline for desktop;
+     this layer only keeps the surface and the glyph emphasis. */
+  #appShell #sidebar .sidebar-search:focus-within {
+    border-color: transparent;
+    background: transparent;
+    color: var(--foreground);
+  }
+  #appShell #sidebar .sidebar-search svg {
+    width: 16px;
+    height: 16px;
+    flex-basis: 16px;
+    color: var(--muted-foreground);
+    transition: color var(--ui-duration-hover) ease;
+  }
+  #appShell #sidebar .sidebar-search:hover svg,
+  #appShell #sidebar .sidebar-search:focus-within svg {
+    color: var(--foreground);
+  }
+  #appShell #sidebarSearch {
+    color: var(--foreground);
+  }
+  #appShell #sidebarSearch::placeholder {
+    color: var(--ui-text-placeholder);
+  }
+  #appShell #sidebarSearch:focus::placeholder {
+    color: var(--ui-text-placeholder);
+  }
+
+  #appShell #recentsPanel {
+    padding: 0 8px 6px;
+    scrollbar-width: thin;
+  }
+  #appShell #sidebar .recents-header {
+    /* 8px from the panel edge + 4px of its own = 12px from the rail edge,
+       which is where the reference draws the group header — a shade left of
+       the row icons it introduces. */
+    padding: 16px var(--ui-space-xs) 5px;
+  }
+  #appShell #sidebar .recents-title {
+    color: var(--ui-text-muted);
+    /* One step below the row labels. The reference draws its group headers
+       at the same size as the rows, but its headers carry no weight of their
+       own; here the header is a quiet grey label, so it stays a step down
+       and the rail keeps its two reading levels. */
+    font-size: var(--ui-font-size-xs);
+    font-weight: var(--ui-font-weight-medium);
+    line-height: 16px;
+  }
+  #appShell #sidebar .recents-empty {
+    padding: var(--ui-space-xl) var(--ui-space-sm);
+    color: var(--muted-foreground);
+    font-size: var(--ui-font-size-xs);
+    line-height: var(--ui-text-ui-line);
+    text-align: start;
+    text-wrap: pretty;
+  }
+  #appShell #sidebar .recents-time-label {
+    padding: 12px 8px 4px;
+    color: var(--ui-text-muted);
+    font-weight: var(--ui-font-weight-medium);
+    line-height: 15px;
+    letter-spacing: 0.02em;
+  }
+  /* Mode is still available in the row data/menu; the dot was visual noise
+     in a list whose primary job is fast title scanning. */
+  #appShell #sidebar .recent-mode-badge {
+    display: none;
+  }
+  #appShell #sidebar .recent-item {
+    gap: 0;
+    padding-inline: 10px;
+    border-radius: var(--ui-radius-control);
+    color: var(--foreground);
+    transition:
+      background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
+      color var(--ui-duration-hover) var(--ui-ease-apple, ease);
+  }
+  #appShell #sidebar .recent-item-text {
+    color: var(--foreground);
+    font-size: var(--ui-text-ui);
+    line-height: var(--ui-text-ui-line);
+    letter-spacing: -0.01em;
+    transition: color var(--ui-duration-hover) ease;
+  }
+  #appShell #sidebar .recent-item:hover,
+  #appShell #sidebar .recent-item:focus-within {
+    background: var(--ui-bg-hover);
+    color: var(--foreground);
+  }
+  #appShell #sidebar .recent-item.active,
+  #appShell #sidebar .recent-item[aria-current='true'] {
+    background: var(--ui-bg-selected);
+    color: var(--foreground);
+    font-weight: var(--ui-font-weight-medium);
+  }
+  #appShell #sidebar .recent-item-actions {
+    margin-inline-start: 4px;
+    transition: opacity var(--ui-duration-hover) ease;
+  }
+  #appShell #sidebar .recent-item-overflow {
+    border-radius: var(--ui-radius-sm);
+    color: var(--foreground);
+    transition:
+      background-color var(--ui-duration-hover) ease,
+      color var(--ui-duration-hover) ease;
+  }
+  /* Keyboard-open menus get the same discoverability as pointer hover.
+     Virtualized rows already retain focus and menu anchors. */
+  #appShell #sidebar .recent-item:focus-within .recent-item-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  #appShell #sidebar .recent-item-overflow:hover {
+    background: var(--accent);
+    color: var(--foreground);
+  }
+
+  /* The footer is the last navigation row, not a separate card. Space is
+     enough to separate it from history, so the hairline can disappear. */
+  #appShell #sidebarFooter {
+    padding: 6px 8px 8px;
+    border-top: 0;
+  }
+  #appShell #sidebarUserRow:hover {
+    background: transparent;
+  }
+  #appShell .sidebar-footer-account-wrap {
+    gap: 0;
+  }
+  #appShell .sidebar-account-trigger {
+    gap: 8px;
+    min-height: 40px;
+    padding: 0 var(--ui-space-sm);
+    justify-content: flex-start;
+    border-radius: var(--ui-radius-row);
+    color: var(--foreground);
+    transition:
+      background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
+      color var(--ui-duration-hover) var(--ui-ease-apple, ease);
+  }
+  #appShell .sidebar-account-trigger:hover,
+  #appShell .sidebar-account-trigger:focus-visible,
+  #appShell .sidebar-account-trigger[aria-expanded='true'] {
+    background: var(--accent);
+    color: var(--foreground);
+  }
+  #appShell #sidebarUserRow .user-avatar {
+    flex-basis: 28px;
+    width: 28px;
+    height: 28px;
+  }
+  #appShell #sidebarUserRow .user-name {
+    line-height: 16px;
+  }
+  #appShell #sidebarUserRow .user-plan {
+    font-size: var(--ui-font-size-xxs);
+    line-height: 14px;
+  }
+  #appShell #sidebarUserRow .tier-badge {
+    line-height: 14px;
+  }
+
+  /* Match the compact rail: account menus should feel like menus, not modal
+     cards. Keep the shared menu lifecycle and accessibility. */
+  #appShell .sidebar-account-menu {
+    width: 236px;
+    padding: 6px;
+    border: 1px solid var(--ui-border-subtle);
+    border-radius: var(--ui-radius-popover);
+    background: var(--ui-bg-surface);
+    box-shadow: var(--ui-shadow-menu);
+  }
+  #appShell .sidebar-account-menu :is(button, a) {
+    min-height: 36px;
+    gap: 9px;
+    padding: 0 8px;
+    border-radius: var(--ui-radius-sm);
+    font-size: var(--ui-font-size-xs);
+    transition:
+      background-color var(--ui-duration-hover) ease,
+      color var(--ui-duration-hover) ease;
+  }
+  #appShell .sidebar-account-menu :is(button, a):hover {
+    background: var(--accent);
+    color: var(--foreground);
+  }
+  #appShell .sidebar-account-menu svg {
+    width: 18px;
+    height: 18px;
+    flex-basis: 18px;
+  }
+  #appShell .sidebar-account-menu hr {
+    margin: 5px 6px;
+    border-top-color: var(--ui-border-subtle);
+  }
+
+  #appShell #sidebar.collapsed #sidebarHeader {
+    padding: 8px 8px 6px;
+  }
+  #appShell #sidebar.collapsed #sidebarNav {
+    gap: 2px;
+  }
+  #appShell #sidebar.collapsed .sidebar-nav-sep {
+    margin-block: 4px;
+  }
+  #appShell #sidebar.collapsed #sidebarFooter {
+    padding-block: 8px;
   }
 }
