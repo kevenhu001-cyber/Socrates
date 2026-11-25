@@ -29,70 +29,7 @@
 .tag-editor-popover {
   border-radius: var(--ui-radius-popover);
 }
-/* Generation-config popover — converge on the same density as the "+"
-   tools menu: 14px type, 40px rows, quiet hairline divider. The card
-   anchors to a 36px pill; 46px rows at 15px read oversized beside it.
-   Surface: a raised card like the other menus, with the ghost wash for
-   rows. */
-.chat-config-pop {
-  border-radius: var(--ui-radius-popover);
-  transform-origin: top left;
-  padding: var(--ui-menu-gutter);
-  background: var(--popover);
-  color: var(--ui-text-primary);
-}
-.chat-config-row {
-  min-height: 40px;
-  padding: var(--ui-menu-item-padding);
-  gap: var(--ui-menu-item-gap);
-  font-size: var(--ui-font-size-sm);
-  color: var(--ui-text-primary);
-}
-.chat-config-row:hover,
-.chat-config-row:focus-visible {
-  background: var(--ui-bg-hover-ghost);
-}
-/* A control the active model cannot honour
-   (Instant on a model that always reasons) is shown, but not offered. */
-.chat-config-row:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.chat-config-row:disabled:hover {
-  background: transparent;
-}
-.chat-config-row small,
-.chat-config-value {
-  color: var(--ui-text-tertiary);
-}
-.chat-config-divider {
-  margin: 3px 8px;
-  background: var(--ui-border-default);
-}
-.chat-config-row strong {
-  font-size: var(--ui-font-size-sm);
-}
-.chat-config-row small {
-  font-size: var(--ui-font-size-xxs);
-}
-.chat-config-row > svg {
-  width: 17px;
-  height: 17px;
-}
-.chat-config-value svg {
-  width: 15px;
-  height: 15px;
-}
-.chat-config-empty {
-  padding: 16px 12px;
-  font-size: var(--ui-font-size-xs);
-}
-.chat-config-slider {
-  padding: 4px 6px 10px;
-}
-
-/* Menu rows: 8px radius everywhere, quiet hover. */
-.chat-config-pop button,
+/* Shared menu row radius. The model picker owns its rows in components/menu.css. */
 .sidebar-more-popover .sidebar-more-item {
   border-radius: var(--ui-radius-row);
 }
