@@ -8,10 +8,12 @@ interface PluginDetailHeaderProps {
   plugin: WorkspacePluginBasic;
   connectable: boolean;
   isConnected: boolean;
+  canUseInChat: boolean;
   renderMark: (id: string, name: string) => React.ReactNode;
   onBack: () => void;
   onConnect: () => void;
   onManage: () => void;
+  onRefresh: () => void;
   onUseInChat: () => void;
 }
 
@@ -19,17 +21,25 @@ export function PluginDetailHeader({
   plugin,
   connectable,
   isConnected,
+  canUseInChat,
   renderMark,
   onBack,
   onConnect,
   onManage,
+  onRefresh,
   onUseInChat,
 }: PluginDetailHeaderProps) {
+  const pending = plugin.connection?.status === 'initiated';
+  const failed = plugin.connection?.status === 'failed';
   const status = isConnected
     ? i18n('plugins.detail.connected', 'Connected')
-    : connectable
-      ? i18n('plugins.detail.notConnected', 'Not connected')
-      : i18n('plugins.detail.unavailable', 'Unavailable');
+    : pending
+      ? i18n('plugins.detail.pending', 'Awaiting authorization')
+      : failed
+        ? i18n('plugins.detail.failed', 'Connection failed')
+        : connectable
+          ? i18n('plugins.detail.notConnected', 'Not connected')
+          : i18n('plugins.detail.unavailable', 'Unavailable');
 
   return (
     <PageHeader
@@ -73,6 +83,7 @@ export function PluginDetailHeader({
               variant="default"
               size="lg"
               className="plugin-detail-btn-primary min-w-0 flex-1 rounded-full"
+              disabled={!canUseInChat || !connectable}
               onClick={onUseInChat}
             >
               {i18n('plugins.detail.useInChat', 'Use in chat')}
@@ -87,6 +98,16 @@ export function PluginDetailHeader({
               {i18n('plugins.detail.manage', 'Manage')}
             </Button>
           </div>
+        ) : pending ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            className="plugin-detail-btn-primary w-full rounded-full"
+            onClick={onRefresh}
+          >
+            {i18n('plugins.refreshStatus', 'Refresh status')}
+          </Button>
         ) : (
           <Button
             type="button"
