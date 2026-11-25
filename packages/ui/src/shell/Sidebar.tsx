@@ -204,6 +204,8 @@ export interface SidebarIconActionProps {
   controls?: string;
   visible?: boolean;
   iconSize?: number;
+  controlSize?: number;
+  backgroundVar?: string;
   hostStyle?: unknown;
   onPress: () => void;
 }
@@ -217,6 +219,8 @@ export function SidebarIconAction({
   controls,
   visible = true,
   iconSize = 20,
+  controlSize,
+  backgroundVar,
   hostStyle,
   onPress,
 }: SidebarIconActionProps) {
@@ -241,7 +245,14 @@ export function SidebarIconAction({
         {
           /* Only ever forces `none`: when shown, the host's layout CSS decides. */
           ...(visible ? null : { display: 'none' }),
-          backgroundColor: pressed ? colors.fillPressed : hovered ? colors.fill : 'transparent',
+          ...(controlSize ? { width: controlSize, height: controlSize, minWidth: controlSize } : null),
+          backgroundColor: pressed
+            ? colors.fillPressed
+            : hovered
+              ? colors.fill
+              : backgroundVar
+                ? `var(${backgroundVar}, transparent)`
+                : 'transparent',
           transitionProperty: 'background-color',
           transitionDuration: `${uiMotion.fast}ms`,
         },
