@@ -448,10 +448,6 @@
   line-height: 18px;
   white-space: nowrap;
 }
-.tool-run-group[data-state='error'] .tool-run-group-icon,
-.tool-run-group[data-state='error'] .tool-run-group-meta {
-  color: var(--destructive);
-}
 .tool-run-group-body {
   display: flex;
   flex-direction: column;
@@ -466,6 +462,7 @@
 
 /* Failures stay legible without turning a tool row into an alert card. */
 .rn-tool-row[data-error='1'] .tool-inline-tool-icon,
+.rn-tool-row[data-error='1'] .tool-run-label,
 .rn-tool-row[data-error='1'] .tool-run-state {
   color: var(--destructive);
 }
