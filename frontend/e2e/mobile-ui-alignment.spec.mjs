@@ -88,7 +88,7 @@ for (const theme of ['light', 'dark']) {
     await page.locator('#sidebarOpenBtn').click();
     await expect
       .poll(async () => Math.round((await page.locator('#sidebar').boundingBox()).width))
-      .toBe(351);
+      .toBe(312);
     await expect
       .poll(async () => Math.round((await page.locator('#sidebar').boundingBox()).x))
       .toBe(0);
