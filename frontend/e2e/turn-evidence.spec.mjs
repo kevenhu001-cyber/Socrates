@@ -94,6 +94,14 @@ for (const theme of ['light', 'dark'])
         `/api/favicons?url=${encodeURIComponent('https://example.test')}`,
       );
       await expect(panel.locator('.source-card-favicon')).toBeVisible();
+      await expect(panel.locator('.source-card-avatar')).toHaveAttribute('aria-hidden', 'true');
+      const mark = sourcesButton.locator('.turn-sources-mark').first();
+      const centered = await mark.evaluate((node) => {
+        const button = node.closest('button').getBoundingClientRect();
+        const icon = node.getBoundingClientRect();
+        return Math.abs(button.top + button.height / 2 - icon.top - icon.height / 2);
+      });
+      expect(centered).toBeLessThanOrEqual(1);
       await expect(sourcesButton).toHaveAttribute('aria-expanded', 'true');
       await panel.evaluate((node) =>
         Promise.all(node.getAnimations().map((animation) => animation.finished)),

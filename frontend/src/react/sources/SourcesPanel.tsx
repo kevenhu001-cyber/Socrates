@@ -38,7 +38,12 @@ function SourceCard({ item, index }: { item: SourcesPanelItem; index: number }) 
         aria-label={`${item.title} · ${host}`}
       >
         <span className="source-card-mark" aria-hidden="true">
-          <SourceAvatar url={item.url} host={host} className="source-card-avatar" />
+          <SourceAvatar
+            url={item.url}
+            host={host}
+            className="source-card-avatar"
+            imageClassName="source-card-favicon"
+          />
           <span className="source-card-index">{index + 1}</span>
         </span>
         <span className="source-card-copy">

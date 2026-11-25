@@ -6,10 +6,12 @@ export function SourceAvatar({
   url,
   host,
   className,
+  imageClassName,
 }: {
   url: string;
   host: string;
   className: string;
+  imageClassName?: string;
 }) {
   const src = faviconProxyUrl(url);
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
@@ -18,6 +20,7 @@ export function SourceAvatar({
     <span className={className} title={host} aria-hidden="true">
       {src && failedSrc !== src ? (
         <img
+          className={imageClassName}
           src={src}
           alt=""
           loading="lazy"
