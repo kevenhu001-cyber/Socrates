@@ -331,6 +331,20 @@ test('formula scrolling uses canonical theme tokens and one geometry owner', asy
   assert.doesNotMatch(interactive, /\.katex-display > \.katex\s*\{[^}]*font-size:/);
 });
 
+test('external link favicons have one chat style owner and retired chat tokens stay absent', async () => {
+  const [chat, legacy] = await Promise.all([
+    read('src/styles/components/chat.css'),
+    read('src/styles/legacy/16-final-contract.css'),
+  ]);
+  assert.match(chat, /a\.has-site-favicon\s*\{/);
+  assert.match(chat, /\.site-link-favicon\.is-unavailable\s*\{/);
+  assert.doesNotMatch(legacy, /\.site-link-favicon\s*\{/);
+  assert.doesNotMatch(
+    legacy,
+    /--chat-(?:bubble-pad-[xy]|code-header-pad-[xy]|tool-running|tool-error):/,
+  );
+});
+
 test('legacy button utilities use paint-only press feedback and tag editor has one input owner', async () => {
   const [buttons, menu, overlays] = await Promise.all([
     read('src/styles/polish/buttons.css'),
