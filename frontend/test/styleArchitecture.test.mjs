@@ -296,3 +296,22 @@ test('retired attachment markup cannot return to legacy or composer CSS', async 
   assert.match(cards, /\.file-card-caption\s*\{/);
   assert.match(composer, /#composerAttachmentChips \.attachment-chip\.is-leaving/);
 });
+
+test('retired plugin workspace tabs have no DOM, observers or historical CSS', async () => {
+  const files = [
+    'src/react/topbar/TopBar.tsx',
+    'src/sidebar/nav.ts',
+    'src/legacy/mainViewController.ts',
+    'src/styles/layout/app-shell.css',
+    'src/styles/legacy/06-chat-transcript.css',
+    'src/styles/restore/chatgpt-v2.css',
+    'src/styles/restore/fixes.css',
+    'src/styles/restore/chat-surface.css',
+    'src/styles/restore/mobile-parity.css',
+    'src/styles/restore/chatgpt-ui.css',
+    'src/styles/restore/ref-baseline.css',
+  ];
+  for (const file of files) {
+    assert.doesNotMatch(await read(file), /pluginWorkspace(?:Tabs|PluginsTab|SkillsTab)|\.top-mode-tabs\b/);
+  }
+});
