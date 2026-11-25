@@ -420,6 +420,19 @@ test('display settings persist text size, content width, grid, and background co
     .locator('.settings-choice--segmented')
     .filter({ hasText: 'Content width' });
   await widthGroup.locator('[data-slot="toggle-group-item"]').filter({ hasText: /^XL$/ }).click();
+  for (const group of [fontGroup, widthGroup]) {
+    const tabs = group.locator('.ui-page-tabs[data-slot="toggle-group"]');
+    await expect(tabs).toBeVisible();
+    const selected = tabs.locator('[data-slot="toggle-group-item"][aria-pressed="true"]');
+    await expect(selected).toHaveCount(1);
+    const geometry = await selected.evaluate((element) => ({
+      radius: parseFloat(getComputedStyle(element).borderTopLeftRadius),
+      height: element.getBoundingClientRect().height,
+    }));
+    expect(geometry.radius).toBeGreaterThanOrEqual(geometry.height / 2);
+    await selected.click();
+    await expect(selected).toHaveCount(1);
+  }
   await expect
     .poll(() =>
       page.evaluate(() => ({
@@ -434,6 +447,8 @@ test('display settings persist text size, content width, grid, and background co
     .toEqual({ font: '1.375', width: '1.7' });
 
   const grid = overlay.getByRole('switch', { name: 'Conversation grid' });
+  await expect(grid).toHaveAttribute('data-slot', 'switch');
+  await expect(grid.locator('[data-slot="switch-thumb"]')).toBeVisible();
   await overlay.getByText('Conversation grid', { exact: true }).click();
   await expect(grid).toBeChecked();
   await expect(page.locator('html')).toHaveAttribute('data-show-grid', 'true');
