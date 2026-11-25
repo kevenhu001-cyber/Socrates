@@ -331,39 +331,21 @@
   #appShell .composer-shell [data-composer-frame][data-layout='inline'] {
     --composer-frame-radius: calc(var(--ui-radius-composer-desktop) - 2px);
     --composer-control-size: 36px;
-    --composer-collapsed-inset: min(5vw, var(--ui-step-200));
     --composer-motion: var(--ui-duration-normal) var(--ui-ease-content);
     --composer-editor-inset-start: calc(var(--composer-control-size) + var(--ui-step-75));
     --composer-editor-inset-end: calc(2 * var(--composer-control-size) + var(--ui-step-200));
     --composer-toolbar-space: 0px;
     position: relative;
-    max-width: calc(100% - 2 * var(--composer-collapsed-inset));
+    max-width: 100%;
     margin-inline: auto;
     transition:
-      max-width var(--composer-motion),
       border-radius var(--composer-motion),
       box-shadow var(--ui-duration-fast) var(--ui-ease-out);
   }
-  /* Conversation composer: the outer bar already provides the 16px gutter.
-     Keep the capsule full-width without a second inset. */
-  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
-    #appShell
-    .composer-shell:not(.has-plugin-chips):not(.has-queue)
+  /* One resting capsule for both landing and conversation. The width remains
+     stable when the editor grows; only its internal layout and radius change. */
+  #appShell .composer-shell:not(.has-plugin-chips):not(.has-queue)
     [data-composer-frame][data-layout='inline']:not([data-expanded='true']) {
-    --composer-collapsed-inset: min(5vw, var(--ui-step-200));
-    --composer-frame-radius: calc(var(--ui-radius-composer-desktop) - 2px);
-    box-shadow: inset 0 0 0 1px var(--ui-border-subtle);
-  }
-
-  /* The landing composer is the same capsule as the in-session one. The
-     5vw collapsed inset and its 26px radius belong to the old stacked
-     landing; one shell means one width, one radius and one resting edge. */
-  body:not([data-conversation-active='true']):not(.exam-active):not(.workspace-active)
-    #appShell
-    .composer-shell:not(.has-plugin-chips):not(.has-queue)
-    [data-composer-frame][data-layout='inline']:not([data-expanded='true']) {
-    --composer-collapsed-inset: min(5vw, var(--ui-step-200));
-    --composer-frame-radius: calc(var(--ui-radius-composer-desktop) - 2px);
     box-shadow: inset 0 0 0 1px var(--ui-border-subtle);
   }
   #appShell .composer-shell [data-composer-frame][data-layout='inline'][data-expanded='true'],
