@@ -47,9 +47,7 @@
   #appShell .scheduled-task-list .task-row {
     min-height: 70px;
   }
-}
 
-@media (max-width: 768px) {
   #appShell#appShell .sidebar {
     width: min(var(--ui-sidebar-mobile), 90vw);
     min-width: min(var(--ui-sidebar-mobile), 90vw);
@@ -139,10 +137,6 @@
     padding-bottom: 0 !important;
   }
 
-  /* Idle two-row capsule: a taller editor band so one wrapped line of
-     17px text is comfortable, plus the 40px control rail. 104px total
-     (6 + 48 + 40 + 6 + 2 border) replaces the previous 86px/32px field
-     that read as a thin strip next to the reference. */
 }
 
 /* The !important and the tripled #appShell are load-bearing: they outrank the
