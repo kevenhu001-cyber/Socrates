@@ -1,5 +1,0 @@
-{
-  "files": 0,
-  "note": "Files under packages/ui/src importing the retired react-web shim. The shim was deleted on 2026-11-23; the count stays at 0.",
-  "generatedBy": "check-rn-shim.mjs --update"
-}

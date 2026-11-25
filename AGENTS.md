@@ -40,7 +40,7 @@ to verify a change.
 - **React DOM is the only UI stack (ADR [`0027`](docs/adr/0027-react-dom-only-retire-rn-shim.md)).**
   `packages/ui` components are plain React DOM components; the React Native conversion is retired.
   The local `packages/ui/src/react-web.tsx` shim reached zero importers on 2026-11-23 and was deleted.
-  `check-rn-shim.mjs` keeps the importer count at 0 and rejects `react-native*` dependencies, so do
+  `check-retired-architecture.mjs` rejects shim imports and React Native dependencies, so do
   not recreate the shim or add RN-shaped props. Heavy editors (TipTap/tldraw/HTML-viz/Mermaid/Three.js)
   stay Web-only native islands, never in shared core. The transcript body stays server-rendered HTML;
   only shells, toolbars and tool rows are migrated.
@@ -151,15 +151,15 @@ them — those files are dated snapshots, not current state.
 
 ## Architecture guards (run inside `npm run lint`)
 
-`npm run lint` is not just `tsc` + ESLint — it ends in a chain of custom ratchets. When you add a
-guard, add it to both `lint` and a `lint:<name>` script, and give it an `--update` baseline that may
-only shrink.
+`npm run lint` is not just `tsc` + ESLint — it ends in a chain of architecture checks. When you add a
+guard, add it to `lint` and a `lint:<name>` script. Use a shrink-only baseline only for active
+migrations; completed migrations use fixed invariants without an update mode.
 
 | Guard | Enforces |
 |---|---|
 | `check-react-globals.mjs` | React does not read legacy `window.*` globals directly; `react/legacy/gateway.ts` is the only legacy boundary inside `src/react` (the legacy i18n globals live in `ui/legacyI18n.ts`, outside the scanned tree). No blanket `__socrates*` bridge exemption remains |
 | `check-state-ownership.mjs` | React state access converges on `store/index.ts` typed hooks: no new string-keyed `stateStore.dispatch` writes. Baseline 0, shrink-only (also `lint:state-ownership`) |
-| `check-state-facade.mjs` | Rejects imports of the retired `state/store.ts` facade and any `window.stateStore` access. The file was deleted, so typed hooks and bridges in `store/index.ts` are the only state API. Baseline 0, shrink-only (also `lint:state-facade`) |
+| `check-retired-architecture.mjs` | Fixed zero-tolerance rules: first-party SPA source is TypeScript, the removed state facade and browser global cannot return, and the RN shim and React Native dependencies remain forbidden. The individual `lint:legacy-js`, `lint:state-facade` and `lint:rn-shim` commands select the same rules |
 | `check-button-primitive.mjs` | Raw JSX `<button>` elements under `src/react/**` (outside `src/react/ui/`) stay at or below their frozen count — counted from the TypeScript AST, so an HTML template string is not mistaken for an element. Use the shared primitives in `src/react/ui/` (also `lint:button-primitive`) |
 | `check-button-sizes.mjs` | Interactive controls reach the size ladder (`--ui-control-sm` 32 / `md` 40 / `touch` 44) instead of a literal px height; off-ladder count stays at or below baseline (also `lint:button-sizes`) |
 | `check-shadcn-adoption.mjs` | Shared control primitives are adopted: raw controls, unadapted primitives, compatibility controls, retained markup and legacy DOM/template controls each stay at or below their frozen per-bucket count (also `lint:shadcn`) |
@@ -179,15 +179,13 @@ only shrink.
 | `check-i18n-locales.mjs` | `en` and `zh` carry the same key set |
 | `check-e2e-artifacts.mjs` | e2e writes screenshots under `test-results/`, never to absolute paths like `/tmp` (which break on non-POSIX runners and leak across runs) |
 | `check-chat-layering.mjs` | `src/chat/**` must not import `src/react/**`; `src/react/types/**` is the allowed shared contract. Baseline 0, shrink-only |
-| `check-legacy-js.mjs` | No first-party `.js` / `.mjs` / `.cjs` / `.jsx` under `frontend/src` (`vendor-files/` is third-party); `allowJs` is disabled and the baseline is empty (also `lint:legacy-js`) |
 | `check-orphans.mjs` | Every module under `frontend/src` has at least one inbound import from `src`, `test`, `e2e` or `scripts`. Baseline 0, shrink-only (also `lint:orphans`) |
 | `check-external-hosts.mjs` | The SPA keeps every runtime byte on our own origin. Scans `index.html` + `src/**` (comments stripped, `vendor-files/**` skipped) and fails on any absolute `http(s)` host that is not allowlisted — our domains, provider base URLs shown as placeholder text, `www.w3.org` namespaces, and GeoGebra's CDN (the one remaining third-party host, lazily loaded for `math_construction` cards). Baseline empty, shrink-only (also `lint:external-hosts`) |
 | `check-ui-entry.mjs` | `frontend/src` may only import narrow `@socrates/ui/*` subpaths; any import from the removed root barrel `@socrates/ui` fails with `file:line` (also `lint:ui-entry`) |
-| `check-rn-shim.mjs` | `packages/ui/src` may not gain importers of the retired `react-web` shim. The direct-importer count is 0 and `react-native*` dependencies are rejected (also `lint:rn-shim`) |
 | `../scripts/check-packages-dom.mjs` | `packages/*` stay DOM-free (no `document`/`window`/`localStorage`/`react-dom`); platform diffs live in host adapters such as `frontend/src/react/rn/` (also `lint:packages-dom`) |
 | `../scripts/check-explicit-any.mjs` | Production TypeScript under `frontend/src`, `server/src` and `packages/*/src` contains no explicit `any`; baseline 0, shrink-only (also `lint:explicit-any`) |
 | `../scripts/check-core-declarations.mjs` | Every hand-written `packages/core/src/*.d.ts` still describes its `.js` sibling: same exported runtime values, same parameter count and names (type-only exports are not compared). `packages/core` ships `.js` with `allowJs` off, so a drifted declaration would be believed and never checked. Shrink-only (also `lint:core-declarations`) |
-| `../scripts/check-forwarding-shims.mjs` | Freezes the count of re-export-only files (`export * from './canonical.js'`) in `frontend/src` and `server/src`. New code imports the canonical module; deleting a shell lowers the baseline with `--update`. Baseline 0 (also `lint:shims`) |
+| `../scripts/check-forwarding-shims.mjs` | Rejects re-export-only forwarding files in frontend and server source (barrels excluded). Import canonical modules directly; no mutable baseline (also `lint:shims`) |
 | `../scripts/check-milestone-markers.mjs` | Freezes the `P_*` / `main.js` / `B6 batch` / `region N` / `Wave N` dialect that [`docs/architecture/naming.md`](docs/architecture/naming.md) forbids. New code states the invariant and links an ADR; baseline 0, shrink-only (also `lint:markers`) |
 | `../scripts/check-doc-paths.mjs` | Entry docs (`README.md`, `README.zh.md`, `AGENTS.md`, `CLAUDE.md`) only link to paths that exist. `docs/audits/**` are dated snapshots and are not scanned (also `lint:docs`) |
 | `../scripts/check-drizzle-drift.mjs` | Migrations and `server/drizzle/meta/*_snapshot.json` stay in sync, so `db:generate` cannot re-emit an already-applied change in non-idempotent form (also `lint:drizzle`) |
@@ -195,7 +193,7 @@ only shrink.
 | `../scripts/check-action-pinning.mjs` | Every third-party GitHub Action in `.github/workflows/` is pinned to a 40-hex commit SHA, never a tag — a tag is a mutable pointer an upstream owner can repoint at code that then runs with this repo's token and secrets. `scripts/pin-actions.mjs` re-pins via `git ls-remote`; baseline 0, shrink-only (also `lint:action-pinning`) |
 | `../scripts/check-bundle-size.mjs` | The built SPA bundle stays under an explicit ceiling: entry JS (raw + gzip), total JS, largest single chunk, total CSS. It measures the BUILD artifact, so it runs in CI after `npm run build` rather than inside `npm run lint`; `--update` is the explicit act that raises a ceiling (also `lint:bundle`) |
 
-Conventions these follow: a failing check prints the offending `file:line` and exits 1; a baseline
+Conventions these follow: a failing check prints the offending `file:line` and exits 1; for active migrations, a baseline
 lives next to the script as `<name>.baseline.json` and can only move down; `--update` regenerates it
 and prints what it dropped, so a shrinking ratchet is an explicit act.
 

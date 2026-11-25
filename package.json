@@ -7,7 +7,7 @@
     "typecheck": "npm --prefix server run typecheck && npm --prefix frontend run typecheck",
     "typecheck:server": "npm --prefix server run typecheck",
     "typecheck:frontend": "npm --prefix frontend run typecheck",
-    "lint": "npm --prefix frontend run lint && npm run lint:server-boundaries && npm run lint:drizzle && npm run lint:docs && npm run lint:shims && npm run lint:markers && npm run lint:format && npm run lint:core-declarations && npm run lint:action-pinning",
+    "lint": "npm --prefix frontend run lint && npm run lint:server-boundaries && npm run lint:drizzle && npm run lint:markers && npm run lint:format && npm run lint:core-declarations && npm run lint:action-pinning",
     "lint:docs": "node scripts/check-doc-paths.mjs",
     "lint:markers": "node scripts/check-milestone-markers.mjs",
     "lint:core-declarations": "node scripts/check-core-declarations.mjs",

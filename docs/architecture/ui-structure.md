@@ -5,7 +5,7 @@
 前端 JavaScript → TypeScript 迁移已完成；窗口桥接和旧 DOM 写入者仍按领域逐步退役。
 2026-11-23：ADR 0027 将 **React DOM 定为唯一 UI 栈**。`packages/ui` 组件是普通 React DOM
 组件；本地 `packages/ui/src/react-web.tsx` shim 的直接 importer 已降至 0，shim 文件已删除，
-`check-rn-shim.mjs` 继续把 importer 数量锁在 0。
+`check-retired-architecture.mjs` 禁止重新引入 RN shim 或 React Native 依赖。
 下方 RN-1～RN-14 章节只记录历史迁移过程，不是新代码规范。
 2026-11-17：字符串键状态 facade `state/store.ts` 及其浏览器全局 `window.stateStore` 已退役（文件已删除）；
 状态访问只经 `frontend/src/store/index.ts` 的类型化 hooks 与 bridge，代码树里残留的 `stateStore` 字样只是过期注释。
