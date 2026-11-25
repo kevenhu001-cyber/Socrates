@@ -60,6 +60,14 @@ export async function callChatCompletion(opts: ChatCompletionRequestOptions) {
         break;
       }
       const errBody = await response.text().catch(() => '');
+      if (response.status === 400) {
+        console.warn('[LLM] rejected completion request', JSON.stringify({
+          model: opts.model,
+          variant: variant.reason,
+          fields: Object.keys(variant.body),
+          toolCount: Array.isArray(tools) ? tools.length : 0,
+        }));
+      }
       const fallbackIndex =
         response.status === 400 ? nextCompatibilityVariant(variants, variantIndex, errBody) : -1;
       if (fallbackIndex >= 0) {
