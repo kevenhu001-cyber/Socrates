@@ -137,6 +137,36 @@ test('plugin detail shows only verified chat actions and connection requirements
   await expect(detail.locator('.plugin-detail-security-card')).toContainText('Study org');
 });
 
+test('unverified plugin actions cannot launch chat and pending apps are not installed', async ({ page }) => {
+  await mockAuthedApp(page, { lang: 'en' });
+  await mockConnectedCatalog(page, CONNECTORS.map((plugin) =>
+    plugin.id === 'gmail' ? { ...plugin, connection: { status: 'initiated' } } : plugin,
+  ));
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+  await page.locator('#navPlugins').click();
+  await expect(page.locator('.plugin-installed-icons').getByRole('button', { name: 'Gmail' })).toHaveCount(0);
+  await expect(page.locator('[data-connector-id="gmail"] .plugin-directory-card-status')).toHaveText('Awaiting authorization');
+  await page.getByRole('button', { name: 'Personal' }).click();
+  await expect(page.locator('[data-connector-id="gmail"]')).toBeVisible();
+  await page.getByRole('button', { name: 'Find plugins' }).click();
+  await expect(page.locator('.plugin-directory-search input')).toBeFocused();
+  await page.locator('[data-connector-id="notion"] .plugin-directory-card-main').click();
+  await expect(page.locator('.plugin-detail-btn-primary')).toBeDisabled();
+  await expect(page.locator('.plugin-detail-body')).toContainText('The server has not supplied a verified action list.');
+  await expect(page.locator('button.plugin-detail-prompt-card')).toHaveCount(0);
+});
+
+test('failed plugin launch gives actionable feedback', async ({ page }) => {
+  await openConnectedPluginDetail(page);
+  await page.evaluate(() => {
+    window.__socratesLegacy.navigation.startNewChat = async () => { throw new Error('Reset failed'); };
+  });
+  await page.locator('.plugin-detail-btn-primary').click();
+  await expect(page.locator('.msg-toast-error')).toContainText('Could not open this app in chat.');
+  await expect(page.locator('.plugin-detail-view')).toBeVisible();
+});
+
 test('using a connected plugin waits for the chat reset to succeed', async ({ page }) => {
   await openConnectedPluginDetail(page);
 
