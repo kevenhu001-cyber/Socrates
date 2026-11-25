@@ -103,6 +103,24 @@ for (const file of walk(STYLES)) {
   ];
   const migratedRoot = postcss.parse(readFileSync(file, 'utf8'), { from: file });
   migratedRoot.walkRules((rule) => {
+    // The desktop-specific sidebar block and composer menu motion were
+    // migrated to their canonical owners. Shared sidebar affordances remain
+    // allowed, but a new desktop-only rule must not recreate the old split.
+    if (
+      rel === 'polish/sidebar.css' &&
+      rule.parent?.type === 'atrule' &&
+      rule.parent.name === 'media' &&
+      /min-width:\s*769px/.test(rule.parent.params)
+    ) {
+      problems.push(
+        `${rel}:${rule.source?.start?.line ?? '?'} desktop sidebar rules belong in parity/sidebar.css`,
+      );
+    }
+    if (rel === 'polish/composer.css' && /#composerToolsMenu/.test(rule.selector)) {
+      problems.push(
+        `${rel}:${rule.source?.start?.line ?? '?'} tools menu rules belong in components/menu.css`,
+      );
+    }
     if (
       rel === 'polish/overlays.css' &&
       /\.settings-(?:page|account-|bg-|memory-|choice-|danger-|mono|empty-hint)|\.tone-preset-/.test(rule.selector)
@@ -174,14 +192,9 @@ const duplicatePairs = [
   ['.recents-time-label', 'font-size'],
   /*
    * Sidebar owner agreement (2026-11-04 pass, docs/plans/2026-11-04-sidebar-ui-consistency.md).
-   * parity/sidebar.css and polish/sidebar.css are the two sanctioned desktop
-   * owners, so ~20 selectors are deliberately declared in both files. These
-   * pairs verified value-identical across every live desktop declaration;
-   * registering them turns a silent cascade-order flip into a lint failure.
-   * Computed by scanning all non-frozen sheets with the same lastSimple tail
-   * rule this script uses — pairs whose values already disagreed
-   * (`.sidebar-logo` gap/height, `#sidebarHeader` height/padding, nav
-   * transitions, …) are NOT registered and remain pass-2 consolidation work.
+   * Desktop-specific declarations now live in parity/sidebar.css; shared
+   * affordances may still overlap. These pairs prevent a later divergent
+   * desktop value from silently depending on stylesheet order.
    */
   ['.sidebar-logo', 'font-weight'],
   ['#newChatBtn:hover', 'background'],
