@@ -49,6 +49,247 @@
   }
 }
 
+/* Composer attachments: a strip of image tiles and document cards in the
+   frame's top slot. The slot owns the outer rhythm (inset, gap to the
+   editor); the strip only scrolls. The 2px bottom padding keeps the focus
+   ring and the floating remove disc inside the scroll box. */
+.composer-shell .attachment-chips {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--ui-step-75);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scroll-snap-type: x proximity;
+  padding: 0;
+}
+#appShell .composer-shell [data-composer-slot='top'] > .attachment-chips {
+  padding: 0 0 2px;
+}
+
+.composer-shell .attachment-chip {
+  position: relative;
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  min-width: 160px;
+  max-width: min(230px, 75vw);
+  height: 56px;
+  padding: 8px 30px 8px 10px;
+  gap: 10px;
+  border: 0;
+  border-radius: var(--ui-round-md);
+  background: var(--ui-card);
+  box-shadow: var(--ui-elevation-ring);
+  scroll-snap-align: start;
+  display: flex;
+  align-items: center;
+  /* A chip is inserted by React once the upload lands, so `@starting-style`
+     is the whole entrance: it grows into the row instead of appearing between
+     two frames. Removal still cuts — the composer clears in one step. */
+  transition:
+    box-shadow var(--ui-duration-fast) var(--ui-ease-out),
+    opacity var(--ui-duration-fast) var(--ui-ease-out),
+    transform var(--ui-duration-fast) var(--ui-ease-out);
+}
+@starting-style {
+  .composer-shell .attachment-chip {
+    opacity: 0;
+    transform: translateY(2px) scale(0.98);
+  }
+}
+
+.composer-shell .attachment-chip:hover {
+  box-shadow: 0 0 0 1px var(--ui-hairline-strong);
+}
+
+.composer-shell .attachment-chip-visual {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: var(--ui-radius-control);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ui-bg-raised);
+}
+
+.composer-shell .attachment-chip-visual[data-kind='docx'],
+.composer-shell .attachment-chip-visual[data-kind='doc'],
+.composer-shell .attachment-chip-visual[data-kind='word'] {
+  background: hsl(217 91% 60% / 0.1);
+}
+.composer-shell .attachment-chip-visual[data-kind='pdf'] {
+  background: hsl(0 84% 60% / 0.1);
+}
+.composer-shell .attachment-chip-visual[data-kind='xlsx'],
+.composer-shell .attachment-chip-visual[data-kind='xls'],
+.composer-shell .attachment-chip-visual[data-kind='excel'],
+.composer-shell .attachment-chip-visual[data-kind='csv'] {
+  background: hsl(142 71% 45% / 0.1);
+}
+.composer-shell .attachment-chip-visual[data-kind='pptx'],
+.composer-shell .attachment-chip-visual[data-kind='ppt'],
+.composer-shell .attachment-chip-visual[data-kind='powerpoint'] {
+  background: hsl(25 95% 53% / 0.1);
+}
+.composer-shell .attachment-chip-visual[data-kind='code'] {
+  background: hsl(239 84% 67% / 0.1);
+}
+
+.composer-shell .attachment-chip-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.composer-shell .attachment-chip-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.composer-shell .attachment-chip-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+.composer-shell .attachment-chip-name {
+  max-width: 100%;
+  font-size: calc(13px * var(--app-font-scale, 1));
+  font-weight: var(--ui-font-weight-semibold, 600);
+  line-height: 1.25;
+  color: var(--foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.composer-shell .attachment-chip-meta {
+  font-size: calc(11.5px * var(--app-font-scale, 1));
+  line-height: 1.25;
+  color: var(--ui-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Image chip: square tile with covered thumbnail */
+.composer-shell .attachment-chip.is-image {
+  flex: 0 0 56px;
+  width: 56px;
+  height: 56px;
+  min-width: 56px;
+  max-width: 56px;
+  padding: 0;
+  overflow: hidden;
+  box-shadow: var(--ui-elevation-ring);
+}
+.composer-shell .attachment-chip.is-image .attachment-chip-visual {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: transparent;
+}
+.composer-shell .attachment-chip.is-image .attachment-chip-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+  display: block;
+}
+
+/* Close button: circular badge inside top-right corner */
+.composer-shell .attachment-chip-remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: var(--ui-control-badge);
+  height: var(--ui-control-badge);
+  min-width: var(--ui-control-badge);
+  border-radius: var(--ui-radius-pill);
+  background: color-mix(in srgb, var(--foreground) 70%, transparent);
+  color: var(--background);
+  backdrop-filter: blur(4px);
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  z-index: 3;
+  opacity: 0.85;
+  transition:
+    opacity var(--ui-duration-fast) ease,
+    transform var(--ui-duration-fast) ease,
+    background-color var(--ui-duration-fast) ease;
+}
+.composer-shell .attachment-chip-remove:hover {
+  background: var(--foreground);
+  opacity: 1;
+  transform: scale(1.08);
+}
+.composer-shell .attachment-chip.is-image .attachment-chip-remove {
+  top: 4px;
+  right: 4px;
+}
+.composer-shell .attachment-chip-remove svg {
+  width: 10px;
+  height: 10px;
+}
+
+/* Exit beat: a chip leaving the strip fades and shrinks before it is removed,
+   instead of disappearing between two frames. */
+.composer-shell .attachment-chip.is-leaving {
+  opacity: 0;
+  transform: translateY(2px) scale(0.96);
+  pointer-events: none;
+}
+.composer-shell .attachment-chip.error {
+  box-shadow: inset 0 0 0 1px var(--destructive);
+}
+@keyframes attachment-thumb-in {
+  from {
+    opacity: 0.4;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.composer-shell .attachment-chip-thumb {
+  animation: attachment-thumb-in var(--ui-duration-fast) var(--ui-ease-out) both;
+}
+/* Error state & retry. RN-7: status colour is kept to the message line;
+   the chip edge and the retry control stay neutral so one failed upload
+   does not paint a red frame inside the composer. */
+.composer-shell .attachment-chip.error {
+  border-color: var(--ui-border-strong);
+}
+.composer-shell .attachment-chip.error .attachment-chip-meta {
+  color: var(--destructive);
+}
+.composer-shell .attachment-chip-retry {
+  position: absolute;
+  right: 28px;
+  top: 6px;
+  width: var(--ui-control-badge);
+  height: var(--ui-control-badge);
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-bg-surface);
+  color: var(--ui-text-primary);
+  border: 1px solid var(--ui-border-default);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  z-index: 3;
+}
+.composer-shell .attachment-chip-retry svg {
+  width: 11px;
+  height: 11px;
+}
+
 /* ── Attachment row (reference: chat-demo FileCard / DraftAttachments) ──
    Two shapes, one row: an image is a 64px cover tile, a document is a
    240×64 card whose icon column states the type and whose caption names
@@ -133,8 +374,7 @@
 }
 
 /* Image tile: the picture is the card. 64×64 square, as in the reference.
-   The parity base still carries its old 56px flex basis, so the size has to
-   be pinned on every axis here or the tile renders 56 wide × 64 tall. */
+   Keep the flex basis and every axis equal so the tile stays square. */
 #appShell #composerAttachmentChips .attachment-chip.is-image {
   flex: 0 0 64px;
   width: 64px;
@@ -327,9 +567,8 @@
   color: white;
 }
 
-/* Upload state: an image dims under a spinner; a document keeps its type
-   icon and shows a hairline bar along the card's bottom edge. The bar's
-   width is a transition, not a re-render per percentage point. */
+/* Upload state: the image dims under a spinner. FileCard owns document
+   upload status and its accessible caption. */
 #appShell #composerAttachmentChips .attachment-chip-veil {
   position: absolute;
   inset: 0;
@@ -387,15 +626,6 @@
     transform: none;
   }
 }
-@keyframes attachment-processing-sweep {
-  from {
-    background-position: -40% 0;
-  }
-  to {
-    background-position: 140% 0;
-  }
-}
-
 /* Touch layouts cannot hover, so the remove control must be visible. */
 @media (hover: none) {
   #appShell #composerAttachmentChips .attachment-chip-remove {
