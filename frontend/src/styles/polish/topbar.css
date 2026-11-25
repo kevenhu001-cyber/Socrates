@@ -30,27 +30,27 @@
 
 /* Icon buttons: quiet ghost controls, hairline-free until hover. */
 #appShell .top-bar .toggle-sidebar {
-  color: var(--foreground);
+  color: var(--ui-text-primary);
   transition:
     background-color var(--ui-duration-fast) var(--ui-ease-apple, ease),
     color var(--ui-duration-fast) var(--ui-ease-apple, ease);
 }
 @media (max-width: 768px) {
   #appShell .top-bar .icon-btn {
-    color: var(--foreground);
+    color: var(--ui-text-primary);
     transition:
       background-color var(--ui-duration-fast) var(--ui-ease-apple, ease),
       color var(--ui-duration-fast) var(--ui-ease-apple, ease);
   }
 }
 #appShell .top-bar .toggle-sidebar:hover {
-  background: var(--accent);
-  color: var(--foreground);
+  background: var(--ui-bg-hover);
+  color: var(--ui-text-primary);
 }
 @media (max-width: 768px) {
   #appShell .top-bar .icon-btn:hover {
-    background: var(--accent);
-    color: var(--foreground);
+    background: var(--ui-bg-hover);
+    color: var(--ui-text-primary);
   }
 }
 
