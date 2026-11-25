@@ -67,6 +67,29 @@ async function openConnectedPluginDetail(page) {
   await expect(page.locator('#plugin-detail-title')).toHaveAttribute('data-page-title', '');
 }
 
+test('plugin directory search and card surfaces follow shared responsive tokens', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await mockAuthedApp(page, { lang: 'en' });
+  await mockConnectedCatalog(page);
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+  await page.locator('#navPlugins').click();
+  const search = page.locator('.plugin-directory-search');
+  const row = page.locator('.plugin-directory-row').first();
+  await expect(search).toBeVisible();
+  await expect(search).toHaveCSS('border-radius', '999px');
+  await expect(row).toHaveCSS('display', 'flex');
+  await expect(row.locator('.connector-icon')).toHaveCSS('width', '40px');
+  await expect(row.locator('.connector-icon')).toHaveCSS('height', '40px');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(search).toHaveCSS('height', '44px');
+  await expect(row.locator('.connector-icon')).toHaveCSS('width', '40px');
+  const overflow = await page.locator('.plugin-directory').evaluate(
+    (node) => node.scrollWidth - node.clientWidth,
+  );
+  expect(overflow).toBeLessThanOrEqual(1);
+});
+
 test('plugin detail header and actions fit a phone viewport', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 780 });
   await openConnectedPluginDetail(page);

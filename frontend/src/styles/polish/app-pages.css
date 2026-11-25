@@ -469,11 +469,6 @@ body.workspace-active #appShell .ui-page-card.project-card {
   margin-bottom: var(--ui-space-xl);
 }
 
-#appShell .plugin-directory-section h3 {
-  margin: 0;
-  font-size: var(--ui-font-size-md);
-}
-
 #appShell .plugin-directory-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
@@ -523,9 +518,11 @@ body.workspace-active #appShell .ui-page-card.project-card {
 #appShell .plugin-directory-row .connector-icon {
   display: grid;
   place-items: center;
-  flex: 0 0 48px;
-  width: 48px;
-  height: 48px;
+  flex: 0 0 40px;
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  min-height: 40px;
   padding: 0;
   border: 0;
   border-radius: var(--ui-radius-lg);
@@ -533,6 +530,7 @@ body.workspace-active #appShell .ui-page-card.project-card {
 }
 
 #appShell .plugin-directory-row .connector-icon svg {
+  display: block;
   width: 28px;
   height: 28px;
 }
@@ -620,10 +618,51 @@ body.workspace-active #appShell .ui-page-card.project-card {
   background: transparent;
 }
 
+#appShell .plugin-installed-label {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  gap: var(--ui-space-xs);
+  min-height: var(--ui-control-sm);
+  padding: 0;
+  border: 0;
+  border-radius: var(--ui-radius-pill);
+  background: transparent;
+  color: var(--ui-text-primary);
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-medium);
+  white-space: nowrap;
+}
+
+#appShell .plugin-installed-label:hover {
+  color: var(--ui-text-secondary);
+}
+
+#appShell .plugin-installed-caret {
+  color: var(--ui-text-tertiary);
+}
+
+#appShell .plugin-installed-icons {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-sm);
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
 #appShell .plugin-installed-icons .workspace-row-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--ui-radius-sm);
+  display: grid;
+  place-items: center;
+  flex: 0 0 40px;
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-bg-surface);
+  overflow: hidden;
 }
 
 #appShell .plugin-directory-note {

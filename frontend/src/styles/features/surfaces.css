@@ -68,60 +68,6 @@
   visibility: visible;
 }
 
-/* Your apps — the connected strip doubles as the jump target for "Personal". */
-#appShell .plugin-installed-strip {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  min-height: 60px;
-  margin: 0 0 24px;
-}
-#appShell .plugin-installed-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px 6px 14px;
-  border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-pill);
-  background: var(--ui-bg-raised);
-  color: var(--muted-foreground);
-  font-size: var(--ui-font-size-sm);
-  white-space: nowrap;
-}
-#appShell .plugin-installed-label:hover {
-  background: var(--accent);
-  color: var(--foreground);
-}
-#appShell .plugin-installed-count {
-  display: grid;
-  place-items: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
-  border-radius: var(--ui-radius-pill);
-  background: var(--ui-bg-segment-active);
-  color: var(--foreground);
-  font-size: var(--ui-font-size-xxs);
-}
-#appShell .plugin-installed-caret {
-  color: var(--ui-text-tertiary);
-}
-#appShell .plugin-installed-icons {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-#appShell .plugin-installed-icons .workspace-row-icon {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-lg);
-  background: var(--ui-bg-raised);
-}
-
 /* Plugin directory layout is owned by polish/app-pages.css. */
 
 /* Scheduled directory — Page Kit owns the page header, toolbar, range tabs

@@ -23,38 +23,12 @@
     border: 0;
     background: transparent;
   }
-  body.workspace-active #appShell .plugin-installed-label {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: var(--foreground);
-    font-size: var(--ui-font-size-sm);
-    font-weight: var(--ui-font-weight-medium);
-  }
-  body.workspace-active #appShell .plugin-installed-caret {
-    color: var(--ui-text-tertiary);
-  }
   body.workspace-active #appShell .plugin-installed-icons {
     display: flex;
     gap: 10px;
     width: 100%;
     overflow-x: auto;
     scrollbar-width: none;
-  }
-  body.workspace-active #appShell .plugin-installed-icons .workspace-row-icon {
-    display: grid;
-    place-items: center;
-    width: var(--ui-control-md);
-    min-width: var(--ui-control-md);
-    height: var(--ui-control-md);
-    padding: 0;
-    border: 0;
-    border-radius: var(--ui-radius-lg);
-    background: var(--ui-bg-surface);
-    overflow: hidden;
   }
   body.workspace-active #appShell .plugin-installed-icons svg {
     width: 100%;
@@ -64,12 +38,6 @@
     display: flex;
     flex-direction: column;
     gap: 0;
-  }
-  body.workspace-active #appShell .plugin-directory-section h3 {
-    margin: 0;
-    font-size: var(--ui-font-size-sm);
-    line-height: 20px;
-    font-weight: var(--ui-font-weight-medium);
   }
   body.workspace-active #appShell .plugin-directory-row {
     display: flex;
@@ -94,10 +62,10 @@
   body.workspace-active #appShell .plugin-directory-row .connector-icon {
     display: grid;
     place-items: center;
-    width: var(--ui-control-md);
-    min-width: var(--ui-control-md);
-    height: var(--ui-control-md);
-    min-height: var(--ui-control-md);
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    min-height: 40px;
     flex: 0 0 40px;
     padding: 0;
     border: 0;

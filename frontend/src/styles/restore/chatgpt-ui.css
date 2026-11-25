@@ -398,7 +398,7 @@ body.workspace-active #appShell .workspace-danger:hover {
 /* The empty state must span the full grid width. */
 
 /* Directory rows own their box, radius, and background (`.plugin-directory-row`
-   in surfaces.css) — the legacy `.plugins-list` host rules were removed with
+   in polish/app-pages.css) — the legacy `.plugins-list` host rules were removed with
    the static shell. */
 
 /* Kimi-style quiet connected state: a bare accent checkmark instead of a
@@ -677,8 +677,7 @@ body.workspace-active #appShell #mainInner {
   width: 100%;
 }
 
-.workspace-search-field,
-.plugin-directory-search {
+.workspace-search-field {
   display: flex;
   align-items: center;
   margin: 0;
@@ -690,8 +689,7 @@ body.workspace-active #appShell #mainInner {
     background-color 0.16s ease;
 }
 
-.workspace-search-field:focus-within,
-.plugin-directory-search:focus-within {
+.workspace-search-field:focus-within {
   border-color: color-mix(in srgb, var(--cg-text) 36%, transparent);
   /* The bare input inside this field carries no ring of its own (see the
      focus contract in components/input.css), so the FIELD is the indicator.
@@ -703,15 +701,13 @@ body.workspace-active #appShell #mainInner {
   box-shadow: var(--ui-focus-shadow);
 }
 
-.workspace-search-field svg,
-.plugin-directory-search svg {
+.workspace-search-field svg {
   flex: 0 0 18px;
   width: 18px;
   height: 18px;
 }
 
-.workspace-search-field input,
-.plugin-directory-search input {
+.workspace-search-field input {
   width: 100%;
   min-width: 0;
   border: 0;
@@ -721,16 +717,8 @@ body.workspace-active #appShell #mainInner {
   font: var(--ui-font-weight-regular) 14px/22px var(--cg-font);
 }
 
-.workspace-search-field input::placeholder,
-.plugin-directory-search input::placeholder {
+.workspace-search-field input::placeholder {
   color: var(--cg-text-muted);
-}
-
-.plugin-directory-tabs {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin: 0;
 }
 
 .workspace-table {
