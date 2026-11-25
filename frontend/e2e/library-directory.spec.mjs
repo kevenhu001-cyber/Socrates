@@ -286,3 +286,18 @@ test('phone library filters actual images and selects only visible rows', async 
     path: 'test-results/socrates-reference-mobile-library-images-390x769.png',
   });
 });
+
+test('library remains readable at narrow and tablet widths', async ({ page }) => {
+  for (const width of [360, 768, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expect(page.locator('.library-row')).toHaveCount(FILES.files.length);
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(overflow).toBeLessThanOrEqual(1);
+    await page.screenshot({
+      path: `test-results/page-audit-library-${width}.png`,
+      animations: 'disabled',
+    });
+  }
+});

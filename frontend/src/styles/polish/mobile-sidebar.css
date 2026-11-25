@@ -433,11 +433,6 @@
     box-shadow: none;
   }
 }
-@media (max-width: 768px) {
-  /* Drawer: same surface as desktop rail + hairline edge (the border-right
-     rule lived in polish/mobile.css until the pass-2 merge; equal value, so
-     this position keeps its historical cascade slot). */
-}
 /* ─── end of pass-2 merge; original polish/mobile-sidebar.css content below ─── */
 @media (max-width: 768px) {
   #appShell #sidebar {

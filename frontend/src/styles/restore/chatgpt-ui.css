@@ -679,15 +679,6 @@ body.workspace-active #appShell .workspace-row:hover {
    specific composer rules. Keep the new idle geometry authoritative while
    leaving measured multiline and plugin-chip states free to expand. */
 
-@media (max-width: 768px) {
-  /* A measured multiline draft and a selected plugin stack share the same
-     two-tier rhythm: content above, controls below. */
-
-  /* Topic multiline send shifts into the vacated mic track. */
-
-  /* Topic chips send shifts into the vacated mic track. */
-}
-
 /* The phone add menu's bottom-sheet pins (full-width, grabber, scrim) were
    removed in the ui-ref pass: the menu is now a popover anchored over the
    composer, placed by react/composer/composerTools.position.ts and shaped

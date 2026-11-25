@@ -122,13 +122,6 @@
   }
 }
 
-@media (max-width: 768px) {
-  /* On phones the page canvas drops to pure
-     black (see ref-baseline.css), which would leave the borderless pill
-     invisible. Re-add a hairline stroke here and lift the surface one
-     step above the canvas so the composer's silhouette stays readable. */
-}
-
 /* Workspace panels — each is now a React-owned page host. */
 #appShell .spaces-panel.main-page,
 #appShell .library-panel.main-page,
@@ -245,14 +238,6 @@ html[data-mode='light'] #appShell {
     border-color: var(--cg-border-strong) !important;
     background: var(--cg-surface) !important;
   }
-}
-
-@media (max-width: 768px) {
-  /* This block must live AFTER the shared rule above:
-     that rule paints every input surface with `--cg-surface` (#212121),
-     which disappears against the #000 mobile canvas. This block wins the
-     cascade on phones and gives the composer a hairline stroke plus one
-     step of surface lift so its silhouette stays readable. */
 }
 
 /* The duplicate idle-state rule that lived
