@@ -194,8 +194,8 @@ test('mobile composer keeps model selector and reference controls discoverable',
   await expect(pop.getByRole('option', { name: /5.6 Luna/ })).toBeVisible();
   await page.keyboard.press('Escape');
   const effortTrigger = effort.locator('#effortTrigger');
-  await expect(effortTrigger).toBeFocused();
-  await effortTrigger.evaluate((node) => node.blur());
+  await expect(editor).toBeFocused();
+  await editor.evaluate((node) => node.blur());
   await expect(effortTrigger).toBeHidden();
 });
 
