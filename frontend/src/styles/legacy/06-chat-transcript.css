@@ -179,23 +179,6 @@
 /* U-H2 — chat-header mode badge (Tutor/Chat), a pill next to chatStats.
    The text/background/color crossfade between Tutor and Chat instead of
    snapping instantly, driven by JS clearing and re-adding the class. */
-/* The top-bar container class, still used by the plugin
-   workspace tabs (#pluginWorkspaceTabs). The shared Chat/Tutor control is
-   rendered in the React top-bar. */
-.top-mode-tabs {
-  position: absolute;
-  left: 50%;
-  top: calc(50% + 14px);
-  transform: translate(-50%, -50%);
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  padding: 3px;
-  border-radius: 999px;
-  background: hsl(var(--bg-300) / 0.6);
-  z-index: 1;
-  pointer-events: auto;
-}
 /* Exam is a focused workspace. The mobile incognito control is hidden
    independently of inline styles so it cannot leak into the exam UI. */
 body.exam-active #mobileIncognitoBtn {
@@ -220,15 +203,6 @@ body.admin-active #chatStats {
    00-foundations.css. The attribute reflects the live conversation state, so
    the mode dropdown is hidden only while a conversation is active and
    reappears when the user returns to the topic-input page. */
-/* Compatibility layer: the final responsive contract below keeps the shared
-   top-bar container on the empty landing surface and only hides it for live
-   conversations. */
-@media (max-width: 640px) {
-  .top-mode-tabs {
-    display: none;
-  }
-}
-
 /* The incognito top-bar control remains mounted for compatibility but is
    hidden; the active action lives in the sidebar's More menu. */
 @media (max-width: 640px) {
