@@ -123,6 +123,17 @@ const ACTIONS = {
   },
 };
 
+/** Public action metadata for the exact project connector identity, not the
+ * provider's entire upstream API. No parameters or credentials are exposed. */
+export function projectConnectorChatActions(provider: string) {
+  return PROJECT_CONNECTOR_TOOLS.flatMap(({ function: tool }) => {
+    const action = ACTIONS[tool.name];
+    return action?.provider === provider
+      ? [{ name: action.actionId, description: tool.description }]
+      : [];
+  });
+}
+
 /* The JSON schemas sent to a model are an instruction, not an enforcement
  * boundary. Validate again immediately before crossing into the external
  * ProjectConnector so malformed tool calls cannot smuggle unknown fields or
