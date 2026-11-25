@@ -85,10 +85,6 @@ function selectShareVis(vis: 'public' | 'private') {
   });
 }
 
-function renderShareModal() {
-  if (_shareImpl) _shareImpl.renderShareModal();
-}
-
 function createShareLink() {
   runShareAction(function (module: FeatureRuntime) {
     void module.createShareLink();
@@ -125,32 +121,13 @@ function loadSharedSession(token: string) {
   });
 }
 
-function loadSharedExamSession(session: Parameters<FeatureRuntime['loadSharedExamSession']>[0]) {
-  return loadShareImpl().then(function (module: FeatureRuntime) {
-    return module.loadSharedExamSession(session);
-  });
-}
-
-/* Historical named exports are retained for compatibility. They were not used
-   as live bindings by first-party callers; the authoritative runtime values
-   live in share.impl.mjs once the feature is loaded. */
-const _shareVisibility = 'public';
-const _shareToken = null;
-const _shareUrl = '';
-
 export {
-  loadShareImpl,
   toggleShareBtn,
   openShareModal,
   closeShareModal,
   selectShareVis,
-  renderShareModal,
   createShareLink,
   revokeShareLink,
   resetShareToken,
   loadSharedSession,
-  loadSharedExamSession,
-  _shareVisibility,
-  _shareToken,
-  _shareUrl,
 };
