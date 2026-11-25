@@ -206,13 +206,6 @@ body.workspace-active #appShell .main-page {
    8. Unified Composer & Top Mode Pills Refinement
    -------------------------------------------------------------------------- */
 
-@media (max-width: 768px) {
-  [data-mode='light'] #appShell .top-mode-tabs {
-    background: #f3f4f6 !important;
-    border: 1px solid rgba(0, 0, 0, 0.04) !important;
-  }
-}
-
 /* --------------------------------------------------------------------------
    9. Live OpenConnector Plugins Grid Refinement (2-column layout matching reference)
    -------------------------------------------------------------------------- */
