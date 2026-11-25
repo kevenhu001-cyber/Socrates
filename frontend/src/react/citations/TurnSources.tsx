@@ -1,31 +1,9 @@
-import { useState } from 'react';
-import { faviconProxyUrl } from '../../legacy/faviconProxy';
+import { SourceAvatar } from '../sources/SourceAvatar';
 import { i18n } from '../../ui/legacyI18n.ts';
 import { Button } from '../ui/Button';
 import { openSourcesPanel } from '../sources/mount';
 import { useSourcesPanel } from '../sources/sourcesStore';
 import type { SourcesPanelItem } from '../sources/sourcesStore';
-
-function SourceMark({ url, host }: { url: string; host: string }) {
-  const [failed, setFailed] = useState(false);
-  const src = faviconProxyUrl(url);
-  return (
-    <span className="turn-sources-mark" title={host}>
-      {src && !failed ? (
-        <img
-          src={src}
-          alt=""
-          loading="lazy"
-          decoding="async"
-          referrerPolicy="no-referrer"
-          onError={() => setFailed(true)}
-        />
-      ) : (
-        <span>{host.replace(/^www\./i, '').charAt(0).toUpperCase() || '?'}</span>
-      )}
-    </span>
-  );
-}
 
 /**
  * The compact "Sources · n" pill under an answer. It opens the reader in the
@@ -67,7 +45,7 @@ export function TurnSources({ entryId, items }: { entryId: string; items: Source
       {sites.size ? (
         <span className="turn-sources-marks" aria-hidden="true">
           {[...sites.values()].map((item) => (
-            <SourceMark key={item.url} url={item.url} host={item.host} />
+            <SourceAvatar key={item.url} url={item.url} host={item.host} className="turn-sources-mark" />
           ))}
         </span>
       ) : (
@@ -85,7 +63,7 @@ export function TurnSources({ entryId, items }: { entryId: string; items: Source
         >
           <path d="M4 2.5h5.5L12 5v8.5H4z" />
           <path d="M9.5 2.5V5H12M6 8h4M6 10.5h4" />
-    </svg>
+        </svg>
       )}
       <span className="turn-sources-label">{i18n('citation.sources', 'Sources')}</span>
       <span className="turn-sources-count" aria-hidden="true">

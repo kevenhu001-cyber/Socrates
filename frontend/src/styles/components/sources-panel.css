@@ -66,7 +66,7 @@
   width: 32px;
   height: 32px;
   border: 0;
-  border-radius: var(--ui-radius-control);
+  border-radius: var(--ui-button-radius);
   background: transparent;
   color: var(--ui-text-tertiary);
   cursor: pointer;
@@ -129,14 +129,23 @@
   flex: 0 0 auto;
   width: 28px;
   height: 28px;
-  border-radius: var(--ui-radius-md);
+  border-radius: var(--ui-radius-pill);
   background: var(--ui-bg-panel);
   color: var(--ui-text-secondary);
   font-size: var(--ui-font-size-xs);
   font-weight: var(--ui-font-weight-medium);
 }
 
-.source-card-favicon {
+.source-card-avatar {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  overflow: hidden;
+}
+.source-card-avatar img {
+  display: block;
   width: 18px;
   height: 18px;
   border-radius: var(--ui-radius-xs);
@@ -163,7 +172,7 @@
 .source-card-copy {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--ui-space-xxs);
   min-width: 0;
   flex: 1 1 auto;
 }
@@ -185,6 +194,7 @@
   font-size: var(--ui-font-size-sm);
   font-weight: var(--ui-font-weight-medium);
   line-height: var(--ui-line-height-normal);
+  overflow-wrap: anywhere;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -195,7 +205,8 @@
   margin-top: 2px;
   color: var(--muted-foreground);
   font-size: var(--ui-font-size-xs);
-  line-height: var(--ui-line-height-normal);
+  line-height: var(--ui-line-height-relaxed);
+  overflow-wrap: anywhere;
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;

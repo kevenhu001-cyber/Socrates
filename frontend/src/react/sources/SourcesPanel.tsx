@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createRootSlot } from '../lib/boot/ownedRoot';
 import { Button } from '../ui/Button';
 import { i18n } from '../../ui/legacyI18n.ts';
-import { faviconProxyUrl } from '../../legacy/faviconProxy';
+import { SourceAvatar } from './SourceAvatar';
 import { MathText } from '../rn/useInlineMath';
 import { closeSources, useSourcesPanel, type SourcesPanelItem } from './sourcesStore';
 
@@ -26,15 +26,8 @@ function hostOf(item: SourcesPanelItem): string {
   }
 }
 
-function monogramOf(host: string): string {
-  const first = host.replace(/^www\./i, '').charAt(0);
-  return /[a-z0-9]/i.test(first) ? first.toUpperCase() : '?';
-}
-
 function SourceCard({ item, index }: { item: SourcesPanelItem; index: number }) {
   const host = hostOf(item);
-  const [iconFailed, setIconFailed] = useState(false);
-  const favicon = faviconProxyUrl(item.url);
   return (
     <li className="sources-list-item">
       <a
@@ -45,18 +38,7 @@ function SourceCard({ item, index }: { item: SourcesPanelItem; index: number }) 
         aria-label={`${item.title} · ${host}`}
       >
         <span className="source-card-mark" aria-hidden="true">
-          {favicon && !iconFailed ? (
-            <img
-              className="source-card-favicon"
-              src={favicon}
-              alt=""
-              loading="lazy"
-              referrerPolicy="no-referrer"
-              onError={() => setIconFailed(true)}
-            />
-          ) : (
-            <span>{monogramOf(host)}</span>
-          )}
+          <SourceAvatar url={item.url} host={host} className="source-card-avatar" />
           <span className="source-card-index">{index + 1}</span>
         </span>
         <span className="source-card-copy">

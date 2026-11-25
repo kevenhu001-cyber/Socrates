@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Icon } from '../../legacy/Icon';
 import { Button as BaseButton } from '../ui/Button';
@@ -233,6 +233,35 @@ export function ImageLightbox({ images, initialIndex = 0, open, onClose }: Image
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [zoom, setZoom] = useState(1);
   const [copied, setCopied] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    dialog.querySelector<HTMLElement>('.intui-lightbox-close')?.focus({ preventScroll: true });
+    const trap = (event: KeyboardEvent) => {
+      if (event.key !== 'Tab') return;
+      const controls = [...dialog.querySelectorAll<HTMLElement>('button:not([disabled]), a[href]')];
+      const first = controls[0];
+      const last = controls[controls.length - 1];
+      if (!first || !last) return;
+      const active = document.activeElement;
+      if (event.shiftKey && (active === first || !dialog.contains(active))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (active === last || !dialog.contains(active))) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', trap);
+    return () => {
+      document.removeEventListener('keydown', trap);
+      if (opener?.isConnected) opener.focus({ preventScroll: true });
+    };
+  }, [open]);
 
   useEffect(() => {
     setCurrentIndex(initialIndex);
@@ -282,6 +311,7 @@ export function ImageLightbox({ images, initialIndex = 0, open, onClose }: Image
 
   return createPortal(
     <div
+      ref={dialogRef}
       className="intui-lightbox-backdrop"
       role="dialog"
       aria-modal="true"

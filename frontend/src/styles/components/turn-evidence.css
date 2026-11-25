@@ -49,7 +49,7 @@
   padding: var(--ui-space-md);
   border: 1px solid var(--ui-border-subtle);
   border-radius: var(--ui-radius-lg);
-  background: var(--ui-bg-surface);
+  background: var(--popover);
   color: var(--foreground);
   box-shadow: var(--ui-shadow-popover);
   font-size: var(--ui-font-size-sm);
@@ -154,12 +154,10 @@
 }
 /* 「来源」与数量之间只留间距，不用「·」分隔。 */
 .turn-sources-count {
-  margin-inline-start: var(--ui-space-xs);
   font-variant-numeric: tabular-nums;
 }
 .turn-sources-chevron {
   flex: 0 0 auto;
-  margin-inline-start: var(--ui-space-xs);
   transition: transform 160ms ease;
 }
 .turn-sources.is-active .turn-sources-chevron {
@@ -175,6 +173,7 @@
 .turn-sources-mark {
   display: grid;
   place-items: center;
+  box-sizing: border-box;
   width: 20px;
   height: 20px;
   flex: none;

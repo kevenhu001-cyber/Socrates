@@ -132,6 +132,7 @@ function FileCardBody({
           variant="plain"
           className="file-card-remove"
           aria-label="Delete attachment"
+          title="Delete attachment"
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -207,6 +208,7 @@ export function FileCard({
       onKeyDown={
         isClickable
           ? (e) => {
+              if (e.target !== e.currentTarget) return;
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
                 handleClick(e as unknown as React.MouseEvent);

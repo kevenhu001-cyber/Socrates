@@ -712,6 +712,8 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
   flex-shrink: 0;
   box-sizing: border-box;
   width: 240px;
+  max-width: 100%;
+  min-width: 0;
   min-height: 64px;
   padding: 0 14px;
   border-radius: var(--ui-radius-lg);
@@ -738,7 +740,8 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
   padding-right: 28px;
 }
 
-.file-card:hover .file-card-remove {
+.file-card:hover .file-card-remove,
+.file-card:focus-within .file-card-remove {
   opacity: 1;
 }
 
@@ -749,7 +752,7 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
   flex-shrink: 0;
   width: 28px;
   height: 28px;
-  margin-right: 10px;
+  margin-inline-end: 10px;
 }
 
 .file-card-content {
@@ -763,7 +766,7 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
   overflow: hidden;
   font-size: var(--ui-font-size-sm);
   line-height: 22px;
-  font-weight: var(--ui-font-weight-regular);
+  font-weight: var(--ui-font-weight-medium);
   white-space: nowrap;
   text-overflow: ellipsis;
   color: var(--ui-text-primary);
@@ -781,13 +784,13 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
 
 .file-card-remove {
   position: absolute;
-  top: 4px;
-  right: 4px;
+  inset-block-start: 4px;
+  inset-inline-end: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: var(--ui-control-badge);
+  height: var(--ui-control-badge);
   padding: 0;
   border: 0;
   border-radius: var(--ui-radius-pill);
@@ -894,7 +897,6 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
 
 .msg-attachment-image-link:hover .msg-attachment-image-card {
   border-color: var(--ui-border-strong);
-  transform: scale(1.02);
 }
 
 .msg-attachment-img {
@@ -915,5 +917,21 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
   .msg-toolbar-btn:hover::after,
   .msg-toolbar-btn:focus-visible::after {
     transition: none;
+  }
+}
+
+@media (hover: none) {
+  .file-card .file-card-remove {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .file-card,
+  .file-card-remove,
+  .msg-attachment-image-card {
+    transition: none;
+  }
+  .file-card-spinner {
+    animation: none;
   }
 }
