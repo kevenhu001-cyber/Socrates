@@ -436,7 +436,7 @@ test('Create image waits for a user prompt before submitting the image-generatio
 /* Audit screenshots are evidence, not auto-accepted pixel baselines.
    Use actual page navigation, then assert the viewport and capture each surface. */
 for (const theme of ['light', 'dark']) {
-  for (const width of [360, 768, 1440]) {
+  for (const width of [360, 768, 1024, 1440]) {
     test(`non-chat surface audit: ${theme} ${width}px`, async ({ page }) => {
       const lang = width === 360 ? 'zh' : 'en';
       await page.addInitScript((value) => localStorage.setItem('socrates-theme', value), theme);
@@ -488,6 +488,10 @@ for (const theme of ['light', 'dark']) {
       await capture('plugin-detail', '.plugin-detail-view');
       await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
       await capture('settings', '#settingsPage');
+      if (width > 768) {
+        await expect(page.locator('#settingsPage .account-page-header')).toHaveCSS('border-bottom-width', '1px');
+        await expect(page.locator('#settingsPage .settings-category-description').first()).toBeHidden();
+      }
       await page.locator('#settingsPage .settings-nav [data-section="models"]').click();
       await capture('models', '#settingsPage .settings-body');
       await expect(page.locator('#addProviderBtn')).toBeVisible();
