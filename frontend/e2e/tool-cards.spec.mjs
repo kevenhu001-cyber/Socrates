@@ -1,7 +1,7 @@
 import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
-import { TURN, openToolDetail, openToolGroups, toolRow, toolRowButton } from './_turn-ui.mjs';
+import { TURN, openActivity, openToolDetail, openToolGroups, toolRow, toolRowButton } from './_turn-ui.mjs';
 
 /* Every copy assertion below is English — the app ships with zh as its default
    language, and the labels are now derived per-tool with objects ("Searched
@@ -147,7 +147,7 @@ test('tool activity lands behind its paragraph without splitting it', async ({ p
   const bubble = page.locator('.msg.assistant').last();
   const row = toolRow(bubble, 'boundary-search');
   await expect(row).toHaveCount(1);
-  await expect(bubble.locator(`.turn-evidence > [data-tcid="boundary-search"]`)).toHaveCount(1);
+  await expect(bubble.locator(`.activity-timeline [data-tcid="boundary-search"]`)).toHaveCount(1);
   const prose = await bubble.locator('.tool-run-prose').allTextContents();
   expect(prose.join(' ').replace(/\s+/g, ' ')).toContain(
     '先说明结论。 然后继续检查这个模块的实现细节。 再给出修复方案。',
@@ -215,6 +215,7 @@ test('live chat shows a running search row while the model is searching', async 
 
   const bubble = page.locator('.msg.assistant').last();
   const row = toolRow(bubble, 'late-search');
+  await openActivity(bubble);
   await expect(row).toBeVisible();
   /* One line of copy: the row names the object and never shimmers. */
   const label = row.locator(TURN.stepTitle);
@@ -304,7 +305,7 @@ test('code execution streams live output into its row without thinking overlap',
   await expect(row).toHaveAttribute('data-state', 'running');
   await expect(row.locator(TURN.stepTitle)).toContainText('Executing code');
   await expect(row.locator(TURN.spinner)).toHaveCount(1);
-  await expect(bubble.locator(TURN.surface)).toHaveCount(0);
+  await expect(bubble.locator(TURN.surface)).toHaveCount(1);
   /* RN-2 dropped the phase relabel (Executing code → Analyzing data): the
      verb stays put and the stdout chunk shows up as live output instead. */
   await page.evaluate(() => window.__sendCodeProgress());
@@ -459,7 +460,7 @@ test('consecutive tools stay one row each and open their own details', async ({ 
 
   const bubble = page.locator('.msg.assistant').last();
   /* Each call keeps its own row inside the compact, expandable burst. */
-  const burstToggle = bubble.locator('.tool-activity-burst-toggle');
+  const burstToggle = bubble.locator('[data-testid="turn-activity-toggle"]');
   await expect(burstToggle).toHaveAttribute('aria-expanded', 'false');
   await burstToggle.click();
   await expect(bubble.locator(TURN.row)).toHaveCount(2);
