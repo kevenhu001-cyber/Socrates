@@ -238,6 +238,20 @@ test('converged surfaces keep their canonical stylesheet ownership', async () =>
   assert.doesNotMatch(legacyActivity, /\.library-file-preview-card/);
 });
 
+test('sidebar history geometry and drawer paint stay in their canonical owners', async () => {
+  const [desktop, phone] = await Promise.all([
+    read('src/styles/parity/sidebar.css'),
+    read('src/styles/polish/mobile-sidebar.css'),
+  ]);
+  const historyGeometry = desktop.match(/#appShell #sidebar \.recent-item\s*\{[^}]*height: var\(--sidebar-row\);[^}]*\}/g) || [];
+  assert.equal(historyGeometry.length, 1);
+  assert.match(historyGeometry[0], /border-radius: var\(--ui-radius-sidebar-row\)/);
+  const drawerPaint = phone.slice(phone.indexOf('/* Phone navigation uses the same semantic'));
+  assert.match(drawerPaint, /--sidebar-nav-bg: var\(--ui-bg-hover\)/);
+  assert.match(drawerPaint, /--sidebar-nav-bg: var\(--ui-bg-active\)/);
+  assert.doesNotMatch(drawerPaint, /--sidebar-nav-bg: rgb\(/);
+});
+
 test('header and transcript fades keep one paint recipe per surface', async () => {
   const [topbar, phoneTopbar, transcript, details, chat] = await Promise.all([
     read('src/styles/parity/topbar.css'),
