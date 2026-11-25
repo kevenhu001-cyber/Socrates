@@ -115,7 +115,7 @@ for (const theme of ['light', 'dark']) {
     const capabilities = await page.locator('.plugin-detail-features-list').boundingBox();
     expect(examples.y + examples.height).toBeLessThan(capabilities.y);
     await page.screenshot({
-      path: `test-results/plugin-detail-flat-${theme}.png`,
+      path: `test-results/plugin-detail-flat-${encodeURIComponent(theme)}.png`,
       animations: 'disabled',
       caret: 'hide',
     });
