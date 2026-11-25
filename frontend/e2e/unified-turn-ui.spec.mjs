@@ -276,7 +276,7 @@ test('live activity keeps tool rows folded until requested', async ({ page }) =>
 });
 
 
-test('live workspace preview follows observed steps and yields to expanded details', async ({ page }) => {
+test('live workspace steps stay behind the row disclosure', async ({ page }) => {
   await prepareChatWorkbench(page);
   await page.evaluate(async () => {
     const ctl = await window.addStreamingMessage({ userPrompt: 'Read project files.' });
@@ -286,14 +286,13 @@ test('live workspace preview follows observed steps and yields to expanded detai
     ctl.recordAgentStep({ type: 'step', id: 'agent', runId: 'run-preview', stepId: 'command', kind: 'command', status: 'running', command: 'npm test' });
   });
   const preview = page.getByTestId('agent-activity-preview');
-  await expect(preview).toBeVisible();
-  await expect(preview).toHaveAttribute('data-state', 'running');
-  await expect(preview).toContainText('1/2');
+  await expect(preview).toHaveCount(0);
   await toolRow(page, 'agent').click();
   await expect(preview).toHaveCount(0);
   await expect(page.locator('.agent-step')).toHaveCount(2);
   await toolRow(page, 'agent').click();
-  await expect(preview).toBeVisible();
+  await expect(preview).toHaveCount(0);
+  await expect(page.locator('.agent-step')).toHaveCount(0);
   await page.evaluate(() => {
     const ctl = window.__unifiedController;
     ctl.recordToolResult({ id: 'agent', name: 'workspace_agent', status: 'completed', ok: true, output: 'Done.' });
