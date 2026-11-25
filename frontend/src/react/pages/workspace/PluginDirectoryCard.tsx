@@ -1,3 +1,4 @@
+import { Icon } from '../../../legacy/Icon';
 import { Button } from '../../ui/shadcn/button';
 import { i18n, MoreIcon, PlusIcon } from './workspaceUi';
 import { ConnectorMark } from './ConnectorMark';
@@ -46,7 +47,7 @@ function PluginConnectionAction({
         title={label}
         onClick={() => dispatch.refreshPlugin(plugin.id)}
       >
-        <PlusIcon />
+        <Icon name="regenerate" size={16} />
         <span className="plugin-directory-action-label">{label}</span>
       </Button>
     );
@@ -98,7 +99,12 @@ export function PluginDirectoryCard({
       data-connector-id={plugin.id}
       key={plugin.id}
     >
-      <button type="button" className="plugin-directory-card-main" onClick={() => onSelect(plugin.id)} aria-label={plugin.name}>
+      <button
+        type="button"
+        className="plugin-directory-card-main"
+        onClick={() => onSelect(plugin.id)}
+        aria-label={plugin.name}
+      >
       <span className={'workspace-row-icon connector-icon connector-' + plugin.id}>
         <ConnectorMark id={plugin.id} name={plugin.name} />
       </span>
