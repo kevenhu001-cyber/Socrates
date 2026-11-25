@@ -38,7 +38,7 @@ import { showToast } from '../legacy/toast.ts';
 import { addMessage } from '../chat/messages.ts';
 import { askNextQuestion } from '../tutor/socraticTurn.ts';
 import { saveCurrentSession } from '../session/persistence.ts';
-/* chat/webSearch.ts (~16KB) is lazy — the window.fetchWebContext proxy
+/* chat/webSearch.ts (~16KB) is lazy — the window.fetchWebContext hook
    below returns a promise, which every caller already awaits. */
 import {
   openAttachmentPicker,
@@ -108,14 +108,8 @@ import { setRecentsSearch } from '../legacy/recentsView.ts';
 import { setLang } from '../i18n/index.ts';
 import { showGate, showAuthSignin } from '../auth/index.ts';
 import { setLegacyActions } from '../react/legacy/gateway.ts';
-import { runtimeWindow as browserWindow } from '../types/runtimeWindow.ts';
+import type { LegacyActions } from '../react/legacy/types.ts';
 
-browserWindow.askChatTurn = askChatTurn;
-browserWindow.addStreamingMessage = addStreamingMessage;
-browserWindow.loadSession = loadSession;
-browserWindow.renderRecents = renderRecents;
-browserWindow.setChatStopState = setChatStopState;
-browserWindow.handleSendClick = handleSendClick;
 type DangerConfirmsModule = typeof import('../legacy/dangerConfirms.ts');
 let _dangerImport: Promise<DangerConfirmsModule> | null = null;
 function _loadDangerConfirms() {
@@ -129,26 +123,33 @@ function _loadDangerConfirms() {
   return _dangerImport;
 }
 
-browserWindow.markAuthSuccess = markAuthSuccess;
-browserWindow.addMessage = addMessage;
-browserWindow.askNextQuestion = askNextQuestion;
-browserWindow.saveCurrentSession = saveCurrentSession;
-browserWindow.fetchWebContext = function (
-  query: Parameters<(typeof import('../chat/webSearch.ts'))['fetchWebContext']>[0],
-  opts?: Parameters<(typeof import('../chat/webSearch.ts'))['fetchWebContext']>[1],
-) {
-  return loadWebSearch().then(function (m) {
-    return m.fetchWebContext(query, opts);
+// The remaining browser hooks are retained for legacy HTML and browser tests.
+if (typeof window !== 'undefined') {
+  Object.assign(window, {
+    askChatTurn,
+    addStreamingMessage,
+    loadSession,
+    renderRecents,
+    setChatStopState,
+    handleSendClick,
+    markAuthSuccess,
+    addMessage,
+    askNextQuestion,
+    saveCurrentSession,
+    fetchWebContext: (
+      query: Parameters<(typeof import('../chat/webSearch.ts'))['fetchWebContext']>[0],
+      opts?: Parameters<(typeof import('../chat/webSearch.ts'))['fetchWebContext']>[1],
+    ) => loadWebSearch().then((module) => module.fetchWebContext(query, opts)),
+    renderAssistantHTML,
+    showToast,
+    resetApp,
+    startNewChat,
+    startSession,
+    submitChatMessage,
   });
-};
-browserWindow.renderAssistantHTML = renderAssistantHTML;
-browserWindow.showToast = showToast;
-browserWindow.resetApp = resetApp;
-browserWindow.startNewChat = startNewChat;
-browserWindow.startSession = startSession;
-browserWindow.submitChatMessage = submitChatMessage;
+}
 
-browserWindow.__socratesLegacy = {
+const legacyActions: LegacyActions = {
   auth: {
     showGate,
     showAuthSignin,
@@ -280,21 +281,14 @@ browserWindow.__socratesLegacy = {
     wireCodeBlockHeaders,
     /* chart specs are normalized from toolCalls[];
        the React attachment owns the renderer host and its effect lifecycle. */
-    mountVisualization: function (spec, host, options) {
-      return typeof mountVisualization === 'function'
-        ? mountVisualization(spec, host, options)
-        : null;
-    },
+    mountVisualization: (spec, host, options) => mountVisualization(spec, host, options),
     /* React host teardown: dispose every card (and its renderer resources)
        in the host when the owning component unmounts or remounts. */
-    disposeVisualizations: function (host) {
-      if (typeof disposeVisualizations === 'function') disposeVisualizations(host);
-    },
+    disposeVisualizations,
     /* Teardown for one card React captured from mountVisualization's return
        value — survives a host the legacy pipeline emptied first. */
-    disposeVisualization: function (card: Parameters<typeof disposeVisualization>[0]) {
-      if (typeof disposeVisualization === 'function') disposeVisualization(card);
-    },
+    disposeVisualization: (card) =>
+      disposeVisualization(card as Parameters<typeof disposeVisualization>[0]),
   },
   /* markdown rendering stays in legacy (it owns the
      viz/mermaid placeholder registration that postRender fills in), but the
@@ -302,9 +296,7 @@ browserWindow.__socratesLegacy = {
      AssistantTurn calls renderAssistantHTML per prose segment, so the answer
      text keeps formatting exactly as before. */
   render: {
-    renderAssistantHTML: function (rawText) {
-      return renderAssistantHTML(rawText);
-    },
+    renderAssistantHTML,
     /* the streaming-safe renderer, same one the old
        imperative doRender painted with. formatMsg assumes closed pairs, so
        feeding it a half-arrived `$$…$$` or an open fence leaks raw LaTeX into
@@ -329,4 +321,4 @@ browserWindow.__socratesLegacy = {
   },
 };
 
-setLegacyActions(browserWindow.__socratesLegacy);
+setLegacyActions(legacyActions);
