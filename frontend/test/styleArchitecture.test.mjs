@@ -217,6 +217,11 @@ test('converged surfaces keep their canonical stylesheet ownership', async () =>
   assert.doesNotMatch(sharedSidebar, /@media\s*\(min-width:\s*769px\)/);
   assert.match(menu, /#composerToolsMenu\.composer-tools-menu\[data-menu-side='sheet'\]/);
   assert.doesNotMatch(composer, /#composerToolsMenu/);
+  const composerFrame = await read('src/styles/parity/composer-unified.css');
+  assert.match(composer, /\.composer-shell \.attachment-chip\.is-leaving/);
+  assert.match(composer, /#composerAttachmentChips \.attachment-chip\.is-image/);
+  assert.doesNotMatch(composerFrame, /\.attachment-chip(?!s)/);
+  assert.doesNotMatch(composer, /\.attachment-chip-(?:progress|pct)\b/);
   assert.match(settings, /\.settings-page \.settings-shell/);
   assert.match(settings, /\.settings-memory-list/);
   assert.doesNotMatch(overlays, /\.settings-page|\.settings-memory-list|\.tone-preset-options/);
