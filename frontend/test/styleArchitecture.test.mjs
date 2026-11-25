@@ -327,3 +327,17 @@ test('header uses React state rather than retired DOM chrome mirrors', async () 
     assert.doesNotMatch(await read(file), /mobileIncognitoBtn|\.chat-top-bar\b|setConversationChrome\b|#chatStats\b/);
   }
 });
+
+test('scheduled recommendation cards have one stylesheet owner', async () => {
+  const pages = await read('src/styles/polish/app-pages.css');
+  assert.match(pages, /\.scheduled-recommendation-copy small\s*\{/);
+  assert.match(pages, /\.scheduled-recommendation-add\s*\{/);
+  for (const file of [
+    'src/styles/features/surfaces.css',
+    'src/styles/restore/chatgpt-ui.css',
+    'src/styles/restore/mobile-parity.css',
+    'src/styles/restore/fixes.css',
+  ]) {
+    assert.doesNotMatch(await read(file), /\.scheduled-recommendation(?:s|-[\w-]+)?\b/);
+  }
+});
