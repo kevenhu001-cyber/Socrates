@@ -218,7 +218,7 @@ test('converged surfaces keep their canonical stylesheet ownership', async () =>
   assert.match(menu, /#composerToolsMenu\.composer-tools-menu\[data-menu-side='sheet'\]/);
   assert.doesNotMatch(composer, /#composerToolsMenu/);
   const composerFrame = await read('src/styles/parity/composer-unified.css');
-  assert.match(composer, /\.composer-shell \.attachment-chip\.is-leaving/);
+  assert.match(composer, /#composerAttachmentChips \.attachment-chip\.is-leaving/);
   assert.match(composer, /#composerAttachmentChips \.attachment-chip\.is-image/);
   assert.doesNotMatch(composerFrame, /\.attachment-chip(?!s)/);
   assert.doesNotMatch(composer, /\.attachment-chip-(?:progress|pct)\b/);
@@ -282,4 +282,17 @@ test('legacy button utilities use paint-only press feedback and tag editor has o
   assert.doesNotMatch(buttons, /(?:^|\n)\s*(?:transform|scale):/);
   assert.match(menu, /\.tag-editor-popover input\s*\{/);
   assert.doesNotMatch(overlays, /\.tag-editor-popover input\s*\{/);
+});
+
+test('retired attachment markup cannot return to legacy or composer CSS', async () => {
+  const [legacy, composer, cards] = await Promise.all([
+    read('src/styles/legacy/07-composer-settings.css'),
+    read('src/styles/polish/composer.css'),
+    read('src/styles/components/chat.css'),
+  ]);
+  assert.doesNotMatch(legacy, /\.attachment-chip(?:s)?(?![-\w])/);
+  assert.doesNotMatch(composer, /\.attachment-chip-(?:info|name|meta|progress|pct)\b/);
+  assert.doesNotMatch(composer, /\.attachment-chip\.is-file\s+\.attachment-chip-/);
+  assert.match(cards, /\.file-card-caption\s*\{/);
+  assert.match(composer, /#composerAttachmentChips \.attachment-chip\.is-leaving/);
 });
