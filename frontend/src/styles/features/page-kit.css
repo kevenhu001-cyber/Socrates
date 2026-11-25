@@ -2,7 +2,8 @@
  * page-kit.css — shared page composition layer.
  *
  * This file owns the page column, heading, toolbar, range tabs and empty
- * state for every standard app page. It is layout and rhythm only: colour,
+ * state, section headings, collections and generic cards for every standard
+ * app page. It is layout and rhythm only: colour,
  * type, radius and control sizes come from the --ui-* contract. Individual
  * pages keep only their content layout; they must not re-declare a page
  * header, a primary button skin or a second search field.
@@ -81,6 +82,14 @@
   align-items: center;
   gap: var(--ui-space-sm);
   margin: 0 0 var(--ui-space-lg);
+}
+
+#appShell .ui-page-toolbar-end {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--ui-space-sm);
+  margin-inline-start: auto;
 }
 
 /* Shared page search: one 42px pill, same chrome as Library. The inner
@@ -229,6 +238,127 @@
   color: var(--ui-text-tertiary);
   font-size: var(--ui-font-size-sm);
   line-height: 1.5;
+}
+
+/* ── Section headings inside a page ─────────────────────────────────── */
+
+#appShell .ui-page-section {
+  margin: 0 0 var(--ui-space-xl);
+}
+
+#appShell .ui-page-section:last-child {
+  margin-bottom: 0;
+}
+
+#appShell .ui-page-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-start;
+  gap: var(--ui-space-sm);
+  margin: 0 0 var(--ui-space-sm);
+}
+
+#appShell .ui-page-section-head h2 {
+  margin: 0;
+  color: var(--ui-text-primary);
+  font-size: var(--ui-font-size-md);
+  font-weight: var(--ui-font-weight-semibold);
+  letter-spacing: -0.01em;
+}
+
+#appShell .ui-page-section-head > span {
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Collection card (list pages) ───────────────────────────────────── */
+
+#appShell .ui-collection {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-lg);
+  background: transparent;
+}
+
+#appShell .ui-collection-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-md);
+  min-height: var(--ui-control-md);
+  padding: 0 var(--ui-space-lg);
+  border-bottom: 1px solid var(--ui-border-subtle);
+  background: transparent;
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-font-weight-medium);
+}
+
+#appShell .ui-collection-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+#appShell .ui-collection-body > * {
+  min-width: 0;
+}
+
+#appShell .ui-collection-body > * + * {
+  border-top: 1px solid var(--ui-border-subtle);
+}
+
+/* ── Card grid (projects, plugins, scheduled templates) ─────────────── */
+
+#appShell .ui-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: var(--ui-space-sm);
+  min-width: 0;
+}
+
+#appShell .ui-page-card {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-md);
+  min-width: 0;
+  min-height: 78px;
+  padding: var(--ui-space-lg);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-xl);
+  background: var(--ui-bg-raised);
+  transition:
+    background-color var(--ui-duration-hover) ease,
+    border-color var(--ui-duration-hover) ease;
+}
+
+#appShell .ui-page-card:hover {
+  border-color: var(--ui-border-default);
+  background: color-mix(in srgb, var(--ui-bg-raised), var(--ui-text-primary) 4%);
+}
+
+#appShell .ui-page-card-main {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--ui-space-md);
+  min-width: 0;
+  height: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: start;
+}
+
+#appShell .ui-page-card-main:hover {
+  background: transparent;
 }
 
 /* ── Section card ────────────────────────────────────────────────────── */
