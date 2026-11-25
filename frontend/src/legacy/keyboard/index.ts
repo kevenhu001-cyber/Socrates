@@ -29,7 +29,6 @@ import {
 import { TranscriptAnchor } from './anchor.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 
-const BLUR_GRACE_MS = 900;
 /* A restored (zero-coverage) read must persist this long before the lift is
  * released. Shorter than one real close animation step, longer than an IME
  * reporting hiccup, so a lone bad frame never dips the composer. */
@@ -85,7 +84,6 @@ class KeyboardLiftController implements KeyboardLift {
   private phaseValue: KeyboardPhase = 'closed';
   private sessionActive = false;
   private appliedInset = -1;
-  private blurTimer: ReturnType<typeof setTimeout> | 0 = 0;
   private closeTimer: ReturnType<typeof setTimeout> | 0 = 0;
   private finishTimer: ReturnType<typeof setTimeout> | 0 = 0;
   private nativeOpenTimer: ReturnType<typeof setTimeout> | 0 = 0;
@@ -148,25 +146,14 @@ class KeyboardLiftController implements KeyboardLift {
   };
 
   private readonly onFocusIn = (): void => {
-    if (this.blurTimer) {
-      clearTimeout(this.blurTimer);
-      this.blurTimer = 0;
-    }
     if (this.isFocused()) this.clearNativeTimers();
     this.updateFromGeometry();
   };
 
   private readonly onFocusOut = (): void => {
     if (!this.sessionActive) return;
-    /* Geometry owns close; blur is only a fallback for WebViews without it. */
+    // Blur alone cannot release the lift; geometry/native hide owns close.
     this.updateFromGeometry();
-    if (this.blurTimer) clearTimeout(this.blurTimer);
-    this.blurTimer = setTimeout(() => {
-      this.blurTimer = 0;
-      // Blur is not evidence of a hidden keyboard. While the viewport still
-      // reports coverage, keep the lift and transcript anchor intact.
-      if (this.sessionActive && !this.isFocused()) this.updateFromGeometry();
-    }, BLUR_GRACE_MS);
   };
 
   private readonly onGeometryEvent = (): void => {
@@ -292,10 +279,6 @@ class KeyboardLiftController implements KeyboardLift {
   }
 
   private clearTimers(): void {
-    if (this.blurTimer) {
-      clearTimeout(this.blurTimer);
-      this.blurTimer = 0;
-    }
     if (this.closeTimer) {
       clearTimeout(this.closeTimer);
       this.closeTimer = 0;
@@ -421,10 +404,6 @@ class KeyboardLiftController implements KeyboardLift {
   }
 
   private showNativeKeyboard(keyboardHeight?: number): void {
-    if (this.blurTimer) {
-      clearTimeout(this.blurTimer);
-      this.blurTimer = 0;
-    }
     if (this.closeTimer) {
       clearTimeout(this.closeTimer);
       this.closeTimer = 0;
