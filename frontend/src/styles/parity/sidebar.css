@@ -975,19 +975,21 @@ html[data-detail-open='true'][data-detail-layout='docked'] #appShell .main {
 /* Desktop nav row: the shared shell row keeps the 36px density, 10px corner
    and 6px glyph-to-label gap the shadcn button recipe used before the DOM
    migration. The phone drawer overrides display/height/padding below 768px. */
-#appShell #sidebarNav .sidebar-nav-btn {
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 6px;
-  width: 100%;
-  height: var(--ui-control-desktop);
-  min-height: var(--ui-control-desktop);
-  padding: 6px 10px;
-  border-radius: 10px;
-  text-align: start;
-  white-space: nowrap;
-  cursor: pointer;
-  user-select: none;
+@media (min-width: 769px) {
+  #appShell #sidebarNav .sidebar-nav-btn {
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+    width: 100%;
+    height: var(--ui-control-desktop);
+    min-height: var(--ui-control-desktop);
+    padding: 6px 10px;
+    border-radius: 10px;
+    text-align: start;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+  }
 }
