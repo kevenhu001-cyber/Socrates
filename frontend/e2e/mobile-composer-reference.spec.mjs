@@ -25,7 +25,7 @@ test('mobile composer morphs in place on landing and in a conversation', async (
     await expect(effort).toBeHidden();
     const compact = await frame.boundingBox();
     const hostBox = await host.boundingBox();
-    expect(compact.width).toBeLessThan(hostBox.width);
+    expect(compact.width).toBeLessThanOrEqual(hostBox.width + 1);
     expect(compact.x - hostBox.x).toBeCloseTo((hostBox.width - compact.width) / 2, 0);
     const editorBox = await editor.boundingBox();
     const [plus, microphone, send] = await Promise.all([
@@ -59,8 +59,8 @@ test('mobile composer morphs in place on landing and in a conversation', async (
   await expect(frame).toHaveCSS('height', '92px');
   await expect(frame).toHaveCSS('border-radius', '24px');
   const expanded = await frame.boundingBox();
-  expect(mid.width).toBeGreaterThan(compact.width);
-  expect(mid.width).toBeLessThan(expanded.width);
+  expect(mid.width).toBeCloseTo(compact.width, 0);
+  expect(expanded.width).toBeCloseTo(compact.width, 0);
   expect(mid.height).toBeGreaterThan(compact.height);
   expect(mid.height).toBeLessThan(expanded.height);
   const editorBox = await editor.boundingBox();
@@ -100,6 +100,7 @@ test('mobile composer morphs in place on landing and in a conversation', async (
   );
   expect(geometryTransitions).toBe(0);
   const chatExpanded = await frame.boundingBox();
+  expect(chatExpanded.width).toBeCloseTo(chatCompact.width, 0);
   expect(chatExpanded.y + chatExpanded.height).toBeCloseTo(chatCompact.y + chatCompact.height, 0);
   expect(await editor.evaluate((current, original) => current === original, originalEditor)).toBe(
     true,
