@@ -112,7 +112,7 @@ body[data-transcript-scrolled='true'] #appShell .top-bar::after {
     background: transparent;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
-    color: var(--foreground);
+    color: var(--ui-text-primary);
     font-family: var(--font-sans);
     font-size: var(--ui-text-ui);
     line-height: var(--ui-text-ui-line);
@@ -141,7 +141,7 @@ body[data-transcript-scrolled='true'] #appShell .top-bar::after {
     gap: var(--ui-space-xxs);
     max-width: 320px;
     overflow: hidden;
-    color: var(--foreground);
+    color: var(--ui-text-primary);
     font-size: var(--ui-text-ui);
     font-weight: var(--ui-font-weight-medium);
     line-height: var(--ui-text-ui-line);
