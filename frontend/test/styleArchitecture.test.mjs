@@ -228,3 +228,24 @@ test('converged surfaces keep their canonical stylesheet ownership', async () =>
   assert.match(preview, /\.library-file-preview-card/);
   assert.doesNotMatch(legacyActivity, /\.library-file-preview-card/);
 });
+
+test('header and transcript fades keep one paint recipe per surface', async () => {
+  const [topbar, phoneTopbar, transcript, details, chat] = await Promise.all([
+    read('src/styles/parity/topbar.css'),
+    read('src/styles/polish/topbar.css'),
+    read('src/styles/parity/transcript.css'),
+    read('src/styles/polish/transcript.css'),
+    read('src/styles/components/chat.css'),
+  ]);
+  assert.equal((topbar.match(/background: linear-gradient\(/g) || []).length, 1);
+  assert.doesNotMatch(phoneTopbar, /#pluginWorkspaceTabs\s*\{/);
+  for (const [css, token] of [
+    [transcript, '--transcript-edge-mask'],
+    [details, '--stream-tail-mask'],
+    [chat, '--phone-transcript-mask'],
+  ]) {
+    assert.ok(css.includes(`${token}: linear-gradient(`));
+    assert.ok(css.includes(`-webkit-mask-image: var(${token});`));
+    assert.ok(css.includes(`mask-image: var(${token});`));
+  }
+});
