@@ -56,6 +56,14 @@ async function openProjects(page, { withProjects }) {
 test('projects directory header, tabs, and search keep compact geometry', async ({ page }) => {
   await openProjects(page, { withProjects: true });
   await expect(page.locator('.project-row')).toHaveCount(PROJECTS.projects.length);
+  await expect(page.locator('.projects-directory .ui-page-search svg')).toHaveAttribute(
+    'data-icon-source',
+    'openai-apps-sdk',
+  );
+  await expect(page.locator('.project-row .project-icon svg').first()).toHaveAttribute(
+    'data-icon-source',
+    'openai-apps-sdk',
+  );
 
   const geometry = await page.evaluate(() => {
     const box = (selector) => {
