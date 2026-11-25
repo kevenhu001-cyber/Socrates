@@ -106,10 +106,10 @@ for (const mode of ['light', 'dark']) {
     await expect(card.locator('#authSigninBtn')).toHaveCSS('background-color', ink);
     await expect(card.locator('#authSigninBtn')).toHaveCSS('color', canvas);
     await expect(card.locator('#authGithubBtn')).toHaveCSS('color', ink);
-    await page.screenshot({ path: `test-results/auth-${mode}-desktop.png` });
+    await page.screenshot({ path: `test-results/auth-${encodeURIComponent(mode)}-desktop.png` });
     await page.setViewportSize({ width: 320, height: 568 });
     await expect(card.locator('#authSigninEmail')).toBeVisible();
     expect(await gate.evaluate((node) => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(1);
-    await page.screenshot({ path: `test-results/auth-${mode}-mobile.png` });
+    await page.screenshot({ path: `test-results/auth-${encodeURIComponent(mode)}-mobile.png` });
   });
 }

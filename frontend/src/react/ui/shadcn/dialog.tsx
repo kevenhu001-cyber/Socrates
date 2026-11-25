@@ -3,7 +3,7 @@ import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
 import { cn } from 'cn';
 
 import { Button } from './button';
-import { XIcon } from 'lucide-react';
+import { Icon } from '../../../legacy/Icon';
 
 function Dialog({ ...props }: DialogPrimitive.Root.Props) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />;
@@ -61,8 +61,8 @@ function DialogContent({
     <DialogPrimitive.Popup
       data-slot="dialog-content"
       className={cn(
-        'fixed top-1/2 left-1/2 z-(--ui-z-modal) -translate-x-1/2 -translate-y-1/2 rounded-xl bg-popover text-sm text-popover-foreground ring-1 ring-foreground/10 duration-200',
-        'grid w-full max-w-[calc(100%-2rem)] gap-4 p-4 sm:max-w-sm',
+        'fixed top-1/2 left-1/2 z-(--ui-z-modal) -translate-x-1/2 -translate-y-1/2 rounded-(--ui-radius-dialog) bg-popover text-sm text-popover-foreground shadow-(--ui-shadow-dialog) ring-1 ring-foreground/10 duration-200',
+        'grid w-full max-w-[calc(100%-2rem)] max-h-[calc(100dvh-2rem)] overflow-y-auto gap-4 p-4 sm:max-w-sm',
         className,
       )}
       {...props}
@@ -73,7 +73,7 @@ function DialogContent({
           data-slot="dialog-close"
           render={<Button variant="ghost" className="absolute top-2 right-2" size="icon-sm" />}
         >
-          <XIcon />
+          <Icon name="close" size={18} />
           <span className="sr-only">Close</span>
         </DialogPrimitive.Close>
       )}
@@ -111,7 +111,7 @@ function DialogFooter({
     <div
       data-slot="dialog-footer"
       className={cn(
-        '-mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-xl border-t bg-muted/50 p-4 sm:flex-row sm:justify-end',
+        '-mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-(--ui-radius-dialog) border-t border-border bg-transparent p-4 sm:flex-row sm:justify-end',
         className,
       )}
       {...props}
@@ -128,7 +128,7 @@ function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn('text-base leading-none font-medium', className)}
+      className={cn('text-base leading-snug font-semibold', className)}
       {...props}
     />
   );
