@@ -125,9 +125,6 @@ body,
 }
 
 @media (max-width: 768px) {
-  #appShell .sidebar-footer-actions > .icon-btn {
-    color: var(--cg-text-muted);
-  }
 }
 
 @media (max-width: 768px) {
@@ -151,7 +148,7 @@ body,
     width: 34px;
     height: 34px;
     border-radius: 10px;
-    color: var(--cg-text-secondary);
+    color: var(--foreground);
   }
 }
 
@@ -675,50 +672,6 @@ body.workspace-active #appShell #mainInner {
 
 .workspace-surface {
   width: 100%;
-}
-
-.workspace-search-field {
-  display: flex;
-  align-items: center;
-  margin: 0;
-  padding-inline: 14px;
-  gap: 10px;
-  background: var(--cg-surface);
-  transition:
-    border-color 0.16s ease,
-    background-color 0.16s ease;
-}
-
-.workspace-search-field:focus-within {
-  border-color: color-mix(in srgb, var(--cg-text) 36%, transparent);
-  /* The bare input inside this field carries no ring of its own (see the
-     focus contract in components/input.css), so the FIELD is the indicator.
-     It used to clear its shadow here as well, which left the field with no
-     focus cue at all once the input's own ring was suppressed — a keyboard
-     user had nothing to see. The shared ring is drawn inset, so it stays
-     inside the field's own box and cannot be clipped by the surrounding
-     page. */
-  box-shadow: var(--ui-focus-shadow);
-}
-
-.workspace-search-field svg {
-  flex: 0 0 18px;
-  width: 18px;
-  height: 18px;
-}
-
-.workspace-search-field input {
-  width: 100%;
-  min-width: 0;
-  border: 0;
-  outline: 0;
-  color: var(--cg-text);
-  background: transparent;
-  font: var(--ui-font-weight-regular) 14px/22px var(--cg-font);
-}
-
-.workspace-search-field input::placeholder {
-  color: var(--cg-text-muted);
 }
 
 .workspace-table {

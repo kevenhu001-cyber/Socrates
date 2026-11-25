@@ -316,11 +316,6 @@ body.workspace-active #appShell .main-page {
     z-index: 10 !important;
   }
 
-  #appShell .workspace-search-field {
-    padding-inline: 14px;
-    border-radius: 999px;
-    font-size: 13px;
-  }
 
   /* OpenConnector directory, restyled as the reference's two-column list. */
 
@@ -415,20 +410,7 @@ body.workspace-active #appShell .main-page {
      --cg-page so the safe-area strip below the composer matches the page
      in both modes. */
 
-  /* Mobile header controls: the hardcoded dark-on-light palette only
-     works on the black phone canvas. In light mode invert the circle
-     buttons and give the icon-only actions a dark glyph. */
-  [data-mode='light'] #appShell #sidebarOpenBtn {
-    border-color: rgb(0 0 0 / 10%) !important;
-    background: hsl(0 0% 100% / 96%) !important;
-    color: hsl(0 0% 14%) !important;
-    box-shadow: 0 1px 3px rgb(0 0 0 / 8%) !important;
-  }
 
-  [data-mode='light'] #appShell #sidebarOpenBtn:hover {
-    background: hsl(0 0% 93%) !important;
-    color: hsl(0 0% 4%) !important;
-  }
 }
 
 /* Mobile sidebar nav background states are owned by
@@ -489,11 +471,6 @@ body.workspace-active #appShell .main-page {
   }
 }
 
-#appShell .workspace-search-field {
-  border-color: var(--cg-border-strong);
-  background: var(--cg-surface);
-  box-shadow: none;
-}
 
 /* Search-field icons are intentionally absent here: this group's 22px
    height collided with chatgpt-ui.css's flex-basis:18px, rendering the
@@ -507,30 +484,6 @@ body.workspace-active #appShell .main-page {
 }
 
 /* Directory icon sizing, typography and row surfaces are owned by polish/app-pages.css. */
-
-/* Icon-only square action used by the projects / scheduled surfaces. The
-   plugin directory is deliberately absent: its action is a labelled
-   "Connect" / "Manage" pill owned by features/surfaces.css. */
-#appShell .workspace-icon-action,
-#appShell .scheduled-recommendation-add {
-  width: 32px;
-  min-width: 32px;
-  height: 32px;
-  min-height: 32px;
-  color: var(--cg-text-secondary) !important;
-  border: 0;
-  border-radius: 50%;
-  background: transparent !important;
-}
-
-#appShell .workspace-icon-action:hover,
-#appShell .scheduled-recommendation-add:hover,
-#appShell .workspace-icon-action:focus-visible,
-#appShell .scheduled-recommendation-add:focus-visible {
-  color: var(--cg-text) !important;
-  background: var(--cg-surface-hover) !important;
-  outline: none;
-}
 
 @media (min-width: 769px) {
   body.workspace-active
@@ -550,10 +503,6 @@ body.workspace-active #appShell .main-page {
     margin-inline: auto !important;
   }
 
-  #appShell .workspace-search-field {
-    width: 240px;
-    height: 42px;
-  }
 
 
 

@@ -37,7 +37,10 @@ html[data-theme='socrates'][data-mode]:lang(zh) {
   --font-display: 'Newsreader', 'Charis SIL', 'Noto Sans SC', 'Georgia', serif;
   --font-serif: var(--font-display);
   --font-mono: var(--ui-font-ui-mono);
-  --ui-text-prose: color-mix(in srgb, var(--ui-text-primary) 88%, var(--ui-text-secondary));
+  --ui-text-prose: var(--ui-text-primary);
+  /* Web controls share the canonical monochrome foreground. */
+  --ui-ink: var(--foreground);
+  --ui-on-ink: var(--primary-foreground);
   --ui-bg-header-glass: color-mix(in srgb, var(--ui-bg-page) 90%, transparent);
   --ui-bg-composer-glass: color-mix(in srgb, var(--ui-bg-composer) 94%, transparent);
 
@@ -107,7 +110,7 @@ html[data-theme='socrates'][data-mode]:lang(zh) {
   --geist-gray-700: #8f8f8f;
   --geist-gray-800: #7d7d7d;
   --geist-gray-900: #a1a1a1;
-  --geist-gray-1000: #ededed;
+  --geist-gray-1000: #ffffff;
   --geist-gray-alpha-100: rgb(255 255 255 / 6%);
   --geist-gray-alpha-200: rgb(255 255 255 / 9%);
   --geist-gray-alpha-300: rgb(255 255 255 / 13%);
@@ -309,7 +312,7 @@ html[data-theme='socrates'][data-mode]:lang(zh) {
   --geist-gray-700: #8f8f8f;
   --geist-gray-800: #7d7d7d;
   --geist-gray-900: #4d4d4d;
-  --geist-gray-1000: #171717;
+  --geist-gray-1000: #000000;
   --geist-gray-alpha-100: rgb(0 0 0 / 5%);
   --geist-gray-alpha-200: rgb(0 0 0 / 8%);
   --geist-gray-alpha-300: rgb(0 0 0 / 10%);
@@ -638,19 +641,17 @@ html[data-theme='socrates'][data-mode='dark'] {
   /* Modern monochrome bubble: neutral surface aligned with Geist gray scale, matching ChatGPT / Grok style. */
   --conversation-user: var(--ui-bg-bubble);
   --conversation-user-text: var(--foreground);
-  /* Reference secondary grey: icons, placeholder, disclaimer, section
-     titles and quiet labels all measure #afafaf–#b0b0b0 on the black canvas. */
+  /* Secondary ink is for explanatory copy, not actionable controls. */
   --muted-foreground: rgb(175 175 175);
   /* Phone reference fields: the question box and the selected mode segment
      are one tone (#1b1b1b) between the canvas and the panel rung; the mode
      track sits a step below it (#131313). Field tones, not ladder rungs. */
   --ui-bg-field: rgb(27 27 27);
   --ui-bg-segment: rgb(19 19 19);
-  /* Phone drawer rows (nav, recents) read one step under the ink. */
-  --ui-text-nav: rgb(202 202 202);
+  --ui-text-nav: var(--ui-text-primary);
   --ui-hairline-faint: rgb(255 255 255 / 6%);
-  /* Quiet chrome glyphs (drawer toggle, new chat, action rows). */
-  --ui-icon-secondary: var(--muted-foreground);
+  /* Compatibility alias for actionable chrome. */
+  --ui-icon-secondary: var(--ui-text-primary);
   --ui-segment-thumb-shadow: none;
   --cg-surface-raised: var(--ui-bg-control);
   /* Legacy HSL channels project the same four-step ladder the `--ui-*`
@@ -690,7 +691,7 @@ html[data-theme='socrates'][data-mode='light'] {
   --ui-bg-segment: rgb(244 244 244);
   --ui-text-nav: var(--ui-text-primary);
   --ui-hairline-faint: rgb(0 0 0 / 6%);
-  --ui-icon-secondary: var(--geist-gray-700);
+  --ui-icon-secondary: var(--ui-text-primary);
   --ui-segment-thumb-shadow: var(--ui-elevation-ring);
   --cg-surface-raised: var(--ui-bg-raised);
   /* Same four-step ladder as dark mode, running the other way.

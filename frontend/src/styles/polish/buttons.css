@@ -28,13 +28,6 @@
 
 @import './motion.css';
 
-:root {
-  /* Make all .btn-icon hit areas honour the touch baseline even outside
-     the ≤768px media query — `.btn-icon.touch` is the explicit opt-in,
-     but the bare `.btn-icon` already opts in to ≥40 via min-width /
-     min-height, so the floor is never below the standard control size. */
-}
-
 /* ─────────── Base .btn ─────────── */
 .btn {
   display: inline-flex;
@@ -48,7 +41,7 @@
   /* Refined geometry: standard control radius with optical tracking, opt-in pill via .btn-pill. */
   border-radius: var(--ui-radius-control);
   background: transparent;
-  color: var(--muted-foreground);
+  color: var(--foreground);
   font: var(--ui-font-weight-regular) var(--ui-text-ui) / 20px
     var(--font-sans, system-ui, sans-serif);
   letter-spacing: -0.012em;
@@ -167,7 +160,7 @@
   border: 0;
   border-radius: var(--ui-radius-control);
   background: transparent;
-  color: var(--muted-foreground);
+  color: var(--foreground);
   cursor: pointer;
   user-select: none;
   transition:
@@ -185,10 +178,6 @@
 
 .btn-icon:active {
   transform: scale(0.96);
-}
-
-[data-mode='light'] .btn {
-  color: var(--foreground);
 }
 
 .btn-icon:disabled,
@@ -224,9 +213,6 @@
 .btn-icon.sm svg {
   width: 16px;
   height: 16px;
-}
-
-.btn-icon.md {
 }
 
 .btn-icon.touch {
