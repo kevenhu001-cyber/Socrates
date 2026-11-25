@@ -1,57 +1,30 @@
-/*
- * polish/topbar.css — top bar + mode pill refinement.
- * Header geometry belongs to parity/topbar.css and polish/mobile-shell.css.
- */
-
-@media (max-width: 768px) {
-  /* The phone top bar is owned by polish/mobile-shell.css; this file keeps
-     the desktop bar and the shared mode pill. */
-
-  #appShell .top-bar .toggle-sidebar,
-  #appShell .top-bar .icon-btn {
-    transition:
-      background-color var(--ui-duration-fast) ease,
-      color var(--ui-duration-fast) ease,
-      opacity var(--ui-duration-fast) ease;
-  }
-
-  #appShell .top-bar .mobile-newchat-btn {
-    transition:
-      background-color var(--ui-duration-fast) ease,
-      color var(--ui-duration-fast) ease,
-      opacity var(--ui-duration-fast) ease;
-  }
-
-  #appShell .top-bar :is(.toggle-sidebar, .mobile-newchat-btn, .icon-btn):active {
-    opacity: var(--press-opacity, var(--ui-press-opacity-sm, 0.72));
-  }
-}
-
-/* Icon buttons: quiet ghost controls, hairline-free until hover. */
+/* Top bar control paint. Geometry and scroll fade belong to parity/topbar.css
+   and mobile-shell.css; shared buttons own their native interaction semantics. */
 #appShell .top-bar .toggle-sidebar {
   color: var(--ui-text-primary);
   transition:
-    background-color var(--ui-duration-fast) var(--ui-ease-apple, ease),
-    color var(--ui-duration-fast) var(--ui-ease-apple, ease);
-}
-@media (max-width: 768px) {
-  #appShell .top-bar .icon-btn {
-    color: var(--ui-text-primary);
-    transition:
-      background-color var(--ui-duration-fast) var(--ui-ease-apple, ease),
-      color var(--ui-duration-fast) var(--ui-ease-apple, ease);
-  }
+    background-color var(--ui-duration-fast) var(--ui-ease-out),
+    color var(--ui-duration-fast) var(--ui-ease-out);
 }
 #appShell .top-bar .toggle-sidebar:hover {
   background: var(--ui-bg-hover);
   color: var(--ui-text-primary);
 }
 @media (max-width: 768px) {
+  #appShell .top-bar :is(.toggle-sidebar, .mobile-newchat-btn, .icon-btn) {
+    transition:
+      background-color var(--ui-duration-fast) var(--ui-ease-out),
+      color var(--ui-duration-fast) var(--ui-ease-out),
+      opacity var(--ui-duration-fast) var(--ui-ease-out);
+  }
+  #appShell .top-bar :is(.toggle-sidebar, .mobile-newchat-btn, .icon-btn):active {
+    opacity: var(--press-opacity, var(--ui-press-opacity-sm, 0.72));
+  }
+  #appShell .top-bar .icon-btn {
+    color: var(--ui-text-primary);
+  }
   #appShell .top-bar .icon-btn:hover {
     background: var(--ui-bg-hover);
     color: var(--ui-text-primary);
   }
 }
-
-/* Plugin workspace tabs are desktop-only; layout/app-shell.css owns their
-   hidden state on phones. */
