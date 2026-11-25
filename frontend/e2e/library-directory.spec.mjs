@@ -305,3 +305,20 @@ test('library remains readable at narrow and tablet widths', async ({ page }) =>
     });
   }
 });
+
+
+test('file name opens the preview with keyboard and renaming stays in the action menu', async ({ page }) => {
+  await page.route(/\/files\/f1\/content/, (route) =>
+    route.fulfill({ json: { ok: true, text: 'Preview content' } }),
+  );
+  const file = row(page, 'country_risk_data.csv');
+  const name = file.locator('.library-open-item');
+  await name.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.detail-heading h2')).toHaveText('country_risk_data.csv');
+  await expect(page.locator('.library-file-preview-text')).toHaveText('Preview content');
+  await page.locator('.detail-close').click();
+  await file.locator('.library-row-more-btn').click();
+  await expect(page.locator('.library-row-menu')).toBeVisible();
+  await expect(page.locator('.library-row-menu [data-icon-source="openai-apps-sdk"]')).toHaveCount(2);
+});
