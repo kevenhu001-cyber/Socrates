@@ -171,7 +171,7 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
      the state colors and icon drawing size here. */
   #appShell #sidebarCloseBtn {
     background: transparent;
-    color: var(--muted-foreground);
+    color: var(--foreground);
     cursor: pointer;
     transition:
       background-color var(--ui-duration-hover) ease,
@@ -483,7 +483,7 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     border: 0;
     border-radius: var(--ui-radius-sm, 6px);
     background: transparent;
-    color: var(--ui-text-tertiary);
+    color: var(--foreground);
     cursor: pointer;
   }
   #appShell #sidebar .recent-item-overflow:hover {
@@ -547,7 +547,7 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     width: 32px;
     height: 32px;
     border-radius: var(--ui-radius-md);
-    color: var(--muted-foreground);
+    color: var(--foreground);
     transition:
       background-color var(--ui-duration-hover) ease,
       color var(--ui-duration-hover) ease;

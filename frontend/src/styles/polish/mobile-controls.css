@@ -253,8 +253,6 @@
 }
 @media (max-width: 768px) {
   #appShell .msg-toolbar-btn {
-    /* Reference: the quiet chrome-glyph grey (#b0b0b0 dark / #8f8f8f light). */
-    color: var(--ui-icon-secondary, var(--ui-text-muted));
     transition:
       background-color var(--ui-duration-fast) ease,
       color var(--ui-duration-fast) ease,
