@@ -203,7 +203,7 @@
 #appShell .plugin-detail-prompts-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0;
   padding: 0;
   margin: 0;
   list-style: none;
@@ -216,14 +216,20 @@
   gap: 12px;
   width: 100%;
   box-sizing: border-box;
-  padding: 12px 14px;
+  min-height: 52px;
+  padding: 12px 0;
   background: transparent;
-  border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-lg);
+  border: 0;
+  border-bottom: 1px solid var(--ui-border-subtle);
+  border-radius: 0;
   color: var(--ui-text-primary);
   text-align: start;
   white-space: normal;
   overflow-wrap: anywhere;
+}
+
+#appShell .plugin-detail-prompts-list li:last-child .plugin-detail-prompt-card {
+  border-bottom: 0;
 }
 
 #appShell .plugin-detail-prompt-card > svg {
