@@ -150,3 +150,23 @@ test('user/assistant messages carry the revamped classes; capture a visual scree
   // baseline snapshot) avoids pixel-baseline flakiness on CI.
   await page.screenshot({ path: 'test-results/chat-visual-smoke.png' });
 });
+
+test('code actions are aligned and code stays inside the phone viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await bootChatWithCodeBlock(page);
+  const header = page.locator('.msg.assistant .code-block-header').last();
+  await expect(header).toBeVisible();
+  const offsets = await header.evaluate((node) => {
+    const center = (element) => {
+      const box = element.getBoundingClientRect();
+      return box.top + box.height / 2;
+    };
+    return [...node.querySelectorAll('.code-block-actions button')].map((button) =>
+      Math.abs(center(button) - center(node)),
+    );
+  });
+  expect(offsets.length).toBeGreaterThan(0);
+  for (const offset of offsets) expect(offset).toBeLessThanOrEqual(1);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth))
+    .toBeLessThanOrEqual(1);
+});

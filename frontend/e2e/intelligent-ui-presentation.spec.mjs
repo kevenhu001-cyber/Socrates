@@ -105,6 +105,15 @@ for (const format of ['native', 'openui']) {
         await expect(shell.locator('.iui-card')).toHaveCSS('border-top-width', '0px');
         const reset = shell.getByRole('button', { name: '重置计划' });
         await expect(reset).toBeVisible();
+        expect(await reset.evaluate((node) => {
+          const height = node.getBoundingClientRect().height;
+          return parseFloat(getComputedStyle(node).borderTopLeftRadius) >= height / 2;
+        })).toBe(true);
+        const sizes = await shell.locator('.iui-title').evaluateAll((nodes) =>
+          nodes.map((node) => parseFloat(getComputedStyle(node).fontSize)),
+        );
+        expect(sizes.length).toBeGreaterThanOrEqual(2);
+        expect(sizes[1]).toBeGreaterThan(sizes[0]);
         const isPrimaryBlue = await reset.evaluate((node) => {
           const probe = document.createElement('span');
           probe.style.backgroundColor = 'var(--ui-action)';

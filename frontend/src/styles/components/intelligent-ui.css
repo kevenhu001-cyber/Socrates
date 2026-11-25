@@ -41,7 +41,7 @@
   line-height: var(--ui-line-height-normal);
 }
 .intui-panel-title {
-  font-size: inherit;
+  font-size: var(--ui-font-size-lg);
   letter-spacing: -0.015em;
   overflow-wrap: anywhere;
 }
@@ -96,7 +96,7 @@
 .intui-metric-value {
   overflow-wrap: anywhere;
   color: var(--ui-text-primary);
-  font-size: inherit;
+  font-size: var(--ui-font-size-xl);
   font-variant-numeric: tabular-nums;
   font-weight: var(--ui-font-weight-semibold);
   letter-spacing: -0.015em;

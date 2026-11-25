@@ -48,13 +48,17 @@
   }
 }
 @media (max-width: 768px) {
-  #appShell#appShell .msg-body pre:not(.viz-code-pane) {
+  #appShell#appShell .msg-body pre:not(.tool-inline-detail-value, .viz-code-pane) {
     border-radius: var(--ui-radius-lg);
     border: 1px solid var(--ui-border-code);
     background: var(--ui-bg-code);
     color: var(--foreground);
-    padding: 12px 14px;
+    padding: 14px;
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
     font-size: var(--ui-font-size-sm);
+    line-height: 1.5;
   }
 }
 @media (max-width: 768px) {
@@ -68,10 +72,10 @@
   }
 }
 @media (max-width: 768px) {
-  #appShell .msg-body code {
-    background: var(--ui-bg-surface);
-    border-radius: var(--ui-radius-xs, 4px);
-    padding: 1.5px 5px;
+  #appShell .msg-body :not(pre) > code {
+    background: var(--ui-bg-chip);
+    border-radius: var(--ui-radius-xs);
+    padding: 1px 0.3em;
   }
 }
 @media (max-width: 768px) {
@@ -470,9 +474,16 @@
 /* Compact code chrome belongs to the transcript, not the primary message
    action styling. Keep both actions accessible without a wide label on phones. */
 #appShell .msg-body .code-block-actions {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
   gap: 2px;
 }
 #appShell .msg-body .code-block-actions > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--ui-button-radius);
   box-shadow: none;
   color: var(--ui-text-secondary);
 }
@@ -481,9 +492,9 @@
 }
 @media (max-width: 768px) {
   #appShell .msg-body .code-block-actions > button {
-    width: var(--ui-hit-area);
-    min-width: var(--ui-hit-area);
-    height: var(--ui-hit-area);
+    width: var(--ui-control-touch);
+    min-width: var(--ui-control-touch);
+    height: var(--ui-control-touch);
     padding: 0;
   }
   #appShell .msg-body .code-block-copy-label {
