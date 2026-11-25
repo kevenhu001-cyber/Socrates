@@ -227,6 +227,34 @@ html:not([data-main-view='settingsPage']) #appShell .main-page .ui-page-frame,
   padding: 0;
 }
 
+#appShell .library-list.ui-collection:not(.view-grid) {
+  border: 0;
+  border-radius: 0;
+  overflow: visible;
+}
+
+#appShell .library-list .library-open-item {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--foreground);
+  font: inherit;
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-medium);
+  text-align: start;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+#appShell .library-list .library-open-item:hover {
+  text-decoration: underline;
+}
+
 #appShell .ui-collection .workspace-table-head {
   display: grid;
   grid-template-columns:
@@ -236,7 +264,7 @@ html:not([data-main-view='settingsPage']) #appShell .main-page .ui-page-frame,
   min-height: var(--ui-control-md);
   padding: 0 var(--ui-space-lg);
   border-bottom: 1px solid var(--ui-border-subtle);
-  background: color-mix(in srgb, var(--ui-bg-raised), var(--ui-bg-page) 36%);
+  background: transparent;
   color: var(--ui-text-tertiary);
   font-size: var(--ui-font-size-xs);
 }
@@ -447,51 +475,70 @@ body.workspace-active #appShell .ui-page-card.project-card {
 
 #appShell .plugin-directory-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
   gap: var(--ui-space-sm);
 }
 
 #appShell .plugin-directory-row {
   box-sizing: border-box;
-  display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) auto;
+  display: flex;
+  flex-direction: row;
   align-items: center;
-  gap: var(--ui-space-xs) var(--ui-space-md);
+  gap: var(--ui-space-sm);
   min-width: 0;
-  min-height: 92px;
+  min-height: 88px;
   padding: var(--ui-space-md);
   border: 1px solid var(--ui-border-subtle);
   border-radius: var(--ui-radius-xl);
-  background: var(--ui-bg-raised);
+  background: transparent;
 }
 
 #appShell .plugin-directory-row:hover {
   border-color: var(--ui-border-default);
-  background: color-mix(in srgb, var(--ui-bg-raised), var(--ui-text-primary) 4%);
+  background: var(--ui-bg-hover);
+}
+
+#appShell .plugin-directory-card-main {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: var(--ui-space-md);
+  min-width: 0;
+  min-height: var(--ui-control-touch);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: start;
+  font: inherit;
+  cursor: pointer;
 }
 
 #appShell .plugin-directory-row .connector-icon {
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
   border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-md);
+  border-radius: var(--ui-radius-lg);
   background: var(--ui-bg-surface);
 }
 
 #appShell .plugin-directory-row .connector-icon svg {
-  width: 23px;
-  height: 23px;
+  width: 28px;
+  height: 28px;
 }
 
 #appShell .plugin-directory-row .workspace-row-copy {
-  display: contents;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-xs);
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 #appShell .plugin-directory-card-title-row {
-  grid-column: 2 / -1;
-  grid-row: 1;
   display: flex;
   align-items: center;
   gap: var(--ui-space-xs);
@@ -501,21 +548,18 @@ body.workspace-active #appShell .ui-page-card.project-card {
 #appShell .plugin-directory-card-title-row strong {
   overflow: hidden;
   color: var(--ui-text-primary);
-  font-size: var(--ui-font-size-sm);
-  font-weight: var(--ui-font-weight-semibold);
+  font-size: var(--ui-font-size-md);
+  font-weight: var(--ui-font-weight-medium);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 #appShell .plugin-directory-card-desc {
-  grid-column: 2;
-  grid-row: 2;
-  align-self: center;
   display: -webkit-box;
   overflow: hidden;
   margin: 0;
-  color: var(--ui-text-tertiary);
-  font-size: var(--ui-font-size-xs);
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-sm);
   line-height: 1.5;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -523,9 +567,8 @@ body.workspace-active #appShell .ui-page-card.project-card {
 }
 
 #appShell .plugin-directory-row-action {
-  grid-column: 3;
-  grid-row: 2;
   display: flex;
+  flex: none;
   align-items: center;
   justify-content: flex-end;
 }
@@ -544,10 +587,9 @@ body.workspace-active #appShell .ui-page-card.project-card {
   gap: var(--ui-space-md);
   min-height: 52px;
   margin-bottom: var(--ui-space-xl);
-  padding: 0 var(--ui-space-md);
-  border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-xl);
-  background: var(--ui-bg-raised);
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 
 #appShell .plugin-installed-icons .workspace-row-icon {
