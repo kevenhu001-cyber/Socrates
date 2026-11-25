@@ -32,9 +32,9 @@
  *
  * Component ownership map (2026-11-22):
  *
- *   Sidebar (desktop)                   parity/sidebar.css +
- *     polish/sidebar.css; components/sidebar.css keeps the account menu and
- *     the shared viewport menus.
+ *   Sidebar (desktop)                   parity/sidebar.css owns desktop
+ *     geometry and paint; polish/sidebar.css keeps shared affordances and
+ *     components/sidebar.css keeps shared viewport menus.
  *   Sidebar (phone drawer)              polish/mobile-sidebar.css, with
  *     shared hit areas in polish/mobile-controls.css.
  *   Top bar                             parity/topbar.css +
@@ -50,8 +50,8 @@
  *     widths); editor internals (.composer-editor-root/.tiptap)
  *     components/composer.css.
  *   Composer tools menu                 components/menu.css owns the frame,
- *     paint and radius; polish/composer.css owns motion and the React menu
- *     controller owns placement and sheet state. Historical frame overrides
+ *     paint, radius and motion; the React menu controller owns placement
+ *     and sheet state. Historical frame overrides
  *     in ref-baseline.css and chat-surface.css were retired.
  *   Message list                        parity/transcript.css (desktop) +
  *     polish/transcript.css (details and phone); width/gap
@@ -65,9 +65,8 @@
  *     features/surfaces.css (sole owner, 2026-09-30); creation panels
  *     creation-surfaces.css (sole owner).
  *
- * Account avatar geometry and crop live in parity/sidebar.css; desktop
- * density alone may be adjusted by polish/sidebar.css. Do not duplicate
- * the avatar radius in either file.
+ * Account avatar geometry, crop and desktop density live in parity/sidebar.css.
+ * Do not duplicate avatar geometry in polish/sidebar.css.
  *
  * Sidebar state paint (2026-11-22): the mobile nav background rules that
  * still needed `!important` plus a doubled/tripled #appShell moved to
@@ -82,8 +81,8 @@
  * shared controls use Page Kit, and phone layout uses mobile-directories.css.
  * Auth uses polish/auth.css, with only boot visibility in legacy/.
  *
- * Rule: visual parity tweaks go in fixes.css; feature-page styles in
- * creation-surfaces.css; do not ADD rules to the historical files 1-6.
+ * Rule: new visual rules go to their canonical component owner; do not add
+ * rules to fixes.css or historical files 1-6.
  * Removing or narrowing rules that a canonical owner (parity/, polish/,
  * features/) has superseded is the sanctioned digestion path — the
  * projects-directory head/filter rules migrated to polish/workspace.css
