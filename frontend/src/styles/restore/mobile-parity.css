@@ -25,10 +25,6 @@
     color: var(--cg-text) !important;
   }
 
-  #appShell#appShell .top-mode-tabs {
-    gap: 0;
-  }
-
   /* In-flow surfaces need no paint compensation: the visual-viewport pan
      is already subtracted from --keyboard-inset by legacy/keyboard/index.ts,
      so the composer position tracks the visible keyboard edge 1:1 with
