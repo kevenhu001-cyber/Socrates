@@ -60,7 +60,7 @@
 
   /* User bubble */
   #appShell #msgList .msg.user .msg-body {
-    color: var(--foreground);
+    color: var(--ui-text-primary);
     max-width: 70%;
     padding: 10px 20px;
     border: 0;
@@ -98,7 +98,7 @@
   }
   /* Apps SDK Markdown hierarchy, adapted to the conversation text scale. */
   #appShell #msgList .msg-body :where(h1, h2, h3, h4) {
-    color: var(--foreground);
+    color: var(--ui-text-primary);
     font-family: var(--font-sans);
     font-weight: var(--ui-font-weight-medium);
     letter-spacing: -0.01em;
@@ -166,7 +166,7 @@
     border-inline-start: 2px solid var(--ui-border-strong);
     border-radius: 0;
     background: transparent;
-    color: var(--muted-foreground);
+    color: var(--ui-text-secondary);
     font-style: normal;
   }
   #appShell #msgList .msg-body blockquote p {
@@ -180,7 +180,7 @@
     border: 1px solid var(--ui-border-subtle);
     border-radius: var(--ui-radius-xs);
     background: var(--ui-bg-chip);
-    color: var(--foreground);
+    color: var(--ui-text-primary);
     font-family: var(--font-mono);
     font-size: 0.875em;
     font-weight: var(--ui-font-weight-medium);
@@ -296,7 +296,7 @@
     border: 1px solid var(--ui-border-code);
     border-radius: var(--ui-radius-lg);
     background: var(--ui-bg-code);
-    color: var(--foreground);
+    color: var(--ui-text-primary);
     font-family: var(--font-mono);
     font-size: calc(14px * var(--app-type-scale));
     line-height: 1.5;
@@ -332,7 +332,7 @@
     border: 0;
     border-bottom: 1px solid var(--ui-border-subtle);
     background: transparent;
-    color: var(--foreground);
+    color: var(--ui-text-primary);
     text-align: left;
     vertical-align: top;
   }
