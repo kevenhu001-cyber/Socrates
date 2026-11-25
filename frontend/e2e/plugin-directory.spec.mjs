@@ -8,6 +8,7 @@ const CONNECTORS = [
     name: 'GitHub',
     description: 'Bring repositories, issues, pull requests, and CI context into a chat.',
     capabilities: ['Repositories', 'Issues'],
+    chatActions: [{ name: 'github.get_current_user', description: 'Get the authenticated GitHub user.' }],
     authType: 'oauth',
     connection: { status: 'connected', displayName: 'Study org' },
   },
@@ -77,6 +78,18 @@ test('plugin detail header and actions fit a phone viewport', async ({ page }) =
   expect(bounds.scrollWidth).toBeLessThanOrEqual(bounds.width + 1);
   expect(bounds.actionsWidth).toBeGreaterThan(120);
   await expect(page.locator('.plugin-detail-btn-primary')).toBeVisible();
+});
+
+test('plugin detail shows only verified chat actions and connection requirements', async ({ page }) => {
+  await openConnectedPluginDetail(page);
+  const detail = page.locator('.plugin-detail-view');
+  await expect(detail.getByRole('heading', { name: 'What you can do' })).toBeVisible();
+  await expect(detail.locator('.plugin-detail-feature-item')).toHaveCount(1);
+  await expect(detail.locator('.plugin-detail-feature-item')).toContainText('Get the authenticated GitHub user.');
+  await expect(detail.locator('.plugin-detail-feature-item')).not.toContainText('Issues');
+  await expect(detail.locator('.plugin-detail-prompts-list')).toContainText('Which GitHub account');
+  await expect(detail.locator('.plugin-detail-security-card')).toContainText('OAuth 2.0');
+  await expect(detail.locator('.plugin-detail-security-card')).toContainText('Study org');
 });
 
 test('using a connected plugin waits for the chat reset to succeed', async ({ page }) => {
