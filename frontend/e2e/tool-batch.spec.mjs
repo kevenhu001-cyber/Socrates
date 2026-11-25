@@ -53,7 +53,12 @@ test('a large tool burst collapses to one summary and preserves individual detai
   const turn = page.locator('.msg.assistant').last();
   await expect(turn.locator('.rn-tool-row')).toHaveCount(1);
   const activityToggle = turn.getByTestId('turn-activity-toggle');
+  const activityBody = turn.getByTestId('turn-activity-body');
   await expect(activityToggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(activityBody).toBeHidden();
+  // After completion the collapsed line still names the last event, including
+  // a failure, rather than replacing it with an aggregate count.
+  await expect(turn.getByTestId('turn-activity-label')).toContainText('Search failed: batch-error');
   await activityToggle.click();
 
   const group = turn.getByTestId('tool-group-batch-a');
