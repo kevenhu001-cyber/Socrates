@@ -315,3 +315,15 @@ test('retired plugin workspace tabs have no DOM, observers or historical CSS', a
     assert.doesNotMatch(await read(file), /pluginWorkspace(?:Tabs|PluginsTab|SkillsTab)|\.top-mode-tabs\b/);
   }
 });
+
+test('header uses React state rather than retired DOM chrome mirrors', async () => {
+  const files = [
+    'src/react/topbar/TopBar.tsx',
+    'src/legacy/mainViewController.ts',
+    'src/legacy/share.impl.ts',
+    'src/styles/legacy/06-chat-transcript.css',
+  ];
+  for (const file of files) {
+    assert.doesNotMatch(await read(file), /mobileIncognitoBtn|\.chat-top-bar\b|setConversationChrome\b|#chatStats\b/);
+  }
+});
