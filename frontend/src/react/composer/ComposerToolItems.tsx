@@ -90,7 +90,7 @@ export function MobileTileItem({
   action: ComposerToolsAction;
   labelKey: string;
   label: string;
-  iconName: 'camera' | 'image' | 'upload' | 'wechat';
+  iconName: 'camera' | 'image' | 'paperclip' | 'wechat';
   onPick: (action: ComposerToolsAction) => void;
 }) {
   const text = i18n(labelKey, label);

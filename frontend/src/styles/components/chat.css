@@ -34,8 +34,25 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
     max-width: calc(var(--ui-content-chat) + 40px);
     margin-inline: auto;
     gap: 24px;
-    padding: 28px 20px 24px;
-    scroll-padding-block: 24px;
+    /* Header overlap is a layout-only effect; retain padding at both ends
+       so the first and last message can be scrolled clear of the mask. */
+    --phone-transcript-top: calc(var(--ui-mobile-header) + env(safe-area-inset-top, 0px));
+    --phone-transcript-bottom: 32px;
+    scroll-padding-block: calc(var(--phone-transcript-top) + 12px) var(--phone-transcript-bottom);
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      transparent 0,
+      black var(--phone-transcript-top),
+      black calc(100% - var(--phone-transcript-bottom)),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      transparent 0,
+      black var(--phone-transcript-top),
+      black calc(100% - var(--phone-transcript-bottom)),
+      transparent 100%
+    );
   }
 }
 
@@ -172,7 +189,8 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
     #appShell
     #msgList {
     max-width: none;
-    padding: var(--ui-space-sm) var(--ui-mobile-page-gutter) var(--ui-space-lg);
+    padding: calc(var(--phone-transcript-top) + 12px) var(--ui-mobile-page-gutter)
+      calc(var(--phone-transcript-bottom) + 8px);
   }
   body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
     #appShell
@@ -381,10 +399,9 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
   font-family: var(--font-sans);
   font-size: var(--ui-font-size-xxs);
   font-weight: var(--ui-font-weight-medium);
-  letter-spacing: -0.01em;
-  line-height: 1;
-  padding: 6px 8px;
-  border-radius: var(--ui-radius-sm);
+  line-height: var(--ui-tooltip-line-height);
+  padding: var(--ui-tooltip-padding);
+  border-radius: var(--ui-tooltip-radius);
   border: 1px solid var(--ui-border-subtle);
   box-shadow: var(--ui-shadow-menu);
   white-space: nowrap;
@@ -395,12 +412,13 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
     transform var(--ui-duration-fast) ease;
   z-index: var(--ui-z-menu);
 }
-.msg-toolbar-btn:hover::after {
+.msg-toolbar-btn:hover::after,
+.msg-toolbar-btn:focus-visible::after {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
   transition:
-    opacity var(--ui-duration-fast) ease 250ms,
-    transform var(--ui-duration-fast) var(--ui-ease-spring-gentle) 250ms;
+    opacity var(--ui-duration-fast) ease var(--ui-tooltip-delay),
+    transform var(--ui-duration-fast) var(--ui-ease-out) var(--ui-tooltip-delay);
 }
 .msg-toolbar-btn.active {
   color: var(--foreground);
@@ -424,7 +442,7 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
 /* 消息工具栏的所有图标（复制、编辑、重新生成、赞/踩、分享、分支、朗读、换个角度、「更多」、版本切换箭头）
    统一画成屏幕上的 1.5px 线：non-scaling-stroke 让线宽按渲染像素算，
    不随 18px（桌面）/16px（手机）的缩放或 2.5 的箭头描边变化。 */
-.msg-toolbar-btn svg :is(path, line, polyline, polygon, rect, circle, ellipse) {
+.msg-toolbar-btn svg:not([data-icon-source='openai-apps-sdk']) :is(path, line, polyline, polygon, rect, circle, ellipse) {
   vector-effect: non-scaling-stroke;
   stroke-width: 1.5px;
 }
@@ -694,6 +712,8 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
   flex-shrink: 0;
   box-sizing: border-box;
   width: 240px;
+  max-width: 100%;
+  min-width: 0;
   min-height: 64px;
   padding: 0 14px;
   border-radius: var(--ui-radius-lg);
@@ -720,7 +740,8 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
   padding-right: 28px;
 }
 
-.file-card:hover .file-card-remove {
+.file-card:hover .file-card-remove,
+.file-card:focus-within .file-card-remove {
   opacity: 1;
 }
 
@@ -731,7 +752,7 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
   flex-shrink: 0;
   width: 28px;
   height: 28px;
-  margin-right: 10px;
+  margin-inline-end: 10px;
 }
 
 .file-card-content {
@@ -745,7 +766,7 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
   overflow: hidden;
   font-size: var(--ui-font-size-sm);
   line-height: 22px;
-  font-weight: var(--ui-font-weight-regular);
+  font-weight: var(--ui-font-weight-medium);
   white-space: nowrap;
   text-overflow: ellipsis;
   color: var(--ui-text-primary);
@@ -763,13 +784,13 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
 
 .file-card-remove {
   position: absolute;
-  top: 4px;
-  right: 4px;
+  inset-block-start: 4px;
+  inset-inline-end: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: var(--ui-control-badge);
+  height: var(--ui-control-badge);
   padding: 0;
   border: 0;
   border-radius: var(--ui-radius-pill);
@@ -876,7 +897,6 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
 
 .msg-attachment-image-link:hover .msg-attachment-image-card {
   border-color: var(--ui-border-strong);
-  transform: scale(1.02);
 }
 
 .msg-attachment-img {
@@ -885,4 +905,33 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
   height: 100%;
   object-fit: cover;
   flex-shrink: 0;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .msg-toolbar-btn:hover:not(:focus-visible)::after {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .msg-toolbar-btn::after,
+  .msg-toolbar-btn:hover::after,
+  .msg-toolbar-btn:focus-visible::after {
+    transition: none;
+  }
+}
+
+@media (hover: none) {
+  .file-card .file-card-remove {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .file-card,
+  .file-card-remove,
+  .msg-attachment-image-card {
+    transition: none;
+  }
+  .file-card-spinner {
+    animation: none;
+  }
 }

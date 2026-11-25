@@ -96,17 +96,14 @@
   #appShell #msgList .msg-body strong {
     font-weight: var(--ui-font-weight-semibold);
   }
-  /* Headings take the marketing site's medium weight: hierarchy comes from
-     size and spacing, not from a heavy face. */
+  /* Apps SDK Markdown hierarchy, adapted to the conversation text scale. */
   #appShell #msgList .msg-body :where(h1, h2, h3, h4) {
     color: var(--foreground);
     font-family: var(--font-sans);
     font-weight: var(--ui-font-weight-medium);
     letter-spacing: -0.01em;
   }
-  /* h1 / h2 carry the answer's outline, so they take the semibold step the
-     phone already uses (reference: bold section titles); sizes unchanged. */
-  #appShell #msgList .msg-body :where(h1, h2) {
+  #appShell #msgList .msg-body :where(h1, h2, h3, h4):not(:where(.intui *, .intui-openui *)) {
     font-weight: var(--ui-font-weight-semibold);
   }
   #appShell #msgList .msg-body h1:not(.sc-rich *) {
@@ -120,9 +117,9 @@
     line-height: 1.4;
   }
   #appShell #msgList .msg-body h3:not(.sc-rich *) {
-    margin: 24px 0 10px;
+    margin: 20px 0 10px;
     font-size: var(--ui-font-size-lg);
-    line-height: 1.55;
+    line-height: 1.4;
   }
   #appShell #msgList .msg-body h4:not(.sc-rich *) {
     margin: 20px 0 6px;
@@ -131,17 +128,17 @@
   }
   #appShell #msgList .msg-body :where(ul, ol) {
     margin: 0 0 12px;
-    padding-left: 26px;
+    padding-inline-start: 1.625em;
   }
   #appShell #msgList .msg-body li {
     margin: 0 0 8px;
-    padding-left: 2px;
+    padding-inline-start: 0.25em;
   }
   #appShell #msgList .msg-body li > :where(ul, ol) {
     margin: 4px 0 0;
   }
   #appShell #msgList .msg-body li::marker {
-    color: var(--ui-text-tertiary);
+    color: var(--ui-text-secondary);
   }
   #appShell #msgList .msg-body hr {
     height: 0;
@@ -198,8 +195,9 @@
       .tool-run-trigger,
       .tool-activity-burst-toggle,
       .intui-surface-more,
-      .intui-panel-more
-    ) {
+      .intui-panel-more,
+      [data-slot]
+    ):not(:where(.intui *, .intui-openui *, .visualization-card *, .viz *, .code-block-actions *)) {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -227,8 +225,9 @@
       .tool-run-trigger,
       .tool-activity-burst-toggle,
       .intui-surface-more,
-      .intui-panel-more
-    ):hover {
+      .intui-panel-more,
+      [data-slot]
+    ):not(:where(.intui *, .intui-openui *, .visualization-card *, .viz *, .code-block-actions *)):hover {
     background: color-mix(in srgb, var(--ui-action) 88%, white);
   }
   #appShell
@@ -239,8 +238,9 @@
       .tool-run-trigger,
       .tool-activity-burst-toggle,
       .intui-surface-more,
-      .intui-panel-more
-    ):active {
+      .intui-panel-more,
+      [data-slot]
+    ):not(:where(.intui *, .intui-openui *, .visualization-card *, .viz *, .code-block-actions *)):active {
     transform: scale(0.98);
   }
   #appShell
@@ -251,8 +251,9 @@
       .tool-run-trigger,
       .tool-activity-burst-toggle,
       .intui-surface-more,
-      .intui-panel-more
-    ):focus-visible {
+      .intui-panel-more,
+      [data-slot]
+    ):not(:where(.intui *, .intui-openui *, .visualization-card *, .viz *, .code-block-actions *)):focus-visible {
     box-shadow: var(--ui-focus-shadow);
   }
 
@@ -261,9 +262,10 @@
     display: flex;
     align-items: center;
     gap: 4px;
-    height: 36px;
+    min-height: 44px;
+    height: auto;
     margin: 0;
-    padding: 0 8px 0 16px;
+    padding: 4px 8px 4px 14px;
     border: 1px solid var(--ui-border-code);
     border-bottom: 0;
     border-radius: var(--ui-radius-lg) var(--ui-radius-lg) 0 0;
@@ -277,28 +279,30 @@
   #appShell #msgList .msg-body .code-block-header-lang {
     margin-right: auto;
     color: inherit;
-    font-family: var(--font-mono);
-    font-size: var(--ui-font-size-xxs);
+    font-family: var(--font-sans);
+    font-size: var(--ui-font-size-sm);
     font-weight: var(--ui-font-weight-medium);
     /* legacy/09 lowercases the raw fence id; the header now carries a
        product label (JavaScript, Python) and must keep its casing. */
     text-transform: none;
-    letter-spacing: 0.02em;
+    letter-spacing: normal;
   }
-  #appShell #msgList .msg-body pre:not(.tool-inline-detail-value) {
+  #appShell #msgList .msg-body pre:not(.tool-inline-detail-value, .viz-code-pane) {
     margin: 0 0 16px;
-    padding: 16px;
+    padding: 14px 16px;
+    max-width: 100%;
     overflow-x: auto;
+    overscroll-behavior-x: contain;
     border: 1px solid var(--ui-border-code);
     border-radius: var(--ui-radius-lg);
     background: var(--ui-bg-code);
     color: var(--foreground);
     font-family: var(--font-mono);
     font-size: calc(14px * var(--app-type-scale));
-    line-height: 1.6;
+    line-height: 1.5;
   }
   #appShell #msgList .msg-body .code-block-header + pre {
-    padding-top: 4px;
+    padding-top: 14px;
     border-top: 0;
     border-radius: 0 0 var(--ui-radius-lg) var(--ui-radius-lg);
   }

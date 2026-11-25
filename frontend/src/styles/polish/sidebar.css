@@ -204,11 +204,8 @@
   }
   #appShell #sidebar .recent-item.active,
   #appShell #sidebar .recent-item[aria-current='true'] {
-    background: color-mix(in srgb, var(--ui-ink) 8%, transparent);
+    background: var(--ui-bg-selected);
     color: var(--foreground);
-  }
-  #appShell #sidebar .recent-item.active .recent-item-text,
-  #appShell #sidebar .recent-item[aria-current='true'] .recent-item-text {
     font-weight: var(--ui-font-weight-medium);
   }
   #appShell #sidebar .recent-item-actions {
@@ -266,11 +263,8 @@
     flex-basis: 28px;
     width: 28px;
     height: 28px;
-    font-size: var(--ui-font-size-xxs);
-    border-radius: 50%;
   }
   #appShell #sidebarUserRow .user-name {
-    font-size: var(--ui-font-size-xs);
     line-height: 16px;
   }
   #appShell #sidebarUserRow .user-plan {

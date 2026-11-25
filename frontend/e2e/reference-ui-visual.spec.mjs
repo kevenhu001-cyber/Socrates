@@ -431,3 +431,45 @@ test('Create image waits for a user prompt before submitting the image-generatio
     'Generated with Jimeng AI 4.6.',
   );
 });
+
+/* Audit screenshots are evidence, not auto-accepted pixel baselines.
+   Use actual page navigation, then assert the viewport and capture each surface. */
+for (const theme of ['light', 'dark']) {
+  for (const width of [360, 768, 1440]) {
+    test(`non-chat surface audit: ${theme} ${width}px`, async ({ page }) => {
+      const lang = width === 360 ? 'zh' : 'en';
+      await page.addInitScript((value) => localStorage.setItem('socrates-theme', value), theme);
+      await page.setViewportSize({ width, height: 900 });
+      await mockAuthedApp(page, { lang });
+      await mockReferenceCatalog(page);
+      await gotoAndSettle(page, '/');
+      await waitForAppShell(page);
+      const capture = async (name, selector) => {
+        await expect(page.locator(selector).first()).toBeVisible();
+        const overflow = await page.evaluate(
+          () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        );
+        expect(overflow).toBeLessThanOrEqual(1);
+        await page.screenshot({
+          path: `test-results/page-audit-${encodeURIComponent(name)}-${encodeURIComponent(theme)}-${encodeURIComponent(width)}-${encodeURIComponent(lang)}.png`,
+          animations: 'disabled',
+        });
+      };
+      await openSidebar(page);
+      await capture('sidebar', '#sidebar');
+      for (const [nav, selector, name] of [
+        ['navPlugins', '.plugin-directory', 'plugins'],
+        ['navProjects', '.projects-directory', 'projects'],
+        ['navScheduled', '.scheduled-directory', 'scheduled'],
+      ]) {
+        await page.evaluate((id) => document.getElementById(id)?.click(), nav);
+        await capture(name, selector);
+      }
+      await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
+      await capture('settings', '#settingsPage');
+      await page.locator('#settingsPage .settings-nav [data-section="models"]').click();
+      await capture('models', '#settingsPage .settings-body');
+      await expect(page.locator('#addProviderBtn')).toBeVisible();
+    });
+  }
+}

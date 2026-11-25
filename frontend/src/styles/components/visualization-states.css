@@ -8,7 +8,7 @@
   margin: var(--ui-space-sm) 0;
   padding: var(--ui-space-md);
   border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-lg);
+  border-radius: var(--ui-radius-xl);
   background: var(--ui-bg-surface);
   color: var(--foreground);
   font-family: var(--font-sans);
@@ -120,6 +120,13 @@
     height: 292px;
     padding: 2px;
   }
+}
+/* Keep inline ECharts skeletons at the same height as their finished stage. */
+.intui-surface-document .viz-state-skeleton[data-renderer='echarts'] .viz-skeleton-stage {
+  height: 200px;
+}
+.intui-surface-document .viz-state-skeleton[data-renderer='echarts'] .viz-skeleton-bars {
+  height: 140px;
 }
 /* The engine's card is in the host: it owns the footprint from here on. */
 .openui-visualization:has(> .openui-visualization-host > .visualization-card)
@@ -246,5 +253,51 @@
     background-size: 300% 100%;
     background-position: 100% 0;
     animation: ui-shimmer-sweep var(--ui-duration-shimmer-sweep) ease-in-out infinite;
+  }
+}
+
+/* Mermaid shares the transcript's card language, but not the iframe-only
+   reload/expand actions. The source lives outside the asynchronously replaced
+   preview body, so switching views cannot discard it. */
+.viz[data-viz-kind='mermaid'] {
+  border-radius: var(--ui-radius-xl);
+  background: var(--conversation-page);
+}
+.viz-mermaid-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 48px;
+  padding: 6px 10px 6px 14px;
+  background: var(--ui-bg-field);
+  border-bottom: 1px solid var(--ui-border-subtle);
+}
+.viz-mermaid-title {
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-medium);
+  color: var(--ui-text-primary);
+}
+.viz[data-viz-kind='mermaid'] .viz-actions {
+  position: static;
+  flex-shrink: 0;
+}
+.viz[data-viz-kind='mermaid'] .viz-body {
+  padding: 12px;
+}
+.viz[data-viz-kind='mermaid'] .viz-body > svg {
+  display: block;
+  margin-inline: auto;
+}
+.viz[data-viz-kind='mermaid'][data-viz-view='code'][data-viz-state='ready'] .viz-body {
+  display: none;
+}
+.viz[data-viz-kind='mermaid'] .viz-code-pane {
+  border-radius: 0;
+  background: transparent;
+}
+@media (max-width: 768px) {
+  .viz[data-viz-kind='mermaid'] .viz-seg-btn {
+    min-height: var(--ui-hit-area);
   }
 }

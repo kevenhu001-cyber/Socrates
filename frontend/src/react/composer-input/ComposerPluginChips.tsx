@@ -25,12 +25,12 @@ const DESKTOP_COMPOSER_QUERY = '(min-width: 769px)';
  * the e2e specs and `composerShapeGeometry.ts` read them. */
 const CHIP_BOX = [
   'inline-flex items-center justify-start gap-1.5 grow-0 shrink basis-auto min-w-0 max-w-[220px]',
-  'h-(--composer-control) rounded-md border border-border/80 bg-secondary px-2.5 py-0 pr-1',
+  'h-(--composer-control) rounded-full border border-border/80 bg-secondary px-2.5 py-0 pr-1',
   'text-sm font-normal leading-5 text-secondary-foreground whitespace-normal transition-all duration-150 hover:border-border',
 ].join(' ');
 const TOOL_CHIP_BOX = [
   'inline-flex items-center gap-1 grow-0 shrink-0 basis-auto',
-  'h-(--composer-control) rounded-md border border-border/80 px-3 py-0 pl-2 font-medium leading-5 transition-all duration-150 hover:border-border',
+  'h-(--composer-control) rounded-full border border-border/80 px-3 py-0 font-medium leading-none transition-colors duration-150 hover:border-border',
 ].join(' ');
 const CHIP_ICON_BOX =
   'grid shrink-0 grow-0 basis-4 place-items-center w-4 h-4 overflow-hidden rounded-sm';

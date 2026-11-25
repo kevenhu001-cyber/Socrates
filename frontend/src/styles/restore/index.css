@@ -49,8 +49,10 @@
  *   Composer frame (#composerInputWrap) parity/composer-unified.css (all
  *     widths); editor internals (.composer-editor-root/.tiptap)
  *     components/composer.css.
- *   Composer tools menu                 components/menu.css + the React menu
- *     controller (placement and sheet state).
+ *   Composer tools menu                 components/menu.css owns the frame,
+ *     paint and radius; polish/composer.css owns motion and the React menu
+ *     controller owns placement and sheet state. Historical frame overrides
+ *     in ref-baseline.css and chat-surface.css were retired.
  *   Message list                        parity/transcript.css (desktop) +
  *     polish/transcript.css (details and phone); width/gap
  *     components/chat.css; user-bubble paint chat-surface.css until that
@@ -62,6 +64,10 @@
  *     (compatibility panel chrome); plugin directory skin
  *     features/surfaces.css (sole owner, 2026-09-30); creation panels
  *     creation-surfaces.css (sole owner).
+ *
+ * Account avatar geometry and crop live in parity/sidebar.css; desktop
+ * density alone may be adjusted by polish/sidebar.css. Do not duplicate
+ * the avatar radius in either file.
  *
  * Sidebar state paint (2026-11-22): the mobile nav background rules that
  * still needed `!important` plus a doubled/tripled #appShell moved to

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createRootSlot } from '../lib/boot/ownedRoot';
 import { Button } from '../ui/Button';
 import { i18n } from '../../ui/legacyI18n.ts';
-import { faviconProxyUrl } from '../../legacy/faviconProxy';
+import { SourceAvatar } from './SourceAvatar';
 import { MathText } from '../rn/useInlineMath';
 import { closeSources, useSourcesPanel, type SourcesPanelItem } from './sourcesStore';
 
@@ -26,15 +26,8 @@ function hostOf(item: SourcesPanelItem): string {
   }
 }
 
-function monogramOf(host: string): string {
-  const first = host.replace(/^www\./i, '').charAt(0);
-  return /[a-z0-9]/i.test(first) ? first.toUpperCase() : '?';
-}
-
 function SourceCard({ item, index }: { item: SourcesPanelItem; index: number }) {
   const host = hostOf(item);
-  const [iconFailed, setIconFailed] = useState(false);
-  const favicon = faviconProxyUrl(item.url);
   return (
     <li className="sources-list-item">
       <a
@@ -45,18 +38,12 @@ function SourceCard({ item, index }: { item: SourcesPanelItem; index: number }) 
         aria-label={`${item.title} · ${host}`}
       >
         <span className="source-card-mark" aria-hidden="true">
-          {favicon && !iconFailed ? (
-            <img
-              className="source-card-favicon"
-              src={favicon}
-              alt=""
-              loading="lazy"
-              referrerPolicy="no-referrer"
-              onError={() => setIconFailed(true)}
-            />
-          ) : (
-            <span>{monogramOf(host)}</span>
-          )}
+          <SourceAvatar
+            url={item.url}
+            host={host}
+            className="source-card-avatar"
+            imageClassName="source-card-favicon"
+          />
           <span className="source-card-index">{index + 1}</span>
         </span>
         <span className="source-card-copy">
@@ -109,7 +96,7 @@ export function SourcesPanel() {
     backdrop?.classList.toggle('hidden', !isOpen);
     backdrop?.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
     shell?.classList.toggle('has-sources-open', isOpen);
-    if (isOpen && !wasOpen.current) closeRef.current?.focus();
+    if (isOpen && !wasOpen.current) closeRef.current?.focus({ preventScroll: true });
     wasOpen.current = isOpen;
   }, [isOpen]);
 
@@ -121,13 +108,45 @@ export function SourcesPanel() {
 
   useEffect(() => {
     if (!isOpen) return;
+    const host = document.getElementById('sourcesPanel');
+    const media = window.matchMedia('(max-width: 768px)');
+    const syncRole = () => {
+      host?.setAttribute('role', 'dialog');
+      host?.setAttribute('aria-labelledby', 'sourcesPanelTitle');
+      if (media.matches) host?.setAttribute('aria-modal', 'true');
+      else host?.removeAttribute('aria-modal');
+    };
+    syncRole();
+    media.addEventListener('change', syncRole);
     const dismiss = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      event.preventDefault();
-      closeSources();
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeSources();
+        return;
+      }
+      // Desktop is non-modal; the phone sheet keeps keyboard navigation inside.
+      if (event.key !== 'Tab' || !media.matches || !host) return;
+      const focusable = Array.from(host.querySelectorAll<HTMLElement>('button:not([disabled]), a[href]'));
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (!first || !last) return;
+      const active = document.activeElement;
+      if (event.shiftKey && (active === first || !host.contains(active))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (active === last || !host.contains(active))) {
+        event.preventDefault();
+        first.focus();
+      }
     };
     document.addEventListener('keydown', dismiss);
-    return () => document.removeEventListener('keydown', dismiss);
+    return () => {
+      document.removeEventListener('keydown', dismiss);
+      media.removeEventListener('change', syncRole);
+      host?.removeAttribute('aria-modal');
+      host?.removeAttribute('role');
+      host?.removeAttribute('aria-labelledby');
+    };
   }, [isOpen]);
 
   useEffect(() => {
@@ -159,7 +178,7 @@ export function SourcesPanel() {
             <path d="M4 2.5h5.5L12 5v8.5H4z" />
             <path d="M9.5 2.5V5H12M6 8h4M6 10.5h4" />
           </svg>
-          <h2 className="sources-panel-title">{entry.title}</h2>
+          <h2 id="sourcesPanelTitle" className="sources-panel-title">{entry.title}</h2>
           <span className="sources-panel-count" aria-hidden="true">
             {entry.items.length}
           </span>

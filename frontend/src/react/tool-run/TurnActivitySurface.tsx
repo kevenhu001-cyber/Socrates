@@ -15,7 +15,6 @@ import type { TurnActivityStatus } from '../../legacy/turnActivityModel';
 import { i18n } from '../../ui/legacyI18n.ts';
 import { WebUiTheme, useLocaleRefresh } from '../rn/WebUiTheme';
 import { ToolActivityIcon, toolActivitySites } from './ToolActivityIcon';
-import { ThinkingSpark } from './ThinkingSpark';
 import { useElapsed } from './useElapsed';
 import { runStartedAt, type ToolCallRecord } from './toolRunModel';
 import { tf } from '../../legacy/toolPresentationModel.ts';
@@ -174,6 +173,8 @@ function resolveSurfaceIconProps(isLive: boolean, activeTool?: ToolCallRecord, t
   const sites = resolvedToolName ? toolActivitySites(activeTool) : [];
   const icon = resolvedToolName ? (
     <ToolActivityIcon name={resolvedToolName} sites={sites} />
+  ) : !isLive ? (
+    <StepGlyph html={interfaceIcon('thinking')} />
   ) : undefined;
   const iconWidth = sites.length > 1 ? 30 : undefined;
   return { icon, iconWidth };
@@ -230,7 +231,6 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
           label={label}
           durationLabel={durationLabel}
           live={showLiveCaption}
-          indicator={showActivityCue ? <ThinkingSpark /> : undefined}
           icon={icon}
           iconWidth={iconWidth}
           expandable={hasDetails}

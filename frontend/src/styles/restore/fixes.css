@@ -30,8 +30,8 @@
     opacity: 1;
   }
   #appShell#appShell#appShell #sidebarOpenBtn {
-    border: 0 !important;
-    background: transparent !important;
+    border: var(--ui-phone-drawer-border, 0) !important;
+    background: var(--ui-phone-drawer-bg, transparent) !important;
     box-shadow: none !important;
   }
   #appShell .scheduled-recommendations {
@@ -200,41 +200,6 @@
      "New chat" pill    transparent-> rgb(255 255 255 / 10%) (5% black in light)
      disclaimer         #8e8e8e   -> #afafaf
    ========================================================================== */
-@media (min-width: 769px) {
-  /* Reference header: 52px bar, 36px rows at 8px inset. */
-
-  /* Idle capsule — one 52px row of 36px hit areas around the editor. The
-     third track is the effort pill's slot (auto so "Beagle · 中" fits),
-     mirroring the phone capsule's column template. */
-
-  /* Reasoning-effort pill — chatgpt-parity.css hides every .effort-picker to
-     match the reference's bare capsule, but the pill is our own model/effort
-     control (the desktop configuration popover hangs off it) and the phone
-     surface already shows it. Re-arm it on the desktop idle capsule in the
-     third column; the later layer wins the equal-specificity tie. */
-
-  /* Pin the dictation control to the fourth column (right of the effort
-     pill) so all controls share one grid cell row and therefore one optical
-     centre line. */
-
-  /* Light capsule is white with the reference's three-step elevation; the
-     fill alone reads as a hole in the white page. */
-
-  /* Editor — reference ProseMirror metrics. */
-
-  /* The .rich-composer flex chain still carries min-height:44px from
-     components/composer.css, so it overflowed the 36px editor root by 4px
-     top and bottom — the placeholder line sat 4px above the capsule's
-     optical centre. Pin the whole chain to the same 36px row. */
-
-  /* Attach + dictation controls — 36px circles, matching the reference's
-     composer-btn hit areas (the send control already is 36px). These apply
-     in every composer state: the capsule geometry above is idle-only, but
-     the reference keeps its control size while the field grows. The composer
-     id is part of the selector so the two-id control-size rule in
-     chat-surface.css cannot win the tie. */
-}
-
 /* Phone drawer row backgrounds are owned by polish/mobile-sidebar.css.
    The reference row metrics that used to be described here were retired with
    the mobile-parity merge; the canonical phone owner now carries both the
@@ -255,29 +220,6 @@
    These selectors repeat the three-id + :not(:has(...)) shape used by the
    104px rule above so they win that tie instead of losing to it.
    ========================================================================== */
-@media (max-width: 768px) {
-  /* Idle phone capsule — 2026-09-24 CDP re-measure (400x890) shows the
-     reference is a two-row stack, not the single 56px row this layer
-     previously pinned: editor on row 1 (full width), the add/dictation/
-     send controls on row 2. Measured box [12,428,376,89], radius 26px,
-     min-height 52px, 12px page insets, drop shadow 0 4px 16px rgb(0 0 0 / 5%). */
-
-  /* The reference keeps 12px of page inset on both sides of the capsule. */
-
-  /* Control sizing applies in every state, including the multiline card.
-     The selector carries the composer id as well: a two-id rule in
-     chat-surface.css sizes these controls from
-     var(--conversation-control-size) and wins the tie otherwise. */
-
-  /* The effort chip shares the control row's 36px height so the row reads
-     as one band of equal controls. It also drops its text label: the
-     labelled variant leaves the editor column ~78px wide, so every draft
-     wraps and the capsule can never rest at the reference's one-row
-     height. The value + caret still names the active level. */
-
-  /* Greeting — reference phone heading is 28px tall. */
-}
-
 /* --------------------------------------------------------------------------
    Composer control sizing — every state, every surface.
 
@@ -300,10 +242,3 @@
    absolute→flow jump the previous centered variant needed
    data-keyboard-open to mask — a mid-gesture shift that could retarget a
    tap to #topicSetup and skip the tools/mic/send listeners. */
-@media (max-width: 768px) {
-  /* The mobile landing quick-action column is live again (2026-10-04).
-     mobile-parity.css owns its geometry; this file used to pin it to
-     display:none with a triple-#appShell selector, which outranked that
-     owner and left the row styled but invisible. Do not re-add the pin —
-     the cards are real entry points, not decoration. */
-}

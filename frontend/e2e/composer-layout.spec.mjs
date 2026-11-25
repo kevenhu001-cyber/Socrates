@@ -131,6 +131,25 @@ test('web search is picked from the + menu, shows a removable chip, and clears',
   await expect(chip).toHaveAttribute('aria-label', 'Web search, click to remove');
   await expect(wrap.locator('.composer-tool-chip[data-tool="webSearch"]')).toBeVisible();
 
+  const chipGeometry = await chip.evaluate((node) => {
+    const box = node.getBoundingClientRect();
+    const centerY = (element) => {
+      const rect = element.getBoundingClientRect();
+      return rect.top + rect.height / 2;
+    };
+    const icon = node.querySelector('.composer-tool-chip-glyph');
+    const label = node.querySelector('.composer-tool-chip-label');
+    return {
+      radius: parseFloat(getComputedStyle(node).borderTopLeftRadius),
+      height: box.height,
+      iconOffset: Math.abs(centerY(icon) - centerY(node)),
+      labelOffset: Math.abs(centerY(label) - centerY(node)),
+    };
+  });
+  expect(chipGeometry.radius).toBeGreaterThanOrEqual(chipGeometry.height / 2);
+  expect(chipGeometry.iconOffset).toBeLessThanOrEqual(1);
+  expect(chipGeometry.labelOffset).toBeLessThanOrEqual(1);
+
   // The chip strip sits under the editor, inside the body slot, above the rail.
   const m = await measure(page, '#composerInputWrap');
   expect(m.editor.bottom).toBeLessThanOrEqual(m.chip.top + 2);

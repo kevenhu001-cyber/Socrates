@@ -17,8 +17,8 @@
    * ───────────────────────────────────────────────────────────── */
 
   #appShell#appShell #sidebarOpenBtn {
-    border: 0 !important;
-    background: transparent !important;
+    border: var(--ui-phone-drawer-border, 0) !important;
+    background: var(--ui-phone-drawer-bg, transparent) !important;
     color: var(--cg-text) !important;
     box-shadow: none !important;
   }
@@ -116,9 +116,6 @@
   /* Reference menu is one flat, scrollable list on phones: the desktop twin
      list stays hidden, but connected plugins now stay visible below the tool
      rows (see ComposerToolsMenu). */
-  body #composerToolsMenu .composer-tools-desktop-items {
-    display: none !important;
-  }
 }
 
 /* --------------------------------------------------------------------------
@@ -133,7 +130,7 @@
     background: var(--ui-bg-page) !important;
   }
   [data-mode='dark'] #appShell .top-bar {
-    background: var(--ui-bg-page) !important;
+    background: var(--ui-phone-header-bg, var(--ui-bg-page)) !important;
   }
 
   #appShell#appShell #sidebarOpenBtn svg {

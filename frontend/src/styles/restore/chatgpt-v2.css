@@ -240,14 +240,6 @@ html[data-mode='light'] #appShell {
   }
 }
 
-@media (max-width: 768px) {
-  /* This block must live AFTER the shared rule above:
-     that rule paints every input surface with `--cg-surface` (#212121),
-     which disappears against the #000 mobile canvas. This block wins the
-     cascade on phones and gives the composer a hairline stroke plus one
-     step of surface lift so its silhouette stays readable. */
-}
-
 /* The duplicate idle-state rule that lived
    here used `--cg-surface-hover`, which paints the send/voice control
    in the same dark gray as the rest of the chrome and overrode the

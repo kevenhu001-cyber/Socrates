@@ -88,6 +88,7 @@
   #appShell .sidebar {
     position: fixed;
     inset: 0 auto 0 0;
+    border-start-end-radius: var(--ui-radius-xl);
     border-end-end-radius: var(--ui-radius-xl);
     transform: translateX(0);
     transition: transform var(--ui-duration-drawer) var(--ui-ease-out);
@@ -170,12 +171,6 @@
 }
 
 @media (max-width: 768px) {
-  /* Reference drawer gutters: ~6px outside the row backgrounds on the left,
-   ~4px on the right — everything inside (nav glyph, session title, label)
-   then lands ~16px from the drawer edge via the rows' own 10px padding. */
-}
-
-@media (max-width: 768px) {
   #appShell .sidebar-nav-btn {
     /* Reference drawer renders nav labels and glyphs at primary brightness,
      same as the session titles below them. */
@@ -202,8 +197,7 @@
 
 @media (max-width: 768px) {
   #appShell .sidebar-nav-btn .nav-kbd {
-    color: var(--ui-text-muted);
-    font-size: var(--ui-font-size-xxs);
+    display: none;
   }
 }
 
@@ -268,14 +262,9 @@
   }
   #appShell #sidebar .recent-item.active,
   #appShell #sidebar .recent-item[aria-current='true'] {
-    background: var(--ui-card);
-    box-shadow: var(--ui-elevation-raised);
+    background: var(--ui-bg-selected);
+    box-shadow: none;
   }
-}
-
-@media (max-width: 768px) {
-  /* restore/chatgpt-v2 insets the panel 3px — collapse it so rows own the
-   full inner width and their 10px padding lands content at ~16px. */
 }
 
 @media (max-width: 768px) {
@@ -341,11 +330,6 @@
   #appShell .recent-item:not(.pinned) .recent-item-text {
     color: var(--foreground);
   }
-}
-
-@media (max-width: 768px) {
-  /* ~14px row type, matching the reference drawer's session titles against
-   the 15px nav rows (a stale restore/ rule previously forced 12px). */
 }
 
 @media (max-width: 768px) {
@@ -448,11 +432,6 @@
     outline: none;
     box-shadow: none;
   }
-}
-@media (max-width: 768px) {
-  /* Drawer: same surface as desktop rail + hairline edge (the border-right
-     rule lived in polish/mobile.css until the pass-2 merge; equal value, so
-     this position keeps its historical cascade slot). */
 }
 /* ─── end of pass-2 merge; original polish/mobile-sidebar.css content below ─── */
 @media (max-width: 768px) {

@@ -252,10 +252,18 @@
    hover = "click to remove"; that swap is the only thing left here. */
 #appShell .composer-tool-chip-icon {
   display: inline-grid;
+  place-items: center;
+  flex: 0 0 20px;
   width: 20px;
   height: 20px;
 }
+#appShell .composer-tool-chip-label {
+  display: block;
+  line-height: var(--ui-text-ui-line);
+  white-space: nowrap;
+}
 #appShell .composer-tool-chip-icon svg {
+  display: block;
   grid-area: 1 / 1;
   width: 20px;
   height: 20px;
@@ -335,6 +343,16 @@
       max-width var(--composer-motion),
       border-radius var(--composer-motion),
       box-shadow var(--ui-duration-fast) var(--ui-ease-out);
+  }
+  /* Conversation composer: the outer bar already provides the 16px gutter.
+     Keep the capsule full-width without a second inset. */
+  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
+    #appShell
+    .composer-shell:not(.has-plugin-chips):not(.has-queue)
+    [data-composer-frame][data-layout='inline']:not([data-expanded='true']) {
+    --composer-collapsed-inset: 0px;
+    --composer-frame-radius: var(--ui-radius-composer-desktop);
+    box-shadow: inset 0 0 0 1px var(--ui-border-subtle);
   }
   #appShell .composer-shell [data-composer-frame][data-layout='inline'][data-expanded='true'],
   #appShell .composer-shell:is(.has-plugin-chips, .has-queue) [data-layout='inline'] {
@@ -583,10 +601,7 @@
 }
 
 .composer-shell .attachment-chip:hover {
-  box-shadow:
-    0 0 0 1px var(--ui-hairline-strong),
-    0 2px 6px -1px rgb(0 0 0 / 8%);
-  transform: translateY(-1px);
+  box-shadow: 0 0 0 1px var(--ui-hairline-strong);
 }
 
 .composer-shell .attachment-chip-visual {
@@ -671,16 +686,6 @@
   padding: 0;
   overflow: hidden;
   box-shadow: var(--ui-elevation-ring);
-}
-.composer-shell .attachment-chip.is-image:hover {
-  box-shadow:
-    0 0 0 1px var(--ui-hairline-strong),
-    0 2px 6px -1px rgb(0 0 0 / 8%);
-  transform: translateY(-1px);
-}
-[data-mode='light'] .composer-shell .attachment-chip:hover {
-  box-shadow: 0 0 0 1px var(--ui-hairline-strong);
-  transform: none;
 }
 .composer-shell .attachment-chip.is-image .attachment-chip-visual {
   width: 100%;

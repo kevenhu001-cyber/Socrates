@@ -40,7 +40,7 @@
   color: var(--ui-text-primary);
   font-size: var(--ui-text-page);
   font-weight: var(--ui-font-weight-semibold);
-  line-height: 1.5;
+  line-height: 1.25;
   letter-spacing: -0.02em;
 }
 
@@ -95,7 +95,7 @@
   padding: 0 var(--ui-space-md);
   border: 1px solid var(--ui-border-subtle);
   border-radius: var(--ui-radius-pill);
-  background: var(--ui-bg-raised);
+  background: var(--ui-bg-field);
   color: var(--ui-text-tertiary);
 }
 
@@ -447,7 +447,8 @@
   }
 
   .ui-page-description {
-    display: none;
+    display: block;
+    overflow-wrap: anywhere;
   }
 
   .ui-page-toolbar {
@@ -456,6 +457,7 @@
 
   .ui-page-search {
     max-width: none;
+    min-height: var(--ui-control-touch);
   }
 
   .ui-page-tabs {
@@ -465,12 +467,14 @@
 
   .ui-page-tabs[data-slot='toggle-group'],
   .ui-page-tabs[data-slot='tabs-list'] {
-    height: var(--ui-control-md);
+    height: auto;
+    min-height: var(--ui-control-touch);
   }
 
   .ui-page-tab[data-slot='toggle-group-item'],
   .ui-page-tab[data-slot='tabs-trigger'] {
-    height: var(--ui-control-desktop);
+    min-height: var(--ui-control-touch);
+    height: auto;
     flex: 0 0 auto;
   }
 }

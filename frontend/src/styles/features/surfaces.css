@@ -517,9 +517,9 @@
 }
 
 #appShell .visualization-card {
-  border: 0;
-  border-radius: 0;
-  background: transparent;
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-xl);
+  background: var(--ui-bg-page);
   box-shadow: none;
   overflow: hidden;
 }
@@ -533,9 +533,10 @@
   align-items: center;
   justify-content: space-between;
   gap: 6px 12px;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--border);
-  background: var(--ui-bg-raised);
+  min-height: 48px;
+  padding: 6px 14px;
+  border-bottom: 1px solid var(--ui-border-subtle);
+  background: var(--ui-bg-field);
 }
 
 #appShell .visualization-header h3 {
@@ -561,8 +562,19 @@
   gap: 4px;
   margin-left: auto;
 }
+#appShell .visualization-actions > button {
+  color: var(--ui-text-secondary);
+  box-shadow: none;
+}
+#appShell .visualization-actions > button[aria-expanded='true'] {
+  background: var(--ui-bg-segment);
+  color: var(--ui-text-primary);
+}
 
 @media (max-width: 768px) {
+  #appShell .visualization-actions > button {
+    min-height: var(--ui-hit-area);
+  }
   #appShell .workspace-surface,
   #appShell .main-page {
     padding-inline: 16px;

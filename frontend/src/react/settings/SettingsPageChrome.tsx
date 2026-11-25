@@ -9,14 +9,13 @@ import {
   CpuIcon,
   DatabaseIcon,
   MonitorIcon,
-  MoonIcon,
-  SearchIcon,
   Settings2Icon,
   SparklesIcon,
   UserRoundIcon,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from 'cn';
+import { Icon, type IconProps } from '../../legacy/Icon';
 import { useUserInfo } from '../sidebar-chrome/sidebarChrome.store';
 import { settingsPreferenceActions, useSettingsPreferencesStore } from './settings.store';
 import type { SaveSettingsPreference, SettingsLabel, SettingsSection } from './settings.types';
@@ -33,7 +32,14 @@ const categoryIcons: Record<SettingsSection, LucideIcon> = {
   account: UserRoundIcon,
 };
 
-const mobileGroups = [
+const officialCategoryIcons: Partial<Record<SettingsSection, IconProps['name']>> = {
+  general: 'sliders',
+  notifications: 'bell',
+  personalization: 'personalization',
+  account: 'user',
+};
+
+const settingsGroups = [
   ['general', 'display', 'personalization', 'notifications'],
   ['models', 'apps'],
   ['data', 'account'],
@@ -52,7 +58,7 @@ function SettingsIdentity({ label, onOpen }: { label: SettingsLabel; onOpen: () 
       aria-label={label('账户', 'Account')}
       onClick={onOpen}
     >
-      <span className="settings-identity-avatar"><UserRoundIcon aria-hidden /></span>
+      <span className="settings-identity-avatar"><Icon name="user" size={22} /></span>
       <span className="settings-identity-copy">
         <span>{user.displayName || user.email || label('访客', 'Guest')}</span>
         <span>{user.email && user.displayName ? user.email : free ? label('免费版', 'Free') : user.tierLabel}</span>
@@ -80,7 +86,7 @@ function MobileAppearance({
     <div className="settings-index-appearance" role="group" aria-label={title}>
       <div className="settings-index-appearance-title">
         <span className="settings-category-icon">
-          <MoonIcon aria-hidden />
+          <Icon name="moon" size={20} />
         </span>
         {title}
       </div>
@@ -98,7 +104,6 @@ function MobileAppearance({
               void savePreference({ theme: mode });
             }}
           >
-            <span className="settings-theme-preview" data-preview={mode} aria-hidden />
             <span>{name}</span>
           </Button>
         ))}
@@ -126,7 +131,7 @@ export function SettingsMobileSearch({
       aria-label={label('搜索设置', 'Search settings')}
       onClick={onToggle}
     >
-      <SearchIcon aria-hidden />
+      <Icon name="search" size={18} />
     </Button>
   );
 }
@@ -198,6 +203,7 @@ export function SettingsNavigation({
 
   const renderCategory = ({ key, name, description }: SettingsCategory) => {
     const CategoryIcon = categoryIcons[key];
+    const official = officialCategoryIcons[key];
     const current = !mobile && section === key;
     return (
       <Button
@@ -211,7 +217,7 @@ export function SettingsNavigation({
         onClick={() => onSectionChange(key)}
       >
         <span className="settings-category-icon">
-          <CategoryIcon aria-hidden />
+          {official ? <Icon name={official} size={20} /> : <CategoryIcon aria-hidden />}
         </span>
         <span className="settings-category-copy">
           <span className="settings-category-name">{name}</span>
@@ -223,11 +229,16 @@ export function SettingsNavigation({
   };
 
   const showOverview = mobile && !query.trim();
-  const groups = mobile
-    ? mobileGroups.map((keys) =>
-        keys.flatMap((key) => categories.filter((category) => category.key === key && (!showOverview || key !== 'account'))),
-      )
-    : [];
+  const groups = settingsGroups.map((keys) =>
+    keys.flatMap((key) =>
+      categories.filter((category) => category.key === key && (!showOverview || key !== 'account')),
+    ),
+  );
+  const groupLabels = [
+    label('偏好设置', 'Preferences'),
+    label('模型与服务', 'Models & services'),
+    label('数据与账户', 'Data & account'),
+  ];
 
   return (
     <nav className="settings-nav" aria-label={label('设置分类', 'Settings categories')}>
@@ -242,7 +253,7 @@ export function SettingsNavigation({
           onChange={(event) => onQueryChange(event.target.value)}
         />
         <InputGroupAddon>
-          <SearchIcon aria-hidden />
+          <Icon name="search" size={18} />
         </InputGroupAddon>
       </InputGroup>
       <div
@@ -251,33 +262,23 @@ export function SettingsNavigation({
         aria-label={label('设置类别', 'Settings categories')}
         onKeyDown={mobile ? undefined : onCategoryKeyDown}
       >
-        {mobile
-          ? groups.map((group, index) =>
-              group.length ? (
-                <div className="settings-index-group" key={mobileGroups[index][0]}>
-                  {showOverview ? (
-                    <p className="settings-index-group-label">
-                      {[
-                        label('偏好设置', 'Preferences'),
-                        label('模型与服务', 'Models & services'),
-                        label('数据与账户', 'Data & account'),
-                      ][index]}
-                    </p>
-                  ) : null}
-                  {showOverview && index === 0 ? (
-                    <MobileAppearance label={label} savePreference={savePreference} />
-                  ) : null}
-                  {group.map(renderCategory)}
-                </div>
-              ) : null,
-            )
-          : categories.map(renderCategory)}
+        {groups.map((group, index) =>
+          group.length ? (
+            <div className="settings-index-group" key={settingsGroups[index][0]}>
+              {!query.trim() ? (
+                <p className="settings-index-group-label">{groupLabels[index]}</p>
+              ) : null}
+              {group.map(renderCategory)}
+            </div>
+          ) : null,
+        )}
         {categories.length === 0 ? (
           <p className="settings-nav-empty" role="status">
             {label('没有匹配的设置。', 'No matching settings.')}
           </p>
         ) : null}
       </div>
+      {showOverview ? <MobileAppearance label={label} savePreference={savePreference} /> : null}
     </nav>
   );
 }

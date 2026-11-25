@@ -7,6 +7,7 @@ import { TurnActivitySurface } from './TurnActivitySurface';
 import { deriveTurnPresentationState } from '../../legacy/turnActivityModel';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Chevron } from '@socrates/ui/turn';
+import { interfaceIcon } from '../../legacy/icons/interfaceIcons';
 import { Button } from '../ui/shadcn/button';
 import { tf } from '../../legacy/toolPresentationModel.ts';
 import {
@@ -188,11 +189,21 @@ function ToolActivityBurst({
           aria-controls={bodyId}
           onClick={() => setOpenOverride(!open)}
         >
+          <span
+            className="tool-burst-glyph"
+            aria-hidden="true"
+            dangerouslySetInnerHTML={{ __html: interfaceIcon('activityTools', 18) }}
+          />
           {tf('think.summaryToolsTitle', 'Used {n} tools', { n: members.length })}
           <Chevron open={open} size={8} />
         </Button>
       ) : live && completedCount >= 2 ? (
         <div className="tool-activity-burst-caption">
+          <span
+            className="tool-burst-glyph"
+            aria-hidden="true"
+            dangerouslySetInnerHTML={{ __html: interfaceIcon('activityTools', 18) }}
+          />
           {tf('think.summaryToolsTitle', 'Used {n} tools', { n: completedCount })}
         </div>
       ) : null}

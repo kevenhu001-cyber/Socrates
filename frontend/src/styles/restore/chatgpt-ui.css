@@ -228,17 +228,6 @@ body,
 /* Plus menu: built-in actions remain intact, real connectors occupy a calm
    directory section underneath them. */
 
-#composerToolsMenu .composer-tools-item {
-  color: var(--cg-text-secondary);
-}
-
-#composerToolsMenu .composer-tools-item:hover,
-#composerToolsMenu .composer-tools-item:focus-visible {
-  color: var(--cg-text);
-  background: var(--cg-surface-hover);
-  outline: none;
-}
-
 .composer-tools-plugins {
   margin-top: 8px;
   padding: 12px 4px 4px;
@@ -331,17 +320,6 @@ body,
   overflow: visible;
 }
 
-#composerToolsMenu .composer-tools-plugin-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  min-height: 44px;
-  padding: 6px 10px;
-  border: 0;
-  border-radius: 10px;
-}
-
 #composerToolsMenu .composer-plugin-mark {
   flex: 0 0 32px;
   width: 32px;
@@ -362,18 +340,6 @@ body,
   font-size: 14px;
   font-weight: var(--ui-font-weight-medium);
   color: var(--cg-text);
-}
-
-#composerToolsMenu .composer-tools-check {
-  flex: 0 0 18px;
-  width: 18px;
-  height: 18px;
-  margin-left: auto;
-  color: var(--cg-accent);
-}
-
-#composerToolsMenu {
-  overscroll-behavior: contain;
 }
 
 /* Workspace pages */
@@ -660,15 +626,6 @@ body.workspace-active #appShell .workspace-row:hover {
 /* Final cascade guard. The legacy stylesheet contains a few later, highly
    specific composer rules. Keep the new idle geometry authoritative while
    leaving measured multiline and plugin-chip states free to expand. */
-
-@media (max-width: 768px) {
-  /* A measured multiline draft and a selected plugin stack share the same
-     two-tier rhythm: content above, controls below. */
-
-  /* Topic multiline send shifts into the vacated mic track. */
-
-  /* Topic chips send shifts into the vacated mic track. */
-}
 
 /* The phone add menu's bottom-sheet pins (full-width, grabber, scrim) were
    removed in the ui-ref pass: the menu is now a popover anchored over the

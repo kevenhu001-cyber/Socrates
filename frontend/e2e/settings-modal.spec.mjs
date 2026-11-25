@@ -1091,3 +1091,55 @@ test('wide settings keeps a readable form width and announces one empty search s
   ).toHaveCount(1);
   await expect(pane).toHaveCount(0);
 });
+
+test('redesigned settings navigation and preference rows fit desktop and phone', async ({ page }) => {
+  const overlay = page.locator('#settingsPage');
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
+  await expect(overlay.locator('.settings-index-group-label')).toHaveCount(3);
+  await expect(overlay.locator('.settings-nav [data-section="general"]')).toHaveAttribute(
+    'aria-current', 'page',
+  );
+  await expect(overlay.locator('.settings-pane:visible h2')).toBeVisible();
+  await page.screenshot({ path: 'test-results/settings-redesign-desktop.png', animations: 'disabled' });
+  await page.setViewportSize({ width: 360, height: 780 });
+  const back = overlay.locator('#settingsMobileBack');
+  if (await back.isVisible()) await back.click();
+  await expect(overlay.locator('.settings-nav')).toBeVisible();
+  await expect(overlay.locator('.settings-theme-options button')).toHaveCount(3);
+  await expect(overlay.locator('.settings-theme-options button[aria-pressed="true"]')).toHaveCount(1);
+  await expect(overlay.locator('.settings-theme-preview')).toHaveCount(0);
+  await overlay.locator('.settings-nav [data-section="general"]').click();
+  await expect(overlay.locator('.settings-pane:visible h2')).toBeVisible();
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  );
+  expect(overflow).toBeLessThanOrEqual(1);
+  await page.screenshot({ path: 'test-results/settings-redesign-mobile.png', animations: 'disabled' });
+});
+
+test('settings preference controls use capsule selects and reachable switches', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
+  const overlay = page.locator('#settingsPage');
+  const select = overlay.locator('#settings-language');
+  await expect(select).toBeVisible();
+  const isCapsule = (node) => {
+    const { height } = node.getBoundingClientRect();
+    return parseFloat(getComputedStyle(node).borderTopLeftRadius) >= height / 2;
+  };
+  expect(await select.evaluate(isCapsule)).toBe(true);
+  await select.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('listbox')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await overlay.locator('.settings-nav [data-section="models"]').click();
+  const toggle = overlay.locator('#stgToggleTrack');
+  await expect(toggle).toBeVisible();
+  expect(await toggle.evaluate(isCapsule)).toBe(true);
+  const thumb = toggle.locator('[data-slot="switch-thumb"]');
+  await expect(thumb).toBeVisible();
+  const [trackRect, thumbRect] = await Promise.all([toggle.boundingBox(), thumb.boundingBox()]);
+  expect(thumbRect.x).toBeGreaterThanOrEqual(trackRect.x);
+  expect(thumbRect.x + thumbRect.width).toBeLessThanOrEqual(trackRect.x + trackRect.width);
+});

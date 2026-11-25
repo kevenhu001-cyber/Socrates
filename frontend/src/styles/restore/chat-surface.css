@@ -38,7 +38,7 @@ body,
 
 @media (max-width: 768px) {
   #appShell#appShell .top-bar {
-    background: var(--conversation-page) !important;
+    background: var(--ui-phone-header-bg, var(--conversation-page)) !important;
     border-bottom: 0;
   }
 }
@@ -51,12 +51,12 @@ body,
 }
 
 #appShell#appShell #sidebarOpenBtn {
-  width: 40px !important;
-  min-width: 40px !important;
-  height: 40px !important;
-  min-height: 40px !important;
+  width: var(--ui-phone-drawer-size, 40px) !important;
+  min-width: var(--ui-phone-drawer-size, 40px) !important;
+  height: var(--ui-phone-drawer-size, 40px) !important;
+  min-height: var(--ui-phone-drawer-size, 40px) !important;
   border-radius: 50% !important;
-  background: transparent !important;
+  background: var(--ui-phone-drawer-bg, transparent) !important;
   color: var(
     --ui-icon-secondary,
     var(--conversation-text-secondary, var(--conversation-text-muted))
@@ -122,18 +122,6 @@ body,
  * dedicated fifth column when voice controls are visible. */
 
 /* Tools stay tied to the composer rather than turning into a separate page. */
-body #composerToolsMenu {
-  border: 1px solid var(--conversation-border) !important;
-  background: var(--conversation-control) !important;
-  color: var(--conversation-text);
-  box-shadow: var(--ui-shadow-popover) !important;
-}
-
-body #composerToolsMenu .composer-tools-item:hover,
-body #composerToolsMenu .composer-tools-plugin-item:hover {
-  background: var(--ui-bg-hover-ghost) !important;
-}
-
 /* Conversation ----------------------------------------------------------- */
 
 #appShell#appShell #chatView,
@@ -261,16 +249,6 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
   }
 }
 
-/* The chat input bar carries both the class and the id; the id-scoped legacy
-   rule (transparent) outranks the class gradient, so target the id. */
-@media (max-width: 768px) {
-  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
-    #appShell#appShell
-    #chatInputBar.chat-input-bar {
-    background: linear-gradient(to bottom, transparent, var(--conversation-page) 24px) !important;
-  }
-}
-
 /* ===========================================================================
  * Reference convergence — final geometry the visual specs pin.
  *
@@ -289,33 +267,9 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
 /* Desktop: the landing composer is the same 52px one-row pill as the chat
    composer, and a grown (multiline) chat composer keeps 40px controls while
    the idle rail stays 36px. */
-@media (min-width: 769px) {
-  /* Desktop and phone surfaces share the charcoal page token. The literal
-     repins were retired — themes.css's bridge owns --conversation-page. */
-}
-
 /* Mobile: the add-content menu is a floating card, the reasoning
    pill stays visible at rest like the reference "高⌄" affordance, and the
    header utilities are 44px. */
-@media (max-width: 768px) {
-  /* A legacy ≤480px rule still hides the caret; the reference pill shows
-     the level label plus a chevron on every phone width. Scoped to the
-     wrap ids so it also beats the focused/multiline caret-hiding layer. */
-
-  /* Selected tools/plugins render as pills in the controls row,
-     immediately right of "+". parity/composer-unified.css now owns the
-     two-row template ("editor …" over "plus chips effort mic send"); the
-     editor host takes grid-area: editor (row 1) and the chip strip lands
-     in the spare 1fr track of the controls row, so no override is needed
-     here — forcing the editor host into row 2 collapsed the editor row
-     and painted the placeholder underneath the controls. */
-
-  /* The composer fade must land on the active page colour in either mode. */
-  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active) .chat-input-bar {
-    background: linear-gradient(to bottom, transparent, var(--conversation-page) 24px) !important;
-  }
-}
-
 /* Final desktop dark-canvas assertion. The legacy sidebar rule above is
    intentionally `!important`; keep this assertion after it so the requested
    desktop palette is deterministic in the real cascade. */

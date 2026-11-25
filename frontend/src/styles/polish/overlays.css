@@ -38,14 +38,14 @@
 .chat-config-pop {
   border-radius: var(--ui-radius-popover);
   transform-origin: top left;
-  padding: 6px;
+  padding: var(--ui-menu-gutter);
   background: var(--popover);
   color: var(--foreground);
 }
 .chat-config-row {
   min-height: 40px;
-  padding: 7px 10px;
-  gap: 10px;
+  padding: var(--ui-menu-item-padding);
+  gap: var(--ui-menu-item-gap);
   font-size: var(--ui-font-size-sm);
   color: var(--foreground);
 }
@@ -94,19 +94,18 @@
 
 /* Menu rows: 8px radius everywhere, quiet hover. */
 .chat-config-pop button,
-.sidebar-more-popover .sidebar-more-item,
-.display-prefs-popover .display-prefs-seg {
-  border-radius: var(--ui-radius-control, 8px);
+.sidebar-more-popover .sidebar-more-item {
+  border-radius: var(--ui-radius-row);
 }
 
 /* Display-prefs segmented control + toggles. */
 .display-prefs-popover .display-prefs-segs {
-  background: var(--ui-bg-surface);
-  border-radius: var(--ui-radius-md, 8px);
+  background: var(--ui-bg-segment);
+  border-radius: var(--ui-segment-radius);
 }
 .display-prefs-popover .display-prefs-seg {
-  border-radius: var(--ui-radius-sm, 6px);
-  color: var(--ui-text-tertiary);
+  border-radius: var(--ui-segment-radius);
+  color: var(--ui-text-secondary);
 }
 .display-prefs-popover .display-prefs-seg.active,
 .display-prefs-popover .display-prefs-seg[aria-checked='true'] {

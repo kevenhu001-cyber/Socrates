@@ -73,7 +73,10 @@ test('Attachment chips remove through the React action', async ({ page }) => {
   const chips = page.locator('#composerAttachmentChips .attachment-chip');
   await expect(chips).toHaveCount(2);
   await expect(chips.first()).toHaveAttribute('title', /one\.txt/);
-  await chips.first().locator('.file-card-remove').click({ force: true });
+  const remove = chips.first().locator('.file-card-remove');
+  await remove.focus();
+  await expect(remove).toHaveCSS('opacity', '1');
+  await page.keyboard.press('Enter');
   await expect(chips).toHaveCount(1);
   await expect(chips.first()).toHaveAttribute('title', /two\.txt/);
 });

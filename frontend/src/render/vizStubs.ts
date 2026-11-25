@@ -199,6 +199,18 @@ let _mermaidCheckedCount = 0;
    it; the worst case is one redundant mermaid.parse per diagram. */
 const MERMAID_CHECKED_MAX = 500;
 
+function mermaidHeader(id: string): string {
+  return (
+    '<div class="viz-mermaid-header"><span class="viz-mermaid-title">Mermaid</span>' +
+    vizActions(id, false, true) +
+    '</div>'
+  );
+}
+
+function mermaidCodePane(code: string): string {
+  return '<pre class="viz-code-pane"><code class="language-mermaid">' + esc(code) + '</code></pre>';
+}
+
 export function renderMermaid(code: string, opts: { stableId?: string }) {
   opts = opts || {};
   const stableId = opts.stableId;
@@ -227,11 +239,13 @@ export function renderMermaid(code: string, opts: { stableId?: string }) {
         return (
           '<div class="viz" id="' +
           escAttr(errorId) +
-          '" data-viz-state="error">' +
-          vizActions(errorId) +
+          '" data-viz-kind="mermaid" data-viz-state="error" data-viz-view="preview">' +
+          mermaidHeader(errorId) +
           '<div class="viz-body">' +
           vizErrorHtml('Diagram syntax error', code) +
-          '</div></div>'
+          '</div>' +
+          mermaidCodePane(code) +
+          '</div>'
         );
       }
     }
@@ -256,11 +270,12 @@ export function renderMermaid(code: string, opts: { stableId?: string }) {
   return (
     '<div class="viz" id="' +
     id +
-    '" data-viz-state="loading">' +
-    vizActions(id) +
+    '" data-viz-kind="mermaid" data-viz-state="loading" data-viz-view="preview">' +
+    mermaidHeader(id) +
     '<div class="viz-body">' +
     vizLoadingHtml() +
     '</div>' +
+    mermaidCodePane(code) +
     '</div>'
   );
 }

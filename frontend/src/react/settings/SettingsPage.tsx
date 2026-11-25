@@ -33,6 +33,7 @@ function SettingsPage() {
   const preferences = useSettingsPreferences();
   const navigation = getSettingsNavigation(preferences.label, section, query);
   const body = useRef<HTMLDivElement>(null);
+  const indexScroll = useRef(0);
 
   /* The search field belongs to the phone index: a detail view or a closed
      page must not carry the open state into the next visit, or the toggle
@@ -55,6 +56,9 @@ function SettingsPage() {
   }, [active]);
 
   const selectSection = (next: SettingsSection) => {
+    if (mobile) {
+      indexScroll.current = document.querySelector('#settingsPage .settings-nav')?.scrollTop ?? 0;
+    }
     settings.publish({ section: next, mobileDetail: true });
     if (body.current) body.current.scrollTop = 0;
     if (mobile) {
@@ -67,7 +71,9 @@ function SettingsPage() {
   const backToIndex = () => {
     settings.publish({ mobileDetail: false });
     window.requestAnimationFrame(() => {
-      document.querySelector<HTMLElement>(`#settingsPage [data-section="${section}"]`)?.focus();
+      const nav = document.querySelector<HTMLElement>('#settingsPage .settings-nav');
+      if (nav) nav.scrollTop = indexScroll.current;
+      document.querySelector<HTMLElement>(`#settingsPage [data-section="${section}"]`)?.focus({ preventScroll: true });
     });
   };
 
@@ -130,7 +136,7 @@ function SettingsPage() {
             onQueryChange={changeQuery}
             onSectionChange={selectSection}
           />
-          <div className="settings-body" ref={body}>
+          <div className="settings-body" ref={body} role="region" aria-label={preferences.label('设置内容', 'Settings content')}>
             <SettingsMobileBack label={preferences.label} onBack={backToIndex} />
             <SettingsPanes
               open={active}

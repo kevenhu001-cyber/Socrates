@@ -33,7 +33,8 @@ test('activity hands the same message body to the first answer token', async ({ 
   await expect(status.getByTestId('turn-activity-label')).toHaveText('Waiting for the response.');
   await expect(status.getByTestId('turn-activity-duration')).toContainText(/\d/);
   await expect(status.getByTestId('thinking-step-spinner')).toHaveCount(0);
-  await expect(status.getByTestId('turn-activity-indicator')).toBeVisible();
+  await expect(status.getByTestId('turn-activity-indicator')).toHaveCount(0);
+  await expect(status.getByTestId('turn-activity-label')).toHaveCSS('animation-name', 'socrates-caption-shimmer');
   const before = await status.boundingBox();
 
   await page.evaluate(() => window.__thinkingController.append('回答从同一个消息正文位置开始。'));
@@ -65,7 +66,8 @@ test('waiting time is separate from observed model reasoning', async ({ page }) 
   const status = message.locator('.rn-turn-activity.is-live');
   await expect(status).toHaveAttribute('data-phase', 'waiting');
   await expect(status.getByTestId('turn-activity-label')).toHaveText('Waiting for the response.');
-  await expect(status.getByTestId('turn-activity-indicator')).toBeVisible();
+  await expect(status.getByTestId('turn-activity-indicator')).toHaveCount(0);
+  await expect(status.getByTestId('turn-activity-label')).toHaveCSS('animation-name', 'socrates-caption-shimmer');
   await expect(status.getByTestId('thinking-step-spinner')).toHaveCount(0);
   await page.evaluate(() => window.__advanceReasoningClock());
   await expect(status.getByTestId('turn-activity-duration')).toContainText(/[5-9]\s?(s|秒)/);
@@ -73,7 +75,8 @@ test('waiting time is separate from observed model reasoning', async ({ page }) 
   await page.evaluate(() => window.__waitingController.appendThinking('PRIVATE REASONING'));
   await expect(status).toHaveAttribute('data-phase', 'thinking');
   await expect(status.getByTestId('turn-activity-label')).toHaveText('Thinking…');
-  await expect(status.getByTestId('turn-activity-indicator')).toBeVisible();
+  await expect(status.getByTestId('turn-activity-indicator')).toHaveCount(0);
+  await expect(status.getByTestId('turn-activity-label')).toHaveCSS('animation-name', 'socrates-caption-shimmer');
   const duration = await page.evaluate(
     () => window.__socratesTestState.session().messages.at(-1).reasoningDurationSec,
   );

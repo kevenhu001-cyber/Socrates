@@ -14,8 +14,7 @@
    (imported last), so the duplicate :root block that used to live here was
    dead on arrival — removed 2026-10-10. */
 
-#appShell,
-#composerToolsMenu {
+#appShell {
   font-family: var(--chatgpt-font) !important;
 }
 

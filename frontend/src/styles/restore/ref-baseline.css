@@ -621,18 +621,7 @@ body.workspace-active #appShell .main-page {
     min-height: 72px !important;
   }
 
-  body #composerToolsMenu:not(.hidden) {
-    border: 1px solid var(--cg-border) !important;
-    /* The tools card is a floating surface, but its pixels are
-       committed to the repo (composer-tools-visual-baseline, rendered on
-       Linux), so it keeps its own pinned step instead of the shared popover
-       one. */
-    border-radius: var(--ui-radius-tools-card) !important;
-    /* `--ref-menu` is declared on #appShell, but the menu is a body child;
-       fall back to the opaque surface token so it never paints transparent. */
-    background: var(--ref-menu, var(--cg-surface)) !important;
-    box-shadow: var(--ui-shadow-popover) !important;
-  }
+
 }
 
 [data-mode='light'] #appShell {

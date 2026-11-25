@@ -41,7 +41,7 @@
   line-height: var(--ui-line-height-normal);
 }
 .intui-panel-title {
-  font-size: inherit;
+  font-size: var(--ui-font-size-lg);
   letter-spacing: -0.015em;
   overflow-wrap: anywhere;
 }
@@ -96,7 +96,7 @@
 .intui-metric-value {
   overflow-wrap: anywhere;
   color: var(--ui-text-primary);
-  font-size: inherit;
+  font-size: var(--ui-font-size-xl);
   font-variant-numeric: tabular-nums;
   font-weight: var(--ui-font-weight-semibold);
   letter-spacing: -0.015em;
@@ -743,9 +743,8 @@
   }
 }
 
-/* The surface is one quiet card in the answer: a hairline, a 16px radius and a
-   lift you only notice when you look for it. No toolbar, no presentation
-   modes. Nodes keep their state because nothing remounts. */
+/* A single quiet frame for interactive output. Use an inset hairline rather
+   than an elevation shadow; semantic groups inside remain borderless. */
 .intui-surface-shell {
   --intui-action-size: var(--ui-control-sm);
   position: relative;
@@ -759,7 +758,7 @@
   border: 0;
   border-radius: var(--ui-radius-lg);
   background: var(--card);
-  box-shadow: var(--ui-elevation-raised);
+  box-shadow: inset 0 0 0 1px var(--ui-border-subtle);
   color: var(--ui-text-primary);
   font: inherit;
   text-align: start;
@@ -770,14 +769,17 @@
   gap: var(--ui-space-sm);
   padding: var(--ui-space-lg) var(--ui-space-lg) 0;
 }
-/* A card with no title keeps its actions in the corner instead of spending a
-   row on an empty header. */
+/* Reserve space for an action-only header: an absolute button used to
+   cover the first generated control on narrow screens. */
 .intui-surface-header.is-actions-only {
-  position: absolute;
-  inset-block-start: var(--ui-space-xs);
-  inset-inline-end: var(--ui-space-xs);
-  z-index: 1;
-  padding: 0;
+  justify-content: flex-end;
+  padding: var(--ui-space-xs) var(--ui-space-sm) 0;
+}
+.intui-surface-header.is-actions-only .intui-surface-heading {
+  display: none;
+}
+.intui-surface-header.is-actions-only + .intui-surface-document {
+  padding-top: var(--ui-space-xs);
 }
 .intui-surface-heading {
   display: grid;
@@ -835,7 +837,7 @@
    it. Touch and keyboard users always see it. */
 @media (hover: hover) and (pointer: fine) {
   .intui-surface-more {
-    opacity: 0;
+    opacity: 0.7;
   }
   .intui-surface-shell:hover .intui-surface-more,
   .intui-surface-shell:focus-within .intui-surface-more,
@@ -949,7 +951,7 @@
     padding: var(--ui-space-md) var(--ui-space-md) 0;
   }
   .intui-surface-header.is-actions-only {
-    padding: 0;
+    padding: var(--ui-space-xs) var(--ui-space-xs) 0;
   }
   .intui-surface-document {
     padding: var(--ui-space-md);
@@ -1253,10 +1255,14 @@
   :is(.visualization-header, .visualization-caption) {
   padding-inline: 0;
 }
-/* The card already names the visual; the engine's own heading would repeat it
-   one line below the card title. */
-#appShell .intui [data-openui-visualization][data-header-hidden] .visualization-header {
+/* Suppress the duplicate title, not the chart's table/download/reset actions.
+   The chart toolbar must remain usable when its outer surface supplies a title. */
+#appShell .intui [data-openui-visualization][data-header-hidden] .visualization-header > div:first-child:not(.visualization-actions) {
   display: none;
+}
+#appShell :is(.intui, .intui-openui) [data-openui-visualization] .visualization-header {
+  background: transparent;
+  border-bottom: 0;
 }
 /* An inline chart is a glance, not a page: it keeps a shorter stage than the
    full-page visualizations that share the same engine. */
@@ -1411,7 +1417,6 @@
   inset: 0;
   z-index: var(--ui-z-modal);
   background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(12px);
   display: flex;
   flex-direction: column;
   color: var(--ui-on-action);
@@ -1433,6 +1438,9 @@
   background: rgba(0, 0, 0, 0.4);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   min-height: 3rem;
+  flex-wrap: wrap;
+  gap: var(--ui-space-xs);
+  padding-top: max(var(--ui-space-sm), env(safe-area-inset-top, 0px));
 }
 .intui-lightbox-meta {
   display: flex;
@@ -1457,9 +1465,13 @@
   display: flex;
   align-items: center;
   gap: var(--ui-space-xs);
+  flex-wrap: wrap;
+  margin-inline-start: auto;
 }
 .intui-lightbox-actions button {
   color: rgba(255, 255, 255, 0.85);
+  border-radius: var(--ui-button-radius);
+  min-height: var(--ui-control-sm);
 }
 .intui-lightbox-actions button:hover {
   color: var(--ui-on-action);
@@ -1496,7 +1508,8 @@
 }
 .intui-lightbox-img-wrapper {
   max-width: 90vw;
-  max-height: 80vh;
+  max-height: 100%;
+  min-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1504,10 +1517,9 @@
 }
 .intui-lightbox-img-wrapper img {
   max-width: 100%;
-  max-height: 80vh;
+  max-height: min(75dvh, 100%);
   object-fit: contain;
   border-radius: var(--ui-radius-md);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
 }
 .intui-lightbox-nav {
   position: absolute;
@@ -1544,6 +1556,23 @@
   text-align: center;
   font-size: var(--ui-font-size-xs);
   color: rgba(255, 255, 255, 0.85);
+  max-height: 25dvh;
+  overflow: auto;
+  padding-bottom: max(var(--ui-space-sm), env(safe-area-inset-bottom, 0px));
+}
+@media (max-width: 768px) {
+  .intui-lightbox-actions button,
+  .intui-lightbox-link-btn {
+    min-height: var(--ui-control-touch);
+  }
+  .intui-lightbox-link-btn {
+    display: inline-flex;
+    align-items: center;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .intui-lightbox-backdrop { animation: none; }
+  .intui-lightbox-img-wrapper { transition: none; }
 }
 
 /* ── Interactive Accordion ── */

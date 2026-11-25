@@ -30,7 +30,7 @@ export const MOBILE_TILES: ReadonlyArray<{
   action: 'camera' | 'photos' | 'upload' | 'wechatFiles';
   labelKey: string;
   label: string;
-  iconName: 'camera' | 'image' | 'upload' | 'wechat';
+  iconName: 'camera' | 'image' | 'paperclip' | 'wechat';
 }> = [
   {
     action: 'camera',
@@ -48,7 +48,7 @@ export const MOBILE_TILES: ReadonlyArray<{
     action: 'upload',
     labelKey: 'composer.tools.localFiles',
     label: '本地文件',
-    iconName: 'upload',
+    iconName: 'paperclip',
   },
   {
     action: 'wechatFiles',
