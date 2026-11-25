@@ -285,6 +285,8 @@ export interface SidebarNavRowProps {
   /** The destination key, published as `data-nav`. */
   navKey: string;
   icon: UiGlyphName;
+  iconSize?: number;
+  iconStrokeWidth?: number;
   label: string;
   /** i18n key for the label and the collapsed rail's tooltip. */
   i18nKey?: string;
@@ -312,6 +314,8 @@ export function SidebarNavRow({
   id,
   navKey,
   icon,
+  iconSize = 20,
+  iconStrokeWidth,
   label,
   i18nKey,
   badge,
@@ -366,7 +370,7 @@ export function SidebarNavRow({
       ])}
     >
       <div aria-hidden style={domStyle([styles.glyph])} {...dataAttributes({ part: 'nav-glyph' })}>
-        <UiIcon name={icon} size={20} color={colors.ink} />
+        <UiIcon name={icon} size={iconSize} color={colors.ink} strokeWidth={iconStrokeWidth} />
       </div>
       <div style={domStyle([styles.labelWrap])} {...dataAttributes({ part: 'nav-label' })}>
         <UiText
