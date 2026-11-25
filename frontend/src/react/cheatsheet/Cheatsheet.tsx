@@ -1,3 +1,5 @@
+import { X } from 'lucide-react';
+import { Button } from '../ui/shadcn/button';
 import { useRef } from 'react';
 import { createRootSlot } from '../lib/boot/ownedRoot';
 import { ensureBodyContainer } from '../lib/boot/mountContainer';
@@ -91,11 +93,12 @@ function Cheatsheet() {
           Keyboard shortcuts
         </FoundationDialogTitle>
         <FoundationDialogClose
+          render={<Button variant="ghost" size="icon-sm" />}
           className="modal-close"
           onClick={() => dispatch.close()}
           aria-label="Close"
         >
-          ×
+          <X aria-hidden="true" />
         </FoundationDialogClose>
       </div>
       <div className="cheatsheet-body">

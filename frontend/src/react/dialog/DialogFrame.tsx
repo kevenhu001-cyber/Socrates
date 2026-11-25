@@ -1,5 +1,6 @@
 import type { CSSProperties, ComponentProps, ReactNode } from 'react';
 import { X } from 'lucide-react';
+import { Button } from '../ui/shadcn/button';
 import { cn } from 'cn';
 import {
   FoundationDialog,
@@ -96,6 +97,7 @@ export function DialogFrame({
             {headerActions}
             {showClose ? (
               <FoundationDialogClose
+                render={<Button variant="ghost" size="icon-sm" />}
                 className={cn('ui-dialog-close', closeClassName)}
                 aria-label="Close"
               >

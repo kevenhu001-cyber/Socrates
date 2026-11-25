@@ -5,6 +5,7 @@ import { Textarea as ShadcnTextarea } from '../../ui/shadcn/textarea';
 import { NativeSelect as ShadcnNativeSelect } from '../../ui/shadcn/native-select';
 import { NativeControl as ShadcnNativeControl } from '../../ui/NativeControl';
 import { Button as UiButton } from '../../ui/Button';
+import { Button as ShadcnButton } from '../../ui/shadcn/button';
 // Adapted from thesysdev/open-intelligent-ui (MIT); see LICENSE.
 import {
   action,
@@ -100,6 +101,14 @@ function Field({ label, children: content }: { label?: string; children: ReactNo
   );
 }
 
+// Translate the public OpenUI variants into the host design system.
+const ACTION_VARIANTS = {
+  solid: 'default',
+  outline: 'outline',
+  soft: 'secondary',
+  ghost: 'ghost',
+} as const;
+
 // Actions
 export const Button = defineComponent({
   name: 'Button',
@@ -119,21 +128,17 @@ export const Button = defineComponent({
     const streaming = useIsStreaming();
     const label = String(props.label ?? '');
     return (
-      <UiButton
+      <ShadcnButton
         type="button"
-        className={cx(
-          'iui-button',
-          `iui-button-${props.variant ?? 'solid'}`,
-          props.color && props.color !== 'primary' && `iui-button-${props.color}`,
-          `iui-button-${props.size ?? 'md'}`,
-          props.block && 'iui-block',
-        )}
+        variant={props.color === 'danger' ? 'destructive' : ACTION_VARIANTS[props.variant ?? 'solid']}
+        size={props.size === 'sm' ? 'sm' : props.size === 'lg' ? 'touch' : 'lg'}
+        className={cx('iui-button', props.block && 'iui-block')}
         disabled={!!props.disabled || streaming || !props.action}
         onClick={() => run(label, props.action)}
       >
         {props.icon ? <Glyph name={props.icon} size={props.size === 'sm' ? 14 : 16} /> : null}
         <MathText text={label} />
-      </UiButton>
+      </ShadcnButton>
     );
   },
 });
@@ -152,16 +157,18 @@ export const IconButton = defineComponent({
     const streaming = useIsStreaming();
     const label = props.label || String(props.icon ?? '');
     return (
-      <UiButton
+      <ShadcnButton
         type="button"
-        className={cx('iui-icon-button', `iui-icon-button-${props.variant ?? 'outline'}`)}
+        className="iui-icon-button"
+        variant={ACTION_VARIANTS[props.variant ?? 'outline']}
+        size="icon-sm"
         aria-label={label}
         title={props.label || undefined}
-        disabled={streaming}
+        disabled={streaming || !props.action}
         onClick={() => run(label, props.action)}
       >
         <Glyph name={props.icon} size={16} />
-      </UiButton>
+      </ShadcnButton>
     );
   },
 });
@@ -384,14 +391,41 @@ export const SegmentedControl = defineComponent({
   component: function SegmentedView({ props, statementId }) {
     const field = useStateField(useFieldName(undefined, statementId), props.value);
     const value = field.value == null ? '' : String(field.value);
+    const choices = optionList(props.options);
+    const selected = choices.findIndex((o) => o.value === value);
     return (
-      <div className={cx('iui-segmented', props.block && 'iui-block')} role="radiogroup">
-        {optionList(props.options).map((o, i) => (
+      <div
+        className={cx('iui-segmented', props.block && 'iui-block')}
+        role="radiogroup"
+        onKeyDown={(event) => {
+          const buttons = Array.from(
+            event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="radio"]'),
+          );
+          const current = buttons.indexOf(event.target as HTMLButtonElement);
+          if (current < 0 || !choices.length) return;
+          const offset = event.key === 'ArrowRight' || event.key === 'ArrowDown'
+            ? 1
+            : event.key === 'ArrowLeft' || event.key === 'ArrowUp'
+              ? -1
+              : 0;
+          if (!offset && event.key !== 'Home' && event.key !== 'End') return;
+          event.preventDefault();
+          const next = event.key === 'Home'
+            ? 0
+            : event.key === 'End'
+              ? choices.length - 1
+              : (current + offset + choices.length) % choices.length;
+          field.setValue(choices[next].value);
+          buttons[next]?.focus();
+        }}
+      >
+        {choices.map((o, i) => (
           <UiButton
             key={`${o.value}-${i}`}
             type="button"
             role="radio"
             aria-checked={o.value === value}
+            tabIndex={i === Math.max(0, selected) ? 0 : -1}
             className={cx(o.value === value && 'is-selected')}
             onClick={() => field.setValue(o.value)}
           >
@@ -664,24 +698,28 @@ export const Timer = defineComponent({
           <span className="iui-timer-time">{clock(left)}</span>
         </div>
         <div className="iui-timer-actions">
-          <UiButton
+          <ShadcnButton
             type="button"
-            className="iui-button iui-button-solid iui-button-sm"
+            className="iui-button"
+            variant="default"
+            size="sm"
             disabled={streaming || left === 0}
             onClick={toggle}
           >
             <Glyph name={running ? 'pause' : 'play'} size={14} />
             {running ? 'Pause' : startedAt === null || left === 0 ? 'Start' : 'Resume'}
-          </UiButton>
-          <UiButton
+          </ShadcnButton>
+          <ShadcnButton
             type="button"
-            className="iui-button iui-button-ghost iui-button-sm"
+            className="iui-button"
+            variant="ghost"
+            size="sm"
             disabled={streaming || startedAt === null}
             onClick={reset}
           >
             <Glyph name="rotate-ccw" size={14} />
             Reset
-          </UiButton>
+          </ShadcnButton>
         </div>
       </div>
     );

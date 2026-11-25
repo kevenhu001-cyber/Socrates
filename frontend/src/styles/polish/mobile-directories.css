@@ -215,8 +215,7 @@
     align-items: center;
     gap: var(--ui-space-sm);
   }
-  body.workspace-active #appShell .library-tool-btn,
-  body.workspace-active #appShell .library-view-btn {
+  body.workspace-active #appShell .library-tool-btn {
     display: grid;
     place-items: center;
     width: var(--ui-control-touch);
@@ -227,18 +226,6 @@
     width: 1px;
     height: 20px;
     background: var(--border);
-  }
-  body.workspace-active #appShell .library-view-switcher {
-    display: flex;
-    gap: 4px;
-  }
-  body.workspace-active #appShell .library-view-btn {
-    border-radius: var(--ui-radius-pill);
-  }
-  body.workspace-active #appShell .library-view-btn[aria-pressed='true'] {
-    background: var(--ui-bg-pill-selected);
-    color: var(--foreground);
-    box-shadow: none;
   }
   body.workspace-active #appShell .library-search-pill {
     flex: 1;
@@ -422,9 +409,6 @@
   /* Tighten only the action gaps, never the search field or touch targets. */
   body.workspace-active #appShell .library-toolbar-controls {
     gap: 8px;
-  }
-  body.workspace-active #appShell .library-view-switcher {
-    gap: 0;
   }
   body.workspace-active #appShell .library-chip {
     padding-inline: 12px;

@@ -152,6 +152,18 @@ test('new pages and settings fit a phone viewport in both themes', async ({ page
     );
     await page.evaluate(() => window.__socratesLegacy.navigation.openNav('sites'));
     await expect(page.locator('#sitesPanel')).toBeInViewport();
+    const viewToggle = page.locator('#sitesPanel .ui-page-view-toggle');
+    const viewOptions = viewToggle.locator('[data-slot="toggle-group-item"]');
+    await expect(viewOptions).toHaveCount(2);
+    for (const option of await viewOptions.all()) {
+      await expect(option).toHaveCSS('height', '44px');
+      await expect(option).toHaveCSS('border-radius', '999px');
+    }
+    await viewOptions.nth(0).click();
+    await expect(viewOptions.nth(0)).toHaveAttribute('aria-pressed', 'true');
+    await viewOptions.nth(1).click();
+    await expect(viewOptions.nth(1)).toHaveAttribute('aria-pressed', 'true');
+    await expect(viewToggle.locator('[aria-pressed="true"]')).toHaveCount(1);
     await page.screenshot({
       path: `test-results/socrates-reference-mobile-sites-empty-${encodeURIComponent(theme)}-390x844.png`,
     });

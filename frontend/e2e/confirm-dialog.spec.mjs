@@ -101,6 +101,14 @@ test('cancel, backdrop and accept preserve the boolean Promise result across rep
     else {
       await expect(page.locator('#confirmOkBtn')).toHaveText('Delete');
       await expect(page.locator('#confirmOkBtn')).toHaveClass(/danger/);
+      const cancel = page.locator('#confirmCancelBtn');
+      const confirm = page.locator('#confirmOkBtn');
+      await expect(cancel).toHaveAttribute('data-variant', 'outline');
+      await expect(confirm).toHaveAttribute('data-variant', 'destructive');
+      for (const button of [cancel, confirm]) {
+        await expect(button).toHaveCSS('border-radius', '999px');
+        await expect(button).toHaveCSS('height', '44px');
+      }
       await page.locator('#confirmOkBtn').click();
     }
     await result(page, action === 'accept');

@@ -138,8 +138,8 @@ export function ComposerPluginItems({
           <span>{i18n('composer.tools.plugins.error', 'Connected apps could not be loaded.')}</span>
           <Button
             type="button"
-            variant="surface"
-            size="surface"
+            variant="outline"
+            size="sm"
             className="composer-tools-state-action"
             role="menuitem"
             onClick={(event) => {
@@ -174,8 +174,8 @@ export function ComposerPluginItems({
           </small>
           <Button
             type="button"
-            variant="surface"
-            size="surface"
+            variant="outline"
+            size="sm"
             className="composer-tools-state-action"
             role="menuitem"
             onClick={managePlugins}

@@ -553,36 +553,6 @@
   gap: 8px;
   justify-content: center;
 }
-.confirm-btn {
-  padding: 8px 20px;
-  font-size: calc(13px * var(--app-font-scale, 1));
-  font-weight: var(--ui-font-weight-medium);
-  cursor: pointer;
-  transition: background-color 0.1s;
-}
-.confirm-btn.primary {
-  background: hsl(var(--accent-000));
-  color: hsl(var(--oncolor-100));
-}
-.confirm-btn.primary:hover {
-  background: hsl(var(--accent-100));
-}
-.confirm-btn.danger {
-  background: hsl(0 60% 15%);
-  color: hsl(0 60% 55%);
-}
-.confirm-btn.danger:hover {
-  background: hsl(0 60% 20%);
-}
-.confirm-btn.cancel {
-  background: hsl(var(--bg-300));
-  color: hsl(var(--text-300));
-}
-.confirm-btn.cancel:hover {
-  background: var(--ui-bg-hover);
-  color: hsl(var(--text-200));
-}
-
 /* Usage modal — heatmap */
 .usage-overlay {
   position: fixed;

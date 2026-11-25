@@ -1,8 +1,8 @@
-import { SettingsSwitch, SettingsSegmentedControl } from '@socrates/ui/settings';
+import { PageTabs } from '../ui/page/PageTabs';
+import { Switch } from '../ui/shadcn/switch';
 import { Label as ShadcnLabel } from '../ui/shadcn/label';
 import { NativeControl as ShadcnNativeControl } from '../ui/NativeControl';
 import { Button } from '../ui/shadcn/button';
-import { WebUiTheme } from '../rn/WebUiTheme';
 import {
   DISPLAY_FONT_STEPS,
   DISPLAY_WIDTH_STEPS,
@@ -38,44 +38,39 @@ export function DisplaySettingsPane({ hidden, label }: SettingsPaneProps) {
           <span className="settings-choice-label" id="settings-font-size-label">
             {label('文字大小', 'Text size')}
           </span>
-          <WebUiTheme>
-            <SettingsSegmentedControl
-              labelId="settings-font-size-label"
-              value={String(display.font)}
-              onValueChange={(val) => settingsPreferenceActions.setFont(Number(val))}
-              options={DISPLAY_FONT_STEPS.map((step, index) => ({
-                value: String(step),
-                label: FONT_LABELS[index],
-              }))}
-            />
-          </WebUiTheme>
+          <PageTabs
+            ariaLabel={label('文字大小', 'Text size')}
+            value={String(display.font)}
+            onChange={(val) => settingsPreferenceActions.setFont(Number(val))}
+            items={DISPLAY_FONT_STEPS.map((step, index) => ({
+              value: String(step),
+              label: FONT_LABELS[index],
+            }))}
+          />
         </div>
         <div className="settings-choice settings-choice--segmented">
           <span className="settings-choice-label" id="settings-content-width-label">
             {label('内容宽度', 'Content width')}
           </span>
-          <WebUiTheme>
-            <SettingsSegmentedControl
-              labelId="settings-content-width-label"
-              value={String(display.width)}
-              onValueChange={(val) => settingsPreferenceActions.setWidth(Number(val))}
-              options={DISPLAY_WIDTH_STEPS.map((step, index) => ({
-                value: String(step),
-                label: WIDTH_LABELS[index],
-              }))}
-            />
-          </WebUiTheme>
+          <PageTabs
+            ariaLabel={label('内容宽度', 'Content width')}
+            value={String(display.width)}
+            onChange={(val) => settingsPreferenceActions.setWidth(Number(val))}
+            items={DISPLAY_WIDTH_STEPS.map((step, index) => ({
+              value: String(step),
+              label: WIDTH_LABELS[index],
+            }))}
+          />
         </div>
-        <ShadcnLabel className="settings-choice">
-          {gridLabel}
-          <WebUiTheme>
-            <SettingsSwitch
-              label={gridLabel}
-              value={display.showGrid}
-              onValueChange={settingsPreferenceActions.setGrid}
-            />
-          </WebUiTheme>
-        </ShadcnLabel>
+        <div className="settings-choice settings-choice--switch">
+          <ShadcnLabel htmlFor="settings-conversation-grid">{gridLabel}</ShadcnLabel>
+          <Switch
+            id="settings-conversation-grid"
+            aria-label={gridLabel}
+            checked={display.showGrid}
+            onCheckedChange={settingsPreferenceActions.setGrid}
+          />
+        </div>
         <div className="settings-choice settings-choice--color">
           <span className="settings-choice-label">
             {label('自定义背景色', 'Custom background')}

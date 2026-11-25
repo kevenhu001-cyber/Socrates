@@ -1,6 +1,7 @@
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { InputGroup, InputGroupInput, InputGroupAddon } from '../ui/shadcn/input-group';
 import { Button } from '../ui/shadcn/button';
+import { PageTabs } from '../ui/page/PageTabs';
 import {
   BellIcon,
   BoxesIcon,
@@ -83,31 +84,24 @@ function MobileAppearance({
     ['system', label('跟随系统', 'System')],
   ] as const;
   return (
-    <div className="settings-index-appearance" role="group" aria-label={title}>
+    <div className="settings-index-appearance">
       <div className="settings-index-appearance-title">
         <span className="settings-category-icon">
           <Icon name="moon" size={20} />
         </span>
         {title}
       </div>
-      <div className="settings-theme-options">
-        {modes.map(([mode, name]) => (
-          <Button
-            key={mode}
-            variant="ghost"
-            size="surface"
-            className="settings-theme-choice"
-            aria-pressed={appearance === mode}
-            onClick={() => {
-              if (appearance === mode) return;
-              settingsPreferenceActions.setTheme(mode);
-              void savePreference({ theme: mode });
-            }}
-          >
-            <span>{name}</span>
-          </Button>
-        ))}
-      </div>
+      <PageTabs
+        className="settings-theme-options"
+        ariaLabel={title}
+        value={appearance}
+        items={modes.map(([value, name]) => ({ value, label: name }))}
+        onChange={(mode) => {
+          if (appearance === mode) return;
+          settingsPreferenceActions.setTheme(mode);
+          void savePreference({ theme: mode });
+        }}
+      />
     </div>
   );
 }

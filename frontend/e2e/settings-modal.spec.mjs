@@ -420,6 +420,19 @@ test('display settings persist text size, content width, grid, and background co
     .locator('.settings-choice--segmented')
     .filter({ hasText: 'Content width' });
   await widthGroup.locator('[data-slot="toggle-group-item"]').filter({ hasText: /^XL$/ }).click();
+  for (const group of [fontGroup, widthGroup]) {
+    const tabs = group.locator('.ui-page-tabs[data-slot="toggle-group"]');
+    await expect(tabs).toBeVisible();
+    const selected = tabs.locator('[data-slot="toggle-group-item"][aria-pressed="true"]');
+    await expect(selected).toHaveCount(1);
+    const geometry = await selected.evaluate((element) => ({
+      radius: parseFloat(getComputedStyle(element).borderTopLeftRadius),
+      height: element.getBoundingClientRect().height,
+    }));
+    expect(geometry.radius).toBeGreaterThanOrEqual(geometry.height / 2);
+    await selected.click();
+    await expect(selected).toHaveCount(1);
+  }
   await expect
     .poll(() =>
       page.evaluate(() => ({
@@ -434,6 +447,8 @@ test('display settings persist text size, content width, grid, and background co
     .toEqual({ font: '1.375', width: '1.7' });
 
   const grid = overlay.getByRole('switch', { name: 'Conversation grid' });
+  await expect(grid).toHaveAttribute('data-slot', 'switch');
+  await expect(grid.locator('[data-slot="switch-thumb"]')).toBeVisible();
   await overlay.getByText('Conversation grid', { exact: true }).click();
   await expect(grid).toBeChecked();
   await expect(page.locator('html')).toHaveAttribute('data-show-grid', 'true');
@@ -1106,8 +1121,21 @@ test('redesigned settings navigation and preference rows fit desktop and phone',
   const back = overlay.locator('#settingsMobileBack');
   if (await back.isVisible()) await back.click();
   await expect(overlay.locator('.settings-nav')).toBeVisible();
-  await expect(overlay.locator('.settings-theme-options button')).toHaveCount(3);
-  await expect(overlay.locator('.settings-theme-options button[aria-pressed="true"]')).toHaveCount(1);
+  const themeOptions = overlay.locator('.settings-theme-options[data-slot="toggle-group"]');
+  await expect(themeOptions.locator('button')).toHaveCount(3);
+  const selectedTheme = themeOptions.locator('button[aria-pressed="true"]');
+  await expect(selectedTheme).toHaveCount(1);
+  expect(
+    await selectedTheme.evaluate((element) => {
+      const radius = parseFloat(getComputedStyle(element).borderTopLeftRadius);
+      return radius >= element.getBoundingClientRect().height / 2;
+    }),
+  ).toBe(true);
+  await selectedTheme.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(themeOptions.locator('button:focus')).toHaveCount(1);
+  await page.keyboard.press('Space');
+  await expect(themeOptions.locator('button:focus')).toHaveAttribute('aria-pressed', 'true');
   await expect(overlay.locator('.settings-theme-preview')).toHaveCount(0);
   await overlay.locator('.settings-nav [data-section="general"]').click();
   await expect(overlay.locator('.settings-pane:visible h2')).toBeVisible();

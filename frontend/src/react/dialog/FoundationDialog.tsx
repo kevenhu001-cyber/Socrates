@@ -66,6 +66,7 @@ export function FoundationDialog({
             data-ui-motion="dialog"
             role={role}
             aria-modal="true"
+            aria-label={ariaLabel}
             className={className}
             initialFocus={initialFocus}
             finalFocus={finalFocus}

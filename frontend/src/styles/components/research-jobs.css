@@ -320,28 +320,11 @@
   flex: 0 0 auto;
   gap: var(--ui-space-xs);
 }
-.research-report-icon-button {
-  display: inline-grid;
-  place-items: center;
-  width: var(--ui-control-sm);
-  min-width: var(--ui-control-sm);
-  min-height: var(--ui-control-sm);
-  padding: 0;
-  border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-pill);
-  background: transparent;
-  color: var(--muted-foreground);
-  font: inherit;
-  font-size: var(--ui-font-size-lg);
-  cursor: pointer;
-}
-.research-report-icon-button:hover:not(:disabled) {
-  background: var(--accent);
-  color: var(--foreground);
-}
-.research-report-icon-button:disabled {
-  opacity: 0.45;
-  cursor: default;
+@media (max-width: 768px) {
+  .research-report-icon-button {
+    width: var(--ui-control-touch);
+    height: var(--ui-control-touch);
+  }
 }
 .research-report-layout {
   display: grid;

@@ -20,6 +20,7 @@ const OFFICIAL_WEB_GLYPHS: Partial<Record<UiIconRendererProps['name'], IconProps
   clock: 'clock',
   panel: 'panel',
   sliders: 'sliders',
+  sparkle: 'personalization',
   skills: 'skills',
 };
 

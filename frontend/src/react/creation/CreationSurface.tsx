@@ -1,5 +1,5 @@
 import { useState, type Ref, type SyntheticEvent } from 'react';
-import { LayoutGrid, PanelsTopLeft, Trash2, X } from 'lucide-react';
+import { PanelsTopLeft, Trash2, X } from 'lucide-react';
 import { Icon } from '../../legacy/Icon';
 import { nativeIslandFrameAttributes } from '../../ui/nativeIslandFrame';
 import { Badge } from '../ui/shadcn/badge';
@@ -15,7 +15,7 @@ import {
 } from '../ui/shadcn/dropdown-menu';
 import { NativeSelect, NativeSelectOption } from '../ui/shadcn/native-select';
 import { Textarea } from '../ui/shadcn/textarea';
-import { ToggleGroup, ToggleGroupItem } from '../ui/shadcn/toggle-group';
+import { PageViewToggle } from '../ui/page/PageTabs';
 import { PageEmptyState } from '../ui/page/PageEmptyState';
 import { PageFrame } from '../ui/page/PageFrame';
 import { PageHeader } from '../ui/page/PageHeader';
@@ -73,26 +73,14 @@ function CreationHeader({
             query={query}
             onQuery={onQueryChange}
           />
-          <div className="creation-sites-view ml-auto" aria-label={text.listView}>
-            <ToggleGroup
-              value={[siteView]}
-              variant="outline"
-              size="sm"
-              spacing={0}
-              aria-label={text.listView}
-              onValueChange={(views) => {
-                const view = views[views.length - 1];
-                if (view === 'grid' || view === 'list') onSiteViewChange(view);
-              }}
-            >
-              <ToggleGroupItem value="grid" aria-label={text.gridView}>
-                <LayoutGrid data-icon="inline-start" />
-              </ToggleGroupItem>
-              <ToggleGroupItem value="list" aria-label={text.listView}>
-                <Icon name="list" size={16} data-icon="inline-start" />
-              </ToggleGroupItem>
-            </ToggleGroup>
-          </div>
+          <PageViewToggle
+            className="creation-sites-view ml-auto"
+            value={siteView}
+            onChange={onSiteViewChange}
+            ariaLabel={text.listView}
+            gridLabel={text.gridView}
+            listLabel={text.listView}
+          />
         </PageToolbar>
         <div className="creation-site-banner">
           <span className="creation-site-banner-icon" aria-hidden="true">
