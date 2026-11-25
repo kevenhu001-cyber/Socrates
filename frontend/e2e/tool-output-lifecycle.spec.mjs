@@ -394,20 +394,11 @@ test('a visualization stays visible across the running → result transition', a
     spec,
   );
   const message = page.locator('.msg.assistant').last();
-  /* RN-2 / OpenUI: while the turn is live the card's exact footprint is a
-     skeleton (mounting a half-streamed payload would draw wrong values).
-     The result frame replaces it with the chart without moving the answer. */
-  const skeleton = message.locator('.viz-state-skeleton').last();
-  await expect(skeleton).toBeVisible();
-  await expect(skeleton).toContainText('Probe transition');
-  await expect(skeleton.locator('.viz-skeleton-status')).toContainText(
-    'Creating the visualization…',
-  );
-  const stage = skeleton.locator('.viz-skeleton-stage');
-  expect(await stage.evaluate((node) => getComputedStyle(node, '::after').animationName)).toBe(
-    'ui-shimmer-sweep',
-  );
-  await expect(stage.locator('.skeleton-shimmer')).toHaveCount(0);
+  // The activity disclosure is the only progress chrome until the server
+  // accepts the UI. Never mount speculative attachments or error cards.
+  await expect(message.locator('.rn-tool-row[data-tcid="viz-1"]')).toHaveAttribute('data-state', 'running');
+  await expect(message.locator('[data-tool-anchor="viz-1"]')).toHaveCount(0);
+  await expect(message.locator('.viz-state-skeleton')).toHaveCount(0);
 
   await page.evaluate(
     (visualization) =>
