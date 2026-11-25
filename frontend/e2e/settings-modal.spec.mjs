@@ -1117,3 +1117,29 @@ test('redesigned settings navigation and preference rows fit desktop and phone',
   expect(overflow).toBeLessThanOrEqual(1);
   await page.screenshot({ path: 'test-results/settings-redesign-mobile.png', animations: 'disabled' });
 });
+
+test('settings preference controls use capsule selects and reachable switches', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
+  const overlay = page.locator('#settingsPage');
+  const select = overlay.locator('#settings-language');
+  await expect(select).toBeVisible();
+  const isCapsule = (node) => {
+    const { height } = node.getBoundingClientRect();
+    return parseFloat(getComputedStyle(node).borderTopLeftRadius) >= height / 2;
+  };
+  expect(await select.evaluate(isCapsule)).toBe(true);
+  await select.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('listbox')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await overlay.locator('.settings-nav [data-section="models"]').click();
+  const toggle = overlay.locator('#stgToggleTrack');
+  await expect(toggle).toBeVisible();
+  expect(await toggle.evaluate(isCapsule)).toBe(true);
+  const thumb = toggle.locator('[data-slot="switch-thumb"]');
+  await expect(thumb).toBeVisible();
+  const [trackRect, thumbRect] = await Promise.all([toggle.boundingBox(), thumb.boundingBox()]);
+  expect(thumbRect.x).toBeGreaterThanOrEqual(trackRect.x);
+  expect(thumbRect.x + thumbRect.width).toBeLessThanOrEqual(trackRect.x + trackRect.width);
+});

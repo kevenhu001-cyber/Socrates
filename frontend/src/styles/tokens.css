@@ -61,7 +61,15 @@
   --ui-radius-tools-card: 12px;
   --ui-radius-tools-row: 8px;
   /* Apps SDK UI control geometry, adapted to the existing theme contract. */
-  --ui-button-radius: var(--ui-radius-row);
+  /* Action buttons are capsules; menu rows and multiline fields are not. */
+  --ui-button-radius: var(--ui-radius-pill);
+  --ui-input-radius: var(--ui-radius-control);
+  --ui-select-radius: var(--ui-radius-pill);
+  --ui-segment-radius: var(--ui-radius-pill);
+  --ui-switch-width: 36px;
+  --ui-switch-width-sm: 32px;
+  --ui-switch-thumb: 16px;
+  --ui-switch-inset: 2px;
   --ui-menu-gutter: 6px;
   --ui-menu-item-gap: 6px;
   --ui-menu-item-padding: 6px 8px;
