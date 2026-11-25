@@ -1,5 +1,5 @@
 /* Reader for the citations and search results behind one answer.
-   Desktop: second transcript column, non-modal. Phone: full-screen sheet. */
+   Desktop: second transcript column, non-modal. Phone: bottom sheet. */
 .sources-panel.hidden,
 .sources-backdrop.hidden {
   display: none;
@@ -89,7 +89,7 @@
 .sources-list {
   display: flex;
   flex-direction: column;
-  gap: var(--ui-space-xs);
+  gap: 0;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -98,12 +98,15 @@
 .sources-list-item {
   margin: 0;
 }
+.sources-list-item + .sources-list-item {
+  border-top: 1px solid var(--ui-border-subtle);
+}
 
 .source-card {
   display: flex;
   align-items: flex-start;
   gap: var(--ui-space-sm);
-  padding: var(--ui-space-sm);
+  padding: var(--ui-space-md) var(--ui-space-sm);
   border: 1px solid transparent;
   border-radius: var(--ui-radius-lg);
   color: inherit;
@@ -203,7 +206,7 @@
   flex: 0 0 auto;
   margin-top: 6px;
   color: var(--ui-text-tertiary);
-  opacity: 0;
+  opacity: 0.65;
   transition: opacity 160ms ease;
 }
 
@@ -257,18 +260,28 @@
     inset: 0;
     z-index: var(--ui-z-modal);
     background: var(--ui-backdrop);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    animation: sources-scrim-in var(--ui-duration-normal) var(--ui-ease-out) both;
   }
   .sources-panel {
     position: fixed;
-    inset: 0;
+    inset: auto 0 0;
+    height: min(86dvh, calc(100dvh - env(safe-area-inset-top, 0px) - 16px));
     z-index: var(--ui-z-sheet);
     display: flex;
     flex-direction: column;
-    background: var(--ui-bg-elevated);
-    padding-top: env(safe-area-inset-top, 0px);
+    background: var(--background);
+    border-radius: var(--ui-radius-2xl) var(--ui-radius-2xl) 0 0;
+    overflow: hidden;
     padding-bottom: env(safe-area-inset-bottom, 0px);
+    box-sizing: border-box;
+    animation: sources-sheet-in var(--ui-duration-drawer, 280ms) var(--ui-ease-out) both;
+  }
+  .sources-panel-header {
+    min-height: 58px;
+  }
+  .sources-panel-close {
+    width: var(--ui-hit-area);
+    height: var(--ui-hit-area);
   }
   .sources-panel-body {
     padding-inline: var(--ui-space-sm);
@@ -278,8 +291,18 @@
   }
 }
 
+@keyframes sources-sheet-in {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@keyframes sources-scrim-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
 @media (prefers-reduced-motion: reduce) {
-  #appShell.has-sources-open .sources-panel {
+  #appShell.has-sources-open .sources-panel,
+  .sources-panel,
+  .sources-backdrop {
     animation: none;
   }
 }

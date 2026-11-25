@@ -84,6 +84,8 @@ for (const theme of ['light', 'dark'])
       const panel = page.locator('#sourcesPanel');
       await expect(panel).toBeVisible();
       await expect(panel.locator('.source-card')).toHaveCount(1);
+      await expect(sourcesButton.locator('.turn-sources-mark')).toHaveCount(1);
+      await expect(panel).toHaveAttribute('role', 'dialog');
       await expect(panel.locator('.source-card-title')).toHaveText(source.title);
       await expect(panel.locator('.source-card-snippet')).toHaveText(source.snippet);
       await expect(panel.locator('.source-card')).toHaveAttribute('href', source.url);
@@ -100,7 +102,13 @@ for (const theme of ['light', 'dark'])
         const box = await panel.boundingBox();
         expect(box.x).toBe(0);
         expect(box.width).toBe((await page.viewportSize()).width);
+        expect(box.y).toBeGreaterThan(0);
+        await expect(panel).toHaveAttribute('aria-modal', 'true');
+        await panel.locator('.source-card').last().focus();
+        await page.keyboard.press('Tab');
+        await expect(panel.locator('.sources-panel-close')).toBeFocused();
       } else {
+        await expect(panel).not.toHaveAttribute('aria-modal', 'true');
         const [chatBox, panelBox] = await Promise.all([
           page.locator('#mainContent').boundingBox(),
           panel.boundingBox(),

@@ -61,7 +61,6 @@ export function ThinkingSurface({
   const { colors } = useUiTheme();
   const reduced = useReducedMotion();
   const { hovered, focused, handlers } = usePressFeedback();
-  const reveal = useReveal(open, 2);
   return (
     <div data-testid="turn-activity" style={{ alignSelf: 'stretch' }}>
       <button
@@ -118,18 +117,15 @@ export function ThinkingSurface({
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              paddingInline: 6,
+              paddingInline: 2,
               paddingBlock: 1,
-              borderRadius: R.pill,
-              backgroundColor: colors.fill,
-              border: `1px solid ${colors.hairline}`,
               flexShrink: 0,
             }}
           >
             <UiText
               testID="turn-activity-duration"
               variant="labelSm"
-              tone="tertiary"
+              tone="secondary"
               aria-live="off"
               numberOfLines={1}
               style={{ flexShrink: 0, fontVariant: ['tabular-nums'] }}

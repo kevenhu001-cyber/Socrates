@@ -108,9 +108,9 @@
 }
 
 .rn-turn-activity .thinking-step-summary {
-  max-height: min(360px, 50dvh);
-  overflow: auto;
-  overscroll-behavior: contain;
+  /* Public summaries remain in the reading flow; only raw tool output
+     uses an independently scrollable region. */
+  max-height: none;
 }
 
 .tool-run-detail-body .thinking-tool-input {

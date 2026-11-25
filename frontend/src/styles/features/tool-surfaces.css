@@ -323,12 +323,17 @@
   color: var(--foreground);
 }
 .tool-run-trigger .tool-run-label {
+  flex: 0 1 auto;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .tool-run-trigger .tool-run-state {
-  flex: none;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
   font-size: var(--ui-font-size-xs);
   color: var(--ui-text-secondary);
 }
@@ -480,4 +485,22 @@
 }
 .agent-activity-preview[data-state='failed'] {
   color: var(--destructive);
+}
+
+/* Quiet history controls: preserve full status labels and disclosure affordances
+   without expanding the transcript to the width of a long command. */
+.rn-tool-row .tool-run-trigger > svg,
+.tool-activity-burst-toggle > svg {
+  flex-shrink: 0;
+}
+.tool-activity-burst-toggle[aria-expanded='true'] {
+  color: var(--foreground);
+}
+@media (max-width: 768px) {
+  .rn-tool-row .tool-run-trigger {
+    min-height: var(--ui-control-touch);
+  }
+  .rn-tool-row[data-state='awaiting'] .tool-run-trigger {
+    flex-wrap: wrap;
+  }
 }

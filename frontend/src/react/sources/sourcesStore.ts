@@ -45,7 +45,7 @@ export function closeSources(): void {
   emit();
   /* Return focus to the answer's sources button, not to a panel that is
      hidden in the same commit. */
-  if (target?.isConnected) target.focus();
+  if (target?.isConnected) target.focus({ preventScroll: true });
 }
 
 export function getSourcesPanelState(): SourcesPanelState {

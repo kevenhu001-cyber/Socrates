@@ -88,7 +88,11 @@ function useSourcePreviewDismiss(
         return;
       setPreview(null);
     };
-    const moved = () => setPreview(null);
+    const moved = (event: Event) => {
+      // Scrolling a long source preview must not dismiss that preview.
+      if (event.target instanceof Node && dialogRef.current?.contains(event.target)) return;
+      setPreview(null);
+    };
     document.addEventListener('keydown', dismiss);
     document.addEventListener('pointerdown', outside);
     window.addEventListener('resize', moved);
@@ -117,8 +121,10 @@ function useSourcePreviewPosition(
     const height = node.offsetHeight;
     const gap = 8;
     const below = rect.bottom + gap;
-    const top =
-      below + height > window.innerHeight - 16 ? Math.max(16, rect.top - gap - height) : below;
+    const maxTop = Math.max(16, window.innerHeight - height - 16);
+    const top = below + height > window.innerHeight - 16
+      ? Math.min(maxTop, Math.max(16, rect.top - gap - height))
+      : below;
     if (top !== preview.top) setPreview((current) => (current ? { ...current, top } : current));
   }, [preview, dialogRef, anchorRef, setPreview]);
 }
@@ -260,6 +266,7 @@ export function TurnEvidence({
     }
     if (!pinned && preview?.pinned) return;
     if (preview?.claimId === claimId && preview.pinned === pinned) return;
+    cancelHoverClose();
     anchorRef.current = anchor;
     const rect = anchor.getBoundingClientRect();
     setPreview({
@@ -271,6 +278,7 @@ export function TurnEvidence({
   };
 
   const hoverClose = () => {
+    cancelHoverClose();
     if (!preview?.pinned) hoverTimer.current = setTimeout(() => setPreview(null), 240);
   };
 
