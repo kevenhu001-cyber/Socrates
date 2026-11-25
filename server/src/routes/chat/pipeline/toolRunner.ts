@@ -32,7 +32,7 @@ const ARGUMENT_ERROR_CODES: ReadonlySet<string> = new Set<string>([
   'invalid_tool_arguments',
 ]);
 
-import { hashToolArguments, type ToolTurnPolicy } from '../../../services/tools/toolTurnPolicy.js';
+import type { ToolTurnPolicy } from '../../../services/tools/toolTurnPolicy.js';
 import { SseEmitter } from './sseEmitter.js';
 import { createToolResultArchive } from '../../../services/tools/toolResultBudget.js';
 import { estimateContextTokens } from '../../../services/core/usageTracker.js';
@@ -91,6 +91,11 @@ export function createToolRunner(deps: ToolRunnerDeps): ToolRunner {
   ): Promise<StreamMessage> => {
     const tc = entry.call;
     const toolName: string = entry.toolName;
+    const releaseRegisteredCall = () => {
+      if (entry.registeredArgumentsHash != null) {
+        deps.toolPolicy.unmarkCall(toolName, entry.registeredArgumentsHash);
+      }
+    };
     const cancelled = (): StreamMessage => {
       const result = {
         status: 'cancelled',
@@ -108,7 +113,7 @@ export function createToolRunner(deps: ToolRunnerDeps): ToolRunner {
         stage: 'cancelled',
       });
       // Stopping is not a tool failure and must not consume its retry budget.
-      deps.toolPolicy.unmarkCall(toolName, hashToolArguments(entry.args));
+      releaseRegisteredCall();
       return {
         role: 'tool',
         tool_call_id: tc.id,
@@ -328,7 +333,7 @@ export function createToolRunner(deps: ToolRunnerDeps): ToolRunner {
 
     // Keep deterministic rejections pinned until the model changes arguments.
     if (canRetryIdenticalToolCall(result, entry.registryEntry?.pure === true)) {
-      deps.toolPolicy.unmarkCall(toolName, hashToolArguments(entry.args));
+      releaseRegisteredCall();
     }
 
     const rawContent = formatToolResultContent(toolName, result);

@@ -23,6 +23,8 @@
  * the loop without a code change.
  */
 
+import { createHash } from 'node:crypto';
+
 /** Consecutive same-tool failures tolerated before that tool steps aside. */
 const DEFAULT_PER_TOOL_FAILURE_LIMIT = 3;
 
@@ -227,22 +229,18 @@ export function createToolTurnPolicy(options: ToolTurnPolicyOptions = {}): ToolT
  * are recognised as the same call. Falls back to the raw string form when a
  * value cannot be serialized.
  *
- * The key is bounded but NOT a bare prefix: large argument objects
- * (code bodies up to 80 KB, agent tasks up to 20 KB) that differ only
- * past the 4 KB mark would otherwise collide and get wrongly rejected
- * as duplicates. Length plus a head/tail sample keeps the key short
- * while still distinguishing tail edits.
+ * Hash the entire canonical value, not a prefix or head/tail sample.
+ * Middle edits in long Python programs must not be mistaken for duplicates.
+ * Only the fixed-size digest is retained in the per-turn seen-call set.
  */
 export function hashToolArguments(value: unknown): string {
+  let serialized: string;
   try {
-    const serialized = stableStringify(value);
-    return serialized.length <= 4096
-      ? serialized
-      : `${serialized.length}:${serialized.slice(0, 3584)}…${serialized.slice(-512)}`;
+    serialized = stableStringify(value);
   } catch {
-    const raw = String(value);
-    return raw.length <= 4096 ? raw : `${raw.length}:${raw.slice(0, 3584)}…${raw.slice(-512)}`;
+    serialized = String(value);
   }
+  return createHash('sha256').update(serialized).digest('hex');
 }
 
 function stableStringify(value: unknown): string {

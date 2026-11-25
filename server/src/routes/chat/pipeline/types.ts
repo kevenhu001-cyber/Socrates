@@ -87,6 +87,8 @@ export interface PreparedCall {
     >['get']
   > | null;
   args: Record<string, unknown>;
+  /** Only set when this call owns a duplicate-guard registration. */
+  registeredArgumentsHash?: string | null;
   rejection: {
     code: string;
     retryable: boolean;

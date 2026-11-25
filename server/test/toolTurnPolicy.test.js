@@ -112,6 +112,19 @@ test('hashToolArguments distinguishes large payloads that differ only in the tai
   assert.ok(hashToolArguments(big).length < big.code.length);
 });
 
+test('hashToolArguments distinguishes same-length edits in the middle of long arguments', () => {
+  const head = 'a'.repeat(5000);
+  const tail = 'z'.repeat(5000);
+  const first = hashToolArguments({ code: head + 'return 1' + tail });
+  const second = hashToolArguments({ code: head + 'return 2' + tail });
+  assert.notEqual(first, second);
+  assert.match(first, /^[a-f0-9]{64}$/);
+  const policy = createToolTurnPolicy();
+  policy.registerCall('code_interpreter', first);
+  assert.equal(policy.isDuplicate('code_interpreter', second), false);
+  assert.equal(policy.isDuplicate('code_interpreter', first), true);
+});
+
 test('the absolute call ceiling stops tools even with iterations left', () => {
   const policy = createToolTurnPolicy({ maxTotalCalls: 2 });
   policy.registerCall('web_search', 'a');

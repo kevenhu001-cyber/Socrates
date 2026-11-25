@@ -543,6 +543,7 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
         if (repaired.ok && call.function) call.function.arguments = JSON.stringify(args);
 
         let rejection: PreparedCall['rejection'] = null;
+        let registeredArgumentsHash: string | null = null;
         if (!resolved.name) {
           rejection = { code: 'unknown_tool', retryable: false };
         } else if (!registryEntry || !registryEntry.enabled) {
@@ -612,18 +613,21 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
                 ? { userMessage: validation.userMessage }
                 : {}),
             };
-          } else if (toolPolicy.isDuplicate(resolved.name, hashToolArguments(args))) {
-            rejection = {
-              code: 'duplicate_tool_call',
-              retryable: true,
-              hint: 'This exact call already ran in this turn, so it was not executed again. Use the previous result, change the arguments materially, or continue in prose.',
-            };
+          } else {
+            const argumentsHash = hashToolArguments(args);
+            if (toolPolicy.isDuplicate(resolved.name, argumentsHash)) {
+              rejection = {
+                code: 'duplicate_tool_call',
+                retryable: true,
+                hint: 'This exact call already ran in this turn, so it was not executed again. Use the previous result, change the arguments materially, or continue in prose.',
+              };
+            } else {
+              toolPolicy.registerCall(resolved.name, argumentsHash);
+              registeredArgumentsHash = argumentsHash;
+            }
           }
         }
-        if (resolved.name && !rejection) {
-          toolPolicy.registerCall(resolved.name, hashToolArguments(args));
-        }
-        return { call, toolName, registryEntry, args, rejection };
+        return { call, toolName, registryEntry, args, rejection, registeredArgumentsHash };
       });
 
       // Emit tool_use event for the client to render cards.

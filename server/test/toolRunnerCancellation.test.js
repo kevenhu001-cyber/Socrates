@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { after, test } from 'node:test';
 import { getEventListeners } from 'node:events';
 import { createToolRunner } from '../src/routes/chat/pipeline/toolRunner.js';
+import { hashToolArguments } from '../src/services/tools/toolTurnPolicy.js';
 import { dispatchToolCalls } from '../src/services/tools/toolScheduler.js';
 import { shutdownPubsub } from '../src/lib/pubsub.js';
 
@@ -20,6 +21,7 @@ function prepared(id = 'plan-1') {
     },
     toolName: 'create_document',
     args,
+    registeredArgumentsHash: hashToolArguments(args),
     rejection: null,
     registryEntry: null,
   };
@@ -53,7 +55,7 @@ function fixture(signal, delay = 0) {
 
 function assertCancelled(f, id) {
   assert.deepEqual(f.records, [], 'cancellation must not execute or penalize the tool');
-  assert.equal(f.unmarked.length, 1);
+  assert.deepEqual(f.unmarked, [['create_document', prepared().registeredArgumentsHash]]);
   assert.equal(f.results.length, 1);
   assert.equal(f.results[0].id, id);
   assert.equal(f.results[0].status, 'cancelled');
@@ -71,6 +73,23 @@ test('already stopped runner does not execute a tool or consume its retry budget
   assert.equal(message.tool_call_id, 'plan-1');
   assert.equal(message.name, 'create_document');
   assert.match(message.content, /cancelled/);
+});
+
+test('cancelling a rejected duplicate does not release another call registration', async () => {
+  const ac = new AbortController();
+  ac.abort();
+  const f = fixture(ac.signal);
+  await f.runner(
+    {
+      ...prepared(),
+      registeredArgumentsHash: null,
+      rejection: { code: 'duplicate_tool_call', retryable: true },
+    },
+    ['create_document'],
+  );
+  assert.deepEqual(f.unmarked, []);
+  assert.deepEqual(f.records, []);
+  assert.equal(f.results[0].status, 'cancelled');
 });
 
 test('stopping during backoff cleans listener and timer without executing the tool', async (t) => {
