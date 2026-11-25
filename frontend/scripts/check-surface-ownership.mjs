@@ -103,6 +103,14 @@ for (const file of walk(STYLES)) {
   ];
   const migratedRoot = postcss.parse(readFileSync(file, 'utf8'), { from: file });
   migratedRoot.walkRules((rule) => {
+    if (
+      rel === 'polish/overlays.css' &&
+      /\.settings-(?:page|account-|bg-|memory-|choice-|danger-|mono|empty-hint)|\.tone-preset-/.test(rule.selector)
+    ) {
+      problems.push(
+        `${rel}:${rule.source?.start?.line ?? '?'} settings rules belong in polish/settings-page.css`,
+      );
+    }
     for (const surface of migratedSurfaces) {
       if (!surface.owners.includes(rel) && surface.pattern.test(rule.selector)) {
         problems.push(
