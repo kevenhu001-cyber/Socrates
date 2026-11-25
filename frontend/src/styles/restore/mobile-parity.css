@@ -17,10 +17,7 @@
    * ───────────────────────────────────────────────────────────── */
 
   #appShell#appShell #sidebarOpenBtn {
-    border: var(--ui-phone-drawer-border, 0) !important;
-    background: var(--ui-phone-drawer-bg, transparent) !important;
     color: var(--cg-text) !important;
-    box-shadow: none !important;
   }
 
   #appShell#appShell #sidebarOpenBtn:hover {
