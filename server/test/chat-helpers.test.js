@@ -996,7 +996,7 @@ describe('appendToolRoutingHints', () => {
       out[0].content,
       /Use `render_intelligent_ui` for every explicitly requested static or interactive/,
     );
-    assert.match(out[0].content, /stateful interaction use an OpenUI node/);
+    assert.match(out[0].content, /Use OpenUI only when native nodes cannot express the needed interaction/);
     assert.doesNotMatch(out[0].content, /declare \$step = 0|Table\(columns, rows, caption, true\)/);
     /* Advanced docs are no longer shipped on every ordinary visual call.
        The lookup tool is referenced only when it is available. */
