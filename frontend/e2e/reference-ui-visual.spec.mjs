@@ -483,6 +483,13 @@ for (const theme of ['light', 'dark']) {
       ]) {
         await page.evaluate((id) => document.getElementById(id)?.click(), nav);
         await capture(name, selector);
+        if (name === 'scheduled') {
+          const recommendation = page.locator('.scheduled-recommendation').first();
+          await expect(recommendation).toBeVisible();
+          await expect(recommendation.locator('.scheduled-recommendation-icon')).toHaveCSS(
+            'border-top-width', '0px',
+          );
+        }
         const title = page.locator(selector).locator('[data-page-title]').first();
         await expect(title).toBeVisible();
         await expect(title).toHaveCSS(
@@ -503,6 +510,13 @@ for (const theme of ['light', 'dark']) {
       await page.evaluate((id) => document.getElementById(id)?.click(), 'navPlugins');
       await page.locator('[data-connector-id="github"] .plugin-directory-card-main').click();
       await capture('plugin-detail', '.plugin-detail-view');
+      if (width > 768) {
+        const header = page.locator('.plugin-detail-page-header');
+        const actions = header.locator('.account-page-actions');
+        const headerBox = await header.boundingBox();
+        const actionsBox = await actions.boundingBox();
+        expect(actionsBox.width).toBeLessThanOrEqual(headerBox.width * 0.42 + 1);
+      }
       await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
       await capture('settings', '#settingsPage');
       if (width > 768) {
