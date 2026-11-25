@@ -257,6 +257,10 @@ html:not([data-main-view='settingsPage']) #appShell .main-page .ui-page-frame.pl
     border-radius: 0;
   }
 
+  body.workspace-active #appShell .ui-collection.library-list:not(.view-grid) .library-row + .library-row {
+    border-top: 1px solid var(--ui-border-subtle);
+  }
+
   body.workspace-active #appShell .ui-collection.library-list:not(.view-grid) .library-row:hover {
     background: color-mix(in srgb, var(--ui-bg-raised), var(--ui-text-primary) 4%);
   }

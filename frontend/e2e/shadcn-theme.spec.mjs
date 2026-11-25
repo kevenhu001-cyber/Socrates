@@ -33,6 +33,7 @@ for (const style of ['socrates', 'philosophy']) {
       await expect(settings).toBeVisible();
       const appearance = settings.locator('#settings-appearance');
       await expect(appearance).toHaveAttribute('data-slot', 'select-trigger');
+      await expect(appearance.locator('svg[data-icon-source="openai-apps-sdk"]')).toBeVisible();
       await expect(settings.locator('.settings-nav input')).toHaveAttribute(
         'data-slot',
         'input-group-control',

@@ -274,7 +274,7 @@
     padding: 0;
     border: 0;
     background: transparent;
-    color: var(--ui-text-muted);
+    color: var(--foreground);
   }
 
   /* The default phone library is a flat list
@@ -324,7 +324,7 @@
     background: transparent;
     border: 0;
     padding: var(--ui-space-xs);
-    color: var(--ui-text-secondary);
+    color: var(--ui-file-color, var(--foreground));
   }
   body.workspace-active #appShell .library-list.view-grid .workspace-row-copy {
     grid-column: 1 / -1;

@@ -459,17 +459,36 @@ for (const theme of ['light', 'dark']) {
       await capture('sidebar', '#sidebar');
       for (const [nav, selector, name] of [
         ['navPlugins', '.plugin-directory', 'plugins'],
+        ['navLibrary', '.library-directory', 'library'],
         ['navProjects', '.projects-directory', 'projects'],
         ['navScheduled', '.scheduled-directory', 'scheduled'],
       ]) {
         await page.evaluate((id) => document.getElementById(id)?.click(), nav);
         await capture(name, selector);
+        const title = page.locator(selector).locator('[data-page-title]').first();
+        await expect(title).toBeVisible();
+        await expect(title).toHaveCSS('color', theme === 'dark' ? 'rgb(255, 255, 255)' : 'rgb(0, 0, 0)');
       }
+      for (const [nav, panel, name] of [
+        ['navImages', '#imagesPanel', 'images'],
+        ['navAssistants', '#assistantsPanel', 'assistants'],
+        ['navSites', '#sitesPanel', 'sites'],
+      ]) {
+        await page.evaluate((id) => document.getElementById(id)?.click(), nav);
+        const visibleFrame = page.locator(panel).locator('.creation-surface-frame');
+        await expect(visibleFrame).toBeVisible();
+        await capture(name, panel + ' .creation-surface-frame');
+      }
+      await page.evaluate((id) => document.getElementById(id)?.click(), 'navPlugins');
+      await page.locator('[data-connector-id="github"] .plugin-directory-card-main').click();
+      await capture('plugin-detail', '.plugin-detail-view');
       await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
       await capture('settings', '#settingsPage');
       await page.locator('#settingsPage .settings-nav [data-section="models"]').click();
       await capture('models', '#settingsPage .settings-body');
       await expect(page.locator('#addProviderBtn')).toBeVisible();
+      const settingsClose = page.locator('#settingsPage .account-page-header [data-slot="button"]').first();
+      await expect(settingsClose.locator('svg')).toHaveCSS('color', theme === 'dark' ? 'rgb(255, 255, 255)' : 'rgb(0, 0, 0)');
     });
   }
 }
