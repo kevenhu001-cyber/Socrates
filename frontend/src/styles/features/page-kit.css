@@ -195,7 +195,7 @@
   width: var(--ui-control-desktop);
   height: var(--ui-control-desktop);
   padding: 0;
-  color: var(--foreground);
+  color: var(--ui-text-primary);
 }
 
 .ui-page-view-toggle .ui-page-tab > svg {
