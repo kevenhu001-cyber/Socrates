@@ -36,42 +36,6 @@
 /* Grayscale rail — a single neutral grey accent replaces the per-tool
    colour rails. */
 
-/* Broken-artifact placeholder shown when an inline image (matplotlib
-   PNG, etc.) fails to load. Replaces the <img> on error so the
-   user sees a useful diagnostic instead of a browser broken-icon. */
-.artifact-error {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 6px 0;
-  padding: 8px 10px;
-  border: 0.5px dashed hsl(0 50% 60%/0.5);
-  border-radius: 5px;
-  background: hsl(0 50% 95%/0.4);
-  font-family: var(--font-mono);
-  font-size: calc(11px * var(--app-font-scale, 1));
-  color: hsl(0 50% 35%);
-  line-height: 1.45;
-}
-.artifact-error-icon {
-  flex-shrink: 0;
-  width: 16px;
-  height: 16px;
-  color: hsl(0 55% 50%);
-}
-.artifact-error-text {
-  flex: 1;
-  word-break: break-all;
-}
-.artifact-error-retry-host {
-  margin-left: auto;
-  flex-shrink: 0;
-}
-[data-theme='socrates'][data-mode='dark'] .artifact-error {
-  background: hsl(0 30% 18%/0.5);
-  color: hsl(0 50% 75%);
-  border-color: hsl(0 40% 40%/0.5);
-}
 /* Live execution block. The badge is a small pill
    in the top-left with the current phase + elapsed seconds; the
    <pre> underneath streams stdout/stderr as it arrives. We cap
@@ -98,87 +62,6 @@
    chevron. Empty by default (display:none) so other tool cards pay no
    visual cost. The 4 runtime statuses map to ✓ / ✗ / ⏱ / – with a
    color cue that survives on both cream and dark backgrounds. */
-
-/* Inline artifacts produced by the code interpreter (matplotlib PNGs,
-   CSV exports, etc.). The figure wrapper (.exec-artifact) holds the
-   skeleton + the eventual image. A 240px max-height keeps a tall PNG
-   from pushing the page; a fade-in transition keeps the user from
-   being visually startled when the image lands. */
-.exec-artifact {
-  display: block;
-  margin: 6px 0 2px;
-  padding: 0;
-  border: 0;
-  border-radius: var(--tool-card-radius-sm);
-  overflow: hidden;
-  background: hsl(var(--bg-200) / 0.45);
-  position: relative;
-}
-.exec-artifact::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1.5px;
-  background: hsl(var(--accent-000) / 0.45);
-  border-radius: 8px 8px 0 0;
-  pointer-events: none;
-  z-index: 1;
-}
-.exec-artifact-image {
-  display: block;
-  max-width: 100%;
-  max-height: 280px;
-  border-radius: 0;
-  background: transparent;
-  object-fit: contain;
-  margin: 0 auto;
-  opacity: 0;
-  transition: opacity 0.25s ease-out;
-  cursor: zoom-in;
-}
-.exec-artifact-image.loaded {
-  opacity: 1;
-}
-.exec-artifact-image:hover {
-  opacity: 0.92;
-}
-.exec-artifact-meta {
-  background: hsl(var(--bg-200) / 0.4);
-}
-.exec-artifact-meta-name {
-  font-family: var(--font-mono);
-  min-width: 0;
-  flex: 1;
-}
-.exec-artifact-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 6px;
-  padding: 5px 10px;
-  border-radius: 6px;
-  border: 0.5px solid hsl(var(--border-300) / 0.5);
-  background: hsl(var(--bg-200));
-  font-family: var(--font-mono);
-  font-size: calc(10.5px * var(--app-font-scale, 1));
-  color: hsl(var(--text-200));
-  text-decoration: none;
-  transition:
-    background 0.12s,
-    border-color 0.12s;
-}
-.exec-artifact-link::before {
-  content: '↓';
-  font-size: 11px;
-  opacity: 0.7;
-}
-.exec-artifact-link:hover {
-  background: hsl(var(--bg-300));
-  border-color: hsl(var(--border-300));
-  color: hsl(var(--text-100));
-}
 
 /* Web Search results — structured list inside the websearch tool card.
    Shows title (clickable link), URL + date, and a brief snippet per result. */
@@ -339,41 +222,6 @@
   padding: 0;
   max-height: 180px;
 }
-.exec-artifact::before {
-  display: none;
-}
-.exec-artifact-image {
-  border-radius: 10px;
-}
-.artifact-error {
-  align-items: flex-start;
-  flex-wrap: wrap;
-  margin: 6px 0;
-  padding: 8px;
-  border: 1px solid hsl(0 45% 55%/0.35);
-  border-radius: var(--tool-card-radius-sm);
-  background: transparent;
-}
-.artifact-error-open {
-  margin-left: 0;
-  color: hsl(var(--accent-000));
-  font: inherit;
-  font-size: inherit;
-  text-decoration: underline;
-}
-.artifact-error-detail {
-  width: 100%;
-  color: hsl(var(--text-400));
-  font-size: inherit;
-}
-.artifact-error-detail code {
-  display: block;
-  margin-top: 5px;
-  white-space: pre-wrap;
-  word-break: break-word;
-  color: hsl(var(--text-400));
-}
-
 /* Open WebUI-style tool disclosure: a quiet status row until the reader
    explicitly opens Input/Output evidence. */
 .agent-tool-card {
