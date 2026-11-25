@@ -11,7 +11,7 @@ import { getSettingsNavigation } from './settingsNavigation';
 import type { SettingsSection } from './settings.types';
 import { useSettingsPreferences } from './useSettingsPreferences';
 
-const MOBILE_SETTINGS_QUERY = '(max-width: 720px)';
+const MOBILE_SETTINGS_QUERY = '(max-width: 768px)';
 const settings = installSettingsBridge();
 
 function subscribeMobileLayout(onChange: () => void) {
