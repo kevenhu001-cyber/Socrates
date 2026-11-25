@@ -1,6 +1,6 @@
 import { test, expect } from './_state-fixture.mjs';
 import { prepareChatWorkbench, WORKBENCH_VIEWPORTS } from './_chat-workbench.mjs';
-import { TURN, toolRow } from './_turn-ui.mjs';
+import { TURN, openActivity, toolRow } from './_turn-ui.mjs';
 
 const nodes = [
   { id: 'panel', type: 'panel', title: 'Estimate', state: { count: 2 } },
@@ -58,7 +58,7 @@ const message = {
   },
 };
 
-test('public summaries disclose separately while tool rows and results stay visible', async ({
+test('public summaries and tool logs share one disclosure; results stay visible', async ({
   page,
 }) => {
   await prepareChatWorkbench(page, { messages: [message] });
@@ -67,7 +67,7 @@ test('public summaries disclose separately while tool rows and results stay visi
   await expect(activity).toHaveCount(1);
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   await expect(page.locator('.intui')).toBeVisible();
-  await expect(toolRow(page, 'ui')).toBeVisible();
+  await expect(toolRow(page, 'ui')).toBeHidden();
   const widths = await page
     .locator('.intui')
     .evaluate((node) => ({ ui: node.clientWidth, host: node.parentElement.clientWidth }));
@@ -258,7 +258,7 @@ test('live activity keeps tool rows folded until requested', async ({ page }) =>
     }
     window.__unifiedController = ctl;
   });
-  const burst = page.locator('.tool-activity-burst-toggle');
+  const burst = page.locator('[data-testid="turn-activity-toggle"]');
   await expect(burst).toHaveAttribute('aria-expanded', 'false');
   await expect(toolRow(page, 'third')).toBeHidden();
   await burst.click();
@@ -272,7 +272,7 @@ test('live activity keeps tool rows folded until requested', async ({ page }) =>
     ctl.finish();
   });
   await expect(page.locator('.tool-activity-burst-caption')).toHaveCount(0);
-  await expect(page.locator('.tool-activity-burst-toggle')).toBeVisible();
+  await expect(page.locator('[data-testid="turn-activity-toggle"]')).toBeVisible();
 });
 
 
@@ -287,6 +287,7 @@ test('live workspace steps stay behind the row disclosure', async ({ page }) => 
   });
   const preview = page.getByTestId('agent-activity-preview');
   await expect(preview).toHaveCount(0);
+  await openActivity(page);
   await toolRow(page, 'agent').click();
   await expect(preview).toHaveCount(0);
   await expect(page.locator('.agent-step')).toHaveCount(2);
@@ -322,6 +323,7 @@ test('stopped workspace steps retain an unconfirmed outcome', async ({ page }) =
       }],
     }],
   });
+  await openActivity(page);
   await toolRow(page, 'cancelled').click();
   const run = page.locator('.agent-run');
   await expect(run).toHaveAttribute('data-state', 'cancelled');
