@@ -18,7 +18,7 @@ function LibraryView({
   dispatch: ReturnType<typeof useWorkspaceDispatch>;
 }>) {
   const [chip, setChip] = useState<'recommend' | 'favorite' | 'folder' | 'images' | 'all'>(
-    'recommend',
+    'all',
   );
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [typeFilter, setTypeFilter] = useState<string>('all');
@@ -103,7 +103,7 @@ function LibraryView({
           <div className="ui-collection-body">
             {items.map((item) => (
               <LibraryItemRow
-                key={item.id}
+                key={`${item.itemType}:${item.id}`}
                 item={item}
                 itemKey={item.itemType || 'files'}
                 tab={item.itemType || 'files'}
