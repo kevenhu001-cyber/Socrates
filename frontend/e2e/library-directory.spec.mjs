@@ -162,12 +162,16 @@ test('library filters and view mode use shadcn stateful controls', async ({ page
   await page.keyboard.press('Escape');
   await expect(filterButton).toBeFocused();
 
-  const viewOptions = page.locator('.library-view-switcher [data-slot="toggle-group-item"]');
+  const viewToggle = page.locator('.library-view-switcher.ui-page-view-toggle');
+  const viewOptions = viewToggle.locator('[data-slot="toggle-group-item"]');
+  await expect(viewOptions).toHaveCount(2);
+  await expect(viewToggle.locator('[aria-pressed="true"]')).toHaveCount(1);
   const gridView = viewOptions.nth(0);
   const listView = viewOptions.nth(1);
   await expect(listView).toHaveAttribute('aria-pressed', 'true');
   await gridView.click();
   await expect(gridView).toHaveAttribute('aria-pressed', 'true');
+  await expect(viewToggle.locator('[aria-pressed="true"]')).toHaveCount(1);
   await expect(page.locator('.library-list')).toHaveClass(/view-grid/);
   await page.screenshot({
     path: 'test-results/shadcn-library-controls-desktop.png',
