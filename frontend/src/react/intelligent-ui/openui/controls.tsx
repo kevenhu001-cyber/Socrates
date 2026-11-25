@@ -5,6 +5,7 @@ import { Textarea as ShadcnTextarea } from '../../ui/shadcn/textarea';
 import { NativeSelect as ShadcnNativeSelect } from '../../ui/shadcn/native-select';
 import { NativeControl as ShadcnNativeControl } from '../../ui/NativeControl';
 import { Button as UiButton } from '../../ui/Button';
+import { Button as ShadcnButton } from '../../ui/shadcn/button';
 // Adapted from thesysdev/open-intelligent-ui (MIT); see LICENSE.
 import {
   action,
@@ -119,13 +120,12 @@ export const Button = defineComponent({
     const streaming = useIsStreaming();
     const label = String(props.label ?? '');
     return (
-      <UiButton
+      <ShadcnButton
         type="button"
+        variant={props.color === 'danger' ? 'destructive' : props.variant === 'outline' ? 'outline' : props.variant === 'soft' ? 'secondary' : props.variant === 'ghost' ? 'ghost' : 'default'}
+        size={props.size === 'sm' ? 'sm' : props.size === 'lg' ? 'touch' : 'lg'}
         className={cx(
           'iui-button',
-          `iui-button-${props.variant ?? 'solid'}`,
-          props.color && props.color !== 'primary' && `iui-button-${props.color}`,
-          `iui-button-${props.size ?? 'md'}`,
           props.block && 'iui-block',
         )}
         disabled={!!props.disabled || streaming || !props.action}
@@ -133,7 +133,7 @@ export const Button = defineComponent({
       >
         {props.icon ? <Glyph name={props.icon} size={props.size === 'sm' ? 14 : 16} /> : null}
         <MathText text={label} />
-      </UiButton>
+      </ShadcnButton>
     );
   },
 });
@@ -152,16 +152,18 @@ export const IconButton = defineComponent({
     const streaming = useIsStreaming();
     const label = props.label || String(props.icon ?? '');
     return (
-      <UiButton
+      <ShadcnButton
         type="button"
-        className={cx('iui-icon-button', `iui-icon-button-${props.variant ?? 'outline'}`)}
+        className="iui-icon-button"
+        variant={props.variant === 'solid' ? 'default' : props.variant === 'ghost' ? 'ghost' : 'outline'}
+        size="icon-sm"
         aria-label={label}
         title={props.label || undefined}
-        disabled={streaming}
+        disabled={streaming || !props.action}
         onClick={() => run(label, props.action)}
       >
         <Glyph name={props.icon} size={16} />
-      </UiButton>
+      </ShadcnButton>
     );
   },
 });
@@ -664,24 +666,28 @@ export const Timer = defineComponent({
           <span className="iui-timer-time">{clock(left)}</span>
         </div>
         <div className="iui-timer-actions">
-          <UiButton
+          <ShadcnButton
             type="button"
-            className="iui-button iui-button-solid iui-button-sm"
+            className="iui-button"
+            variant="default"
+            size="sm"
             disabled={streaming || left === 0}
             onClick={toggle}
           >
             <Glyph name={running ? 'pause' : 'play'} size={14} />
             {running ? 'Pause' : startedAt === null || left === 0 ? 'Start' : 'Resume'}
-          </UiButton>
-          <UiButton
+          </ShadcnButton>
+          <ShadcnButton
             type="button"
-            className="iui-button iui-button-ghost iui-button-sm"
+            className="iui-button"
+            variant="ghost"
+            size="sm"
             disabled={streaming || startedAt === null}
             onClick={reset}
           >
             <Glyph name="rotate-ccw" size={14} />
             Reset
-          </UiButton>
+          </ShadcnButton>
         </div>
       </div>
     );
