@@ -20,6 +20,7 @@ import { shutdownPubsub } from '../src/lib/pubsub.js';
 
 import { streamChatCompletion } from '../src/services/core/llm/stream.js';
 import { callChatCompletion } from '../src/services/core/llm/complete.js';
+import { getLlmDispatcher } from '../src/services/core/llm/dispatcher.js';
 import { isToolFinishReason } from '../src/services/core/llm/protocol.js';
 import {
   appendToolArgumentDelta,
@@ -92,6 +93,43 @@ const BASE_OPTS = Object.freeze({
   apiKey: 'sk-test',
   model: 'gpt-test',
   messages: [{ role: 'user', content: 'hi' }],
+});
+
+test('completion and streaming share the configured proxy only for OpenRouter chat', async (t) => {
+  const previous = process.env.OPENROUTER_PROXY;
+  process.env.OPENROUTER_PROXY = 'http://127.0.0.1:7890';
+  const apiBase = 'https://openrouter.ai/api/v1';
+  const proxy = getLlmDispatcher(apiBase + '/chat/completions');
+  const standard = getLlmDispatcher();
+  t.after(async () => {
+    if (previous === undefined) delete process.env.OPENROUTER_PROXY;
+    else process.env.OPENROUTER_PROXY = previous;
+    await proxy.close();
+  });
+  assert.notEqual(proxy, standard);
+  assert.equal(getLlmDispatcher('https://openrouter.ai/api/v1/embeddings'), standard);
+  assert.equal(getLlmDispatcher('https://openrouter.ai.example/v1/chat/completions'), standard);
+
+  const fetchMock = mock.fn(async (_url, init) =>
+    JSON.parse(init.body).stream
+      ? makeSseResponse([{ choices: [{ delta: { content: 'ok' } }] }, sseDone()])
+      : makeJsonResponse({ choices: [{ message: { content: 'ok' } }] }),
+  );
+  globalThis.fetch = fetchMock;
+  const opts = { ...BASE_OPTS, apiBase };
+  await callChatCompletion(opts);
+  await streamChatCompletion(
+    opts,
+    () => {},
+    () => {},
+    (error) => {
+      throw error;
+    },
+  );
+  assert.deepEqual(
+    fetchMock.mock.calls.map((call) => call.arguments[1].dispatcher),
+    [proxy, proxy],
+  );
 });
 
 test('both chat transports accept base URLs and complete endpoint URLs', async () => {

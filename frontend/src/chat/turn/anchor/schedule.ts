@@ -14,12 +14,12 @@ import { reportSwallow as reportEmptyCatch } from '../../../util/reportSwallow.t
 import {
   BUBBLE_FADE_MAX_MS,
   TURN_ANCHOR_MIN_RESERVE,
-  TURN_ANCHOR_TOP_OFFSET,
   isMsgListMounted,
   isSettlingOwner,
   markTurnViewportOwner,
   nextSettlingOwner,
   turnAnchorReserve,
+  turnAnchorTopOffset,
   turnRowFor,
   type RetryViewportOffset,
   type TurnAnchorList,
@@ -450,7 +450,7 @@ export function scheduleActiveTurnToTop(
     const users = list.querySelectorAll('.msg.user');
     const anchor = users.length ? users[users.length - 1] : null;
     if (!anchor) return;
-    const targetOffset = TURN_ANCHOR_TOP_OFFSET;
+    const targetOffset = turnAnchorTopOffset(styles);
     const reserve = turnAnchorReserve(
       list.clientHeight,
       anchor.getBoundingClientRect().height,

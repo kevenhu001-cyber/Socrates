@@ -311,8 +311,8 @@ test('retiring a spent reserve keeps the prompt in its slot when the row settles
     /* The hold watches the retired row, so the commit reaches it and it
        re-aligns the prompt in its slot. */
     assert.equal(resize(spent), true, 'the hold watches the retired row');
-    assert.equal(scrollTop, 2460);
-    assert.equal(prompt.getBoundingClientRect().top, 12);
+    assert.equal(scrollTop, promptContent - 24);
+    assert.equal(prompt.getBoundingClientRect().top, 24);
     assert.equal(list.dataset.turnViewportOwner, 'turn');
     dispatchUi({ type: 'ui/set', key: '_userScrolledAway', value: true });
     assert.equal(

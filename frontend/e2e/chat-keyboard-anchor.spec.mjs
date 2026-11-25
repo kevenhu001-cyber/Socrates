@@ -501,7 +501,7 @@ test('a prompt sent with the keyboard open keeps its top offset when the keyboar
       if (!latest) return 9999;
       return Math.round(latest.getBoundingClientRect().top - list.getBoundingClientRect().top);
     });
-  await expect.poll(promptOffset, { timeout: 5_000 }).toBeLessThanOrEqual(24);
+  await expect.poll(promptOffset, { timeout: 5_000 }).toBeLessThanOrEqual(70);
 
   /* Sample the prompt for the whole close motion. Without a reserve that
      tracks the growing transcript, the browser clamps scrollTop and the
@@ -533,7 +533,7 @@ test('a prompt sent with the keyboard open keeps its top offset when the keyboar
   const samples = (await sampling).filter((value) => value != null);
 
   expect(samples.length).toBeGreaterThan(0);
-  expect(Math.max(...samples), JSON.stringify(samples)).toBeLessThanOrEqual(24);
+  expect(Math.max(...samples), JSON.stringify(samples)).toBeLessThanOrEqual(70);
   for (let i = 1; i < samples.length; i += 1) {
     expect(
       Math.abs(samples[i] - samples[i - 1]),

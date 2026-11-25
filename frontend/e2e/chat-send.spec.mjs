@@ -162,7 +162,7 @@ test('mobile send places the submitted prompt and thinking state at the viewport
         }),
       { timeout: 5_000 },
     )
-    .toBeLessThanOrEqual(24);
+    .toBeLessThanOrEqual(70);
 
   const placement = await page.evaluate(() => {
     const list = document.getElementById('msgList');
@@ -186,7 +186,7 @@ test('mobile send places the submitted prompt and thinking state at the viewport
 
   expect(placement.userOffset).not.toBeNull();
   expect(placement.userOffset).toBeGreaterThanOrEqual(-2);
-  expect(placement.userOffset, JSON.stringify(placement)).toBeLessThanOrEqual(24);
+  expect(placement.userOffset, JSON.stringify(placement)).toBeLessThanOrEqual(70);
   expect(placement.thinkingVisible).toBe(true);
   expect(placement.anchored).toBe(true);
 });
@@ -271,7 +271,7 @@ test('Tutor button send uses the same top anchor while the reply streams', async
           }),
         { timeout: 5_000 },
       )
-      .toBeLessThanOrEqual(24);
+      .toBeLessThanOrEqual(26);
 
     const state = await page.evaluate(() => {
       const list = document.getElementById('msgList');
@@ -286,7 +286,7 @@ test('Tutor button send uses the same top anchor while the reply streams', async
     });
     expect(state.mode).toBe('tutor');
     expect(state.offset).toBeGreaterThanOrEqual(-2);
-    expect(state.offset).toBeLessThanOrEqual(24);
+    expect(state.offset).toBeLessThanOrEqual(26);
     expect(state.anchored).toBe(true);
     expect(state.away).toBe(false);
   } finally {
@@ -337,11 +337,13 @@ test('mobile first turn stays at the transcript top when the viewport grows', as
     });
   /* The anchor glides the first prompt into place; poll until it settles
      rather than sampling a fixed moment mid-glide. */
-  await expect.poll(firstTurnOffset, { timeout: 5_000 }).toBeLessThanOrEqual(40);
+  await expect
+    .poll(async () => Math.abs((await firstTurnOffset()) - 68), { timeout: 5_000 })
+    .toBeLessThanOrEqual(2);
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.waitForTimeout(400);
-  expect(await firstTurnOffset()).toBeLessThanOrEqual(40);
+  expect(Math.abs((await firstTurnOffset()) - 68)).toBeLessThanOrEqual(2);
 });
 
 test('a sent prompt keeps its top offset across viewport changes', async ({ page }) => {
@@ -402,7 +404,7 @@ test('a sent prompt keeps its top offset across viewport changes', async ({ page
       if (!latest) return 9999;
       return Math.round(latest.getBoundingClientRect().top - list.getBoundingClientRect().top);
     });
-  await expect.poll(promptOffset, { timeout: 5_000 }).toBeLessThanOrEqual(24);
+  await expect.poll(promptOffset, { timeout: 5_000 }).toBeLessThanOrEqual(70);
 
   /* Sample the anchored prompt for the whole layout change. A reserve that
      does not track the live transcript height lets the browser clamp
@@ -437,7 +439,7 @@ test('a sent prompt keeps its top offset across viewport changes', async ({ page
   const assertStable = (name, offsets) => {
     const samples = offsets.filter((value) => value != null);
     expect(samples.length, name).toBeGreaterThan(0);
-    expect(Math.max(...samples), `${name}: ${JSON.stringify(samples)}`).toBeLessThanOrEqual(24);
+    expect(Math.max(...samples), `${name}: ${JSON.stringify(samples)}`).toBeLessThanOrEqual(70);
     for (let i = 1; i < samples.length; i += 1) {
       expect(
         Math.abs(samples[i] - samples[i - 1]),
@@ -454,7 +456,7 @@ test('a sent prompt keeps its top offset across viewport changes', async ({ page
     return sampling;
   })();
   assertStable('keyboard-close growth', growFrames);
-  expect(await promptOffset(), 'settled offset after the growth').toBeLessThanOrEqual(24);
+  expect(await promptOffset(), 'settled offset after the growth').toBeLessThanOrEqual(70);
 
   /* Shrinking back must shrink the reserve without moving the prompt. */
   const shrinkFrames = await (async () => {
@@ -463,7 +465,7 @@ test('a sent prompt keeps its top offset across viewport changes', async ({ page
     return sampling;
   })();
   assertStable('keyboard-open shrink', shrinkFrames);
-  expect(await promptOffset(), 'settled offset after the shrink').toBeLessThanOrEqual(24);
+  expect(await promptOffset(), 'settled offset after the shrink').toBeLessThanOrEqual(70);
 });
 
 test('retry replaces the failed answer and resumes at the visible error position', async ({

@@ -4,7 +4,7 @@
 // that does not fill the screen, the bottom of a full one, or the very first
 // message of a long session — and whether or not an answer was still
 // streaming, the transcript must glide (never jump) to the submitted prompt
-// and settle it at the top offset (chat/turnAnchor.ts TURN_ANCHOR_TOP_OFFSET).
+// and settle it inside the transcript’s visible reading area.
 //
 // Each case samples, on every animation frame from the submit until the send
 // anchor releases (`data-turn-anchor-settling` cleared) plus a short tail,
@@ -320,8 +320,8 @@ function assertGlide({ offsets, times, sawSettling }, { expectMotion }) {
 }
 
 const VIEWPORTS = [
-  { name: 'desktop', size: { width: 1280, height: 800 } },
-  { name: 'mobile', size: { width: 390, height: 844 } },
+  { name: 'desktop', size: { width: 1280, height: 800 }, offset: 24 },
+  { name: 'mobile', size: { width: 390, height: 844 }, offset: 68 },
 ];
 
 const SCENARIOS = [
@@ -421,8 +421,13 @@ for (const vp of VIEWPORTS) {
         assertGlide(result, { expectMotion: scenario.motion });
 
         const offset = await promptOffset(page);
-        expect(offset).toBeGreaterThanOrEqual(10);
-        expect(offset).toBeLessThanOrEqual(14);
+        expect(offset).toBeGreaterThanOrEqual(vp.offset - 2);
+        expect(offset).toBeLessThanOrEqual(vp.offset + 2);
+        if (vp.name === 'mobile') {
+          const header = await page.locator('#topBar').boundingBox();
+          const prompt = await page.locator('#msgList .msg.user').last().boundingBox();
+          expect(prompt.y - (header.y + header.height)).toBeGreaterThanOrEqual(10);
+        }
         const away = await page.evaluate(() => window.__socratesTestState.ui()._userScrolledAway);
         expect(away).toBe(false);
 
@@ -449,8 +454,8 @@ test('reduced motion: a send from deep history lands on the prompt without anima
   expect(motion.count, JSON.stringify(offsets.map(Math.round))).toBeLessThanOrEqual(2);
   expect(motion.span, JSON.stringify(offsets.map(Math.round))).toBeLessThanOrEqual(60);
   const offset = await promptOffset(page);
-  expect(offset).toBeGreaterThanOrEqual(10);
-  expect(offset).toBeLessThanOrEqual(14);
+  expect(offset).toBeGreaterThanOrEqual(22);
+  expect(offset).toBeLessThanOrEqual(26);
   await page.evaluate(() => {
     for (const s of window.__streams) s.finish();
   });

@@ -5,6 +5,7 @@ import dns from 'node:dns';
 import { Agent, EnvHttpProxyAgent, ProxyAgent, type Dispatcher } from 'undici';
 
 let _llmDispatcher: Dispatcher | null = null;
+let openRouterDispatcher: ProxyAgent | null = null;
 const _dnsCache = new Map<
   string,
   { addresses: Array<{ address: string; family: number }>; expires: number }
@@ -29,7 +30,17 @@ function cachedDnsLookup(
   });
 }
 
-export function getLlmDispatcher(): Dispatcher {
+export function getLlmDispatcher(endpoint?: string): Dispatcher {
+  const openRouterProxy = process.env.OPENROUTER_PROXY;
+  const url = openRouterProxy && endpoint ? URL.parse(endpoint) : null;
+  if (
+    openRouterProxy &&
+    url?.origin === 'https://openrouter.ai' &&
+    url.pathname === '/api/v1/chat/completions'
+  ) {
+    openRouterDispatcher ??= new ProxyAgent(openRouterProxy);
+    return openRouterDispatcher;
+  }
   if (_llmDispatcher) return _llmDispatcher;
   const proxyUrl =
     process.env.LLM_PROXY ||

@@ -40,10 +40,12 @@ export function clearTurnViewportOwner(list: HTMLElement | null): void {
     delete (list as TurnAnchorList).__socratesTurnViewportOwner;
 }
 
-/* The submitted prompt's own top offset inside the transcript viewport.
-   Shared by the send-time pass and the viewport hold below so both land
-   (and stay) on the same line. */
-export const TURN_ANCHOR_TOP_OFFSET = 12;
+/** The transcript's scroll padding includes the overlaid header on phones. */
+export function turnAnchorTopOffset(
+  styles: Pick<CSSStyleDeclaration, 'scrollPaddingTop'> | null,
+): number {
+  return parseFloat(styles?.scrollPaddingTop ?? '') || 24;
+}
 
 /* The active turn never reserves less than this much answer room. */
 export const TURN_ANCHOR_MIN_RESERVE = 120;
@@ -58,7 +60,7 @@ export const TURN_ANCHOR_BOTTOM_GAP = 24;
 
 /**
  * Leading space the active answer needs so the submitted prompt can stay at
- * TURN_ANCHOR_TOP_OFFSET while the answer fills the rest of the live
+ * its top offset while the answer fills the rest of the live
  * transcript viewport. Recomputed on every viewport change, not just at send
  * time: the keyboard and the composer both change the transcript's height
  * after the send, and a stale reserve lets the scroll range shrink under the

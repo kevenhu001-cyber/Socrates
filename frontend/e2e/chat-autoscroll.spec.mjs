@@ -400,7 +400,7 @@ test('send glides the prompt to the top instead of teleporting', async ({ page }
   expect(settled.settling).toBe(false);
   expect(settled.away).toBe(false);
   expect(settled.userOffset).toBeGreaterThanOrEqual(-2);
-  expect(settled.userOffset).toBeLessThanOrEqual(24);
+  expect(settled.userOffset).toBeLessThanOrEqual(26);
 
   await page.evaluate(() => window.__finishStream());
   await page.waitForTimeout(200);
@@ -432,7 +432,7 @@ test('sticky bottom resumes once the answer outgrows the prompt reserve', async 
       distance: Math.round(list.scrollHeight - list.scrollTop - list.clientHeight),
     };
   });
-  expect(anchored.userOffset).toBeLessThanOrEqual(24);
+  expect(anchored.userOffset).toBeLessThanOrEqual(26);
   expect(anchored.distance).toBeGreaterThan(0);
 
   /* A delta far larger than the reserved room: the tail must stay visible
@@ -537,7 +537,7 @@ test('superseding a still-thinking turn keeps the send visually stable', async (
         return Math.round(latest.getBoundingClientRect().top - list.getBoundingClientRect().top);
       }),
     )
-    .toBeLessThanOrEqual(24);
+    .toBeLessThanOrEqual(26);
   await expect
     .poll(() => page.evaluate(() => document.querySelectorAll('#msgList [data-turn-stub]').length))
     .toBe(0);

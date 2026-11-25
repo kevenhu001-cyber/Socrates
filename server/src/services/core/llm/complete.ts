@@ -47,7 +47,7 @@ export async function callChatCompletion(opts: ChatCompletionRequestOptions) {
           headers: providerHeaders(apiKey, false),
           body: JSON.stringify(variant.body),
           signal,
-          dispatcher: getLlmDispatcher(),
+          dispatcher: getLlmDispatcher(endpoint),
         } as unknown as RequestInit);
       } catch (err) {
         if ((err as Error).name === 'AbortError') throw err;

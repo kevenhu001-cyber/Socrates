@@ -57,7 +57,7 @@ import { createStreamPlayer } from '../../render/streamPlayer.js';
 import { scheduleActiveTurnToTop } from './anchor/schedule.ts';
 import {
   turnAnchorReserve,
-  TURN_ANCHOR_TOP_OFFSET,
+  turnAnchorTopOffset,
   type RetryViewportOffset,
 } from './anchor/ownership.ts';
 import { createToolRuntime } from '../toolRuntime/index.ts';
@@ -111,7 +111,6 @@ function prepareStreamingShell(opts: StreamingOptions) {
   hideNewReplyPill();
   const list = document.getElementById('msgList')!;
   const clientId = opts.clientId ? opts.clientId : 'msg-' + generateId();
-  const initialTargetOffset = TURN_ANCHOR_TOP_OFFSET;
   dispatchBatch({
     ui: { type: 'ui/set', key: '_userScrolledAway', value: false },
     session: {
@@ -170,7 +169,7 @@ function prepareStreamingShell(opts: StreamingOptions) {
             {
               _turnAnchorMinHeight: reserve,
               _turnAnchorMode: 'turn',
-              _turnViewportTarget: initialTargetOffset,
+              _turnViewportTarget: turnAnchorTopOffset(styles),
             },
             true,
           );

@@ -105,7 +105,7 @@ export async function streamChatCompletion(
             headers: providerHeaders(apiKey, true),
             body: JSON.stringify(variant.body),
             signal,
-            dispatcher: getLlmDispatcher(),
+            dispatcher: getLlmDispatcher(endpoint),
           } as unknown as RequestInit);
           if (response.ok) {
             successfulVariant = variant;
