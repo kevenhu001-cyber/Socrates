@@ -272,3 +272,84 @@
     background-position: 0% 0;
   }
 }
+
+/* Web activity is a quiet transcript disclosure, not a separate card. */
+.rn-turn-activity .rn-turn-activity-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-xs);
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ui-text-secondary);
+  font: inherit;
+  font-size: var(--ui-font-size-sm);
+  line-height: var(--ui-text-ui-line);
+  text-align: start;
+}
+.rn-turn-activity button.rn-turn-activity-toggle {
+  cursor: pointer;
+}
+.rn-turn-activity button.rn-turn-activity-toggle:hover {
+  color: var(--foreground);
+}
+.rn-turn-activity button.rn-turn-activity-toggle:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-focus-shadow);
+  border-radius: var(--ui-radius-row);
+}
+.rn-turn-activity .activity-caption {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rn-turn-activity .rn-turn-activity-toggle .tool-inline-tool-icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+.rn-turn-activity .activity-chevron {
+  flex: none;
+  transition: transform var(--ui-duration-fast) var(--ui-ease-out);
+}
+.rn-turn-activity[data-open='true'] .activity-chevron {
+  transform: rotate(90deg);
+}
+.activity-disclosure > .ui-collapse-inner {
+  opacity: 1;
+  transition: opacity var(--ui-duration-normal) var(--ui-ease-out);
+}
+.activity-disclosure.collapsed > .ui-collapse-inner {
+  opacity: 0;
+}
+.activity-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-sm);
+  margin-block: var(--ui-space-xs) var(--ui-space-md);
+  padding-inline-start: var(--ui-space-md);
+  border-inline-start: 1px solid var(--ui-border-subtle);
+  min-width: 0;
+}
+.activity-summary-step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-xs);
+  font-size: var(--ui-font-size-sm);
+  line-height: var(--ui-line-height-relaxed);
+}
+.activity-summary-title {
+  color: var(--foreground);
+  font-weight: var(--ui-font-weight-medium);
+}
+.rn-turn-activity .activity-summary-step .thinking-step-summary {
+  margin: 0;
+}
+@media (prefers-reduced-motion: reduce), (forced-colors: active) {
+  .rn-turn-activity .activity-chevron,
+  .activity-disclosure > .ui-collapse-inner {
+    transition: none;
+  }
+}
