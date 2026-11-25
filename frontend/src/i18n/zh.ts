@@ -1279,6 +1279,7 @@ export const zh = {
   'think.rn.elapsed': '{sec} 秒',
   'think.rn.runningNoTime': '正在处理…',
   'think.rn.doneNoTime': '思考过程',
+  'think.toolsWorking': '正在处理…',
   'think.summaryToolTitle': '使用了 {n} 个工具',
   'think.summaryToolsTitle': '使用了 {n} 个工具',
   'tool.verb.search': '搜索网页',
