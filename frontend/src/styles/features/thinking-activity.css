@@ -299,6 +299,12 @@
   box-shadow: var(--ui-focus-shadow);
   border-radius: var(--ui-radius-row);
 }
+.rn-turn-activity .activity-duration {
+  flex: none;
+  font-size: var(--ui-font-size-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--ui-text-secondary);
+}
 .rn-turn-activity .activity-caption {
   min-width: 0;
   overflow: hidden;
