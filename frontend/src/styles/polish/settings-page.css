@@ -140,7 +140,7 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
   .settings-page .settings-pane > h2 {
     padding-bottom: 12px;
     border-bottom: 1px solid var(--ui-border-subtle);
-    font-size: var(--ui-text-lg);
+    font-size: var(--ui-font-size-lg);
     font-weight: var(--ui-font-weight-semibold);
   }
 

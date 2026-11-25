@@ -83,7 +83,7 @@ test('plugin detail header and actions fit a phone viewport', async ({ page }) =
 test('plugin detail shows only verified chat actions and connection requirements', async ({ page }) => {
   await openConnectedPluginDetail(page);
   const detail = page.locator('.plugin-detail-view');
-  await expect(detail.getByRole('heading', { name: 'What you can do' })).toBeVisible();
+  await expect(detail.getByRole('heading', { name: /What you can do/ })).toBeVisible();
   await expect(detail.locator('.plugin-detail-feature-item')).toHaveCount(1);
   await expect(detail.locator('.plugin-detail-feature-item')).toContainText('Get the authenticated GitHub user.');
   await expect(detail.locator('.plugin-detail-feature-item')).not.toContainText('Issues');
@@ -104,6 +104,14 @@ test('using a connected plugin waits for the chat reset to succeed', async ({ pa
   expect(await page.evaluate(() => '__socratesComposerPluginSelectionBridge' in window)).toBe(
     false,
   );
+});
+
+test('plugin example opens a draft without submitting the request', async ({ page }) => {
+  await openConnectedPluginDetail(page);
+  await page.locator('button.plugin-detail-prompt-card').first().click();
+  await expect(page.locator('#topicSetup')).toBeVisible();
+  await expect(page.locator('#composerInputWrap .composer-plugin-chip-label')).toHaveText(['GitHub']);
+  await expect(page.locator('#composerInputWrap')).toContainText('Which GitHub account am I connected to?');
 });
 
 test('canceling the chat reset keeps the connected plugin unselected', async ({ page }) => {

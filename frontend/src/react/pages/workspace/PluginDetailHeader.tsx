@@ -30,7 +30,7 @@ export function PluginDetailHeader({
   onUseInChat,
 }: PluginDetailHeaderProps) {
   const pending = plugin.connection?.status === 'initiated';
-  const failed = plugin.connection?.status === 'failed';
+  const failed = ['failed', 'error', 'expired'].includes(plugin.connection?.status || '');
   const status = isConnected
     ? i18n('plugins.detail.connected', 'Connected')
     : pending
@@ -47,6 +47,7 @@ export function PluginDetailHeader({
       className="plugin-detail-page-header"
       titleId="plugin-detail-title"
       title={plugin.name}
+      titleTabIndex={-1}
       leading={
         <>
           <Button

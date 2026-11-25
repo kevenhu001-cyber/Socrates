@@ -84,7 +84,7 @@
 #appShell .plugin-detail-view {
   display: flex;
   flex-direction: column;
-  max-width: 760px;
+  max-width: var(--ui-page-reading-width);
   width: 100%;
   margin: 0 auto;
 }
@@ -117,7 +117,7 @@
   border-radius: var(--ui-radius-lg);
   display: grid;
   place-items: center;
-  background: var(--cg-surface-raised);
+  background: var(--ui-bg-surface);
   overflow: hidden;
   padding: 0;
 }
@@ -231,7 +231,13 @@
   color: var(--ui-text-secondary);
 }
 
+#appShell button.plugin-detail-prompt-card:hover {
+  background: var(--ui-bg-hover);
+}
+
 #appShell .plugin-detail-prompt-text {
+  flex: 1;
+  min-width: 0;
   font-size: var(--ui-font-size-sm);
   line-height: 1.4;
   color: var(--foreground);
@@ -664,9 +670,9 @@
   }
 
   #appShell .plugin-detail-page-header .account-page-actions {
-    flex: 1 0 calc(100% - 108px);
+    flex: 1 0 100%;
     min-width: 0;
-    margin-inline-start: 108px;
+    margin-inline-start: 0;
   }
 
   #appShell .plugin-detail-cta-group {

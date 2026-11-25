@@ -1,27 +1,6 @@
-/* One phone owner for Library and Plugins. Desktop rules are shared from
-   surfaces.css/polish/workspace.css; no compatibility geometry overrides. */
+/* Phone-only layout for Library and Plugins. Shared search controls and desktop
+   directory surfaces are owned by Page Kit and polish/app-pages.css. */
 @media (max-width: 768px) {
-  body.workspace-active #appShell .plugin-directory-search {
-    display: flex;
-    align-items: center;
-    flex: 1;
-    min-width: 0;
-    height: var(--ui-control-touch);
-    min-height: var(--ui-control-touch);
-    padding: 0 var(--ui-space-md);
-    border: 1px solid transparent;
-    border-radius: var(--ui-radius-pill);
-    background: var(--ui-bg-field);
-  }
-  body.workspace-active #appShell :is(.plugin-directory-search, .library-search-pill):focus-within {
-    border-color: var(--ui-border-strong);
-  }
-
-  body.workspace-active #appShell .plugin-directory-search input {
-    min-width: 0;
-    width: 100%;
-    font-size: max(1rem, var(--ui-font-size-md));
-  }
   body.workspace-active #appShell .plugin-directory-add-btn {
     display: grid;
     place-items: center;
@@ -231,21 +210,6 @@
     width: 1px;
     height: 20px;
     background: var(--border);
-  }
-  body.workspace-active #appShell .library-search-pill {
-    flex: 1;
-    min-width: 0;
-    height: var(--ui-control-touch);
-    min-height: var(--ui-control-touch);
-    padding: 0 var(--ui-space-md);
-    border: 1px solid transparent;
-    border-radius: var(--ui-radius-pill);
-    background: var(--ui-bg-field);
-  }
-  body.workspace-active #appShell .library-search-pill input {
-    width: 100%;
-    min-width: 0;
-    font-size: max(1rem, var(--ui-font-size-md));
   }
   body.workspace-active #appShell .library-desktop-table-head {
     display: block;

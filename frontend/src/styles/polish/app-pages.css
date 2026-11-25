@@ -463,7 +463,7 @@ body.workspace-active #appShell .ui-page-card.project-card {
   margin-inline-start: auto;
 }
 
-/* ── Plugins ────────────────────────────────────────────────────────── */
+/* ── Plugins — canonical directory owner ───────────────────────────── */
 
 #appShell .plugin-directory-section {
   margin-bottom: var(--ui-space-xl);
@@ -477,7 +477,7 @@ body.workspace-active #appShell .ui-page-card.project-card {
 #appShell .plugin-directory-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
-  gap: var(--ui-space-md);
+  gap: var(--ui-space-sm) var(--ui-space-lg);
 }
 
 #appShell .plugin-directory-row {
@@ -487,15 +487,16 @@ body.workspace-active #appShell .ui-page-card.project-card {
   align-items: center;
   gap: var(--ui-space-sm);
   min-width: 0;
-  min-height: 88px;
-  padding: var(--ui-space-md);
-  border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-xl);
+  min-height: 80px;
+  padding: var(--ui-space-sm);
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius-lg);
   background: transparent;
+  transition: background-color var(--ui-duration-hover) ease;
 }
 
 #appShell .plugin-directory-row:hover {
-  border-color: var(--ui-border-default);
+  border-color: transparent;
   background: var(--ui-bg-hover);
 }
 
@@ -525,6 +526,7 @@ body.workspace-active #appShell .ui-page-card.project-card {
   flex: 0 0 48px;
   width: 48px;
   height: 48px;
+  padding: 0;
   border: 0;
   border-radius: var(--ui-radius-lg);
   background: var(--ui-bg-surface);
@@ -551,6 +553,7 @@ body.workspace-active #appShell .ui-page-card.project-card {
 }
 
 #appShell .plugin-directory-card-title-row strong {
+  min-width: 0;
   overflow: hidden;
   color: var(--ui-text-primary);
   font-size: var(--ui-font-size-md);
@@ -559,7 +562,21 @@ body.workspace-active #appShell .ui-page-card.project-card {
   white-space: nowrap;
 }
 
+#appShell .plugin-directory-card-status {
+  flex: none;
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-xxs);
+  white-space: nowrap;
+}
+
+#appShell .plugin-directory-action-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 #appShell .plugin-directory-card-desc {
+  white-space: normal;
   display: -webkit-box;
   overflow: hidden;
   margin: 0;
@@ -579,6 +596,12 @@ body.workspace-active #appShell .ui-page-card.project-card {
 }
 
 #appShell .plugin-directory-icon-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ui-space-xs);
+  flex: none;
+  white-space: nowrap;
   height: var(--ui-control-sm);
   min-height: var(--ui-control-sm);
   padding-inline: var(--ui-space-sm);
@@ -604,6 +627,8 @@ body.workspace-active #appShell .ui-page-card.project-card {
 }
 
 #appShell .plugin-directory-note {
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-sm);
   margin-top: var(--ui-space-md);
   padding: var(--ui-space-sm) var(--ui-space-md);
   border: 1px solid var(--ui-border-subtle);

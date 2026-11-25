@@ -1,12 +1,14 @@
 import { Icon } from '../../../legacy/Icon';
+import { Button } from '../../ui/shadcn/button';
 import { i18n } from './workspaceUi';
-import { actionTitle, detailText, pluginDescription, pluginExample } from './pluginDetailContent';
+import { actionTitle, actionDescription, detailText, pluginDescription, pluginExample } from './pluginDetailContent';
 import type { WorkspacePluginBasic } from './pluginDetail.types';
 
 interface PluginDetailSectionsProps {
   plugin: WorkspacePluginBasic;
   capabilities: string[];
   connectable: boolean;
+  onUseExample?: (prompt: string) => void;
 }
 
 function authDetails(authType?: string): [string, string] {
@@ -33,7 +35,7 @@ function ActionList({ actions }: { actions: NonNullable<WorkspacePluginBasic['ch
           <Icon name="check" size={16} />
           <div className="plugin-detail-action-copy">
             <strong>{actionTitle(action.name)}</strong>
-            <span>{action.description}</span>
+            <span>{actionDescription(action)}</span>
           </div>
         </li>
       ))}
@@ -41,12 +43,12 @@ function ActionList({ actions }: { actions: NonNullable<WorkspacePluginBasic['ch
   );
 }
 
-export function PluginDetailSections({ plugin, capabilities, connectable }: PluginDetailSectionsProps) {
+export function PluginDetailSections({ plugin, capabilities, connectable, onUseExample }: PluginDetailSectionsProps) {
   const actions = plugin.chatActions;
   const [authLabel, authHelp] = authDetails(plugin.authType);
   const connected = plugin.connection?.status === 'connected';
   const pending = plugin.connection?.status === 'initiated';
-  const failed = plugin.connection?.status === 'failed';
+  const failed = ['failed', 'error', 'expired'].includes(plugin.connection?.status || '');
   const hasActions = Boolean(actions?.length);
   const credentials = plugin.credentialInput?.fields || [];
 
@@ -99,13 +101,23 @@ export function PluginDetailSections({ plugin, capabilities, connectable }: Plug
         <section className="plugin-detail-section">
           <h2 className="plugin-detail-section-title">{detailText('Try asking', '使用示例')}</h2>
           <p className="plugin-detail-desc">
-            {detailText('Example requests to use after connecting this app.', '连接后可在对话中尝试以下请求。')}
+            {onUseExample ? detailText('Choose an example to open a new chat with a draft. Nothing is sent automatically.', '选择示例即可打开新对话并填入草稿，不会自动发送。') : detailText('Example requests to use after connecting this app.', '连接后可在对话中尝试以下请求。')}
           </p>
           <ul className="plugin-detail-prompts-list">
             {actions.slice(0, 3).map((action) => (
-              <li className="plugin-detail-prompt-card" key={action.name}>
-                <Icon name="newChat" size={18} />
-                <span className="plugin-detail-prompt-text">{pluginExample(plugin, action)}</span>
+              <li key={action.name}>
+                {onUseExample ? (
+                  <Button variant="outline" size="surface" className="plugin-detail-prompt-card" onClick={() => onUseExample(pluginExample(plugin, action))}>
+                    <Icon name="newChat" size={18} />
+                    <span className="plugin-detail-prompt-text">{pluginExample(plugin, action)}</span>
+                    <Icon name="chevronRight" size={16} className="plugin-detail-prompt-arrow" />
+                  </Button>
+                ) : (
+                  <div className="plugin-detail-prompt-card">
+                    <Icon name="newChat" size={18} />
+                    <span className="plugin-detail-prompt-text">{pluginExample(plugin, action)}</span>
+                  </div>
+                )}
               </li>
             ))}
           </ul>
@@ -132,7 +144,7 @@ export function PluginDetailSections({ plugin, capabilities, connectable }: Plug
           {credentials.map((field) => (
             <div className="plugin-detail-security-field" key={field.key}>
               <dt>{field.label}</dt>
-              <dd>{field.required ? detailText('Required', '必填') : detailText('Optional', '选填')}</dd>
+              <dd>{field.required !== false ? detailText('Required', '必填') : detailText('Optional', '选填')}</dd>
             </div>
           ))}
         </dl>
