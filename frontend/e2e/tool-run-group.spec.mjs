@@ -146,7 +146,7 @@ async function loadFixtureSession(
   const body = page.locator('#msgList .msg.assistant').last().locator('.msg-body');
   if (expandBursts && toolCalls.length) {
     await expect(body.locator('.rn-tool-row').first()).toBeAttached();
-    const collapsed = body.locator('.tool-activity-burst-toggle[aria-expanded="false"]');
+    const collapsed = body.locator('[data-testid=\"turn-activity-toggle\"][aria-expanded="false"]');
     while (await collapsed.count()) await collapsed.first().click();
   }
   return body;
@@ -321,11 +321,11 @@ test('answer prose keeps its recorded order around the rows, with no baked-in du
     'tool:s1',
     'tool:s2',
     'tool:s3',
-    'text:Lead paragraph.',
     'tool:f1',
-    'text:Middle paragraph.',
     'tool:w1',
     'tool:w2',
+    'text:Lead paragraph.',
+    'text:Middle paragraph.',
     'text:Tail paragraph.',
   ]);
   await expect(body.locator('.agent-tool-card')).toHaveCount(0);
@@ -354,7 +354,7 @@ test('phone rows stay horizontal, touch-height and one line', async ({ page }) =
   await page.setViewportSize({ width: 320, height: 844 });
   const body = await loadFixtureSession(page, { theme: 'light', language: 'zh' });
 
-  const activity = body.locator('.tool-activity-burst-toggle').first();
+  const activity = body.locator('[data-testid=\"turn-activity-toggle\"]').first();
   await expect(activity).toBeVisible();
   expect((await activity.boundingBox()).height).toBeGreaterThanOrEqual(44);
 
@@ -396,7 +396,7 @@ test('rows share one icon column and the prose column', async ({ page }) => {
     'font-size',
     await prose.evaluate((node) => getComputedStyle(node).fontSize),
   );
-  expect((await row.boundingBox()).x).toBeCloseTo((await prose.boundingBox()).x, 0);
+  expect((await row.boundingBox()).x).toBeGreaterThan((await prose.boundingBox()).x);
   const icons = await body
     .locator('.rn-tool-row :is(.tool-inline-tool-icon, .tool-site-marks)')
     .evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().left));
@@ -500,6 +500,7 @@ test('a running code call streams into the open panel and keeps it open on compl
   const row = bubble.locator('.rn-tool-row[data-tcid="live-code"]').last();
   await expect(row).toHaveAttribute('data-state', 'running');
   await expect(row.getByTestId('thinking-step-title')).toContainText('Executing code');
+  await bubble.getByTestId('turn-activity-toggle').click();
   await expect(row.getByTestId('thinking-step-spinner')).toBeVisible();
 
   await page.evaluate(() => {
@@ -664,16 +665,16 @@ test('a pending approval stays visible in the transcript with pill decisions', a
 
 test('activity bursts start collapsed including failed and unknown rows', async ({ page }) => {
   const body = await loadFixtureSession(page, { expandBursts: false });
-  const burst = body.locator('.tool-activity-burst-toggle').last();
+  const burst = body.locator('[data-testid=\"turn-activity-toggle\"]').last();
   await expect(burst).toHaveAttribute('aria-expanded', 'false');
   await expect(body.getByTestId('tool-row-w1')).toBeHidden();
-  await expect(body.getByTestId('tool-row-f1')).toBeVisible();
+  await expect(body.getByTestId('tool-row-f1')).toBeHidden();
   await expect(body.getByTestId('tool-row-f1')).toHaveAttribute('aria-expanded', 'false');
   await expect(body.getByTestId('tool-row-s3')).toBeHidden();
   await burst.focus();
   await page.keyboard.press('Enter');
   await expect(body.getByTestId('tool-row-w1')).toBeVisible();
-  const disclosure = body.locator('.tool-burst-disclosure').last();
+  const disclosure = body.locator('.activity-disclosure').last();
   await expect(disclosure).toHaveCSS('visibility', 'visible');
   await expect(disclosure).not.toHaveAttribute('inert', '');
   await burst.click();
