@@ -72,15 +72,17 @@ export function PluginDetailView({
         plugin={plugin}
         connectable={connectable}
         isConnected={isConnected}
+        canUseInChat={plugin.chatActions?.length !== 0}
         renderMark={renderMark}
         onBack={onBack}
         onConnect={handleConnect}
         onManage={handleManage}
+        onRefresh={() => dispatch.refreshPlugin(plugin.id)}
         onUseInChat={() => {
           void handleUseInChat();
         }}
       />
-      <PluginDetailSections plugin={plugin} capabilities={capabilities} />
+      <PluginDetailSections plugin={plugin} capabilities={capabilities} connectable={connectable} />
     </PageFrame>
   );
 }
