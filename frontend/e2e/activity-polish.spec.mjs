@@ -158,6 +158,7 @@ for (const mobile of [false, true]) {
     await surface.locator(TURN.toggle).click();
     const step = surface.locator(TURN.step).first();
     await expect(step).toBeVisible();
+    await expect(surface.locator('.activity-timeline')).toHaveCSS('padding-inline-start', '0px');
     const summary = await step.boundingBox();
     const surfaceBox = await surface.boundingBox();
     /* The activity list starts at the caption's text edge; no decorative
@@ -184,6 +185,7 @@ for (const mobile of [false, true]) {
     await expect(wrapper).not.toHaveAttribute('data-live', 'true');
     await expect(row.locator(TURN.spinner)).toHaveCount(0);
     await expect(caption).not.toHaveAttribute('role', 'status');
+    await expect(surface.locator('.activity-timeline')).toHaveCSS('padding-inline-start', '0px');
     await expect(surface.locator(TURN.toggle)).toHaveAttribute('aria-expanded', 'true');
     await page.mouse.move(0, 0);
     if (mobile)
