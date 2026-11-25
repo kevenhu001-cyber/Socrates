@@ -667,7 +667,8 @@ test('activity bursts start collapsed including failed and unknown rows', async 
   const burst = body.locator('.tool-activity-burst-toggle').last();
   await expect(burst).toHaveAttribute('aria-expanded', 'false');
   await expect(body.getByTestId('tool-row-w1')).toBeHidden();
-  await expect(body.getByTestId('tool-row-f1')).toBeHidden();
+  await expect(body.getByTestId('tool-row-f1')).toBeVisible();
+  await expect(body.getByTestId('tool-row-f1')).toHaveAttribute('aria-expanded', 'false');
   await expect(body.getByTestId('tool-row-s3')).toBeHidden();
   await burst.focus();
   await page.keyboard.press('Enter');
