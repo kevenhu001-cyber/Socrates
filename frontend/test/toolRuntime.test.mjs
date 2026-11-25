@@ -209,6 +209,19 @@ test('ToolRuntime does not open a progress stream after a terminal result', () =
   runtime.dispose();
 });
 
+test('late progress cannot modify a committed tool result', () => {
+  const { message, runtime } = agentRuntimeHarness();
+  runtime.recordToolUse({ id: 'code', name: 'code_interpreter', input: {} });
+  runtime.recordToolProgress({ id: 'code', phase: 'stdout', chunk: 'before' });
+  runtime.recordToolResult({ id: 'code', ok: true, status: 'completed', output: 'done' });
+  const settled = message.toolCalls[0];
+  runtime.recordToolProgress({ id: 'code', phase: 'stdout', chunk: 'late' });
+  assert.strictEqual(message.toolCalls[0], settled);
+  assert.equal(settled._liveOutput, 'before');
+  assert.equal(settled.output, 'done');
+  runtime.dispose();
+});
+
 test('ToolRuntime records rows on the data instead of mounting DOM', () => {
   const message = { toolCalls: [] };
   let scheduled = null;
@@ -722,6 +735,7 @@ test('decideApproval still POSTs after dispose when the store swaps the message 
       status: 'pending',
       kind: 'commandExecution',
       reason: 'Run the verification command',
+      ui: { text: 'Try again', disabled: false },
     },
   };
 
@@ -729,7 +743,11 @@ test('decideApproval still POSTs after dispose when the store swaps the message 
   const calls = [];
   const originalFetch = globalThis.fetch;
   const originalTimeout = window.setTimeout;
-  window.setTimeout = () => 0; // This test covers the decision POST, not polling.
+  const scheduledPolls = [];
+  window.setTimeout = (callback) => {
+    scheduledPolls.push(callback);
+    return 1;
+  };
   globalThis.fetch = async (url, opts = {}) => {
     calls.push({ url: String(url), method: opts.method || 'GET', body: opts.body });
     if (String(url).includes('/approvals/')) {
@@ -785,6 +803,15 @@ test('decideApproval still POSTs after dispose when the store swaps the message 
       'accept',
       'entry approval flips to accepted',
     );
+    assert.equal(message.toolCalls[0].approval.ui.state, 'accepted');
+    assert.equal(message.toolCalls[0].approval.ui.disabled, true);
+    await runtime.decideApproval('tc-codex-1', 'accept');
+    assert.equal(calls.filter((c) => c.method === 'POST').length, 1);
+    assert.equal(scheduledPolls.length, 1);
+    const requestCount = calls.length;
+    message = { clientId: 'another-message', toolCalls: [] };
+    await scheduledPolls[0]();
+    assert.equal(calls.length, requestCount, 'lost ownership stops polling before a request');
   } finally {
     globalThis.fetch = originalFetch;
     window.setTimeout = originalTimeout;

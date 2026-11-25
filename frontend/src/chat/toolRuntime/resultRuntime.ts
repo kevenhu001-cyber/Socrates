@@ -82,8 +82,7 @@ export function createToolResultRuntime<
     options.setPreparing(entry);
     /* A late result can arrive after finish()'s offset write-back, so stamp
        its split point now for history replay. */
-    const mountedOffset = options.recordRowOffset(entry);
-    if (mountedOffset != null) entry.textOffset = mountedOffset;
+    options.recordRowOffset(entry);
     return entry;
   }
 
