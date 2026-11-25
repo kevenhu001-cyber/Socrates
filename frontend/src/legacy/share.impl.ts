@@ -480,13 +480,8 @@ export {
   openShareModal,
   closeShareModal,
   selectShareVis,
-  renderShareModal,
   createShareLink,
   revokeShareLink,
   resetShareToken,
   loadSharedSession,
-  loadSharedExamSession,
-  _shareVisibility,
-  _shareToken,
-  _shareUrl,
 };
