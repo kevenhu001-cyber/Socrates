@@ -70,7 +70,11 @@
 #appShell .library-file-icon svg {
   width: 22px;
   height: 22px;
-  stroke: hsl(var(--always-white));
+  /* Official glyphs are filled outlines; do not add an extra stroke. */
+}
+
+#appShell .library-file-icon svg:not([data-icon-source='openai-apps-sdk']) {
+  stroke: currentColor;
 }
 
 /* ------------------------------------------------------------------ */
