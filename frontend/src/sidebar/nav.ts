@@ -3,7 +3,6 @@ import {
   installComposerPluginSelectionBridge,
 } from '../composer/pluginSelection.ts';
 import { getComposerMarkdown, setComposerMarkdown } from '../composer/controller.ts';
-import { openPromptTemplatesModal } from '../legacy/promptTemplates.ts';
 import { activateMainView } from '../legacy/mainViewController.ts';
 import { loadSession } from '../session/loader.ts';
 import { workspaceForPath, replaceRoute } from '../app/router.ts';
@@ -44,9 +43,6 @@ const workspaceCache: { connectors: WorkspaceConnector[] } = { connectors: [] };
 const CONNECTOR_RETURN_CONTEXT_KEY = 'socrates-connector-return-v1';
 const CONNECTOR_RETURN_CONTEXT_TTL = 10 * 60 * 1000;
 
-function byId(id: string) {
-  return document.getElementById(id);
-}
 function esc(value: string | null) {
   return String(value == null ? '' : value)
     .replace(/&/g, '&amp;')
@@ -235,81 +231,6 @@ export function getSlashApps(): SlashApp[] {
 if (typeof window !== 'undefined') {
   (window as unknown as { getSlashApps?: typeof getSlashApps }).getSlashApps = getSlashApps;
 }
-
-let _pluginWorkspaceTabsBound = false;
-/* Delegated on purpose: #pluginWorkspaceTabs is React-owned
-   (src/react/topbar/TopBar.tsx), so the two tab buttons are re-created after
-   boot and a listener bound to the static node would die with it. The
-   elements are resolved by id on every call for the same reason. */
-function bindPluginWorkspaceTabs() {
-  if (typeof document === 'undefined' || typeof MutationObserver === 'undefined') return;
-  if (_pluginWorkspaceTabsBound) return;
-  _pluginWorkspaceTabsBound = true;
-
-  let lastSkillsOpen: boolean | null = null;
-  function syncSelection() {
-    const pluginsTab = byId('pluginWorkspacePluginsTab');
-    const skillsTab = byId('pluginWorkspaceSkillsTab');
-    if (!pluginsTab || !skillsTab) return;
-    const skillsOpen = !!document.getElementById('promptTemplatesOverlay');
-    /* Only touch the tabs when the answer actually changed; rewriting the
-       same classes/attributes on every frame kept restyling them. */
-    if (skillsOpen === lastSkillsOpen) return;
-    lastSkillsOpen = skillsOpen;
-    pluginsTab.classList.toggle('active', !skillsOpen);
-    skillsTab.classList.toggle('active', skillsOpen);
-    pluginsTab.setAttribute('aria-selected', String(!skillsOpen));
-    skillsTab.setAttribute('aria-selected', String(skillsOpen));
-  }
-
-  document.addEventListener('click', function (event) {
-    const target = event.target;
-    if (!target || typeof (target as Element).closest !== 'function') return;
-    const tab = (target as Element).closest(
-      '#pluginWorkspacePluginsTab, #pluginWorkspaceSkillsTab',
-    );
-    if (!tab) return;
-    if (tab.id === 'pluginWorkspacePluginsTab') {
-      openNav('plugins');
-      syncSelection();
-      return;
-    }
-    openPromptTemplatesModal();
-    requestAnimationFrame(syncSelection);
-  });
-  /* The only two signals syncSelection needs are structurally local:
-     the modal root is a direct body child (ensureBodyChild) and the tab
-     buttons are React-owned chrome under #pluginWorkspaceTabs. Watching
-     those two scopes replaces the document-wide subtree observer that used
-     to wake for every streamed token and every history row (audit R3).
-     syncSelection itself still early-returns when nothing changed. */
-  const overlayWatch = new MutationObserver(function () {
-    ensureOverlayWatch();
-    syncSelection();
-  });
-  function ensureOverlayWatch() {
-    const root = document.getElementById('promptTemplatesReactRoot');
-    if (root) overlayWatch.observe(root, { childList: true, subtree: true });
-  }
-  overlayWatch.observe(document.body, { childList: true });
-  ensureOverlayWatch();
-
-  let tabsEl: HTMLElement | null = null;
-  const tabsWatch = new MutationObserver(function () {
-    ensureTabsWatch();
-    syncSelection();
-  });
-  function ensureTabsWatch() {
-    const tabs = byId('pluginWorkspaceTabs');
-    if (tabs && tabs !== tabsEl) {
-      tabsEl = tabs;
-      tabsWatch.observe(tabs, { childList: true, subtree: true });
-    }
-  }
-  ensureTabsWatch();
-  syncSelection();
-}
-bindPluginWorkspaceTabs();
 
 function safeConnectorReturnPath(value: unknown) {
   const path = String(value || '');
