@@ -1,11 +1,11 @@
 /*
  * parity/topbar.css — the header's web layout (RN-7).
  *
- * The controls are the shared React Native shell parts
+ * The controls are the shared React DOM shell parts
  * (packages/ui/src/shell/TopBar.tsx): the model switcher, the 聊天 / 辅导
  * segmented track, the tutor stage and practice capsules, find, share and
  * the phone new-chat action paint themselves from the site tokens. This
- * owner keeps what only the page can do: the 52px bar with its hairline,
+ * owner keeps what only the page can do: the 48px bar and scroll fade,
  * the left / centre / right groups, the centred mode track, phone
  * placement, and hiding chat chrome on surfaces that are not the chat.
  */
@@ -159,6 +159,14 @@ body[data-transcript-scrolled='true'] #appShell .top-bar::after {
   @container app-topbar (max-width: 64rem) {
     #appShell .top-bar-left {
       flex: 1 1 0;
+      min-width: 0;
+    }
+    #appShell .top-bar-left #topModelSwitcher {
+      min-width: 0;
+      max-width: 100%;
+    }
+    #appShell .top-bar-left #topModelSwitcher > svg {
+      flex-shrink: 0;
     }
     #appShell .top-mode-switch {
       position: relative;
@@ -169,7 +177,7 @@ body[data-transcript-scrolled='true'] #appShell .top-bar::after {
       margin-inline-start: 0;
     }
     #appShell .top-bar-right {
-      flex: 1 1 0;
+      flex: 1 0 auto;
       justify-content: flex-end;
       margin-left: 0;
     }
