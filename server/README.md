@@ -13,7 +13,7 @@ npm run lint       # typecheck + service dependency boundary guard
 npm run build      # strict check + emit into dist/
 npm test           # isolated per-file tests through tsx; guarded test database
 npm run test:strict # same runner; fails if DATABASE_URL is absent
-npm start          # stable compatibility entry -> compiled runtime
+npm start          # compiled runtime (dist/index.runtime.js)
 ```
 
 ## Session prompt caching
@@ -66,9 +66,13 @@ env -u DATABASE_URL node --import tsx --test test/llmProtocol.test.mjs
 Worker-backed services close their pools explicitly so leaked handles remain
 observable. Do not run a DB-backed suite against a production `.env`.
 
-`src/index.js` is intentionally a small compatibility entry because existing
-systemd installations may execute that path directly. The application runtime
-is compiled to `dist/index.runtime.js`. `deploy.sh` installs the lockfile
+`npm start` and the Docker image start `dist/index.runtime.js` directly.
+`src/index.js` remains only for older systemd installations that execute that
+path. Before deleting it, inspect the deployed unit with
+`systemctl cat <unit>` and verify its `WorkingDirectory` and `ExecStart` point
+to the compiled runtime; reload/restart the unit and verify `/api/health`.
+Keep the compatibility file until every deployed unit and rollback target has
+been verified. `deploy.sh` installs the lockfile
 dependencies, builds into an isolated candidate directory, preserves the
 previous compiled tree, and restores it automatically if restart or health
 checks fail.
