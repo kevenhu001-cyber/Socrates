@@ -101,6 +101,14 @@ function Field({ label, children: content }: { label?: string; children: ReactNo
   );
 }
 
+// Translate the public OpenUI variants into the host design system.
+const ACTION_VARIANTS = {
+  solid: 'default',
+  outline: 'outline',
+  soft: 'secondary',
+  ghost: 'ghost',
+} as const;
+
 // Actions
 export const Button = defineComponent({
   name: 'Button',
@@ -122,12 +130,9 @@ export const Button = defineComponent({
     return (
       <ShadcnButton
         type="button"
-        variant={props.color === 'danger' ? 'destructive' : props.variant === 'outline' ? 'outline' : props.variant === 'soft' ? 'secondary' : props.variant === 'ghost' ? 'ghost' : 'default'}
+        variant={props.color === 'danger' ? 'destructive' : ACTION_VARIANTS[props.variant ?? 'solid']}
         size={props.size === 'sm' ? 'sm' : props.size === 'lg' ? 'touch' : 'lg'}
-        className={cx(
-          'iui-button',
-          props.block && 'iui-block',
-        )}
+        className={cx('iui-button', props.block && 'iui-block')}
         disabled={!!props.disabled || streaming || !props.action}
         onClick={() => run(label, props.action)}
       >
@@ -155,7 +160,7 @@ export const IconButton = defineComponent({
       <ShadcnButton
         type="button"
         className="iui-icon-button"
-        variant={props.variant === 'solid' ? 'default' : props.variant === 'ghost' ? 'ghost' : 'outline'}
+        variant={ACTION_VARIANTS[props.variant ?? 'outline']}
         size="icon-sm"
         aria-label={label}
         title={props.label || undefined}
@@ -386,14 +391,41 @@ export const SegmentedControl = defineComponent({
   component: function SegmentedView({ props, statementId }) {
     const field = useStateField(useFieldName(undefined, statementId), props.value);
     const value = field.value == null ? '' : String(field.value);
+    const choices = optionList(props.options);
+    const selected = choices.findIndex((o) => o.value === value);
     return (
-      <div className={cx('iui-segmented', props.block && 'iui-block')} role="radiogroup">
-        {optionList(props.options).map((o, i) => (
+      <div
+        className={cx('iui-segmented', props.block && 'iui-block')}
+        role="radiogroup"
+        onKeyDown={(event) => {
+          const buttons = Array.from(
+            event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="radio"]'),
+          );
+          const current = buttons.indexOf(event.target as HTMLButtonElement);
+          if (current < 0 || !choices.length) return;
+          const offset = event.key === 'ArrowRight' || event.key === 'ArrowDown'
+            ? 1
+            : event.key === 'ArrowLeft' || event.key === 'ArrowUp'
+              ? -1
+              : 0;
+          if (!offset && event.key !== 'Home' && event.key !== 'End') return;
+          event.preventDefault();
+          const next = event.key === 'Home'
+            ? 0
+            : event.key === 'End'
+              ? choices.length - 1
+              : (current + offset + choices.length) % choices.length;
+          field.setValue(choices[next].value);
+          buttons[next]?.focus();
+        }}
+      >
+        {choices.map((o, i) => (
           <UiButton
             key={`${o.value}-${i}`}
             type="button"
             role="radio"
             aria-checked={o.value === value}
+            tabIndex={i === Math.max(0, selected) ? 0 : -1}
             className={cx(o.value === value && 'is-selected')}
             onClick={() => field.setValue(o.value)}
           >
