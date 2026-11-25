@@ -94,7 +94,7 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
   }
 
   html[data-main-view='settingsPage'] #settingsPage .settings-nav {
-    gap: var(--ui-space-sm);
+    gap: var(--ui-space-xs);
     padding: 4px 12px 20px;
     border: 0;
     background: transparent;
@@ -149,7 +149,10 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
     gap: 2px;
   }
   .settings-page .settings-nav-categories {
-    gap: 10px;
+    gap: var(--ui-space-sm);
+  }
+  .settings-page .settings-nav-item .settings-category-chevron {
+    display: none;
   }
   .settings-page .settings-category-icon svg {
     width: 20px;
