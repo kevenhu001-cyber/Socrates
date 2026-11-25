@@ -586,10 +586,6 @@ body.workspace-active #appShell .workspace-row:hover {
     --conversation-composer-width: calc(100vw - 28px);
   }
 
-  #appShell .top-mode-tabs {
-    min-width: 166px;
-  }
-
   #appShell #mainInner,
   body.workspace-active #appShell #mainInner {
     width: 100%;
