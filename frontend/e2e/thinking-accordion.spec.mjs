@@ -35,6 +35,7 @@ test('thinking disclosure supports keyboard control and preserves intent through
   await expect(accordion.getByTestId('turn-activity-duration')).toContainText(/\d/);
   await expect(accordion.getByTestId('thinking-step-spinner')).toHaveCount(0);
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(body).toBeHidden();
   await toggle.focus();
   await page.keyboard.press('Enter');
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
