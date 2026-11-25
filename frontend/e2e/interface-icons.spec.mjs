@@ -2,6 +2,8 @@ import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
+const officialNav = ['navNew', 'navSearch', 'navLibrary', 'navProjects', 'navScheduled'];
+
 test('React-owned navigation renders a glyph for every primary destination', async ({ page }) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page);
@@ -19,6 +21,10 @@ test('React-owned navigation renders a glyph for every primary destination', asy
     /* RN 侧栏：每行的图标放在 data-part="nav-glyph" 槽里。 */
     const icon = page.locator(`#${id} [data-part="nav-glyph"] svg`);
     await expect(icon, id).toBeVisible();
+    if (officialNav.includes(id)) {
+      await expect(icon, id).toHaveAttribute('data-icon-source', 'openai-apps-sdk');
+      await expect(icon, id).toHaveAttribute('stroke', 'none');
+    }
     expect(
       await icon.locator('path, circle, rect, line, polyline, polygon').count(),
       id,
@@ -51,6 +57,15 @@ for (const theme of ['light', 'dark']) {
     /* 浅色主题的 ink 接近黑，深色主题接近白：确认颜色确实跟着主题走。 */
     if (theme === 'light') expect(r + g + b).toBeLessThan(3 * 64);
     else expect(r + g + b).toBeGreaterThan(3 * 192);
+    for (const id of officialNav) {
+      const glyph = page.locator(`#${id} [data-part="nav-glyph"] svg`);
+      await expect(glyph).toHaveAttribute('data-icon-source', 'openai-apps-sdk');
+      const bounds = await glyph.boundingBox();
+      if (bounds) {
+        expect(bounds.width).toBe(24);
+        expect(bounds.height).toBe(24);
+      }
+    }
     const icons = await page
       .locator('#sidebarNav .sidebar-nav-btn [data-part="nav-glyph"] svg')
       .evaluateAll((elements) =>
@@ -60,6 +75,7 @@ for (const theme of ['light', 'dark']) {
             const style = getComputedStyle(svg);
             const box = svg.getBBox();
             return {
+              noStroke: style.stroke === 'none',
               official: svg.getAttribute('data-icon-source') === 'openai-apps-sdk',
               fill: style.fill,
               stroke: style.strokeWidth,
@@ -73,7 +89,7 @@ for (const theme of ['light', 'dark']) {
     expect(icons.length).toBeGreaterThanOrEqual(5);
     for (const icon of icons) {
       /* RN-7 图标统一 1.5px 线宽（UI_ICON_STROKE，non-scaling）。 */
-      if (icon.official) {
+      if (icon.official || icon.noStroke) {
         expect(icon.color).toBe('none');
         expect(icon.fill).toBe(ink);
       } else {
