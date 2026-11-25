@@ -292,7 +292,7 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
     <ToolRunDisclosureProvider>
       <TurnEvidence runtime={message.turnRuntime} text={rawText} entryId={messageId}>
         <TurnActivitySurface
-          activities={presentation.reasoningSummaries}
+          activities={presentation.activities}
           publicSummary={presentation.publicSummary}
           isLive={presentation.activityLive}
           status={presentation.activityStatus}
