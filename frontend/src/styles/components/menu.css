@@ -62,6 +62,7 @@ body #composerToolsMenu.composer-tools-menu {
   border: 1px solid var(--ui-border-subtle);
   background: var(--ui-bg-surface);
   color: var(--foreground);
+  font-family: var(--font-sans);
   box-shadow: var(--ui-shadow-menu);
   animation: none;
 }
@@ -165,6 +166,7 @@ body #composerToolsMenu.composer-tools-menu {
 }
 
 #composerToolsMenu .composer-tools-check {
+  flex: 0 0 16px;
   margin-left: auto;
   color: var(--ui-accent-action);
   width: 16px;
@@ -214,10 +216,10 @@ body #composerToolsMenu.composer-tools-menu {
 }
 
 @media (min-width: 769px) {
-  .composer-tools-desktop-items {
+  #composerToolsMenu .composer-tools-desktop-items {
     display: block;
   }
-  .composer-tools-mobile-items {
+  #composerToolsMenu .composer-tools-mobile-items {
     display: none;
   }
   body #composerToolsMenu.composer-tools-menu {
@@ -231,10 +233,10 @@ body #composerToolsMenu.composer-tools-menu {
     opacity: 1;
     pointer-events: auto;
   }
-  .composer-tools-desktop-items {
+  #composerToolsMenu .composer-tools-desktop-items {
     display: none;
   }
-  .composer-tools-mobile-items {
+  #composerToolsMenu .composer-tools-mobile-items {
     display: block;
   }
   .composer-tools-plugins {

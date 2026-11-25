@@ -243,17 +243,6 @@ body,
 /* Plus menu: built-in actions remain intact, real connectors occupy a calm
    directory section underneath them. */
 
-#composerToolsMenu .composer-tools-item {
-  color: var(--cg-text-secondary);
-}
-
-#composerToolsMenu .composer-tools-item:hover,
-#composerToolsMenu .composer-tools-item:focus-visible {
-  color: var(--cg-text);
-  background: var(--cg-surface-hover);
-  outline: none;
-}
-
 .composer-tools-plugins {
   margin-top: 8px;
   padding: 12px 4px 4px;
@@ -349,17 +338,6 @@ body,
   overflow: visible;
 }
 
-#composerToolsMenu .composer-tools-plugin-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  min-height: 44px;
-  padding: 6px 10px;
-  border: 0;
-  border-radius: 10px;
-}
-
 #composerToolsMenu .composer-plugin-mark {
   flex: 0 0 32px;
   width: 32px;
@@ -380,14 +358,6 @@ body,
   font-size: 14px;
   font-weight: var(--ui-font-weight-medium);
   color: var(--cg-text);
-}
-
-#composerToolsMenu .composer-tools-check {
-  flex: 0 0 18px;
-  width: 18px;
-  height: 18px;
-  margin-left: auto;
-  color: var(--cg-accent);
 }
 
 /* Workspace pages */

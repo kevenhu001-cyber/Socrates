@@ -116,9 +116,6 @@
   /* Reference menu is one flat, scrollable list on phones: the desktop twin
      list stays hidden, but connected plugins now stay visible below the tool
      rows (see ComposerToolsMenu). */
-  body #composerToolsMenu .composer-tools-desktop-items {
-    display: none !important;
-  }
 }
 
 /* --------------------------------------------------------------------------
