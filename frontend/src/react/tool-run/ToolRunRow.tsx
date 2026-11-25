@@ -1,5 +1,5 @@
-import { memo, useId, useRef } from 'react';
-import { Chevron, Spinner, ToolErrorNotice, toolTargetOf, toolVerbOf } from '@socrates/ui/turn';
+import { memo, useId } from 'react';
+import { Chevron, Spinner, toolTargetOf, toolVerbOf } from '@socrates/ui/turn';
 import { translate } from '../../legacy/toolPresentationModel.ts';
 import { agentStepCommand, agentStepLabel } from '../../legacy/agentSteps.ts';
 import { Button } from '../ui/shadcn/button';
@@ -22,55 +22,6 @@ interface ToolRunRowProps {
   messageId?: string;
   readOnly?: boolean;
   live: boolean;
-}
-
-function errorMessageOf(view: ToolRunView, call: ToolCallRecord): string {
-  const friendly = typeof call.userMessage === 'string' ? call.userMessage.trim() : '';
-  if (friendly) return friendly;
-  const error = view.sections.find((section) => section.kind === 'error');
-  return error?.kind === 'error' ? error.text.trim().split('\n')[0].slice(0, 180) : '';
-}
-
-function ToolRunActions({
-  view,
-  call,
-  messageId,
-  readOnly,
-}: Omit<ToolRunRowProps, 'live'> & { view: ToolRunView }) {
-  const host = useRef<HTMLDivElement>(null);
-  const message = errorMessageOf(view, call);
-  const retry = !readOnly ? view.retry : undefined;
-  if (!message && !retry && !view.approval) return null;
-  return (
-    <div className="rn-tool-actions" ref={host} data-tool-actions={view.id}>
-      {message || retry ? (
-        <WebUiTheme>
-          <ToolErrorNotice
-            message={message || translate('tool.statusFailed', 'Failed')}
-            retryLabel={retry ? translate('tool.retry', 'Retry search') : undefined}
-            onRetry={
-              retry
-                ? () => {
-                    /* Same event the delegated listener in liveTurn already handles. */
-                    host.current?.dispatchEvent(
-                      new CustomEvent('tool-retry', { bubbles: true, detail: retry }),
-                    );
-                  }
-                : undefined
-            }
-          />
-        </WebUiTheme>
-      ) : null}
-      {view.approval ? (
-        <ToolRunApproval
-          view={view.approval}
-          messageId={messageId ?? ''}
-          toolCallId={view.id}
-          readOnly={readOnly}
-        />
-      ) : null}
-    </div>
-  );
 }
 
 /** The same sentence-safe position owns the trigger, its detail and its actions. */
@@ -155,7 +106,14 @@ export const ToolRunRow = memo(function ToolRunRow({
           </div>
         ) : null}
       </WebUiTheme>
-      <ToolRunActions view={view} call={call} messageId={messageId} readOnly={readOnly} />
+      {view.approval ? (
+        <ToolRunApproval
+          view={view.approval}
+          messageId={messageId ?? ''}
+          toolCallId={view.id}
+          readOnly={readOnly}
+        />
+      ) : null}
     </div>
   );
 });
