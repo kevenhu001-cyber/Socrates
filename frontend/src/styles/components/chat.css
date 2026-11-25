@@ -985,3 +985,25 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
     animation: none;
   }
 }
+
+/* Real domain favicons precede every external answer/source link. */
+a.has-site-favicon {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--ui-space-xs);
+  vertical-align: baseline;
+}
+.site-link-favicon {
+  display: inline-block;
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  border-radius: var(--ui-radius-none);
+  object-fit: contain;
+  vertical-align: -2px;
+  background: transparent;
+}
+.site-link-favicon.is-unavailable {
+  display: none;
+}
