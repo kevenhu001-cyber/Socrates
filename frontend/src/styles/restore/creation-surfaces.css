@@ -11,34 +11,6 @@
 #appShell #sitesPanel {
   margin: 0 auto;
 }
-#appShell .creation-sites-view {
-  display: flex;
-  justify-content: flex-end;
-  gap: 2px;
-  width: max-content;
-  margin: 0 0 22px auto;
-  padding: 4px;
-  border-radius: var(--radius-lg);
-  background: var(--muted);
-}
-#appShell .creation-sites-view button {
-  width: var(--ui-control-sm);
-  height: var(--ui-control-sm);
-  border: 0;
-  border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--muted-foreground);
-  font-size: 21px;
-  cursor: pointer;
-}
-#appShell .creation-sites-view button:hover {
-  color: var(--foreground);
-}
-#appShell .creation-sites-view button[aria-pressed='true'] {
-  background: var(--background);
-  color: var(--foreground);
-  box-shadow: var(--shadow-sm, 0 1px 2px rgb(0 0 0 / 6%));
-}
 #appShell .creation-site-banner {
   display: flex;
   align-items: center;
@@ -490,19 +462,6 @@
   padding: 0 14px;
   border-radius: var(--ui-radius-pill);
 }
-#appShell #sitesPanel .creation-sites-view {
-  margin: 18px 0 14px auto;
-}
-#appShell #sitesPanel .creation-sites-view button {
-  display: grid;
-  place-items: center;
-  width: var(--ui-control-sm);
-  height: var(--ui-control-sm);
-}
-#appShell #sitesPanel .creation-sites-view svg {
-  width: 20px;
-  height: 20px;
-}
 #appShell #sitesPanel .creation-site-banner-icon svg {
   width: 23px;
   height: 23px;
@@ -523,10 +482,6 @@
 @media (max-width: 768px) {
   #appShell #sitesPanel {
     padding: 18px 16px 48px !important;
-  }
-  #appShell #sitesPanel .creation-sites-view button {
-    width: var(--ui-control-md);
-    height: var(--ui-control-md);
   }
   #appShell #sitesPanel .creation-sites-search input {
     width: 100%;
