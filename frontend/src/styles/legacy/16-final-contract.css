@@ -130,16 +130,10 @@
    `.msg-body .code-block-header`.
    ───────────────────────────────────────────────────────────────────────── */
 :root {
-  --chat-bubble-pad-y: 10px;
-  --chat-bubble-pad-x: 16px;
   --chat-msg-gap: 20px; /* vertical rhythm between turns */
   --chat-assistant-line-height: 1.6;
   --chat-code-bg: hsl(var(--bg-300));
   --chat-code-radius: 12px;
-  --chat-code-header-pad-y: 6px;
-  --chat-code-header-pad-x: 12px;
-  --chat-tool-running: hsl(var(--accent-000));
-  --chat-tool-error: hsl(0 70% 55%);
 }
 
 /* Message rhythm + bubbles. `.msg-list` already sets a 12px gap higher up;
@@ -292,28 +286,6 @@
   .shimmer-text {
     animation: none !important;
   }
-}
-
-/* Real domain favicons precede every external answer/source link. */
-a.has-site-favicon {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 5px;
-  vertical-align: baseline;
-}
-.site-link-favicon {
-  display: inline-block;
-  flex: 0 0 16px;
-  width: 16px;
-  height: 16px;
-  margin: 0;
-  border-radius: 3px;
-  object-fit: contain;
-  vertical-align: -2px;
-  background: transparent;
-}
-.site-link-favicon.is-unavailable {
-  display: none;
 }
 
 /* Workspace-agent events use the same screenshot anatomy: icon + sentence.
