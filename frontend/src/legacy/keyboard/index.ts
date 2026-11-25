@@ -19,6 +19,8 @@
 
 import {
   getKeyboardInset,
+  hasMobileComposerFocus,
+  retainsComposerFocus,
   isTrackedInputFocused,
   KEYBOARD_OPEN_THRESHOLD_PX,
   MIN_STABLE_VISUAL_HEIGHT,
@@ -136,8 +138,13 @@ class KeyboardLiftController implements KeyboardLift {
     };
   }
 
-  private readonly onPointerDown = (): void => {
-    /* Pointerdown is retained for the keyboard lifecycle event surface. */
+  private readonly onPointerDown = (event: PointerEvent): void => {
+    if (!event.isPrimary || event.button !== 0 || !event.cancelable) return;
+    if (hasMobileComposerFocus() && retainsComposerFocus(event.target)) {
+      // Cancel only the default focus transfer. Click still activates the
+      // model selector and touch panning remains owned by the browser.
+      event.preventDefault();
+    }
   };
 
   private readonly onFocusIn = (): void => {
@@ -145,23 +152,20 @@ class KeyboardLiftController implements KeyboardLift {
       clearTimeout(this.blurTimer);
       this.blurTimer = 0;
     }
-    this.clearNativeTimers();
+    if (this.isFocused()) this.clearNativeTimers();
     this.updateFromGeometry();
   };
 
   private readonly onFocusOut = (): void => {
     if (!this.sessionActive) return;
     /* Geometry owns close; blur is only a fallback for WebViews without it. */
-    this.setPhase('closing');
     this.updateFromGeometry();
     if (this.blurTimer) clearTimeout(this.blurTimer);
     this.blurTimer = setTimeout(() => {
       this.blurTimer = 0;
-      if (this.sessionActive && !this.isFocused()) {
-        this.cancelCloseConfirm();
-        this.publishInset(0);
-        this.finishSession();
-      }
+      // Blur is not evidence of a hidden keyboard. While the viewport still
+      // reports coverage, keep the lift and transcript anchor intact.
+      if (this.sessionActive && !this.isFocused()) this.updateFromGeometry();
     }, BLUR_GRACE_MS);
   };
 
@@ -346,7 +350,8 @@ class KeyboardLiftController implements KeyboardLift {
       this.finishTimer = 0;
       if (!this.sessionActive) return;
       const target = this.measureTarget();
-      if (target == null || target <= RESTORE_SLOP_PX || !this.isFocused()) this.finishSession();
+      if (target != null && target <= RESTORE_SLOP_PX) this.finishSession();
+      else this.updateFromGeometry();
     }, FINISH_CLOSE_MS);
   }
 
