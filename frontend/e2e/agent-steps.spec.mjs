@@ -69,6 +69,7 @@ test('the workspace agent streams its steps into the chat', async ({ page }) => 
   await expect(surface).toHaveCount(1);
   const trigger = surface.getByTestId('tool-row-agent-1');
   await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  await bubble.getByTestId('turn-activity-toggle').click();
   await trigger.click();
   await expect(trigger).toHaveAttribute('aria-expanded', 'true');
   const steps = surface.locator('.agent-step');

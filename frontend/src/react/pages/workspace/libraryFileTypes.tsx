@@ -1,4 +1,5 @@
 import React from 'react';
+import { Icon } from '../../../legacy/Icon';
 import type { LibraryItemRecord } from './library.types';
 
 /* File-type glyphs for the Library thumbnail box. Resolution order is
@@ -28,7 +29,7 @@ const CATEGORY_RULES: Array<{ type: string; matches: (kind: string, ext: string)
   { type: 'audio', matches: (kind, ext) => kind === 'audio' || AUDIO_EXTENSIONS.includes(ext) },
   {
     type: 'doc',
-    matches: (kind, ext) => DOC_EXTENSIONS.includes(ext) || ['pdf', 'text', 'docx'].includes(kind),
+    matches: (kind, ext) => DOC_EXTENSIONS.includes(ext) || ext === 'pdf' || ['pdf', 'text', 'docx'].includes(kind),
   },
 ];
 
@@ -56,6 +57,7 @@ function FileGlyph({ children }: { children: React.ReactNode }) {
 }
 
 const GLYPH_RULES: Array<{ type: string; matches: (kind: string, ext: string) => boolean }> = [
+  { type: 'folder', matches: (kind) => kind === 'folder' },
   { type: 'html', matches: (_kind, ext) => ['html', 'htm', 'web'].includes(ext) },
   { type: 'code', matches: (_kind, ext) => ['json', 'js', 'ts', 'py', 'css'].includes(ext) },
   { type: 'text', matches: (_kind, ext) => ['md', 'markdown', 'txt'].includes(ext) },
@@ -68,7 +70,7 @@ const GLYPH_RULES: Array<{ type: string; matches: (kind: string, ext: string) =>
   {
     type: 'doc',
     matches: (kind, ext) =>
-      ['pdf', 'text', 'docx', 'rtf'].includes(kind) || DOC_EXTENSIONS.includes(ext),
+      ['pdf', 'text', 'docx', 'rtf'].includes(kind) || ext === 'pdf' || DOC_EXTENSIONS.includes(ext),
   },
 ];
 
@@ -78,12 +80,8 @@ function glyphType(item: LibraryItemRecord): string {
 }
 
 const FILE_TYPE_GLYPHS: Record<string, () => React.ReactNode> = {
-  html: () => (
-    <FileGlyph>
-      <circle cx="12" cy="12" r="9" />
-      <path d="M3 12h18M12 3c-5 5-5 13 0 18M12 3c5 5 5 13 0 18" />
-    </FileGlyph>
-  ),
+  folder: () => <Icon name="folder" size={20} />,
+  html: () => <Icon name="globe" size={20} />,
   code: () => (
     <FileGlyph>
       <path d="m8 6-5 6 5 6M16 6l5 6-5 6M14 4l-4 16" />
@@ -95,13 +93,7 @@ const FILE_TYPE_GLYPHS: Record<string, () => React.ReactNode> = {
       <path d="M8 9h8M8 15h5" />
     </FileGlyph>
   ),
-  image: () => (
-    <FileGlyph>
-      <rect x="3" y="3" width="18" height="18" rx="2.5" />
-      <circle cx="8.6" cy="8.6" r="1.6" />
-      <path d="m21 15.5-4.5-4.5L5 22" />
-    </FileGlyph>
-  ),
+  image: () => <Icon name="image" size={20} />,
   video: () => (
     <FileGlyph>
       <rect x="2.5" y="4.5" width="19" height="15" rx="2.5" />
@@ -127,12 +119,7 @@ const FILE_TYPE_GLYPHS: Record<string, () => React.ReactNode> = {
       <path d="M12 16v5M8.5 21h7" />
     </FileGlyph>
   ),
-  book: () => (
-    <FileGlyph>
-      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-    </FileGlyph>
-  ),
+  book: () => <Icon name="library" size={20} />,
   doc: () => (
     <FileGlyph>
       <path d="M14 2.5H6.5a2 2 0 0 0-2 2v15a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V8z" />

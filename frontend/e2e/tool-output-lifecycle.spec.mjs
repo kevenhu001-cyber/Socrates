@@ -210,6 +210,7 @@ test('opening a mobile tool detail does not move or duplicate call outputs', asy
   await expect(charts.nth(1)).toContainText('Probe B');
   await expect(body.locator('.exec-artifact')).toHaveCount(0);
 
+  await body.getByTestId('turn-activity-toggle').click();
   await body.locator('[data-testid="tool-row-search-1"]').click();
   /* The detail opens inline beneath its row; outputs above and below keep
      their nodes. */

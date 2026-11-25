@@ -875,6 +875,7 @@ export const en = {
   'plugins.public': 'Public',
   'plugins.personal': 'Personal',
   'plugins.popular': 'Popular',
+  'plugins.searchResults': 'Search results',
   'plugins.detail.back': 'Back to plugins',
   'plugins.detail.backLabel': 'Plugins',
   'plugins.detail.connected': 'Connected',

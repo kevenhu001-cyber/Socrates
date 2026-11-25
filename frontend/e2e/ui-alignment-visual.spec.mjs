@@ -66,8 +66,10 @@ for (const [device, viewport] of Object.entries(WORKBENCH_VIEWPORTS)) {
         ],
       });
       await expect(page.locator('html')).toHaveAttribute('data-mode', theme);
-      const burst = page.locator('.tool-activity-burst-toggle');
+      const burst = page.locator('[data-testid="turn-activity-toggle"]');
       await expect(burst).toBeVisible();
+      await expect(page.getByTestId('tool-row-search-a')).toBeHidden();
+      await burst.click();
       await expect(page.getByTestId('tool-row-search-a')).toBeVisible();
       await capture(page, info, `${device}-${theme}-completed-expanded`);
       await burst.click();
@@ -93,8 +95,10 @@ for (const [device, viewport] of Object.entries(WORKBENCH_VIEWPORTS)) {
         });
       });
       await expect(page.getByTestId('agent-activity-preview')).toBeVisible();
-      await expect(page.getByTestId('agent-activity-preview')).toContainText('1/2');
+      await expect(page.getByTestId('agent-activity-preview')).toHaveCount(0);
       await capture(page, info, `${device}-${theme}-live-workspace`);
+      const activity = page.getByTestId('turn-activity-toggle').last();
+      if ((await activity.getAttribute('aria-expanded')) === 'false') await activity.click();
       await page.getByTestId('tool-row-alignment-agent').click();
       await expect(page.locator('.agent-step')).toHaveCount(2);
       await capture(page, info, `${device}-${theme}-live-details`);

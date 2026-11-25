@@ -40,7 +40,7 @@ test('thinking disclosure supports keyboard control and preserves intent through
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
   await expect(body).toBeVisible();
   await expect(body).not.toHaveAttribute('aria-hidden', 'true');
-  await expect(body.locator('.thinking-step-preview')).toHaveText('Checking both assumptions.');
+  await expect(body.locator('.thinking-step-summary')).toHaveText('Checking both assumptions.');
   await expect(body.getByTestId('thinking-step')).not.toHaveAttribute('aria-expanded');
   await page.keyboard.press('Space');
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
@@ -73,8 +73,7 @@ test('thinking disclosure supports keyboard control and preserves intent through
   await setLang(page, 'zh');
   // The settled label is neutral; neither seconds nor summary counts are
   // presented as a measure of reasoning progress.
-  await expect(accordion.getByTestId('turn-activity-label')).toHaveText('思考摘要');
-  await expect(accordion.getByTestId('turn-activity-duration')).toHaveText('6 秒');
+  await expect(accordion.getByTestId('turn-activity-label')).toHaveText('思考了 6 秒');
   await page.screenshot({
     path: 'test-results/thinking-disclosure-desktop.png',
     animations: 'disabled',

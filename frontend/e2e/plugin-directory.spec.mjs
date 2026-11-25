@@ -54,7 +54,9 @@ async function openConnectedPluginDetail(page) {
     await page.locator('#sidebarOpenBtn').click();
   }
   await page.locator('#navPlugins').click();
-  await page.locator('[data-connector-id="github"]').click();
+  const entry = page.locator('[data-connector-id="github"] .plugin-directory-card-main');
+  await entry.focus();
+  await page.keyboard.press('Enter');
   await expect(page.locator('.plugin-detail-view')).toBeVisible();
   await expect(page.locator('.plugin-detail-view')).toHaveAttribute('data-page-frame', '');
   await expect(page.locator('.plugin-detail-page-header')).toHaveAttribute(

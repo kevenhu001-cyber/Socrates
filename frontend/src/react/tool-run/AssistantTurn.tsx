@@ -5,12 +5,9 @@
 import { TurnEvidence } from '../citations/TurnEvidence';
 import { TurnActivitySurface } from './TurnActivitySurface';
 import { deriveTurnPresentationState } from '../../legacy/turnActivityModel';
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { Chevron, Spinner } from '@socrates/ui/turn';
-import { interfaceIcon } from '../../legacy/icons/interfaceIcons';
-import { Button } from '../ui/shadcn/button';
-import { tf } from '../../legacy/toolPresentationModel.ts';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  approvalViewOf,
   buildTurnLayout,
   groupOutputCalls,
   stripLegacyToolHtml,
@@ -18,11 +15,11 @@ import {
   type ToolCallRecord,
   type TurnSegment,
 } from './toolRunModel.js';
-import { ToolRunDisclosureProvider, useExpandedToolIds } from './ToolRunDisclosure';
+import { ToolRunDisclosureProvider } from './ToolRunDisclosure';
 import { TurnStatus } from './TurnStatus.js';
 import { TurnSegmentContent } from './TurnSegmentContent';
 import { ToolRunAttachments } from './ToolRunAttachments';
-import { ToolRunRow } from './ToolRunRow';
+import { ToolRunApproval } from './ToolRunApproval';
 import { useProseRenderer, useScaffoldTurnProse } from './proseRenderer';
 import { useLocaleRefresh } from '../rn/WebUiTheme';
 import { stripLegacyTerminalHtml } from './toolRunLegacyHtml';
@@ -145,95 +142,19 @@ function useStreamSettling(isLive: boolean): boolean {
   return isSettling;
 }
 
-/** Keep the rows mounted when a user folds the activity; attachments stay outside
- * the disclosure so an interactive result never disappears with its log. */
-function ToolActivityBurst({
-  members,
-  messageId,
-  readOnly,
-  live,
-}: {
-  members: ToolCallRecord[];
-  messageId: string;
-  readOnly?: boolean;
-  live: boolean;
-}) {
-  const [openOverride, setOpenOverride] = useState<boolean | null>(null);
-  const expandedIds = useExpandedToolIds();
-  const bodyId = useId();
-  const running = live && members.some((call) => toolRunStateOf(call) === 'running');
-  // Approval is user input, not a log: never hide a pending decision.
-  const canFold = members.length > 1 && members.every((call) => toolRunStateOf(call) !== 'awaiting');
-  const open = openOverride ?? members.some((call) => expandedIds?.has(call.id));
-  const folded = canFold && !open;
-  const label = running
-    ? tf('think.toolsWorking', 'Working with tools…', {})
-    : tf(
-        members.length === 1 ? 'think.summaryToolTitle' : 'think.summaryToolsTitle',
-        members.length === 1 ? 'Used {n} tool' : 'Used {n} tools',
-        { n: members.length },
-      );
-  return (
-    <div className="tool-activity-burst">
-      {canFold ? (
-        <Button
-          type="button"
-          variant="surface"
-          className="tool-activity-burst-toggle"
-          aria-expanded={open}
-          aria-controls={bodyId}
-          onClick={() => setOpenOverride(!open)}
-        >
-          {running ? <Spinner /> : (
-            <span
-              className="tool-burst-glyph"
-              aria-hidden="true"
-              dangerouslySetInnerHTML={{ __html: interfaceIcon('activityTools', 18) }}
-            />
-          )}
-          <span>{label}</span>
-          <Chevron open={open} size={8} />
-        </Button>
-      ) : null}
-      <div
-        id={bodyId}
-        className={canFold ? `ui-collapse tool-burst-disclosure${folded ? ' collapsed' : ''}` : undefined}
-        aria-hidden={folded || undefined}
-        inert={folded}
-      >
-        <div className={canFold ? "ui-collapse-inner" : undefined}>
-          {members.map((call) => (
-            <ToolRunRow
-              key={call.id}
-              call={call}
-              messageId={messageId}
-              readOnly={readOnly}
-              live={live}
-            />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function TurnSegmentsView({
   segments,
   message,
   growingIndex,
-  messageId,
   calls,
   readOnly,
-  live,
   prose,
 }: {
   segments: TurnSegment[];
   message: ChatMessage;
   growingIndex: number;
-  messageId: string;
   calls: ToolCallRecord[];
   readOnly?: boolean;
-  live: boolean;
   prose: ReturnType<typeof useProseRenderer>;
 }): React.ReactElement {
   return (
@@ -243,23 +164,14 @@ function TurnSegmentsView({
           const members = segment.kind === 'group' ? groupOutputCalls(segment) : [segment.call];
           // Parallel tools can join a group after its first output has mounted.
           // Keep attachments keyed by call at the transcript level across regrouping.
-          return [
-            <ToolActivityBurst
-              key={`burst-${members[0]?.id}`}
-              members={members}
-              messageId={messageId}
+          return members.map((call) => (
+            <ToolRunAttachments
+              key={`output-${call.id}`}
+              call={call}
+              tools={calls}
               readOnly={readOnly}
-              live={live}
-            />,
-            ...members.map((call) => (
-              <ToolRunAttachments
-                key={`output-${call.id}`}
-                call={call}
-                tools={calls}
-                readOnly={readOnly}
-              />
-            )),
-          ];
+            />
+          ));
         }
         return (
           <TurnSegmentContent
@@ -365,14 +277,6 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
   const activeTool =
     calls.find((call) => toolRunStateOf(call) === 'awaiting') ||
     calls.find((call) => toolRunStateOf(call) === 'running');
-  const activeToolInline = Boolean(
-    activeTool &&
-    segments.some((segment) =>
-      segment.kind === 'group'
-        ? groupOutputCalls(segment).some((call) => call.id === activeTool.id)
-        : segment.kind === 'tool' && segment.call.id === activeTool.id,
-    ),
-  );
   const presentation = deriveTurnPresentationState(message, {
     live: isLive,
     answerStarted: hasAnswerProse,
@@ -388,7 +292,7 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
     <ToolRunDisclosureProvider>
       <TurnEvidence runtime={message.turnRuntime} text={rawText} entryId={messageId}>
         <TurnActivitySurface
-          activities={presentation.reasoningSummaries}
+          activities={presentation.activities}
           publicSummary={presentation.publicSummary}
           isLive={presentation.activityLive}
           status={presentation.activityStatus}
@@ -397,9 +301,23 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
           statusLabel={presentation.activityLabel}
           intentSummary={presentation.intentSummary}
           answerStarted={hasAnswerProse}
-          activeToolInline={activeToolInline}
           activeTool={activeTool}
+          calls={calls}
+          messageId={messageId}
+          readOnly={readOnly}
         />
+        {calls.map((call) => {
+          const approval = approvalViewOf(call);
+          return approval ? (
+            <ToolRunApproval
+              key={call.id}
+              view={approval}
+              messageId={messageId}
+              toolCallId={call.id}
+              readOnly={readOnly}
+            />
+          ) : null;
+        })}
         {legacyHtml ? (
           <div
             className="tool-run-prose is-settled"
@@ -410,10 +328,8 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
           segments={segments}
           message={message}
           growingIndex={growingIndex}
-          messageId={messageId}
           calls={calls}
           readOnly={readOnly}
-          live={isLive}
           prose={prose}
         />
         <TurnIndicators

@@ -1,3 +1,4 @@
+import { Icon } from '../../../legacy/Icon';
 import { Button as UiButton } from '../../ui/Button';
 import { i18n } from './workspaceUi';
 import { ConnectorMark } from './ConnectorMark';
@@ -20,7 +21,7 @@ export function InstalledPluginStrip({
       <UiButton type="button" className="plugin-installed-label" onClick={onShowPersonal}>
         {i18n('plugins.installed', 'Installed')}
         <span className="plugin-installed-caret" aria-hidden="true">
-          ›
+          <Icon name="chevronRight" size={14} />
         </span>
       </UiButton>
       <div className="plugin-installed-icons">
@@ -30,6 +31,7 @@ export function InstalledPluginStrip({
             className={'workspace-row-icon connector-icon connector-' + plugin.id}
             key={plugin.id}
             title={plugin.name}
+            aria-label={plugin.name}
             onClick={() => onSelect(plugin.id)}
           >
             <ConnectorMark id={plugin.id} name={plugin.name} />

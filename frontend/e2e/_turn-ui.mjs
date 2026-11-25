@@ -50,14 +50,12 @@ export async function openActivity(scope) {
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
 }
 
-/**
- * Kept for specs written against the old 「使用了 N 个工具」 group. Calls are
- * one row each now, so there is nothing left to expand.
- */
-export async function openToolGroups() {}
+/** All execution logs now share the turn activity disclosure. */
+export async function openToolGroups(scope) { await openActivity(scope); }
 
 /** Open the call's inline detail. Returns the panel. */
 export async function openToolDetail(page, scope, id) {
+  await openActivity(scope);
   const row = toolRowButton(scope, id);
   if ((await row.getAttribute('aria-expanded')) !== 'true') await row.click();
   const detail = page.locator(TURN.detail);
