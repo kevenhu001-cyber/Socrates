@@ -61,7 +61,9 @@ export function SidebarHeader() {
           i18nKey="sidebar.filterRecents"
           controls="sidebarSearch"
           expanded={searchOpen}
-          iconSize={iconSize}
+          iconSize={24}
+          controlSize={44}
+          backgroundVar="--sidebar-search-button-bg"
           hostStyle={webClass(isMobile && 'btn-icon', 'sidebar-search-btn')}
           onPress={() => {
             // Reveal and focus in the same tap so mobile browsers can open the keyboard.
