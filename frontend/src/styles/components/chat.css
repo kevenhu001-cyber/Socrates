@@ -39,8 +39,20 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
     --phone-transcript-top: calc(var(--ui-mobile-header) + env(safe-area-inset-top, 0px));
     --phone-transcript-bottom: 32px;
     scroll-padding-block: calc(var(--phone-transcript-top) + 12px) var(--phone-transcript-bottom);
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 var(--phone-transcript-top), #000 calc(100% - var(--phone-transcript-bottom)), transparent 100%);
-    mask-image: linear-gradient(to bottom, transparent 0, #000 var(--phone-transcript-top), #000 calc(100% - var(--phone-transcript-bottom)), transparent 100%);
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      transparent 0,
+      #000 var(--phone-transcript-top),
+      #000 calc(100% - var(--phone-transcript-bottom)),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      transparent 0,
+      #000 var(--phone-transcript-top),
+      #000 calc(100% - var(--phone-transcript-bottom)),
+      transparent 100%
+    );
   }
 }
 
@@ -177,7 +189,8 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
     #appShell
     #msgList {
     max-width: none;
-    padding: calc(var(--phone-transcript-top) + 12px) var(--ui-mobile-page-gutter) calc(var(--phone-transcript-bottom) + 8px);
+    padding: calc(var(--phone-transcript-top) + 12px) var(--ui-mobile-page-gutter)
+      calc(var(--phone-transcript-bottom) + 8px);
   }
   body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
     #appShell

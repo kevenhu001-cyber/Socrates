@@ -338,7 +338,10 @@
   }
   /* Conversation composer: the outer bar already provides the 16px gutter.
      Keep the capsule full-width without a second inset. */
-  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active) #appShell .composer-shell [data-composer-frame][data-layout='inline'] {
+  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
+    #appShell
+    .composer-shell:not(.has-plugin-chips):not(.has-queue)
+    [data-composer-frame][data-layout='inline']:not([data-expanded='true']) {
     --composer-collapsed-inset: 0px;
     --composer-frame-radius: var(--ui-radius-composer-desktop);
     box-shadow: inset 0 0 0 1px var(--ui-border-subtle);

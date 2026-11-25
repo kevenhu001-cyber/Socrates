@@ -200,8 +200,11 @@ let _mermaidCheckedCount = 0;
 const MERMAID_CHECKED_MAX = 500;
 
 function mermaidHeader(id: string): string {
-  return '<div class="viz-mermaid-header"><span class="viz-mermaid-title">Mermaid</span>' +
-    vizActions(id, false, true) + '</div>';
+  return (
+    '<div class="viz-mermaid-header"><span class="viz-mermaid-title">Mermaid</span>' +
+    vizActions(id, false, true) +
+    '</div>'
+  );
 }
 
 function mermaidCodePane(code: string): string {
@@ -240,7 +243,9 @@ export function renderMermaid(code: string, opts: { stableId?: string }) {
           mermaidHeader(errorId) +
           '<div class="viz-body">' +
           vizErrorHtml('Diagram syntax error', code) +
-          '</div>' + mermaidCodePane(code) + '</div>'
+          '</div>' +
+          mermaidCodePane(code) +
+          '</div>'
         );
       }
     }
@@ -269,7 +274,8 @@ export function renderMermaid(code: string, opts: { stableId?: string }) {
     mermaidHeader(id) +
     '<div class="viz-body">' +
     vizLoadingHtml() +
-    '</div>' + mermaidCodePane(code) +
+    '</div>' +
+    mermaidCodePane(code) +
     '</div>'
   );
 }
