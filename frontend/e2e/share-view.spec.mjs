@@ -193,7 +193,7 @@ test('a shared turn lays its tool rows out declaratively, read-only', async ({ p
   await expect(body).toHaveClass(/is-declarative/);
 
   // Completed tool bursts start compact; expand before inspecting their rows.
-  const burstToggle = body.locator('.tool-activity-burst-toggle');
+  const burstToggle = body.locator('[data-testid="turn-activity-toggle"]');
   await expect(burstToggle).toHaveAttribute('aria-expanded', 'false');
   await burstToggle.click();
 
@@ -209,7 +209,7 @@ test('a shared turn lays its tool rows out declaratively, read-only', async ({ p
   const order = await body
     .locator('.turn-evidence')
     .evaluate((el) =>
-      Array.from(el.children).map((node) =>
+      Array.from(el.querySelectorAll('.rn-tool-row, .tool-run-prose')).map((node) =>
         node.classList.contains('tool-run-prose')
           ? 'text:' + (node.textContent || '').replace(/\s+/g, ' ').trim()
           : node.classList.contains('rn-tool-row')
