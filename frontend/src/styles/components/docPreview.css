@@ -378,3 +378,91 @@
 .doc-preview-status .file-card-spinner {
   justify-self: center;
 }
+
+/* Library file previews — content geometry shares this owner with chat
+   attachment previews. The library dialog shell remains in surfaces.css. */
+.library-file-preview-card {
+  width: min(860px, calc(100vw - 36px));
+  max-height: min(820px, calc(100dvh - 36px));
+  display: flex;
+  flex-direction: column;
+}
+.library-file-preview-card .workspace-dialog-title {
+  flex: 0 0 auto;
+}
+.library-file-preview-media {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 180px;
+  max-height: calc(100dvh - 190px);
+  overflow: auto;
+  border-radius: var(--ui-radius-sm);
+  background: var(--ui-bg-sunken);
+}
+.library-file-preview-media img {
+  display: block;
+  max-width: 100%;
+  max-height: calc(100dvh - 210px);
+  object-fit: contain;
+}
+.library-file-preview-media video {
+  display: block;
+  max-width: 100%;
+  max-height: calc(100dvh - 210px);
+}
+.library-file-preview-audio {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 110px;
+  border-radius: var(--ui-radius-sm);
+  background: var(--ui-bg-sunken);
+}
+.library-file-preview-audio audio {
+  width: min(520px, 100%);
+}
+.library-file-preview-frame {
+  width: 100%;
+  height: min(650px, calc(100dvh - 190px));
+  border: 0;
+  border-radius: var(--ui-radius-sm);
+  background: hsl(0 0% 100%); /* Document paper, not app chrome. */
+}
+.library-file-preview-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 180px;
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-xxs);
+}
+.library-file-preview-text {
+  box-sizing: border-box;
+  width: 100%;
+  max-height: min(620px, calc(100dvh - 190px));
+  margin: 0;
+  padding: 13px 14px;
+  overflow: auto;
+  border: 0.5px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-sm);
+  background: var(--ui-bg-sunken);
+  color: var(--ui-text-primary);
+  font: var(--ui-font-size-xxs)/1.6 var(--font-mono, ui-monospace, SFMono-Regular, Consolas, monospace);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.library-artifact-source {
+  min-height: 220px;
+}
+.library-file-preview-note {
+  margin-top: 8px;
+}
+.library-file-preview-error {
+  min-height: 140px;
+  padding: 24px 12px;
+}
+.library-file-preview-error span {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
