@@ -729,7 +729,8 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
 }
 
 .file-card:hover .file-card-remove,
-.file-card:focus-within .file-card-remove {
+.file-card:focus-within .file-card-remove,
+.file-card.uploading .file-card-remove {
   opacity: 1;
 }
 
