@@ -272,3 +272,14 @@ test('Page Kit owns shared section, collection and card defaults', async () => {
     assert.ok(!pages.split('\n').some((line) => line === rule), `Duplicate base: ${selector}`);
   }
 });
+
+test('legacy button utilities use paint-only press feedback and tag editor has one input owner', async () => {
+  const [buttons, menu, overlays] = await Promise.all([
+    read('src/styles/polish/buttons.css'),
+    read('src/styles/components/menu.css'),
+    read('src/styles/polish/overlays.css'),
+  ]);
+  assert.doesNotMatch(buttons, /(?:^|\n)\s*(?:transform|scale):/);
+  assert.match(menu, /\.tag-editor-popover input\s*\{/);
+  assert.doesNotMatch(overlays, /\.tag-editor-popover input\s*\{/);
+});
