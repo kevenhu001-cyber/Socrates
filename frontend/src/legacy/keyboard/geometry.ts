@@ -179,3 +179,27 @@ export function isEditableWithin(eventTarget: unknown, trackedInputs: readonly u
     return false;
   }
 }
+
+/** Only preserve an already-focused composer on mobile; never steal focus
+ * from another text field or a deliberate keyboard-navigation action. */
+export function hasMobileComposerFocus(): boolean {
+  if (typeof document === 'undefined' || typeof window === 'undefined') return false;
+  const root = document.getElementById('composerInputWrap');
+  return Boolean(
+    root &&
+    isEditableWithin(document.activeElement, [root]) &&
+    (document.documentElement.dataset.keyboardOpen === 'true' ||
+      window.matchMedia('(max-width: 768px)').matches ||
+      window.matchMedia('(pointer: coarse)').matches)
+  );
+}
+
+/** A tap on these surfaces is not an instruction to dismiss the IME.
+ * Links, fields, message actions and native range controls keep normal focus. */
+export function retainsComposerFocus(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+  if (target.closest('#topModelSwitcher, #effortTrigger, [data-chat-config-trigger]')) return true;
+  if (target.closest('.chat-config-pop button')) return true;
+  if (target.closest('button, a, input, textarea, select, [contenteditable], [role="button"], [role="link"], [tabindex], label, summary, video, audio')) return false;
+  return Boolean(target.closest('#msgList, #chatView, #topicSetup, #composerInputWrap'));
+}
