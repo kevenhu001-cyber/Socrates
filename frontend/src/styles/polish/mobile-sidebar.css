@@ -836,54 +836,25 @@
   }
 }
 
-/* Phone drawer nav background states. The shared RN row reads
-   --sidebar-nav-bg with its inline palette as the fallback, so these rules
-   win without `!important` even though the row publishes an inline
-   background: resting and selected rows stay transparent, the current row
-   takes the shared hover surface, and hover, keyboard focus plus press pick
-   up the reference wash (10% white on the dark rail, 5% black in the light
-   theme). This is the canonical phone owner and loads after parity/. */
+/* Phone navigation uses the same semantic hover and press roles as the
+   desktop shell. The new-chat entry never looks like a selected destination. */
 @media (max-width: 768px) {
   #appShell #sidebarNav .sidebar-nav-btn {
     --sidebar-nav-bg: transparent;
   }
-  #appShell #sidebarNav .sidebar-nav-btn.active,
-  #appShell #sidebarNav .sidebar-nav-btn[aria-current='page'] {
+  #appShell #sidebarNav .sidebar-nav-btn:is(.active, [aria-current='page']) {
     --sidebar-nav-bg: var(--ui-bg-hover);
   }
-  /* The primary entry keeps its transparent resting state even when it also
-     carries .active / aria-current; only hover and focus paint it. Its
-     three-ID selector already outranks the .active wash above. */
   #appShell #sidebarNav #navNew.sidebar-nav-btn {
     --sidebar-nav-bg: transparent;
   }
-  #appShell #sidebarNav .sidebar-nav-btn:hover,
-  #appShell #sidebarNav .sidebar-nav-btn:focus-visible {
-    --sidebar-nav-bg: rgb(255 255 255 / 10%);
+  #appShell #sidebarNav .sidebar-nav-btn:is(:hover, :focus-visible),
+  #appShell #sidebarNav #navNew.sidebar-nav-btn:is(:hover, :focus-visible) {
+    --sidebar-nav-bg: var(--ui-bg-hover);
   }
-  #appShell #sidebarNav .sidebar-nav-btn:active {
-    --sidebar-nav-bg: rgb(255 255 255 / 10%);
-  }
-  #appShell #sidebarNav #navNew.sidebar-nav-btn:hover,
-  #appShell #sidebarNav #navNew.sidebar-nav-btn:focus-visible {
-    --sidebar-nav-bg: rgb(255 255 255 / 10%);
-  }
+  #appShell #sidebarNav .sidebar-nav-btn:active,
   #appShell #sidebarNav #navNew.sidebar-nav-btn:active {
-    --sidebar-nav-bg: rgb(255 255 255 / 10%);
-  }
-  [data-mode='light'] #appShell #sidebarNav .sidebar-nav-btn:hover,
-  [data-mode='light'] #appShell #sidebarNav .sidebar-nav-btn:focus-visible {
-    --sidebar-nav-bg: rgb(0 0 0 / 5%);
-  }
-  [data-mode='light'] #appShell #sidebarNav .sidebar-nav-btn:active {
-    --sidebar-nav-bg: rgb(0 0 0 / 5%);
-  }
-  [data-mode='light'] #appShell #sidebarNav #navNew.sidebar-nav-btn:hover,
-  [data-mode='light'] #appShell #sidebarNav #navNew.sidebar-nav-btn:focus-visible {
-    --sidebar-nav-bg: rgb(0 0 0 / 5%);
-  }
-  [data-mode='light'] #appShell #sidebarNav #navNew.sidebar-nav-btn:active {
-    --sidebar-nav-bg: rgb(0 0 0 / 5%);
+    --sidebar-nav-bg: var(--ui-bg-active);
   }
 }
 
