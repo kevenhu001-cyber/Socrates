@@ -176,7 +176,7 @@ html:not([data-main-view='settingsPage']) #appShell .main-page .ui-page-frame,
 
 #appShell .ui-card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
   gap: var(--ui-space-sm);
   min-width: 0;
 }
@@ -319,7 +319,7 @@ html:not([data-main-view='settingsPage']) #appShell .main-page .ui-page-frame,
 @media (min-width: 769px) {
   #appShell .library-list.view-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr));
     gap: var(--ui-space-sm);
     padding: 0;
     overflow: visible;
@@ -335,7 +335,7 @@ html:not([data-main-view='settingsPage']) #appShell .main-page .ui-page-frame,
   #appShell .library-list.view-grid .ui-collection-body {
     display: grid;
     grid-column: 1 / -1;
-    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr));
     gap: var(--ui-space-sm);
   }
 
@@ -343,7 +343,7 @@ html:not([data-main-view='settingsPage']) #appShell .main-page .ui-page-frame,
     position: relative;
     box-sizing: border-box;
     display: grid;
-    grid-template-columns: 44px minmax(0, 1fr);
+    grid-template-columns: 44px minmax(0, 1fr) 24px;
     grid-template-rows: auto auto;
     align-items: center;
     gap: var(--ui-space-xs) var(--ui-space-sm);
@@ -360,9 +360,10 @@ html:not([data-main-view='settingsPage']) #appShell .main-page .ui-page-frame,
   }
 
   #appShell .library-list.view-grid .library-checkbox-label {
-    position: absolute;
-    top: var(--ui-space-sm);
-    left: var(--ui-space-sm);
+    position: static;
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
     z-index: 1;
   }
 
@@ -403,7 +404,7 @@ html:not([data-main-view='settingsPage']) #appShell .main-page .ui-page-frame,
 /* ── Projects ───────────────────────────────────────────────────────── */
 
 #appShell .ui-project-grid {
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
 }
 
 /* The compatibility list painted a top rule when the rows were a plain
@@ -424,7 +425,7 @@ body.workspace-active #appShell .ui-page-card.project-card {
   padding: var(--ui-space-lg);
   border: 1px solid var(--ui-border-subtle);
   border-radius: var(--ui-radius-xl);
-  background: var(--ui-bg-raised);
+  background: transparent;
 }
 
 #appShell .project-card .project-icon {
@@ -434,7 +435,7 @@ body.workspace-active #appShell .ui-page-card.project-card {
   width: 40px;
   height: 40px;
   border-radius: var(--ui-radius-md);
-  background: color-mix(in srgb, currentColor 12%, transparent);
+  background: transparent;
 }
 
 #appShell .project-card .project-icon svg {
@@ -476,7 +477,7 @@ body.workspace-active #appShell .ui-page-card.project-card {
 #appShell .plugin-directory-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
-  gap: var(--ui-space-sm);
+  gap: var(--ui-space-md);
 }
 
 #appShell .plugin-directory-row {
@@ -514,13 +515,17 @@ body.workspace-active #appShell .ui-page-card.project-card {
   cursor: pointer;
 }
 
+#appShell .plugin-directory-card-main:hover {
+  background: transparent;
+}
+
 #appShell .plugin-directory-row .connector-icon {
   display: grid;
   place-items: center;
   flex: 0 0 48px;
   width: 48px;
   height: 48px;
-  border: 1px solid var(--ui-border-subtle);
+  border: 0;
   border-radius: var(--ui-radius-lg);
   background: var(--ui-bg-surface);
 }
@@ -786,9 +791,9 @@ body.workspace-active #appShell .ui-page-card.project-card {
 
 #appShell .profile-header,
 #appShell .profile-section {
-  border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-xl);
-  background: var(--ui-bg-raised);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
 #appShell .profile-header {
@@ -797,8 +802,9 @@ body.workspace-active #appShell .ui-page-card.project-card {
 
 #appShell .profile-section {
   padding: var(--ui-space-lg);
-  border: 1px solid var(--ui-border-subtle);
-  background: var(--ui-bg-raised);
+  border: 0;
+  border-top: 1px solid var(--ui-border-subtle);
+  background: transparent;
 }
 
 #appShell .profile-page .profile-row,
@@ -840,13 +846,12 @@ body.workspace-active #appShell .ui-page-card.project-card {
   justify-content: center;
   min-height: 220px;
   padding: var(--ui-space-xxl) var(--ui-space-lg);
-  border: 1px dashed var(--ui-border-subtle);
-  border-radius: var(--ui-radius-2xl);
-  background: color-mix(in srgb, var(--ui-bg-raised), transparent 30%);
+  border: 0;
+  background: transparent;
 }
 
 #appShell .ui-page-empty [data-slot='empty-title'] {
-  color: var(--ui-text-secondary);
+  color: var(--ui-text-primary);
   font-size: var(--ui-font-size-md);
   font-weight: var(--ui-font-weight-medium);
 }
