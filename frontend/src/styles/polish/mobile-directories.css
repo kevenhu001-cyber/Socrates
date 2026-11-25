@@ -177,7 +177,7 @@
   body.workspace-active #appShell .library-toolbar-divider {
     width: 1px;
     height: 20px;
-    background: var(--border);
+    background: var(--ui-border-default);
   }
   body.workspace-active #appShell .library-desktop-table-head {
     display: block;
@@ -231,7 +231,7 @@
     border: 1px solid var(--ui-border-strong);
     border-radius: var(--ui-radius-control);
     background: var(--ui-bg-surface);
-    color: var(--ui-file-color, var(--foreground));
+    color: var(--ui-file-color, var(--ui-text-primary));
   }
   body.workspace-active #appShell .library-file-icon svg {
     width: 20px;
@@ -274,7 +274,7 @@
     padding: 0;
     border: 0;
     background: transparent;
-    color: var(--foreground);
+    color: var(--ui-text-primary);
   }
 
   /* The default phone library is a flat list
@@ -324,7 +324,7 @@
     background: transparent;
     border: 0;
     padding: var(--ui-space-xs);
-    color: var(--ui-file-color, var(--foreground));
+    color: var(--ui-file-color, var(--ui-text-primary));
   }
   body.workspace-active #appShell .library-list.view-grid .workspace-row-copy {
     grid-column: 1 / -1;
