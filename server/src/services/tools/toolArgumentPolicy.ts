@@ -57,13 +57,6 @@ const POLICIES: Record<string, ToolArgumentPolicy> = {
 };
 
 export function toolArgumentPolicy(toolName: string | null | undefined): ToolArgumentPolicy {
-  return (toolName && POLICIES[toolName]) || DEFAULT_POLICY;
+  return toolName && Object.hasOwn(POLICIES, toolName) ? POLICIES[toolName] : DEFAULT_POLICY;
 }
 
-/** Tools whose executor owns argument validation. Kept as a derived set so
- * existing callers and tests can still ask the question directly. */
-export const SELF_NORMALIZING_TOOLS: ReadonlySet<string> = new Set(
-  Object.entries(POLICIES)
-    .filter(([, policy]) => policy.validation === 'none')
-    .map(([name]) => name),
-);

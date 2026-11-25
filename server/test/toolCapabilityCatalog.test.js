@@ -1,10 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createToolRegistry } from '../src/services/tools/toolCapabilityCatalog.js';
-import {
-  SELF_NORMALIZING_TOOLS,
-  toolArgumentPolicy,
-} from '../src/services/tools/toolArgumentPolicy.js';
+import { toolArgumentPolicy } from '../src/services/tools/toolArgumentPolicy.js';
 import { toolResultBudgetEnabled } from '../src/services/tools/toolResultBudget.js';
 import { PI_AGENT_ENABLED } from '../src/services/tools/piAgent.js';
 
@@ -12,8 +9,12 @@ test('the argument policy declares which validator owns each tool', () => {
   assert.equal(toolArgumentPolicy('render_intelligent_ui').validation, 'none');
   assert.equal(toolArgumentPolicy('create_document').validation, 'tool');
   assert.equal(toolArgumentPolicy('web_search').validation, 'schema');
-  assert.equal(SELF_NORMALIZING_TOOLS.has('render_intelligent_ui'), true);
-  assert.equal(SELF_NORMALIZING_TOOLS.has('create_document'), false);
+  assert.equal(toolArgumentPolicy('render_intelligent_ui').dropUnknown, false);
+  assert.equal(toolArgumentPolicy('create_document').dropUnknown, false);
+  for (const name of ['constructor', 'toString', '__proto__', null]) {
+    assert.equal(toolArgumentPolicy(name).validation, 'schema');
+    assert.equal(toolArgumentPolicy(name).dropUnknown, true);
+  }
 });
 
 test('connector discovery tools are offered only when a connector is connected', () => {
