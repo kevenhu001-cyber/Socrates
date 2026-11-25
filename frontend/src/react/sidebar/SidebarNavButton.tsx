@@ -68,7 +68,7 @@ export function SidebarNavButton({
       navKey={item.key}
       icon={glyph}
       iconSize={mobile ? 24 : 20}
-      iconStrokeWidth={mobile ? 2 : undefined}
+      iconStrokeWidth={mobile ? 2 : 1.75}
       label={label}
       i18nKey={item.i18nKey}
       badge={item.badgeKey ? i18n(item.badgeKey, 'New') : undefined}
@@ -79,7 +79,7 @@ export function SidebarNavButton({
           ? { expanded: Boolean(expanded), controls: 'moreNavPopover' }
           : undefined
       }
-      activeShadow="var(--ui-elevation-raised)"
+      activeShadow="none"
       backgroundVar="--sidebar-nav-bg"
       hostStyle={webClass('sidebar-nav-btn', active && 'active')}
       badgeStyle={webClass('nav-new-badge')}
