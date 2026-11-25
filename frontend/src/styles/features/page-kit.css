@@ -115,6 +115,8 @@
   background: transparent;
   color: var(--ui-text-primary);
   font-size: var(--ui-font-size-sm);
+  line-height: 1.5;
+  outline: none;
   box-shadow: none;
 }
 

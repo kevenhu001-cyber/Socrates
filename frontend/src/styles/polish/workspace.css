@@ -84,7 +84,6 @@
 #appShell .plugin-detail-view {
   display: flex;
   flex-direction: column;
-  max-width: var(--ui-page-reading-width);
   width: 100%;
   margin: 0 auto;
 }
@@ -222,7 +221,8 @@
   border: 1px solid var(--ui-border-subtle);
   border-radius: var(--ui-radius-lg);
   color: var(--foreground);
-  text-align: left;
+  text-align: start;
+  white-space: normal;
   overflow-wrap: anywhere;
 }
 
@@ -244,6 +244,7 @@
 }
 
 #appShell .plugin-detail-prompt-arrow {
+  margin-inline-start: auto;
   color: var(--ui-text-tertiary);
   font-size: var(--ui-font-size-sm);
   flex-shrink: 0;

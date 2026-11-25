@@ -20,6 +20,12 @@ html:not([data-main-view='settingsPage']) #appShell .main-page .ui-page-frame,
   padding-bottom: var(--ui-page-bottom-space);
 }
 
+/* Reading/detail pages use a narrower shared column than directory grids. */
+html:not([data-main-view='settingsPage']) #appShell .main-page .ui-page-frame.plugin-detail-view,
+#appShell .ui-page-frame.plugin-detail-view {
+  max-width: var(--ui-page-reading-width);
+}
+
 #appShell .ui-page-header {
   align-items: flex-start;
   gap: var(--ui-space-lg);
