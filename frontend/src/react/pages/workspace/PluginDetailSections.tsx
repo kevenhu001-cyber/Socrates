@@ -65,6 +65,31 @@ export function PluginDetailSections({ plugin, capabilities, connectable, launch
         ) : null}
       </section>
 
+      {hasActions && actions ? (
+        <section className="plugin-detail-section">
+          <h2 className="plugin-detail-section-title">{detailText('Try asking', '使用示例')}</h2>
+          <p className="plugin-detail-desc">
+            {onUseExample ? detailText('Choose an example to open a new chat with a draft. Nothing is sent automatically.', '选择示例即可打开新对话并填入草稿，不会自动发送。') : detailText('Example requests to use after connecting this app.', '连接后可在对话中尝试以下请求。')}
+          </p>
+          <ul className="plugin-detail-prompts-list">
+            {actions.slice(0, 3).map((action) => (
+              <li key={action.name}>
+                {onUseExample ? (
+                  <Button variant="ghost" size="surface" className="plugin-detail-prompt-card" disabled={launching} onClick={() => onUseExample(pluginExample(plugin, action))}>
+                    <span className="plugin-detail-prompt-text">{pluginExample(plugin, action)}</span>
+                    <Icon name="chevronRight" size={16} className="plugin-detail-prompt-arrow" />
+                  </Button>
+                ) : (
+                  <div className="plugin-detail-prompt-card">
+                    <span className="plugin-detail-prompt-text">{pluginExample(plugin, action)}</span>
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       <section className="plugin-detail-section">
         <h2 className="plugin-detail-section-title">
           {detailText('What you can do', '支持的功能')}
@@ -97,33 +122,6 @@ export function PluginDetailSections({ plugin, capabilities, connectable, launch
           </p>
         ) : null}
       </section>
-
-      {hasActions && actions ? (
-        <section className="plugin-detail-section">
-          <h2 className="plugin-detail-section-title">{detailText('Try asking', '使用示例')}</h2>
-          <p className="plugin-detail-desc">
-            {onUseExample ? detailText('Choose an example to open a new chat with a draft. Nothing is sent automatically.', '选择示例即可打开新对话并填入草稿，不会自动发送。') : detailText('Example requests to use after connecting this app.', '连接后可在对话中尝试以下请求。')}
-          </p>
-          <ul className="plugin-detail-prompts-list">
-            {actions.slice(0, 3).map((action) => (
-              <li key={action.name}>
-                {onUseExample ? (
-                  <Button variant="outline" size="surface" className="plugin-detail-prompt-card" disabled={launching} onClick={() => onUseExample(pluginExample(plugin, action))}>
-                    <Icon name="newChat" size={18} />
-                    <span className="plugin-detail-prompt-text">{pluginExample(plugin, action)}</span>
-                    <Icon name="chevronRight" size={16} className="plugin-detail-prompt-arrow" />
-                  </Button>
-                ) : (
-                  <div className="plugin-detail-prompt-card">
-                    <Icon name="newChat" size={18} />
-                    <span className="plugin-detail-prompt-text">{pluginExample(plugin, action)}</span>
-                  </div>
-                )}
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
 
       <section className="plugin-detail-section">
         <h2 className="plugin-detail-section-title">{detailText('Connection and permissions', '连接与权限')}</h2>
