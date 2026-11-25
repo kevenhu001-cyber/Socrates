@@ -219,6 +219,7 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
         : 'complete';
   // Keep the mounted timeline stable during elapsed-time ticks. Nested tool
   // detail disclosures already mount their expensive output only when opened.
+  const overviewTitle = i18n('think.taskOverview', 'Task overview');
   const history = useMemo(
     () => (
       <>
@@ -226,7 +227,7 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
           <SummaryStep
             step={{
               id: 'intent',
-              title: i18n('think.taskOverview', 'Task overview'),
+              title: overviewTitle,
               summary: intent,
             }}
           />
@@ -238,7 +239,7 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
         )}
       </>
     ),
-    [intent, timeline, messageId, readOnly, live],
+    [intent, timeline, messageId, readOnly, live, overviewTitle],
   );
   if (!live && !expandable && !props.reasoningDurationSec) return null;
   const durationLabel =
