@@ -458,6 +458,23 @@ for (const theme of ['light', 'dark']) {
       };
       await openSidebar(page);
       await capture('sidebar', '#sidebar');
+      if (width > 768) {
+        await capture('home', '#topicSetup');
+        const model = page.locator('#topModelSwitcher');
+        const mode = page.locator('#topModeSwitch');
+        await expect(model).toBeVisible();
+        await expect(mode).toBeVisible();
+        const modelBox = await model.boundingBox();
+        const modeBox = await mode.boundingBox();
+        expect(modelBox.x + modelBox.width).toBeLessThanOrEqual(modeBox.x + 1);
+        await model.click();
+        const picker = page.locator('.chat-config-pop');
+        await expect(picker).toBeVisible();
+        await expect(picker).toBeInViewport();
+        await capture('model-picker', '.chat-config-pop');
+        await page.keyboard.press('Escape');
+        await expect(picker).toBeHidden();
+      }
       for (const [nav, selector, name] of [
         ['navPlugins', '.plugin-directory', 'plugins'],
         ['navLibrary', '.library-directory', 'library'],
