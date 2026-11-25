@@ -526,7 +526,7 @@ body.composer-tools-open.composer-tools-open::after {
   width: 28px;
   height: 28px;
   flex: none;
-  color: var(--ui-text-secondary);
+  color: var(--foreground);
 }
 .settings-page .settings-category-icon svg {
   width: 17px;

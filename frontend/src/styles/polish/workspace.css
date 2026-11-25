@@ -228,7 +228,7 @@
 
 #appShell .plugin-detail-prompt-card > svg {
   flex: none;
-  color: var(--ui-text-secondary);
+  color: var(--foreground);
 }
 
 #appShell button.plugin-detail-prompt-card:hover {

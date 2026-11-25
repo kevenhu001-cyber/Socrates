@@ -239,7 +239,7 @@ html[data-main-view='settingsPage'] #settingsPage .provider-nav-item {
   border: 0;
   border-radius: var(--ui-radius-control);
   background: transparent;
-  color: var(--ui-text-secondary);
+  color: var(--foreground);
   font: inherit;
   font-size: var(--ui-font-size-sm);
   text-align: start;
