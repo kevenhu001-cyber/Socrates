@@ -97,16 +97,8 @@ export function PluginDirectoryCard({
       className="connector-row plugin-directory-row"
       data-connector-id={plugin.id}
       key={plugin.id}
-      onClick={() => onSelect(plugin.id)}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(event) => {
-        if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
-          event.preventDefault();
-          onSelect(plugin.id);
-        }
-      }}
     >
+      <button type="button" className="plugin-directory-card-main" onClick={() => onSelect(plugin.id)} aria-label={plugin.name}>
       <span className={'workspace-row-icon connector-icon connector-' + plugin.id}>
         <ConnectorMark id={plugin.id} name={plugin.name} />
       </span>
@@ -119,7 +111,8 @@ export function PluginDirectoryCard({
         </div>
         <p className="plugin-directory-card-desc">{description}</p>
       </div>
-      <div className="plugin-directory-row-action" onClick={(event) => event.stopPropagation()}>
+      </button>
+      <div className="plugin-directory-row-action">
         <PluginConnectionAction plugin={plugin} configured={configured} dispatch={dispatch} />
       </div>
     </article>
