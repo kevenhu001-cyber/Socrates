@@ -255,7 +255,6 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
             <div
               className="activity-timeline"
               data-testid="thinking-timeline"
-              style={{ paddingInlineStart: toolName ? 22 : 0 }}
             >
               {intent ? (
                 <SummaryStep
