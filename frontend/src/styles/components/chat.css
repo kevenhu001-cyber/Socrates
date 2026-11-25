@@ -649,6 +649,53 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
   white-space: nowrap;
 }
 
+/* Shared formula typesetting for prose and interactive content. */
+.katex {
+  font-size: 1.05em;
+}
+/* UI-align: KaTeX display scroll — the horizontal scrollbar stays
+   invisible until the formula is hovered (open-webui pattern), so
+   wide equations don't carry a permanent gray bar underneath. */
+.katex-display {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  padding: 4px 0;
+  margin: 8px 0;
+}
+@supports (scrollbar-width: thin) {
+  .katex-display {
+    scrollbar-width: thin;
+  }
+}
+@supports (scrollbar-color: transparent transparent) {
+  .katex-display {
+    scrollbar-color: transparent transparent;
+  }
+}
+@supports (scrollbar-color: hsl(var(--text-000) / 0.25) transparent) {
+  .katex-display:hover {
+    scrollbar-color: hsl(var(--text-000) / 0.25) transparent;
+  }
+}
+.katex-display::-webkit-scrollbar {
+  height: 5px;
+}
+.katex-display::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 3px;
+}
+.katex-display:hover::-webkit-scrollbar-thumb {
+  background: hsl(var(--text-000) / 0.25);
+}
+.katex-display > .katex {
+  font-size: 1.1em;
+  width: max-content;
+  min-width: 100%;
+}
+
 /* A formula that cannot be typeset yet keeps its height with blank space.
    A display formula shows one quiet shimmer bar; an inline formula a blank
    slot. The project bans dot ornaments, so no ellipsis. */
