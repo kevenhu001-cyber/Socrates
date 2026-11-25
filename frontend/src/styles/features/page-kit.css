@@ -174,6 +174,37 @@
   color: var(--ui-text-primary);
 }
 
+/* Compact icon-only range tabs share the same selected and hover paint.
+ * Keep the group on one line in a toolbar, including phone layouts. */
+.ui-page-tabs.ui-page-view-toggle[data-slot='toggle-group'] {
+  flex: 0 0 auto;
+  width: max-content;
+  height: auto;
+  padding: 0;
+  overflow: visible;
+  background: transparent;
+}
+
+.ui-page-view-toggle .ui-page-tab[data-slot='toggle-group-item'] {
+  display: grid;
+  place-items: center;
+  width: var(--ui-control-desktop);
+  height: var(--ui-control-desktop);
+  padding: 0;
+}
+
+.ui-page-view-toggle .ui-page-tab > svg {
+  width: 18px;
+  height: 18px;
+}
+
+@media (max-width: 768px) {
+  .ui-page-view-toggle .ui-page-tab[data-slot='toggle-group-item'] {
+    width: var(--ui-control-touch);
+    height: var(--ui-control-touch);
+  }
+}
+
 /* ── Empty state ─────────────────────────────────────────────────────── */
 
 .ui-page-empty[data-slot='empty'] {
