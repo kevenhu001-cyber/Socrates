@@ -806,7 +806,7 @@ body.composer-tools-open.composer-tools-open::after {
   box-shadow: var(--ui-focus-shadow);
 }
 /* Laptop / tablet: keep the rail but give the pane room to breathe. */
-@media (min-width: 721px) and (max-width: 900px) {
+@media (min-width: 769px) and (max-width: 900px) {
   .settings-page .settings-shell {
     grid-template-columns: 184px minmax(0, 1fr);
   }
@@ -820,7 +820,7 @@ body.composer-tools-open.composer-tools-open::after {
     max-width: none;
   }
 }
-@media (max-width: 720px) {
+@media (max-width: 768px) {
   .provider-fields {
     grid-template-columns: minmax(0, 1fr);
   }
