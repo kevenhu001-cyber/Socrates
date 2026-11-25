@@ -5,7 +5,7 @@
 .tag-editor-popover {
   border: 1px solid var(--ui-border-subtle);
   background: var(--ui-bg-surface);
-  color: var(--foreground);
+  color: var(--ui-text-primary);
 }
 
 /* Session tag editor. The shell is a singleton that `session/organize.ts`
@@ -22,6 +22,11 @@
   border-radius: var(--ui-radius-popover);
   box-shadow: var(--ui-shadow-popover);
 }
+/* ── Tag editor popover rows ── */
+.tag-editor-popover input {
+  border-radius: var(--ui-radius-control, 8px);
+}
+
 .tag-editor-popover.visible {
   display: flex;
   animation: tagEditorIn var(--ui-duration-fast) var(--ui-ease-out) both;
@@ -61,7 +66,7 @@ body #composerToolsMenu.composer-tools-menu {
   border-radius: var(--ui-radius-tools-card);
   border: 1px solid var(--ui-border-subtle);
   background: var(--ui-bg-surface);
-  color: var(--foreground);
+  color: var(--ui-text-primary);
   font-family: var(--font-sans);
   box-shadow: var(--ui-shadow-menu);
   animation: none;
@@ -119,7 +124,7 @@ body #composerToolsMenu.composer-tools-menu {
   height: 20px;
   border-radius: var(--ui-radius-xs);
   background: none;
-  color: var(--foreground);
+  color: var(--ui-text-primary);
   transition: color var(--ui-duration-fast) ease;
 }
 #composerToolsMenu .composer-tools-item:hover .composer-tools-icon,
