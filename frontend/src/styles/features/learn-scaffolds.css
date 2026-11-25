@@ -62,8 +62,6 @@
 
 .sc-rich .katex-display {
   margin: 0.4em 0;
-  overflow-x: auto;
-  overflow-y: hidden;
 }
 
 .sc-rich[data-part='quiz-q'],
@@ -83,10 +81,6 @@
 .sc-rich[data-part='quiz-explanation'],
 .sc-rich[data-part='practice-answer'] {
   font-size: var(--prose-size, var(--ui-text-body));
-}
-
-.sc-rich[data-part$='-step'] .katex-display {
-  margin: 0;
 }
 
 /* ---- streaming preview ------------------------------------------------ */
