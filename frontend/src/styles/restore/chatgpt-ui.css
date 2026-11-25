@@ -526,12 +526,6 @@ body.workspace-active #appShell .workspace-row:hover {
     max-height: 270px;
   }
 
-  /* Reference cards keep the action on the same line even on phones:
-     single-line ellipsis on the copy absorbs the narrow width. */
-
-  .scheduled-recommendation-copy small {
-    white-space: normal;
-  }
 }
 
 /* Final cascade guard. The legacy stylesheet contains a few later, highly
