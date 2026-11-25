@@ -17,7 +17,6 @@ import {
 import { MAX_TOOL_ARGUMENT_CHARS } from '../src/services/tools/toolCallSafety.js';
 import fs from 'node:fs';
 import fsPromises from 'node:fs/promises';
-import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -47,8 +46,11 @@ describe('codeInterpreter.execute — input guard rails', () => {
     );
     const workerSource = await fsPromises.readFile(source, 'utf8');
     assert.doesNotMatch(workerSource, /require\s*\(/);
-    assert.match(workerSource, /import os from 'node:os'/);
-    assert.equal(typeof os.tmpdir(), 'string');
+    assert.match(workerSource, /import \{ parentPort \} from 'node:worker_threads'/);
+    assert.match(
+      workerSource,
+      /import \{ PYODIDE_PACKAGE_CACHE_DIR \} from '\.\/codeInterpreter\/config\.js'/,
+    );
   });
 
   /* Pyodide's default file-descriptor bindings can raise an I/O error
@@ -60,7 +62,8 @@ describe('codeInterpreter.execute — input guard rails', () => {
       '../src/services/pyodideWorker.ts',
     );
     const workerSource = await fsPromises.readFile(source, 'utf8');
-    const loadMatch = workerSource.match(/loadPyodide\(\s*\{[\s\S]*?\}\s*\)/);
+    // The closing brace of a spread expression is not the end of the call.
+    const loadMatch = workerSource.match(/await loadPyodide\(\s*\{[\s\S]*?^    \}\);/m);
     assert.ok(loadMatch, 'loadPyodide({ … }) call site not found in pyodideWorker.ts');
     const optionsBlock = loadMatch[0];
     assert.match(

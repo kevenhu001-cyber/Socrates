@@ -1,10 +1,16 @@
-import test from 'node:test';
+import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
 import { rankMemoryTexts, memoryQuery } from '../src/services/embeddings/memoryRanker.js';
 import { promptCacheFields, cacheProvider } from '../src/services/core/llm/cachePolicy.js';
 import { requestBodyVariants, nextCompatibilityVariant } from '../src/services/core/llm/protocol.js';
 import { addDeferredCoreTools, splitInitialToolNames } from '../src/services/integrations/connectorCatalog.js';
 import { selectDeferredCoreTools } from '../src/routes/chat/pipeline/toolContext.js';
+
+import { shutdownPubsub } from '../src/lib/pubsub.js';
+
+after(async () => {
+  await shutdownPubsub();
+});
 
 const base = { apiKey: 'test-secret', userId: 'user-a', cacheSessionId: 'session-a', model: 'deepseek/deepseek-v3', apiBase: 'https://openrouter.ai/api/v1', messages: [{ role: 'user', content: 'hello' }] };
 
@@ -59,6 +65,9 @@ test('routine questions keep Python deferred while execution-heavy requests prew
     '计算 2 + 3',
     '推导这个方程',
     '解释代码',
+    '解释如何执行代码',
+    '执行代码是什么意思',
+    'what does executing code mean',
     '画一个函数图像',
     'calculate 2 + 3',
     'explain this code',
@@ -77,6 +86,8 @@ test('routine questions keep Python deferred while execution-heavy requests prew
     'perform data analysis',
     '分析这份 CSV 数据',
     '执行代码',
+    '请运行这段代码',
+    '帮我执行脚本',
     '运行数值仿真',
     '把结果导出为 CSV',
     'run a numerical simulation',
