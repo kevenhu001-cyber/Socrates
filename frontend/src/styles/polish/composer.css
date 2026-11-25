@@ -1,7 +1,7 @@
 /*
- * polish/composer.css — composer capsule + tools menu + effort picker.
+ * polish/composer.css — landing typography and attachment presentation.
  * Grid geometry and control sizes are owned by parity/composer-unified.css;
- * this layer refines surrounding tools and desktop greeting details.
+ * Menu presentation and motion belong to components/menu.css.
  */
 
 /* Bundled brand face on the hero line and composer text. The parity layer
@@ -48,59 +48,6 @@
     padding-bottom: calc(200px + var(--conversation-safe-bottom) + 4vh);
   }
 }
-
-/* Effort trigger reads as a chip: quieter type than the editor text. */
-
-/* "+" tools menu — the desktop card skin (16px radius, border, shadow,
-   220px width) is owned by restore/chatgpt-parity.css's :not(.hidden)
-   block and the phone sheet by restore/mobile-parity.css + fixes.css;
-   nothing to converge here. */
-
-/* "+" open animation — same motion language as the rest of the overlay
-   system: a 2px anchored lift and the shared scale / duration / easing.
-   The menu lives on <body> and is shown by removing .hidden (display:none),
-   so the panel stays in the DOM and the whole open/close pair can be one
-   transition: `allow-discrete` holds the box for the fade before `display`
-   flips, and `@starting-style` supplies the first frame of the next open.
-   Browsers without support keep the instant toggle. */
-body #composerToolsMenu.composer-tools-menu {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-  transform-origin: top left;
-  transition:
-    opacity var(--ui-duration-fast) var(--ui-ease-out),
-    transform var(--ui-duration-fast) var(--ui-ease-out),
-    display var(--ui-duration-fast) allow-discrete;
-}
-body #composerToolsMenu.composer-tools-menu.hidden {
-  opacity: 0;
-  transform: translateY(var(--_ct-dir, -2px)) scale(var(--_ct-scale, var(--ui-overlay-enter-scale)));
-}
-body #composerToolsMenu.composer-tools-menu[data-menu-side='above'] {
-  --_ct-dir: 2px;
-  transform-origin: bottom left;
-}
-body #composerToolsMenu.composer-tools-menu[data-menu-side='sheet'] {
-  --_ct-dir: var(--ui-step-150);
-  --_ct-scale: 1;
-}
-@starting-style {
-  body #composerToolsMenu.composer-tools-menu:not(.hidden) {
-    opacity: 0;
-    transform: translateY(var(--_ct-dir, -2px))
-      scale(var(--_ct-scale, var(--ui-overlay-enter-scale)));
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  body #composerToolsMenu.composer-tools-menu {
-    transition: none;
-  }
-}
-/* The tools card's rows, glyphs, group labels and footer now belong to
-   `components/menu.css` alone (ADR 0024: one owner per surface). The 34px /
-   20px / `--ui-radius-tools-row` block that lived here re-skinned the same
-   rows after the component layer and kept them off the shadcn 32px rung;
-   removed 2026-10-29 with the matching `restore/chatgpt-parity.css` pins. */
 
 /* ── Attachment row (reference: chat-demo FileCard / DraftAttachments) ──
    Two shapes, one row: an image is a 64px cover tile, a document is a
@@ -458,19 +405,5 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side='sheet'] {
 @media (prefers-reduced-motion: reduce) {
   #appShell #composerAttachmentChips .attachment-chip {
     animation: none;
-  }
-}
-
-/* Reference phone sheet is a flat action list — group labels stay in the
-   DOM for the group aria-labels and the compat specs, but clip out of the
-   painted sheet on phones. */
-@media (max-width: 768px) {
-  body #composerToolsMenu .composer-tools-mobile-items .composer-tools-group-label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
   }
 }
