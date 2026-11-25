@@ -1,4 +1,4 @@
-import { useId, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useId, useMemo, useRef, useState, type ReactElement } from 'react';
 import {
   ThinkingSurface,
   activityTimeline,
@@ -77,7 +77,7 @@ function toolActivityRows(
   messageId: string,
   readOnly: boolean | undefined,
   live: boolean,
-): ReactNode[] {
+): ReactElement[] {
   const rows: ReactNode[] = [];
   let completedBurst: ToolCallRecord[] = [];
 
