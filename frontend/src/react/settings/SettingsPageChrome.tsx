@@ -64,7 +64,7 @@ function SettingsIdentity({ label, onOpen }: { label: SettingsLabel; onOpen: () 
         <span>{user.displayName || user.email || label('访客', 'Guest')}</span>
         <span>{user.email && user.displayName ? user.email : free ? label('免费版', 'Free') : user.tierLabel}</span>
       </span>
-      <ChevronRightIcon className="settings-category-chevron" aria-hidden />
+      <ChevronRightIcon className="settings-category-chevron" size={16} strokeWidth={1.75} aria-hidden />
     </Button>
   );
 }
@@ -145,7 +145,7 @@ export function SettingsMobileBack({
       className="settings-mobile-back"
       onClick={onBack}
     >
-      <ChevronLeftIcon aria-hidden />
+      <ChevronLeftIcon size={20} strokeWidth={1.75} aria-hidden />
       {label('所有设置', 'All settings')}
     </Button>
   );
@@ -211,13 +211,13 @@ export function SettingsNavigation({
         onClick={() => onSectionChange(key)}
       >
         <span className="settings-category-icon">
-          {official ? <Icon name={official} size={20} /> : <CategoryIcon aria-hidden />}
+          {official ? <Icon name={official} size={20} /> : <CategoryIcon size={20} strokeWidth={1.75} aria-hidden />}
         </span>
         <span className="settings-category-copy">
           <span className="settings-category-name">{name}</span>
           <span className="settings-category-description">{description}</span>
         </span>
-        <ChevronRightIcon className="settings-category-chevron" aria-hidden />
+        <ChevronRightIcon className="settings-category-chevron" size={16} strokeWidth={1.75} aria-hidden />
       </Button>
     );
   };
@@ -238,6 +238,9 @@ export function SettingsNavigation({
     <nav className="settings-nav" aria-label={label('设置分类', 'Settings categories')}>
       {showOverview ? <SettingsIdentity label={label} onOpen={() => onSectionChange('account')} /> : null}
       <InputGroup className={cn('settings-search shrink-0', mobile && !searchOpen && 'hidden')}>
+        <InputGroupAddon align="inline-start">
+          <Icon name="search" size={18} />
+        </InputGroupAddon>
         <InputGroupInput
           id="settingsSearchInput"
           type="search"
@@ -246,9 +249,6 @@ export function SettingsNavigation({
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
         />
-        <InputGroupAddon>
-          <Icon name="search" size={18} />
-        </InputGroupAddon>
       </InputGroup>
       <div
         className="settings-nav-categories"
@@ -259,7 +259,7 @@ export function SettingsNavigation({
         {groups.map((group, index) =>
           group.length ? (
             <div className="settings-index-group" key={settingsGroups[index][0]}>
-              {!query.trim() ? (
+              {mobile && !query.trim() ? (
                 <p className="settings-index-group-label">{groupLabels[index]}</p>
               ) : null}
               {group.map(renderCategory)}
