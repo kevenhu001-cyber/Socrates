@@ -274,13 +274,6 @@
     height: 20px;
   }
 }
-@media (max-width: 768px) {
-  #appShell .msg-toolbar-btn::after {
-    border-radius: var(--ui-radius-sm);
-    font-size: var(--ui-font-size-xxs);
-    padding: 5px 8px;
-  }
-}
 
 @media (max-width: 768px) {
   #appShell .msg-toolbar-feedback {
