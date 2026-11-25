@@ -32,30 +32,45 @@ export interface ThinkingSurfaceProps {
   /** Quiet elapsed time; deliberately outside the status live region. */
   durationLabel?: string;
   live: boolean;
+  /** Host class hooks for matching the transcript type scale. */
+  labelClassName?: string;
+  durationClassName?: string;
   /** Live working indicator, drawn alongside the caption. */
   indicator?: ReactNode;
-  /** A tool or site mark remains visible alongside the working indicator. */
+  /** A tool mark remains visible before the activity caption. */
   icon?: ReactNode;
   iconWidth?: number;
+  /** Optional site marks or other quiet metadata after the caption. */
+  trailing?: ReactNode;
   expandable: boolean;
   open: boolean;
   onToggle(): void;
   /** DOM id / nativeID for aria-controls. */
   bodyId: string;
+  /** Host-owned disclosure classes and layout for web animation adapters. */
+  bodyClassName?: string;
+  bodyStyle?: CSSProperties;
+  bodyInert?: boolean;
   children?: ReactNode;
 }
 
 export function ThinkingSurface({
   label,
   durationLabel,
+  labelClassName,
+  durationClassName,
   live,
   indicator,
   icon,
   iconWidth = 18,
+  trailing,
   expandable,
   open,
   onToggle,
   bodyId,
+  bodyClassName,
+  bodyStyle,
+  bodyInert,
   children,
 }: ThinkingSurfaceProps) {
   const { colors } = useUiTheme();
@@ -103,6 +118,7 @@ export function ThinkingSurface({
         ) : null}
         <UiText
           testID="turn-activity-label"
+          className={labelClassName}
           variant="bodySm"
           tone="secondary"
           role={live ? 'status' : undefined}
@@ -124,6 +140,7 @@ export function ThinkingSurface({
           >
             <UiText
               testID="turn-activity-duration"
+              className={durationClassName}
               variant="labelSm"
               tone="secondary"
               aria-live="off"
@@ -134,17 +151,21 @@ export function ThinkingSurface({
             </UiText>
           </span>
         ) : null}
+        {trailing}
         {expandable ? <Chevron open={open} tone="tertiary" /> : null}
       </button>
       <div
         data-testid="turn-activity-body"
         id={bodyId}
+        className={bodyClassName}
         aria-hidden={!open}
+        inert={bodyInert}
         style={{
           display: open ? 'flex' : 'none',
           flexDirection: 'column',
           marginTop: S[50],
           marginBottom: S[75],
+          ...bodyStyle,
         }}
       >
         {children}

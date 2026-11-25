@@ -123,9 +123,9 @@
 }
 
 /* ── Activity disclosure ────────────────────────────────────────────────
-   The RN surface owns the compact action + duration header and a single
-   quiet rail. These HTML bodies stay aligned with their row's label;
-   neither summaries nor tool details introduce another card surface. */
+   The shared ThinkingSurface owns the compact action + duration header.
+   The web host adds only the animated disclosure body and public activity
+   list; neither summaries nor tool details introduce another card surface. */
 .rn-turn-activity .thinking-step-summary,
 .rn-turn-activity .thinking-step-preview {
   margin: 0;
@@ -153,13 +153,13 @@
   align-self: flex-start;
 }
 
-:is(.rn-turn-activity, .tool-run-trigger) .tool-site-marks {
+:is(.rn-turn-activity, .tool-run-trigger, .tool-run-group-trigger) .tool-site-marks {
   display: inline-flex;
   align-items: center;
   gap: 2px;
 }
 
-:is(.rn-turn-activity, .tool-run-trigger) .tool-site-mark {
+:is(.rn-turn-activity, .tool-run-trigger, .tool-run-group-trigger) .tool-site-mark {
   position: relative;
   display: grid;
   place-items: center;
@@ -177,7 +177,7 @@
   text-transform: uppercase;
 }
 
-:is(.rn-turn-activity, .tool-run-trigger) .tool-site-mark img {
+:is(.rn-turn-activity, .tool-run-trigger, .tool-run-group-trigger) .tool-site-mark img {
   position: absolute;
   inset: 0;
   display: block;
@@ -316,13 +316,6 @@
   height: 16px;
   flex: none;
 }
-.rn-turn-activity .activity-chevron {
-  flex: none;
-  transition: transform var(--ui-duration-fast) var(--ui-ease-out);
-}
-.rn-turn-activity[data-open='true'] .activity-chevron {
-  transform: rotate(90deg);
-}
 .activity-disclosure > .ui-collapse-inner {
   opacity: 1;
   transition: opacity var(--ui-duration-normal) var(--ui-ease-out);
@@ -334,10 +327,12 @@
   display: flex;
   flex-direction: column;
   gap: var(--ui-space-sm);
-  margin-block: var(--ui-space-xs) var(--ui-space-md);
-  padding-inline-start: var(--ui-space-md);
-  border-inline-start: 1px solid var(--ui-border-subtle);
   min-width: 0;
+  margin-block: var(--ui-space-xs) var(--ui-space-md);
+  /* The activity list shares the caption's text edge. A rail without nodes
+     reads as an accidental border, not as a meaningful timeline. */
+  padding-inline-start: 0;
+  border-inline-start: 0;
 }
 .activity-summary-step {
   display: flex;

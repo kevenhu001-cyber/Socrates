@@ -153,7 +153,11 @@ test('streaming actions are absent and running tools own the activity surface', 
   await expect(message.locator('.rn-tool-row[data-state="running"]')).toHaveCount(1);
   await expect(message.locator('.rn-turn-activity.is-live')).toHaveCount(1);
   await expect(message.locator('.rn-turn-activity')).toHaveCount(1);
-  // The collapsed header names the running call; time remains secondary.
+  const activityToggle = message.getByTestId('turn-activity-toggle');
+  const activityBody = message.getByTestId('turn-activity-body');
+  await expect(activityToggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(activityBody).toBeHidden();
+  // The collapsed header shows one current action, not the hidden timeline.
   await expect(message.locator('.rn-tool-row[data-tcid="search"]')).toContainText(
     'React Context rendering',
   );
@@ -161,7 +165,30 @@ test('streaming actions are absent and running tools own the activity surface', 
     message.locator('.rn-tool-row[data-tcid="search"]').getByTestId('thinking-step-spinner'),
   ).toHaveCount(1);
   await expect(message.getByTestId('turn-activity-label')).toContainText('React Context rendering');
+
+  // A later-started parallel call becomes the sole headline; earlier calls
+  // remain in the expanded history, in their original timeline positions.
+  await page.waitForTimeout(20);
+  await page.evaluate(() => {
+    const ctl = window.__activityController;
+    ctl.recordTurnActivity({
+      type: 'tool',
+      toolCallId: 'latest-search',
+      toolName: 'web_search',
+    });
+    ctl.recordToolUse({
+      id: 'latest-search',
+      name: 'web_search',
+      input: { query: 'latest API reference' },
+    });
+  });
+  await expect(message.locator('.rn-tool-row[data-state="running"]')).toHaveCount(2);
+  await expect(message.getByTestId('turn-activity-label')).toContainText('latest API reference');
   await expect(message.getByTestId('turn-activity-duration')).toContainText(/\d/);
+  await activityToggle.click();
+  await expect(activityToggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(activityBody).toBeVisible();
+  await expect(message.locator('.rn-tool-row[data-tcid="latest-search"]')).toBeVisible();
   await expect(message.locator('.msg-toolbar button')).toHaveCount(0);
   await page.screenshot({ path: 'test-results/turn-activity-running.png' });
 
@@ -173,6 +200,14 @@ test('streaming actions are absent and running tools own the activity surface', 
       ok: true,
       status: 'completed',
       output: 'Found documentation.',
+      results: [],
+    });
+    ctl.recordToolResult({
+      id: 'latest-search',
+      name: 'web_search',
+      ok: true,
+      status: 'completed',
+      output: 'Found the latest API reference.',
       results: [],
     });
     ctl.recordTurnActivity({ type: 'synthesizing' });

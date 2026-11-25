@@ -1,6 +1,6 @@
-import { Button } from '../ui/Button';
-import { useId, useMemo, useRef, useState } from 'react';
+import { useId, useMemo, useRef, useState, type ReactElement } from 'react';
 import {
+  ThinkingSurface,
   activityTimeline,
   publicSummariesOf,
   stepsWithFallback,
@@ -10,13 +10,13 @@ import type { TurnActivityEntry } from '@socrates/contracts';
 import type { TurnActivityStatus } from '../../legacy/turnActivityModel';
 import { i18n } from '../../ui/legacyI18n.ts';
 import { tf } from '../../legacy/toolPresentationModel.ts';
-import { Icon } from '../../legacy/Icon';
-import { useLocaleRefresh } from '../rn/WebUiTheme';
+import { useLocaleRefresh, WebUiTheme } from '../rn/WebUiTheme';
 import { MathText } from '../rn/useInlineMath';
-import { ToolActivityIcon, ToolSiteMarks, turnActivitySites } from './ToolActivityIcon';
+import { ToolActivityIcon, toolActivitySites } from './ToolActivityIcon';
 import { ToolRunRow } from './ToolRunRow';
+import { ToolRunGroupRow } from './ToolRunGroupRow';
 import { useElapsed } from './useElapsed';
-import { runStartedAt, type ToolCallRecord } from './toolRunModel';
+import { runStartedAt, toolRunStateOf, toolRunView, type ToolCallRecord } from './toolRunModel';
 
 export interface TurnActivitySurfaceProps {
   /** Only provider-approved public summaries, never raw reasoning. */
@@ -52,15 +52,28 @@ function SummaryStep({ step }: { step: ThinkingStep }) {
   );
 }
 
-function activityLabel(props: TurnActivitySurfaceProps, hasSummary: boolean) {
-  if (props.isLive) return props.statusLabel || i18n('think.thinking', 'Thinking…');
+function activityLabel(
+  props: TurnActivitySurfaceProps,
+  hasSummary: boolean,
+  latestStep?: ThinkingStep,
+  latestTool?: ToolCallRecord,
+) {
+  if (props.isLive) {
+    return props.statusLabel || props.status?.label || i18n('think.thinking', 'Thinking…');
+  }
+  // Once settled, keep the headline on the final event rather than turning it
+  // into a count of the entire hidden history.
+  if (latestTool) return toolRunView(latestTool).label;
   const seconds = props.reasoningDurationSec;
   if (typeof seconds === 'number' && Number.isFinite(seconds) && seconds > 0) {
     return tf('think.thoughtDuration', 'Thought for {sec}s', {
       sec: Math.max(1, Math.round(seconds)),
     });
   }
-  if (hasSummary) return i18n('think.reasoningSummary', 'Thinking summary');
+  if (hasSummary) {
+    return latestStep?.title || i18n('think.reasoningSummary', 'Thinking summary');
+  }
+  if (latestStep) return i18n('think.complete', 'Finished thinking');
   if (props.calls.length)
     return tf(
       props.calls.length === 1 ? 'think.summaryToolTitle' : 'think.summaryToolsTitle',
@@ -68,6 +81,70 @@ function activityLabel(props: TurnActivitySurfaceProps, hasSummary: boolean) {
       { n: props.calls.length },
     );
   return i18n('think.complete', 'Finished thinking');
+}
+
+/** Render short bursts as individual rows and fold only large, settled runs.
+ * Failed, active, approval and agent-run entries stay independently visible. */
+function toolActivityRows(
+  calls: ReadonlyArray<ToolCallRecord>,
+  messageId: string,
+  readOnly: boolean | undefined,
+  live: boolean,
+): ReactElement[] {
+  const rows: ReactElement[] = [];
+  let completedBurst: ToolCallRecord[] = [];
+
+  const flushBurst = () => {
+    if (!completedBurst.length) return;
+    if (completedBurst.length >= 4) {
+      rows.push(
+        <ToolRunGroupRow
+          key={`tool-group-${completedBurst[0].id}`}
+          calls={completedBurst}
+          messageId={messageId}
+          readOnly={readOnly}
+          live={live}
+        />,
+      );
+    } else {
+      for (const call of completedBurst) {
+        rows.push(
+          <ToolRunRow
+            key={`tool-${call.id}`}
+            call={call}
+            messageId={messageId}
+            readOnly={readOnly}
+            live={live}
+            approvalOutside
+          />,
+        );
+      }
+    }
+    completedBurst = [];
+  };
+
+  for (const call of calls) {
+    const view = toolRunView(call);
+    const canGroup =
+      toolRunStateOf(call) === 'done' && !view.agentRun && !view.approval;
+    if (canGroup) {
+      completedBurst.push(call);
+      continue;
+    }
+    flushBurst();
+    rows.push(
+      <ToolRunRow
+        key={`tool-${call.id}`}
+        call={call}
+        messageId={messageId}
+        readOnly={readOnly}
+        live={live}
+        approvalOutside
+      />,
+    );
+  }
+  flushBurst();
+  return rows;
 }
 
 /** One stable disclosure per assistant turn. Tool artifacts and pending
@@ -116,71 +193,70 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
   }, [steps, calls, activities, reasoningLabel, reasoningDone]);
   const hasSummary = steps.length > 0 || Boolean(intent);
   const expandable = timeline.length > 0 || Boolean(intent);
+  const latestEntry = timeline[timeline.length - 1];
+  const latestStep = latestEntry?.kind === 'step' ? latestEntry.step : undefined;
+  const latestTools = latestEntry?.kind === 'tools' ? latestEntry.tools : undefined;
+  const latestTool = latestTools?.[latestTools.length - 1];
   const live = Boolean(props.isLive);
+  const liveToolPhase = live && (status?.phase === 'tool-running' || status?.phase === 'tool-awaiting');
+  const headerTool = live ? (liveToolPhase ? activeTool : undefined) : latestTool;
   const working = live && status?.phase !== 'answering' && status?.phase !== 'tool-awaiting';
   const startedAt =
     status?.phase === 'tool-running' ? runStartedAt(activeTool) : props.activityStartedAt || 0;
   const elapsedMs = useElapsed(startedAt, working);
   const elapsedSec = elapsedMs > 0 ? elapsedMs / 1000 : status?.elapsedSec;
-  const label = activityLabel(props, hasSummary);
-  const toolName = live ? status?.toolName : undefined;
-  const sites = useMemo(() => turnActivitySites(calls), [calls]);
+  const label = activityLabel(props, hasSummary, latestStep, latestTool);
+  const toolName = headerTool?.name || (liveToolPhase ? status?.toolName : undefined);
+  const headerIcon = toolName ? (
+    <ToolActivityIcon name={toolName} sites={headerTool ? toolActivitySites(headerTool) : []} />
+  ) : undefined;
+  const currentActivity = live
+    ? status?.phase || 'working'
+    : latestTool
+      ? 'tool'
+      : latestStep
+        ? 'thinking'
+        : 'complete';
   if (!live && !expandable && !props.reasoningDurationSec) return null;
-  const caption = (
-    <>
-      {toolName ? <ToolActivityIcon name={toolName} /> : null}
-      <span
-        className="activity-caption"
-        data-testid="turn-activity-label"
-        role={working ? 'status' : undefined}
-      >
-        {label}
-      </span>
-      {working && elapsedSec ? (
-        <span className="activity-duration" data-testid="turn-activity-duration" aria-live="off">
-          {tf('think.rn.elapsed', '{sec}s', { sec: Math.max(1, Math.round(elapsedSec)) })}
-        </span>
-      ) : null}
-      {sites.length ? <ToolSiteMarks sites={sites} /> : null}
-      {expandable ? <Icon name="chevronRight" size={12} className="activity-chevron" /> : null}
-    </>
-  );
+  const durationLabel =
+    working && elapsedSec
+      ? tf('think.rn.elapsed', '{sec}s', { sec: Math.max(1, Math.round(elapsedSec)) })
+      : undefined;
+
   return (
     <div
       className={`rn-turn-activity${live ? ' is-live' : ''}`}
       data-turn-surface-part="activity"
       data-live={working ? 'true' : undefined}
       data-phase={live ? status?.phase : undefined}
+      data-current-activity={currentActivity}
       data-activity-timeline={expandable ? 'true' : undefined}
       data-answer-started={props.answerStarted ? 'true' : undefined}
       data-open={open ? 'true' : 'false'}
     >
-      <div data-testid="turn-activity">
-        {expandable ? (
-          <Button
-            type="button"
-            className="rn-turn-activity-toggle"
-            data-testid="turn-activity-toggle"
-            aria-expanded={open}
-            aria-controls={id}
-            onClick={() => setOpen((value) => !value)}
-          >
-            {caption}
-          </Button>
-        ) : (
-          <div className="rn-turn-activity-toggle" data-testid="turn-activity-toggle">
-            {caption}
-          </div>
-        )}
-        <div
-          id={id}
-          data-testid="turn-activity-body"
-          className={`ui-collapse activity-disclosure${open ? '' : ' collapsed'}`}
-          aria-hidden={!open}
-          inert={!open}
+      <WebUiTheme>
+        <ThinkingSurface
+          label={label}
+          labelClassName="activity-caption"
+          durationLabel={durationLabel}
+          durationClassName="activity-duration"
+          live={working}
+          icon={headerIcon}
+          iconWidth={18}
+          expandable={expandable}
+          open={open}
+          onToggle={() => setOpen((value) => !value)}
+          bodyId={id}
+          bodyClassName={`ui-collapse activity-disclosure${open ? '' : ' collapsed'}`}
+          bodyStyle={{ display: 'grid', marginTop: 0, marginBottom: 0 }}
+          bodyInert={!open}
         >
           <div className="ui-collapse-inner">
-            <div className="activity-timeline" data-testid="thinking-timeline">
+            <div
+              className="activity-timeline"
+              data-testid="thinking-timeline"
+              style={{ paddingInlineStart: toolName ? 22 : 0 }}
+            >
               {intent ? (
                 <SummaryStep
                   step={{
@@ -193,21 +269,12 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
               {timeline.flatMap((entry) =>
                 entry.kind === 'step'
                   ? [<SummaryStep key={`summary-${entry.step.id}`} step={entry.step} />]
-                  : entry.tools.map((call) => (
-                      <ToolRunRow
-                        key={`tool-${call.id}`}
-                        call={call}
-                        messageId={messageId}
-                        readOnly={readOnly}
-                        live={live}
-                        approvalOutside
-                      />
-                    )),
+                  : toolActivityRows(entry.tools, messageId, readOnly, live),
               )}
             </div>
           </div>
-        </div>
-      </div>
+        </ThinkingSurface>
+      </WebUiTheme>
     </div>
   );
 }

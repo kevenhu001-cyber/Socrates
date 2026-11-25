@@ -164,7 +164,7 @@ test('stream does not retry terminal quota errors', async () => {
   assert.equal(env.calls(), 1);
 });
 
-test('stream treats reasoning tokens as semantic output and does not retry', async () => {
+test('reasoning without a final answer reports failure without replaying the turn', async () => {
   const env = installStreamEnvironment([
     {
       chunks: [
@@ -188,7 +188,10 @@ test('stream treats reasoning tokens as semantic output and does not retry', asy
   );
 
   assert.equal(thinkingReceived, 'thinking deeply...');
-  assert.equal(result?.semanticActivity, true);
+  assert.equal(result, null, 'reasoning alone is not a completed answer');
+  const { callStore } = await import('../src/store/index.ts');
+  const { t } = await import('../src/ui/legacyI18n.ts');
+  assert.equal(callStore.getState().lastCallError, t('chat.noAnswer'));
   assert.equal(env.calls(), 1, 'turn must not be replayed when reasoning was delivered');
 });
 

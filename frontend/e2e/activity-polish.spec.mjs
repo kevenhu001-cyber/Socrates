@@ -42,6 +42,16 @@ for (const mobile of [false, true]) {
     await toggle.click();
     await expect(toggle).toHaveAttribute('aria-expanded', 'true');
     await expect(toolRow(page, 'output-polish')).toBeVisible();
+    const timeline = body.locator('.activity-timeline');
+    const timelineGeometry = await timeline.evaluate((node) => {
+      const style = getComputedStyle(node);
+      return {
+        border: parseFloat(style.borderInlineStartWidth),
+        padding: parseFloat(style.paddingInlineStart),
+      };
+    });
+    expect(timelineGeometry.border).toBe(0);
+    expect(timelineGeometry.padding).toBe(0);
     for (let i = 0; i < 4; i++) await toggle.click();
     await expect(toggle).toHaveAttribute('aria-expanded', 'true');
     await toggle.click();
@@ -150,8 +160,8 @@ for (const mobile of [false, true]) {
     await expect(step).toBeVisible();
     const summary = await step.boundingBox();
     const surfaceBox = await surface.boundingBox();
-    /* Shallow indent only: the timeline's 4px inset + 1px rail + 16px gap
-       (21px) is the whole offset; no nested card padding on top of it. */
+    /* The activity list starts at the caption's text edge; no decorative
+       rail or extra inset competes with the answer column. */
     expect(summary.x - surfaceBox.x).toBeLessThanOrEqual(24);
     await page.evaluate(() => {
       const messages = window.__socratesTestState.session().messages.map((entry) =>
