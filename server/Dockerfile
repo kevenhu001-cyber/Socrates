@@ -93,9 +93,6 @@ COPY --chown=node:node packages/core /repo/packages/core
 
 # package.json is read at runtime (type: module, engines) and by `npm start`.
 COPY --chown=node:node server/package.json ./package.json
-# The stable systemd entry point delegates to dist/index.runtime.js. Kept so a
-# container and a systemd host start the process the same way.
-COPY --chown=node:node server/src/index.js ./src/index.js
 COPY --chown=node:node server/scripts/pi-run-provider.mjs ./scripts/pi-run-provider.mjs
 # Migrations travel with the image so the schema version is tied to the digest
 # rather than to whatever happens to be checked out on the host. They are
@@ -130,4 +127,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||8080)+'/api/health').then(r=>r.ok?process.exit(0):process.exit(1)).catch(()=>process.exit(1))"
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
-CMD ["node", "src/index.js"]
+CMD ["node", "dist/index.runtime.js"]
