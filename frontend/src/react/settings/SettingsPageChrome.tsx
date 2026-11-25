@@ -2,19 +2,6 @@ import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { InputGroup, InputGroupInput, InputGroupAddon } from '../ui/shadcn/input-group';
 import { Button } from '../ui/shadcn/button';
 import { PageTabs } from '../ui/page/PageTabs';
-import {
-  BellIcon,
-  BoxesIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  CpuIcon,
-  DatabaseIcon,
-  MonitorIcon,
-  Settings2Icon,
-  SparklesIcon,
-  UserRoundIcon,
-  type LucideIcon,
-} from 'lucide-react';
 import { cn } from 'cn';
 import { Icon, type IconProps } from '../../legacy/Icon';
 import { useUserInfo } from '../sidebar-chrome/sidebarChrome.store';
@@ -22,21 +9,14 @@ import { settingsPreferenceActions, useSettingsPreferencesStore } from './settin
 import type { SaveSettingsPreference, SettingsLabel, SettingsSection } from './settings.types';
 import type { SettingsCategory } from './settingsNavigation';
 
-const categoryIcons: Record<SettingsSection, LucideIcon> = {
-  general: Settings2Icon,
-  display: MonitorIcon,
-  notifications: BellIcon,
-  personalization: SparklesIcon,
-  models: CpuIcon,
-  apps: BoxesIcon,
-  data: DatabaseIcon,
-  account: UserRoundIcon,
-};
-
-const officialCategoryIcons: Partial<Record<SettingsSection, IconProps['name']>> = {
+const categoryIcons: Record<SettingsSection, IconProps['name']> = {
   general: 'sliders',
+  display: 'display',
   notifications: 'bell',
   personalization: 'personalization',
+  models: 'model',
+  apps: 'apps',
+  data: 'dataControls',
   account: 'user',
 };
 
@@ -64,7 +44,7 @@ function SettingsIdentity({ label, onOpen }: { label: SettingsLabel; onOpen: () 
         <span>{user.displayName || user.email || label('访客', 'Guest')}</span>
         <span>{user.email && user.displayName ? user.email : free ? label('免费版', 'Free') : user.tierLabel}</span>
       </span>
-      <ChevronRightIcon className="settings-category-chevron" size={16} strokeWidth={1.75} aria-hidden />
+      <Icon name="chevronRight" className="settings-category-chevron" size={16} />
     </Button>
   );
 }
@@ -145,7 +125,7 @@ export function SettingsMobileBack({
       className="settings-mobile-back"
       onClick={onBack}
     >
-      <ChevronLeftIcon size={20} strokeWidth={1.75} aria-hidden />
+      <Icon name="chevronLeft" size={20} />
       {label('所有设置', 'All settings')}
     </Button>
   );
@@ -196,8 +176,7 @@ export function SettingsNavigation({
   };
 
   const renderCategory = ({ key, name, description }: SettingsCategory) => {
-    const CategoryIcon = categoryIcons[key];
-    const official = officialCategoryIcons[key];
+    const categoryIcon = categoryIcons[key];
     const current = !mobile && section === key;
     return (
       <Button
@@ -211,13 +190,13 @@ export function SettingsNavigation({
         onClick={() => onSectionChange(key)}
       >
         <span className="settings-category-icon">
-          {official ? <Icon name={official} size={20} /> : <CategoryIcon size={20} strokeWidth={1.75} aria-hidden />}
+          <Icon name={categoryIcon} size={20} />
         </span>
         <span className="settings-category-copy">
           <span className="settings-category-name">{name}</span>
           <span className="settings-category-description">{description}</span>
         </span>
-        <ChevronRightIcon className="settings-category-chevron" size={16} strokeWidth={1.75} aria-hidden />
+        <Icon name="chevronRight" className="settings-category-chevron" size={16} />
       </Button>
     );
   };

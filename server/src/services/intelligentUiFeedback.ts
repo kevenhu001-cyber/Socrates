@@ -140,7 +140,7 @@ export function intelligentUiFeedback(
   error: string,
   failure: IntelligentUiFailure,
 ): IntelligentUiFeedback {
-  const lines = [`Fix the UI and call render_intelligent_ui again: ${error}`];
+  const lines = [`Fix the UI and call render_intelligent_ui again: ${error}`, 'Use one complete native function argument JSON object with a nodes array. Preserve the real task and data; examples are shapes only.'];
   const example = intelligentUiExample(failure.componentType || '', failure.componentKind);
   if (example)
     lines.push(
@@ -166,7 +166,7 @@ export function intelligentUiFeedback(
       continue;
     }
     lines.push(`Visualization "${template}" contract: ${contract.guidance}`);
-    const line = exampleLine(template, failure.componentType === 'visualization');
+    const line = exampleLine(template, failure.componentType !== 'openui');
     if (line) lines.push(`A valid call: ${line}`);
   }
   if (
@@ -189,7 +189,7 @@ export function intelligentUiFeedback(
     )
   )
     lines.push(NUMBER_HINT);
-  if (failure.stage === 'visualization') {
+  if (failure.stage === 'visualization' && failure.componentType !== 'openui') {
     if (failure.failures.some((item) => item.template === 'function')) {
       lines.push(
         'For "function" template: write ONLY the right-hand math expression (e.g. "sin(x)", "x^2 - 4*x + 4", not "y = ..."), use lowercase x as the variable (convert t or r to x), use explicit * for multiplication (2*x, not 2x), and use plain ASCII math without LaTeX formatting.',
@@ -234,7 +234,7 @@ export function intelligentUiFeedback(
     );
   }
   lines.push(
-    'Do not put this validation error, its field paths, or a "tool failed" line into your answer; the tool card already shows it. If you cannot render the visual, continue in prose and state the limitation in one plain sentence.',
+    'Keep validation diagnostics internal. Retry only while permitted; if the visual cannot be rendered, continue in prose and mention only a material limitation.',
   );
   return {
     correction: lines.join('\n'),

@@ -1,7 +1,6 @@
-import { memo, useId, useRef } from 'react';
-import { Chevron, Spinner, ToolErrorNotice, toolTargetOf, toolVerbOf } from '@socrates/ui/turn';
+import { memo, useId } from 'react';
+import { Chevron, Spinner, toolTargetOf, toolVerbOf } from '@socrates/ui/turn';
 import { translate } from '../../legacy/toolPresentationModel.ts';
-import { agentStepCommand, agentStepLabel } from '../../legacy/agentSteps.ts';
 import { Button } from '../ui/shadcn/button';
 import { useLocaleRefresh, WebUiTheme } from '../rn/WebUiTheme';
 import { ToolActivityIcon, toolActivitySites } from './ToolActivityIcon';
@@ -22,55 +21,6 @@ interface ToolRunRowProps {
   messageId?: string;
   readOnly?: boolean;
   live: boolean;
-}
-
-function errorMessageOf(view: ToolRunView, call: ToolCallRecord): string {
-  const friendly = typeof call.userMessage === 'string' ? call.userMessage.trim() : '';
-  if (friendly) return friendly;
-  const error = view.sections.find((section) => section.kind === 'error');
-  return error?.kind === 'error' ? error.text.trim().split('\n')[0].slice(0, 180) : '';
-}
-
-function ToolRunActions({
-  view,
-  call,
-  messageId,
-  readOnly,
-}: Omit<ToolRunRowProps, 'live'> & { view: ToolRunView }) {
-  const host = useRef<HTMLDivElement>(null);
-  const message = errorMessageOf(view, call);
-  const retry = !readOnly ? view.retry : undefined;
-  if (!message && !retry && !view.approval) return null;
-  return (
-    <div className="rn-tool-actions" ref={host} data-tool-actions={view.id}>
-      {message || retry ? (
-        <WebUiTheme>
-          <ToolErrorNotice
-            message={message || translate('tool.statusFailed', 'Failed')}
-            retryLabel={retry ? translate('tool.retry', 'Retry search') : undefined}
-            onRetry={
-              retry
-                ? () => {
-                    /* Same event the delegated listener in liveTurn already handles. */
-                    host.current?.dispatchEvent(
-                      new CustomEvent('tool-retry', { bubbles: true, detail: retry }),
-                    );
-                  }
-                : undefined
-            }
-          />
-        </WebUiTheme>
-      ) : null}
-      {view.approval ? (
-        <ToolRunApproval
-          view={view.approval}
-          messageId={messageId ?? ''}
-          toolCallId={view.id}
-          readOnly={readOnly}
-        />
-      ) : null}
-    </div>
-  );
 }
 
 /** The same sentence-safe position owns the trigger, its detail and its actions. */
@@ -133,9 +83,6 @@ export const ToolRunRow = memo(function ToolRunRow({
             {rowContent}
           </div>
         )}
-        {running && !disclosure.open && view.agentRun ? (
-          <AgentActivityPreview run={view.agentRun} />
-        ) : null}
         {disclosure.open && expandable ? (
           <div id={detailId} className="tool-run-detail-body" data-testid="tool-detail">
             <ToolRunDetail
@@ -155,7 +102,14 @@ export const ToolRunRow = memo(function ToolRunRow({
           </div>
         ) : null}
       </WebUiTheme>
-      <ToolRunActions view={view} call={call} messageId={messageId} readOnly={readOnly} />
+      {view.approval ? (
+        <ToolRunApproval
+          view={view.approval}
+          messageId={messageId ?? ''}
+          toolCallId={view.id}
+          readOnly={readOnly}
+        />
+      ) : null}
     </div>
   );
 });
@@ -182,22 +136,4 @@ function toolActionLabel(call: ToolCallRecord): string {
   const verb = toolVerbOf(call.name);
   const target = toolTargetOf(call.name, call.input);
   return [translate(verb.key, verb.fallback), target].filter(Boolean).join(' · ');
-}
-
-/** A live, compact preview of the recorded workspace activity. Raw terminal
- * output and approval controls stay in their existing, explicit surfaces. */
-function AgentActivityPreview({ run }: { run: NonNullable<ToolRunView['agentRun']> }) {
-  const active = [...run.steps].reverse().find((step) => step.status === 'running');
-  const latest = active || run.steps[run.steps.length - 1];
-  if (!latest) return null;
-  const completed = run.steps.filter((step) => step.status === 'done').length;
-  const label = latest.status === 'running'
-    ? [translate('tool.status.running', 'Running'), agentStepCommand(latest)].filter(Boolean).join(' · ')
-    : agentStepLabel(latest, (key) => translate(key, key));
-  return (
-    <div className="agent-activity-preview" data-state={latest.status} data-testid="agent-activity-preview">
-      <span className="agent-activity-preview-label">{label}</span>
-      <span className="agent-activity-preview-count">{completed}/{run.steps.length}</span>
-    </div>
-  );
 }

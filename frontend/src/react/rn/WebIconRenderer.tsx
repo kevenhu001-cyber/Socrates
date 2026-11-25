@@ -1,8 +1,8 @@
 /**
  * Web renderer for `UiIcon` glyph data (packages/ui/src/primitives/UiIcon.tsx).
  * The shared package only holds geometry; here it becomes an inline svg with
- * a non-scaling stroke, so every glyph draws the same 1.5px line regardless
- * of its rendered size.
+ * the official Apps SDK filled outline whenever available. Local fallback
+ * glyphs use a non-scaling stroke; official shapes must never be restroked.
  */
 import type { UiIconRendererProps } from '@socrates/ui/primitives';
 import { Icon, type IconProps } from '../../legacy/Icon';
@@ -22,6 +22,23 @@ const OFFICIAL_WEB_GLYPHS: Partial<Record<UiIconRendererProps['name'], IconProps
   sliders: 'sliders',
   sparkle: 'personalization',
   skills: 'skills',
+  puzzle: 'puzzle',
+  assistant: 'assistant',
+  site: 'site',
+  exam: 'exam',
+  more: 'more',
+  'drawer-more': 'more',
+  'drawer-sites': 'site',
+  pin: 'pin',
+  share: 'share',
+  close: 'close',
+  pen: 'edit',
+  mic: 'microphone',
+  'chevron-down': 'chevronDown',
+  'chevron-right': 'chevronRight',
+  'drawer-images': 'image',
+  'drawer-library': 'library',
+  'drawer-folder': 'folder',
 };
 
 export function WebIconRenderer({ name, shapes, size, color, strokeWidth }: UiIconRendererProps) {
@@ -34,25 +51,6 @@ export function WebIconRenderer({ name, shapes, size, color, strokeWidth }: UiIc
         data-ui-icon={name}
         style={{ color, display: 'block', flexShrink: 0 }}
       />
-    );
-  }
-  if (name === 'more') {
-    return (
-      <svg
-        width={size}
-        height={size}
-        viewBox="0 0 24 24"
-        fill="currentColor"
-        stroke="none"
-        aria-hidden="true"
-        focusable="false"
-        data-ui-icon={name}
-        style={{ color, display: 'block', flexShrink: 0 }}
-      >
-        <circle cx="5" cy="12" r="1.8" />
-        <circle cx="12" cy="12" r="1.8" />
-        <circle cx="19" cy="12" r="1.8" />
-      </svg>
     );
   }
   return (

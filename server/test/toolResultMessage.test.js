@@ -154,7 +154,7 @@ test('failure feedback keeps error narration out of the answer body', () => {
     retryable: false,
     errorMessage: 'execution timed out',
   });
-  assert.match(code, /tool card already shows it/);
+  assert.match(code, /internal/i);
   assert.doesNotMatch(code, /explain the error to the user/i);
 
   const workspace = formatToolResultContent('workspace_agent', {
@@ -163,7 +163,7 @@ test('failure feedback keeps error narration out of the answer body', () => {
     errorCode: 'agent_failed',
     error: 'runner stopped',
   });
-  assert.match(workspace, /tool card already shows it/);
+  assert.match(workspace, /internal/i);
   assert.doesNotMatch(workspace, /report the failure/i);
 
   const connector = formatToolResultContent('arxiv_search', {
@@ -172,11 +172,11 @@ test('failure feedback keeps error narration out of the answer body', () => {
     retryable: true,
     detail: 'unavailable',
   });
-  assert.match(connector, /tool card already shows it/);
+  assert.match(connector, /internal/i);
   assert.doesNotMatch(connector, /Explain the error/i);
 
   const generic = formatToolResultContent('some_tool', { status: 'failed', error: 'failed' });
-  assert.match(generic, /tool card already shows it/);
+  assert.match(generic, /internal/i);
 
   const withDetail = formatToolResultContent('read_attachment', {
     status: 'failed',
@@ -186,11 +186,14 @@ test('failure feedback keeps error narration out of the answer body', () => {
   assert.match(withDetail, /\[detail: Pass the fileId uuid exactly/);
 });
 
-test('generic correction and terminal results retain their original payload', () => {
-  assert.equal(
-    formatToolResultContent('some_tool', { correction: 'schema feedback' }),
-    'schema feedback',
+test('corrections honor the retry budget and completed results retain their payload', () => {
+  assert.match(
+    formatToolResultContent('some_tool', { status: 'failed', retryable: true, correction: 'schema feedback' }),
+    /\[retryable: yes\][\s\S]*schema feedback/,
   );
+  const exhausted = formatToolResultContent('some_tool', { status: 'failed', retryable: false, correction: 'schema feedback' });
+  assert.match(exhausted, /\[retryable: no\]/);
+  assert.doesNotMatch(exhausted, /schema feedback/);
   assert.equal(
     formatToolResultContent('some_tool', { status: 'completed', output: 'result' }),
     'result',

@@ -1337,6 +1337,7 @@ export const en = {
   'think.rn.elapsed': '{sec}s',
   'think.rn.runningNoTime': 'Processing…',
   'think.rn.doneNoTime': 'Thought process',
+  'think.toolsWorking': 'Working with tools…',
   'think.summaryToolTitle': 'Used {n} tool',
   'think.summaryToolsTitle': 'Used {n} tools',
   'tool.verb.search': 'Search the web',

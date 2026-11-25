@@ -14,8 +14,6 @@
 import { normalizeIntelligentUiArgs, validateIntelligentUi } from '@socrates/core';
 import { LazyIntelligentUiBlock } from '../intelligent-ui/LazyIntelligentUiBlock';
 import { NormalizedVisualizationsContext } from '../intelligent-ui/openui/normalizedVisualizations';
-import { IntelligentUiFailureCard } from '../intelligent-ui/IntelligentUiFailureCard';
-import { VisualizationSkeleton } from '../visualization/VisualizationStates';
 import { useEffect, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 
@@ -119,53 +117,6 @@ function resolveIntelligentUiSource(
   return { source, hasVisualization: false };
 }
 
-function extractPartialVisualizationInfo(
-  input: unknown,
-  argumentsText: string | undefined,
-): { template?: string; title?: string } {
-  if (input && typeof input === 'object' && !Array.isArray(input)) {
-    const record = input as Record<string, unknown>;
-    const template = typeof record.template === 'string' ? record.template : undefined;
-    const title = typeof record.title === 'string' ? record.title : undefined;
-    if (template || title) return { template, title };
-  }
-  const text =
-    typeof argumentsText === 'string' ? argumentsText : typeof input === 'string' ? input : '';
-  if (text) {
-    const templateMatch = text.match(/"template"\s*:\s*"([^"]+)"/);
-    const titleMatch = text.match(/"title"\s*:\s*"([^"]+)"/);
-    return {
-      template: templateMatch ? templateMatch[1] : undefined,
-      title: titleMatch ? titleMatch[1] : undefined,
-    };
-  }
-  return {};
-}
-
-function renderUnresolvedIntelligentUi(
-  call: ToolCallRecord,
-  state: ReturnType<typeof toolRunStateOf>,
-  tools: ReadonlyArray<ToolCallRecord>,
-  hasVisualization: boolean,
-  readOnly?: boolean,
-): ReactElement | null {
-  if (hasVisualization) return null;
-  if (call.uiSurface?.phase === 'streaming' || state === 'running' || state === 'awaiting') {
-    const partialInfo = extractPartialVisualizationInfo(call.input, call.argumentsText);
-    return (
-      <div className="tool-inline-attachments" data-tool-anchor={call.id} data-tool-loading="true">
-        <VisualizationSkeleton
-          title={partialInfo.title || null}
-          template={partialInfo.template || null}
-          phase="receiving"
-        />
-      </div>
-    );
-  }
-  if (state === 'done') return renderIntelligentUiFailure(call, tools, readOnly);
-  return null;
-}
-
 function renderIntelligentUiAttachment(
   call: ToolCallRecord,
   tools: ReadonlyArray<ToolCallRecord>,
@@ -173,14 +124,14 @@ function renderIntelligentUiAttachment(
 ): ReactElement | null | false {
   const state = toolRunStateOf(call);
   const surface = call.uiSurface;
-  if (state === 'error') return renderIntelligentUiFailure(call, tools, readOnly);
-  if (surface?.phase === 'aborted' && state !== 'done') return false;
-  if (state === 'stopped') return null;
+  // Never mount speculative or rejected UI as an answer attachment.
+  // A committed surface is authoritative; old sessions may only have a
+  // completed tool result. In-flight work is represented by the activity row.
+  if (state === 'error' || state === 'stopped' || surface?.phase === 'aborted') return false;
+  if (surface ? surface.phase !== 'committed' : state !== 'done') return false;
 
-  const { source, hasVisualization } = resolveIntelligentUiSource(call, surface);
-  if (!source) {
-    return renderUnresolvedIntelligentUi(call, state, tools, hasVisualization, readOnly);
-  }
+  const { source } = resolveIntelligentUiSource(call, surface);
+  if (!source) return null;
   const serverSpecs = Array.isArray(call.visualizations)
     ? call.visualizations.filter(
         (spec): spec is Record<string, unknown> =>
@@ -194,36 +145,10 @@ function renderIntelligentUiAttachment(
           source={source}
           showActivityCue={false}
           tools={tools}
-          open={
-            surface && surface.phase !== 'aborted'
-              ? surface.phase === 'streaming'
-              : state === 'running' || state === 'awaiting'
-          }
+          open={false}
           readOnly={readOnly}
         />
       </NormalizedVisualizationsContext.Provider>
-    </div>
-  );
-}
-
-function supersededByLaterAttempt(
-  call: ToolCallRecord,
-  tools: ReadonlyArray<ToolCallRecord>,
-): boolean {
-  const index = tools.findIndex((entry) => entry.id === call.id);
-  if (index < 0) return false;
-  return tools.slice(index + 1).some((entry) => entry.name === call.name);
-}
-
-function renderIntelligentUiFailure(
-  call: ToolCallRecord,
-  tools: ReadonlyArray<ToolCallRecord>,
-  readOnly?: boolean,
-): ReactElement | null {
-  if (supersededByLaterAttempt(call, tools)) return null;
-  return (
-    <div className="tool-inline-attachments" data-tool-anchor={call.id} data-tool-failed="true">
-      <IntelligentUiFailureCard call={call} readOnly={readOnly} />
     </div>
   );
 }

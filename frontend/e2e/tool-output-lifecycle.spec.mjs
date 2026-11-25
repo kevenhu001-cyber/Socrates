@@ -379,8 +379,8 @@ test('a visualization stays visible across the running → result transition', a
     SEARCH_RESULTS,
   );
 
-  /* The chart mounts while its call is still in flight (the spec is already
-     in the arguments) and must not vanish when the result lands. */
+  /* Complete arguments alone do not authorize mounting a chart; wait for
+     the accepted result. */
   const spec = vizSpec('Probe transition');
   await page.evaluate(
     (input) =>
@@ -394,20 +394,11 @@ test('a visualization stays visible across the running → result transition', a
     spec,
   );
   const message = page.locator('.msg.assistant').last();
-  /* RN-2 / OpenUI: while the turn is live the card's exact footprint is a
-     skeleton (mounting a half-streamed payload would draw wrong values).
-     The result frame replaces it with the chart without moving the answer. */
-  const skeleton = message.locator('.viz-state-skeleton').last();
-  await expect(skeleton).toBeVisible();
-  await expect(skeleton).toContainText('Probe transition');
-  await expect(skeleton.locator('.viz-skeleton-status')).toContainText(
-    'Creating the visualization…',
-  );
-  const stage = skeleton.locator('.viz-skeleton-stage');
-  expect(await stage.evaluate((node) => getComputedStyle(node, '::after').animationName)).toBe(
-    'ui-shimmer-sweep',
-  );
-  await expect(stage.locator('.skeleton-shimmer')).toHaveCount(0);
+  // The activity disclosure is the only progress chrome until the server
+  // accepts the UI. Never mount speculative attachments or error cards.
+  await expect(message.locator('.rn-tool-row[data-tcid="viz-1"]')).toHaveAttribute('data-state', 'running');
+  await expect(message.locator('[data-tool-anchor="viz-1"]')).toHaveCount(0);
+  await expect(message.locator('.viz-state-skeleton')).toHaveCount(0);
 
   await page.evaluate(
     (visualization) =>
@@ -432,9 +423,7 @@ test('a visualization stays visible across the running → result transition', a
   await expect(message.locator('.rn-tool-row .visualization-card')).toHaveCount(0);
   await expect(message.locator('.visualization-card')).toHaveCount(1);
 
-  /* The settle must not have torn the running renderer down and rebuilt it:
-     the host survives the single-member → aggregate shape change, and the
-     content-stable spec identity keeps the effect from re-running. */
+  /* Only the accepted chart should have mounted, once. */
   const probe = await readVizProbe(page);
   expect(probe.created).toHaveLength(1);
   expect(probe.created[0].cardId).toMatch(/^openui-/);

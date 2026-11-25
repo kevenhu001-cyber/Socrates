@@ -928,9 +928,9 @@ html[data-detail-open='true'][data-detail-layout='docked'] #appShell .main {
     --sidebar-nav-bg: transparent;
   }
   #appShell #sidebarNav .sidebar-nav-btn > [data-part='nav-glyph'] {
-    flex: 0 0 20px;
-    width: 20px;
-    height: 20px;
+    flex: 0 0 var(--sidebar-glyph-size, 20px);
+    width: var(--sidebar-glyph-size, 20px);
+    height: var(--sidebar-glyph-size, 20px);
   }
   #appShell #sidebarNav .sidebar-nav-btn > [data-part='nav-label'] {
     min-width: 0;
@@ -938,8 +938,8 @@ html[data-detail-open='true'][data-detail-layout='docked'] #appShell .main {
   }
   #appShell #sidebarNav .sidebar-nav-btn > [data-part='nav-glyph'] svg {
     display: block;
-    width: 20px;
-    height: 20px;
+    width: var(--sidebar-glyph-size, 20px);
+    height: var(--sidebar-glyph-size, 20px);
     flex: none;
   }
   #appShell #sidebarNav .sidebar-nav-btn:is(:hover, :focus-visible, [aria-expanded='true']) {
