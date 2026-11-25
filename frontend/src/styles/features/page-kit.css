@@ -387,24 +387,14 @@
 }
 
 .ui-dialog-close {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--ui-control-sm);
-  height: var(--ui-control-sm);
-  border-radius: var(--ui-radius-control);
-  background: transparent;
   color: var(--ui-text-tertiary);
-  border: 0;
-  cursor: pointer;
-  transition:
-    color 0.15s,
-    background-color 0.15s;
 }
 
-.ui-dialog-close:hover {
-  color: var(--ui-text-primary);
-  background: var(--ui-bg-hover);
+@media (max-width: 768px) {
+  .ui-dialog-close {
+    width: var(--ui-control-touch);
+    height: var(--ui-control-touch);
+  }
 }
 
 .ui-dialog-body {
