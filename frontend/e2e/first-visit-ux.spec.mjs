@@ -20,11 +20,15 @@ test('sign-in centers the form with consent above it on desktop and phones', asy
     'font-family',
     /^"Geist Sans", "Noto Sans SC",/,
   );
-  await expect(gate).toHaveCSS('background-color', 'rgb(26, 26, 26)');
-  await expect(card).toHaveCSS('background-color', 'rgb(46, 46, 46)');
-  await expect(card.locator('#authSigninEmail')).toHaveCSS('background-color', 'rgb(10, 10, 10)');
-  await expect(card.locator('#authGithubBtn')).toHaveCSS('background-color', 'rgb(31, 31, 31)');
-  await expect(card.locator('#authSigninBtn')).toHaveCSS('background-color', 'rgb(237, 237, 237)');
+  await expect(gate).toHaveCSS('background-color', 'rgb(0, 0, 0)');
+  await expect(gate).toHaveCSS('background-image', 'none');
+  await expect(card).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  await expect(card).toHaveCSS('border-width', '0px');
+  await expect(card.locator('#authSigninEmail')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  await expect(card.locator('#authGithubBtn')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  await expect(card.locator('#authSigninBtn')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await expect(card.locator('#authSigninBtn')).toHaveCSS('color', 'rgb(0, 0, 0)');
+  await expect(card.locator('#authGithubBtn svg')).toHaveCSS('color', 'rgb(255, 255, 255)');
   await expect(consent).toBeVisible();
   const cardBox = await card.boundingBox();
   const consentBox = await consent.boundingBox();
