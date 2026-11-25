@@ -18,8 +18,7 @@
  *   - circle icon: pill (`--ui-radius-pill`)
  *   - sidebar row: 12px (`--ui-radius-row`)
  *   - colour feedback: `--ui-duration-hover` (140 ms)
- *   - press feedback: handled by polish/press.css (`scale` property, not
- *     `transform`, so it composes with the controls' own transitions)
+ *   - press feedback: paint only, owned by polish/press.css; no transform
  *
  * Composers stay out of this file: parity/composer-unified.css is the
  * single owner of `.composer-shell` and its controls, enforced by
@@ -41,7 +40,7 @@
   /* Refined geometry: standard control radius with optical tracking, opt-in pill via .btn-pill. */
   border-radius: var(--ui-radius-control);
   background: transparent;
-  color: var(--foreground);
+  color: var(--ui-text-primary);
   font: var(--ui-font-weight-regular) var(--ui-text-ui) / 20px
     var(--font-sans, system-ui, sans-serif);
   letter-spacing: -0.012em;
@@ -52,15 +51,14 @@
     background-color var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1),
     color var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1),
     border-color var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1),
-    transform 120ms ease;
+    box-shadow var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1);
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
 
 .btn:hover {
-  background: var(--accent);
-  color: var(--foreground);
+  background: var(--ui-bg-hover);
+  color: var(--ui-text-primary);
 }
 
 .btn:disabled,
@@ -110,7 +108,6 @@
 
 .btn-primary:active {
   box-shadow: inset 0 1px 2px 0 rgb(0 0 0 / 24%);
-  transform: translateY(0.5px);
 }
 
 .btn-secondary {
@@ -127,25 +124,17 @@
   border-color: var(--ui-hairline-strong);
 }
 
-.btn-secondary:active {
-  transform: translateY(0.5px);
-}
-
 .btn-ghost {
   background: transparent;
-  color: var(--foreground);
+  color: var(--ui-text-primary);
   font-weight: var(--ui-font-weight-regular);
-}
-
-.btn-ghost:active {
-  transform: translateY(0.5px);
 }
 
 .btn-ghost.active,
 .btn-ghost[aria-current='page'],
 .btn-ghost[aria-selected='true'] {
   background: var(--ui-bg-surface);
-  color: var(--foreground);
+  color: var(--ui-text-primary);
 }
 
 /* ─────────── .btn-icon ─────────── */
@@ -160,24 +149,19 @@
   border: 0;
   border-radius: var(--ui-radius-control);
   background: transparent;
-  color: var(--foreground);
+  color: var(--ui-text-primary);
   cursor: pointer;
   user-select: none;
   transition:
     background-color var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1),
-    color var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1),
-    transform 120ms ease;
+    color var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1);
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
 
 .btn-icon:hover {
-  background: var(--accent);
-  color: var(--foreground);
-}
-
-.btn-icon:active {
-  transform: scale(0.96);
+  background: var(--ui-bg-hover);
+  color: var(--ui-text-primary);
 }
 
 .btn-icon:disabled,
@@ -200,8 +184,8 @@
   border-radius: var(--ui-radius-control);
 }
 .btn-icon.accent {
-  background: var(--accent);
-  color: var(--foreground);
+  background: var(--ui-bg-hover);
+  color: var(--ui-text-primary);
 }
 
 .btn-icon.sm {
