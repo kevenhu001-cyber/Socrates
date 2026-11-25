@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { ArrowLeftIcon, type LucideIcon } from 'lucide-react';
+import { Icon, type IconProps } from '../../legacy/Icon';
 import { Button } from '../ui/shadcn/button';
 import { PageHeader } from '../ui/page/PageHeader';
 
@@ -9,7 +9,7 @@ export function AccountPageHeader({
   titleId,
   backLabel,
   backId,
-  backIcon: BackIcon = ArrowLeftIcon,
+  backIcon = 'chevronLeft',
   onBack,
   children,
 }: {
@@ -17,7 +17,7 @@ export function AccountPageHeader({
   titleId: string;
   backLabel: string;
   backId: string;
-  backIcon?: LucideIcon;
+  backIcon?: IconProps['name'];
   onBack: () => void;
   children?: ReactNode;
 }) {
@@ -35,7 +35,7 @@ export function AccountPageHeader({
           aria-label={backLabel}
           onClick={onBack}
         >
-          <BackIcon aria-hidden />
+          <Icon name={backIcon} size={20} />
         </Button>
       }
       actions={children}
