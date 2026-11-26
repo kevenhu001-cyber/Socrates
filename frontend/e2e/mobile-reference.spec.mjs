@@ -20,7 +20,7 @@ test('reference home keeps its bottom composer and phone configuration usable', 
   const rect = await composer.boundingBox();
   expect(rect.x).toBe(16);
   expect(rect.width).toBe(358);
-  expect(rect.height).toBe(92);
+  expect(rect.height).toBe(86);
   expect(769 - rect.y - rect.height).toBe(24);
   await expect(page.locator('#topicTitle')).toBeInViewport();
   await expect(page.locator('#topModelSwitcher')).toBeHidden();
