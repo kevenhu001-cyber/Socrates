@@ -2052,9 +2052,10 @@ export function validateDemonstration(input) {
           at(objectPath, () => {
             if (
               !record(object) ||
-              !['body', 'block', 'rod', 'spring', 'vector', 'path', 'resistor', 'capacitor', 'inductor', 'voltageSource', 'currentSource', 'dimension', 'pin', 'roller', 'ground'].includes(object.kind)
+              !['body', 'block', 'rod', 'spring', 'vector', 'path', 'resistor', 'capacitor', 'inductor', 'voltageSource', 'currentSource', 'dimension', 'pin', 'roller', 'ground', 'atom', 'cell', 'bond', 'doubleBond', 'tripleBond', 'reactionArrow', 'reversibleArrow', 'inhibition'].includes(object.kind)
             )
               throw Error('Unknown scene object kind; use a documented mechanical or electrical symbol');
+            if (object.kind==='atom' && (typeof object.element!=='string'||!/^[A-Z][a-z]?$/.test(object.element))) throw Error('Atom needs an element symbol');
             if (!text(object.label))
               throw Error('Object label must be text of at most 200 characters');
             if (
@@ -2084,7 +2085,7 @@ export function validateDemonstration(input) {
           const pairs =
             object.kind === 'path'
               ? []
-              : ['body', 'block'].includes(object.kind)
+              : ['body', 'block', 'atom', 'cell'].includes(object.kind)
                 ? ['center']
                 : ['from', 'to'];
           for (const key of pairs)
@@ -2094,7 +2095,7 @@ export function validateDemonstration(input) {
               object[key].forEach((value) => check(value));
             });
           const sizes =
-            object.kind === 'body'
+            ['body','atom','cell'].includes(object.kind)
               ? ['radius']
               : object.kind === 'block'
                 ? ['width', 'height']
