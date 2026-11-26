@@ -10,59 +10,6 @@
 
 /* Mode banner — slim strip between chat-header and msgList. */
 
-/* Tool module cards — appended to assistant bubbles. Looks like
-   a compact, collapsible summary line. */
-.agent-tool-card {
-  font-size: calc(12px * var(--app-font-scale, 1));
-}
-/* Grayscale tool icons — every tool reads as a neutral glyph; the
-   tool name carries the identity. No per-tool colour chips. */
-.agent-tool-card.code {
-  background: hsl(var(--bg-100) / 0.7);
-}
-[data-theme='socrates'][data-mode='dark'] .agent-tool-card.code {
-  background: hsl(var(--bg-100) / 0.7);
-}
-/* Subtle "py" tag after the Python card name — muted grey, no brand
-   colour. */
-
-/* Accent rail on the leading edge of the body — gives each tool
-   card a glanceable identity without painting the whole border.
-   Tone is set by `.tool-{tone}` on the card root. The .tool-{cls}
-   modifiers used by the old SVG-emoji icons (read / write / edit
-   / bash / glob / grep / webfetch / websearch / codeint) get a
-   matching rail automatically via the per-tool .agent-tool-body
-   styles below. */
-/* Grayscale rail — a single neutral grey accent replaces the per-tool
-   colour rails. */
-
-/* Live execution block. The badge is a small pill
-   in the top-left with the current phase + elapsed seconds; the
-   <pre> underneath streams stdout/stderr as it arrives. We cap
-   height at 200px so a runaway print loop scrolls instead of
-   pushing the page. */
-
-.agent-tool-stream {
-  margin: 0;
-  padding: 6px 12px 8px;
-  background: transparent;
-  font-family: var(--font-mono);
-  font-size: calc(10.5px * var(--app-font-scale, 1));
-  line-height: 1.4;
-  color: hsl(var(--text-300));
-  white-space: pre-wrap;
-  word-break: break-word;
-  max-height: 200px;
-  overflow-y: auto;
-  flex: 1;
-  min-width: 0;
-}
-
-/* Status badge: small monospaced glyph in the card header next to the
-   chevron. Empty by default (display:none) so other tool cards pay no
-   visual cost. The 4 runtime statuses map to ✓ / ✗ / ⏱ / – with a
-   color cue that survives on both cream and dark backgrounds. */
-
 /* Web Search results — structured list inside the websearch tool card.
    Shows title (clickable link), URL + date, and a brief snippet per result. */
 /* Web search results — left-rail index + body. Mirrors the layout
@@ -202,38 +149,10 @@
   }
 }
 
-/* Tool cards — clean, minimal ChatGPT-style disclosure.
-   The chat content is primary; tool details are available on demand. */
-.agent-tool-card,
-.agent-tool-card.code {
-  background: var(--tool-card-bg);
-  border: 0;
-  box-shadow: none;
-}
-.agent-tool-card:hover {
-  background: var(--tool-card-bg-hover);
-  box-shadow: none;
-}
 .wsr-title {
   letter-spacing: 0;
 }
 
-.agent-tool-stream {
-  padding: 0;
-  max-height: 180px;
-}
-/* Open WebUI-style tool disclosure: a quiet status row until the reader
-   explicitly opens Input/Output evidence. */
-.agent-tool-card {
-  background: transparent;
-  border: 0;
-  overflow: visible;
-}
-.agent-tool-card:hover,
-.agent-tool-card.open {
-  border: 0;
-  box-shadow: none;
-}
 .wsr-title {
   color: hsl(var(--text-100));
   font-weight: var(--ui-font-weight-semibold);
