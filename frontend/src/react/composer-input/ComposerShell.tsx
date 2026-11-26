@@ -24,7 +24,10 @@ import { useStore } from 'zustand';
 import { useIsChatStreaming } from '../useChatRuntime';
 import { VoiceSpectrum } from './VoiceSpectrum';
 import { useStoredReasoningEffort } from '../chat-configuration/useChatConfigurationLabels';
-import { openChatConfiguration, useChatConfigurationSnapshot } from '../chat-configuration/chatConfiguration.bridge';
+import {
+  openChatConfiguration,
+  useChatConfigurationSnapshot,
+} from '../chat-configuration/chatConfiguration.bridge';
 import { effortLabel } from '../chat-configuration/ChatConfigurationPanels';
 import { useProviderConfigStore } from '../../config/providerConfig.store';
 import { resolveEffectiveEffort } from '../../config/effectiveEffort';
@@ -173,6 +176,13 @@ function usePrimaryClickHandler(
   };
 }
 
+function toggleVoice(): void {
+  const target = readComposerSurface();
+  void import('../../legacy/voiceInput.ts')
+    .then(({ toggleSpeechInput }) => toggleSpeechInput(target))
+    .catch((error) => reportSwallow(error, 'react/composer-input.voiceInput'));
+}
+
 function buildComposerControls(opts: {
   toolsLabel: string;
   composerTools: { isOpen: boolean; triggerId: string | null };
@@ -205,12 +215,7 @@ function buildComposerControls(opts: {
       timerLabel: opts.voiceTimerLabel,
       showTimer: !opts.phone,
       disabled: opts.voiceUnavailable !== null,
-      onPress: () => {
-        const target = readComposerSurface();
-        void import('../../legacy/voiceInput.ts')
-          .then(({ toggleSpeechInput }) => toggleSpeechInput(target))
-          .catch((error) => reportSwallow(error, 'react/composer-input.voiceInput'));
-      },
+      onPress: () => toggleVoice(),
     },
     primary: {
       mode: (opts.streaming ? 'stop' : 'send') as 'stop' | 'send',
@@ -218,30 +223,34 @@ function buildComposerControls(opts: {
       ready: opts.canSend,
       sending: opts.sending,
       onPress: opts.handlePrimaryClick,
+      /* Empty draft: the action disc starts dictation (reference voice disc).
+         Busy or unavailable dictation keeps the disabled send disc. */
+      voice:
+        opts.voicePhase === 'idle' && opts.voiceUnavailable === null
+          ? { label: opts.voiceLabel, onPress: () => toggleVoice() }
+          : null,
     },
   };
 }
 
 function useComposerEffortControl(phone: boolean) {
   const storedEffort = useStoredReasoningEffort();
-  const capabilities = useProviderConfigStore((state) =>
-    state.providers.find((provider) => provider.id === state.activeId)?.capabilities,
+  const capabilities = useProviderConfigStore(
+    (state) => state.providers.find((provider) => provider.id === state.activeId)?.capabilities,
   );
   const effort = resolveEffectiveEffort(storedEffort, capabilities);
   const configuration = useChatConfigurationSnapshot();
-  return (
-    phone && capabilities?.supportsEffort !== false
-      ? {
-          visible: true,
-          caption: i18n('chatconfig.effort', 'Reasoning effort'),
-          value: effortLabel(effort),
-          level: effort,
-          accessibilityLabel: `${i18n('chatconfig.effort', 'Reasoning effort')} · ${effortLabel(effort)}`,
-          expanded: configuration.open && configuration.triggerId === 'effortTrigger',
-          onPress: () => openChatConfiguration(anchor('effortTrigger')),
-        }
-      : undefined
-  );
+  return phone && capabilities?.supportsEffort !== false
+    ? {
+        visible: true,
+        caption: i18n('chatconfig.effort', 'Reasoning effort'),
+        value: effortLabel(effort),
+        level: effort,
+        accessibilityLabel: `${i18n('chatconfig.effort', 'Reasoning effort')} · ${effortLabel(effort)}`,
+        expanded: configuration.open && configuration.triggerId === 'effortTrigger',
+        onPress: () => openChatConfiguration(anchor('effortTrigger')),
+      }
+    : undefined;
 }
 
 /**

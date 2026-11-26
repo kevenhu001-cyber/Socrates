@@ -241,6 +241,15 @@ function MessageToolbarActions({
       </ToolButton>
       {role === 'user' && (
         <>
+          {/* 2026-11-26 reference: copy · share · edit under the bubble.
+              Delete stays on desktop rows; phones reach it from the
+              long-press context menu. */}
+          <ToolButton
+            label={i18n('message.share', 'Share conversation')}
+            onClick={() => callbacks.onShare?.()}
+          >
+            {toolbarIcon('share')}
+          </ToolButton>
           <ToolButton
             label={i18n('message.edit', 'Edit message')}
             onClick={() => callbacks.onEdit?.()}
@@ -250,6 +259,7 @@ function MessageToolbarActions({
           <ToolButton
             label={i18n('message.delete', 'Delete message')}
             onClick={() => callbacks.onDelete?.()}
+            className="msg-toolbar-desktop-only"
           >
             {toolbarIcon('trash')}
           </ToolButton>
@@ -257,12 +267,9 @@ function MessageToolbarActions({
       )}
       {role === 'assistant' && (
         <>
-          <ToolButton
-            label={i18n('message.regenerate', 'Regenerate response')}
-            onClick={() => callbacks.onRegenerate?.()}
-          >
-            {toolbarIcon('regenerate')}
-          </ToolButton>
+          {/* 2026-11-26 reference answer row, left to right: copy · feedback ·
+              read aloud · share · regenerate · more. Branch and re-explain
+              live in the overflow. */}
           <span className="msg-toolbar-feedback">
             <ToolButton
               label={i18n('message.helpful', 'Helpful')}
@@ -280,22 +287,28 @@ function MessageToolbarActions({
               {toolbarIcon('thumbsDown')}
             </ToolButton>
           </span>
+          <ToolButton
+            label={i18n('message.readAloud', 'Read aloud')}
+            onClick={(event: React.MouseEvent<HTMLButtonElement>) => callbacks.onReadAloud?.(event)}
+          >
+            {toolbarIcon('speaker')}
+          </ToolButton>
+          <ToolButton
+            label={i18n('message.share', 'Share conversation')}
+            onClick={() => callbacks.onShare?.()}
+          >
+            {toolbarIcon('share')}
+          </ToolButton>
+          <ToolButton
+            label={i18n('message.regenerate', 'Regenerate response')}
+            onClick={() => callbacks.onRegenerate?.()}
+          >
+            {toolbarIcon('regenerate')}
+          </ToolButton>
           <MessageOverflow
-            actions={[
-              ...secondaryActions,
-              {
-                label: i18n('message.helpful', 'Helpful'),
-                icon: ThumbsUpIcon,
-                mobileOnly: true,
-                onClick: () => callbacks.onThumbsUp?.(),
-              },
-              {
-                label: i18n('message.notHelpful', 'Not helpful'),
-                icon: ThumbsDownIcon,
-                mobileOnly: true,
-                onClick: () => callbacks.onThumbsDown?.(),
-              },
-            ]}
+            actions={secondaryActions.filter(
+              (action) => action.icon !== ShareIcon && action.icon !== ReadAloudIcon,
+            )}
           />
         </>
       )}

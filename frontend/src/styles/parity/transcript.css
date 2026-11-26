@@ -1236,3 +1236,133 @@ html[data-mode='dark'] #appShell .msg-body .hljs :is(.hljs-comment, .hljs-quote)
     line-height: calc(24px * var(--app-type-scale));
   }
 }
+
+/* ── 2026-11-26 phone reference (docs/audits/2026-11-26-chatgpt-ui-realignment.md)
+   One quiet centred timestamp opens the transcript; prose links are dotted
+   with a trailing ↗ instead of a favicon; tables are borderless grids with
+   row hairlines across the full column; headings step up; the scroll-to-
+   latest control is a canvas disc with a hairline ring. Desktop takes the
+   same language. */
+#appShell #msgList .msg-time-divider {
+  display: flex;
+  justify-content: center;
+  margin: 0 0 var(--ui-space-md, 16px);
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xs);
+  line-height: 20px;
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+}
+#appShell
+  #msgList
+  .msg-body
+  :is(p, li, blockquote, td)
+  a[href^='http']:not(.code-block-copy):not([href^='#socrates-citation-']) {
+  color: inherit;
+  font-weight: inherit;
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-color: var(--ui-text-tertiary);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 4px;
+}
+#appShell
+  #msgList
+  .msg-body
+  :is(p, li, blockquote, td)
+  a[href^='http']:not(.code-block-copy):not([href^='#socrates-citation-'])::after {
+  content: '↗';
+  display: inline-block;
+  margin-inline-start: 0.3em;
+  color: var(--ui-text-secondary);
+  font-size: 0.8em;
+  text-decoration: none;
+}
+#appShell
+  #msgList
+  .msg-body
+  :is(p, li, blockquote, td)
+  a[href^='http']:not(.code-block-copy):not([href^='#socrates-citation-']):hover {
+  text-decoration-color: currentColor;
+}
+#appShell #msgList .msg-body :is(p, li, blockquote, td) a[href^='http'] .site-link-favicon {
+  display: none;
+}
+/* Markdown tables (`.ds-table-wrap > table.ds-table` from markdownExtensions,
+   plus legacy un-wrapped tables) span the prose column like the reference:
+   no frame, a bold header, one hairline between rows. Visualization and
+   intelligent-UI tables keep their own contract. */
+#appShell
+  #msgList
+  .msg-body
+  .ds-table-wrap:not(.visualization-table-wrap):not(.intui-table-wrap):not(.iui-table-wrap)
+  > table.ds-table,
+#appShell #msgList .msg-body table:not(.ds-table):not(.intui-table) {
+  width: 100%;
+  font-size: var(--prose-size, var(--ui-font-size-md));
+  line-height: 1.6;
+}
+#appShell
+  #msgList
+  .msg-body
+  .ds-table-wrap:not(.visualization-table-wrap):not(.intui-table-wrap):not(.iui-table-wrap)
+  > table.ds-table
+  :is(th, td),
+#appShell #msgList .msg-body :where(th, td):not(.ds-table *):not(.intui-table *) {
+  min-width: 72px;
+  max-width: none;
+  padding: 12px 16px 12px 0;
+  border: 0;
+  border-bottom: 1px solid var(--ui-border-subtle);
+  background: transparent;
+}
+#appShell
+  #msgList
+  .msg-body
+  .ds-table-wrap:not(.visualization-table-wrap):not(.intui-table-wrap):not(.iui-table-wrap)
+  > table.ds-table
+  th,
+#appShell #msgList .msg-body th:not(.ds-table th):not(.intui-table th) {
+  border-bottom-color: var(--ui-border-subtle);
+  font-weight: var(--ui-font-weight-bold);
+}
+#appShell
+  #msgList
+  .msg-body
+  .ds-table-wrap:not(.visualization-table-wrap):not(.intui-table-wrap):not(.iui-table-wrap)
+  > table.ds-table
+  tbody
+  tr:hover
+  td {
+  background: transparent;
+}
+#appShell
+  #msgList
+  .msg-body
+  .ds-table-wrap:not(.visualization-table-wrap):not(.intui-table-wrap):not(.iui-table-wrap)
+  > table.ds-table
+  tbody
+  tr:last-child
+  td {
+  border-bottom: 0;
+}
+#appShell #msgList .msg-body hr {
+  border-top-color: var(--ui-border-subtle);
+}
+#appShell .new-reply-pill {
+  border-color: var(--ui-border-strong);
+  background: var(--ui-bg-page);
+  box-shadow: none;
+}
+@media (max-width: 768px) {
+  #appShell #msgList .msg-body h2:not(.sc-rich *) {
+    margin: 28px 0 12px;
+    font-size: var(--ui-font-size-xl);
+    font-weight: var(--ui-font-weight-bold);
+    line-height: 1.4;
+  }
+  #appShell #msgList .msg-body h3:not(.sc-rich *) {
+    font-size: var(--ui-font-size-lg);
+    font-weight: var(--ui-font-weight-bold);
+  }
+}

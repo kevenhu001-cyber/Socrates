@@ -155,25 +155,13 @@ for (const size of ['desktop', 'mobile']) {
     await expect(metric).toContainText('2');
     const send = page.locator('#composerPrimaryBtn');
     const editor = page.locator('#composerRoot .rich-composer-editor');
-    await expect(send).toBeDisabled();
-    const disabledDisc = await send.evaluate((node) => {
-      const style = getComputedStyle(node);
-      return { fill: style.backgroundColor, opacity: Number(style.opacity) };
-    });
+    /* 2026-11-26 reference: an empty draft shows the blue voice disc; a draft
+       swaps it for the send arrow on the same action fill. */
+    await expect(send).toHaveAttribute('data-voice', 'true');
     await editor.fill('Help me refine this plan.');
     await expect(send).toBeEnabled();
-    // Desktop swaps the disc fill from quiet grey to the action colour at full
-    // opacity; the phone keeps the action colour and fades from 0.5.
-    await expect
-      .poll(() =>
-        send.evaluate((node, baseline) => {
-          const style = getComputedStyle(node);
-          return (
-            style.backgroundColor !== baseline.fill || Number(style.opacity) > baseline.opacity
-          );
-        }, disabledDisc),
-      )
-      .toBe(true);
+    await expect(send).toHaveAttribute('data-voice', 'false');
+    await expect(send).toHaveAttribute('data-ready', 'true');
     await page.screenshot({
       path: `test-results/ui-detail-actions-${encodeURIComponent(size)}.png`,
     });

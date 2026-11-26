@@ -20,7 +20,7 @@ test('mobile composer stays two-row on landing and in a conversation', async ({ 
   const checkStacked = async () => {
     await expect(frame).toHaveAttribute('data-expanded', 'true');
     await expect(frame).toHaveCSS('height', '86px');
-    await expect(frame).toHaveCSS('border-radius', '28px');
+    await expect(frame).toHaveCSS('border-radius', '32px');
     const compact = await frame.boundingBox();
     const hostBox = await host.boundingBox();
     expect(compact.width).toBeLessThanOrEqual(hostBox.width + 1);
@@ -55,7 +55,7 @@ test('mobile composer stays two-row on landing and in a conversation', async ({ 
   await expect(editor).toBeFocused();
   await expect(host.locator('[data-composer-control=effort]')).toBeVisible();
   await expect(frame).toHaveCSS('height', '86px');
-  await expect(frame).toHaveCSS('border-radius', '28px');
+  await expect(frame).toHaveCSS('border-radius', '32px');
   const expanded = await frame.boundingBox();
   expect(mid.width).toBeCloseTo(compact.width, 0);
   expect(expanded.width).toBeCloseTo(compact.width, 0);
@@ -76,7 +76,10 @@ test('mobile composer stays two-row on landing and in a conversation', async ({ 
   await editor.press('ControlOrMeta+a');
   await editor.press('Backspace');
   await expect(editor).toBeEmpty();
-  await expect(primary).toBeDisabled();
+  /* 2026-11-26 reference: an empty draft turns the primary into the blue voice
+     disc (waveform, starts dictation) instead of a disabled send arrow. */
+  await expect(primary).toHaveAttribute('data-voice', 'true');
+  await expect(primary).toBeEnabled();
   await editor.evaluate((node) => node.blur());
   await checkStacked();
 
@@ -148,8 +151,8 @@ test('mobile composer keeps model selector and reference controls discoverable',
   await expect(page.locator('#mobileMode')).toHaveCount(0);
   await expect(page.locator('#topModeSwitch')).toBeHidden();
   await expect(composer.locator('#composerMicBtn')).toBeVisible();
-  await expect(composer.locator('#composerPrimaryBtn')).toHaveAttribute('aria-label', '发送');
-  await expect(composer.locator('#composerPrimaryBtn [data-ui-icon=arrow-up]')).toHaveCount(1);
+  await expect(composer.locator('#composerPrimaryBtn')).toHaveAttribute('aria-label', '语音输入');
+  await expect(composer.locator('#composerPrimaryBtn [data-ui-icon=waveform]')).toHaveCount(1);
   await editor.click();
   await expect(composer).toHaveClass(/composer-focused/);
   await expect(composer.locator('[data-composer-control=effort]')).toBeVisible();
@@ -227,7 +230,7 @@ for (const width of [320, 360, 430]) {
     const frame = host.locator('[data-composer-frame]');
     const editor = host.locator('.rich-composer-editor');
     await expect(frame).toHaveCSS('height', '86px');
-    await expect(frame).toHaveCSS('border-radius', '28px');
+    await expect(frame).toHaveCSS('border-radius', '32px');
     const idle = await frame.boundingBox();
     await editor.click();
     await expect(frame).toHaveCSS('height', '86px');
@@ -236,6 +239,8 @@ for (const width of [320, 360, 430]) {
     expect(focused.height).toBeCloseTo(idle.height, 0);
     expect(focused.x).toBeGreaterThanOrEqual(0);
     expect(focused.x + focused.width).toBeLessThanOrEqual(width + 1);
-    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width + 1);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      width + 1,
+    );
   });
 }

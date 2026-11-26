@@ -295,7 +295,9 @@
 /* The shared control owns send/stop fill and press feedback. */
 #appShell
   .composer-shell
-  [data-composer-control='send']:not([data-ready='true']):not([data-stop='1']) {
+  [data-composer-control='send']:not([data-ready='true']):not([data-stop='1']):not(
+    [data-voice='true']
+  ) {
   border: 1px solid var(--ui-hairline);
   opacity: 0.65;
 }
@@ -311,7 +313,7 @@
     --ui-ink-tertiary: var(--ui-text-placeholder);
   }
   #appShell .composer-shell [data-composer-frame][data-layout='inline'] {
-    --composer-frame-radius: var(--ui-radius-composer-desktop);
+    --composer-frame-radius: var(--ui-radius-composer-phone);
     --composer-control-size: 36px;
     --composer-motion: var(--ui-duration-normal) var(--ui-ease-content);
     --composer-editor-inset-start: var(--ui-step-75);

@@ -86,14 +86,15 @@ test('phone composer hit areas reach into the visual gap without stealing adjace
   await waitForAppShell(page);
   const send = page.locator('#composerPrimaryBtn');
   const editor = page.locator('#composerRoot .rich-composer-editor');
-  /* The primary action is the same ink disc in every state; readiness is
-     carried by opacity (0.5 disabled, 1 enabled), so the checks read that
-     rather than a colour swap. */
-  const idleOpacity = '0.5';
-  await expect(send).toBeDisabled();
-  await expect(send).toHaveCSS('opacity', idleOpacity);
+  /* 2026-11-26 reference: the primary is the blue action disc in every state.
+     An empty draft shows the voice affordance (enabled, full strength); typing
+     swaps it for the send arrow. */
+  await expect(send).toHaveAttribute('data-voice', 'true');
+  await expect(send).toBeEnabled();
+  await expect(send).toHaveCSS('opacity', '1');
   await expect(page.locator('#composerToolsBtn')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
   await editor.fill('A question');
+  await expect(send).toHaveAttribute('data-voice', 'false');
   await expect(send).toBeEnabled();
   await expect(send).toHaveCSS('opacity', '1');
   const targets = await page.evaluate(() => {

@@ -2,16 +2,34 @@ import { restingRect } from '../../legacy/pressFeedback.ts';
 
 /* Phone bottom sheet, matching the mobile drawer reference (screenshot 1000038600.jpg):
    it slides up from the bottom of the viewport, spans full width, with rounded top corners. */
-function positionMobileMenu(menu: HTMLElement, viewportHeight: number, bottomInset: number): void {
+/* 2026-11-26 phone reference: the "+" menu is a floating card that rests just
+ * above the question box with 12px side margins, not a full-width bottom
+ * sheet. `composerTop` is the box's top edge in the layout viewport; the card
+ * keeps an 8px gap above it and never grows past the visible viewport. */
+const MOBILE_MENU_MARGIN = 12;
+const MOBILE_MENU_GAP = 8;
+
+function positionMobileMenu(
+  menu: HTMLElement,
+  viewportHeight: number,
+  bottomInset: number,
+  composerTop: number | null,
+): void {
+  const layoutHeight = typeof window !== 'undefined' ? window.innerHeight : viewportHeight;
+  const bottom =
+    composerTop !== null && composerTop > 0
+      ? Math.max(bottomInset, layoutHeight - composerTop + MOBILE_MENU_GAP)
+      : bottomInset;
+  const room = Math.max(160, viewportHeight - (bottom - bottomInset) - MOBILE_MENU_MARGIN * 2);
   menu.style.setProperty('position', 'fixed', 'important');
-  menu.style.setProperty('left', '0px', 'important');
-  menu.style.setProperty('right', '0px', 'important');
-  menu.style.setProperty('width', '100%', 'important');
-  menu.style.setProperty('max-width', '100%', 'important');
+  menu.style.setProperty('left', `${MOBILE_MENU_MARGIN}px`, 'important');
+  menu.style.setProperty('right', `${MOBILE_MENU_MARGIN}px`, 'important');
+  menu.style.setProperty('width', 'auto', 'important');
+  menu.style.setProperty('max-width', 'none', 'important');
   menu.style.setProperty('top', 'auto', 'important');
-  menu.style.setProperty('bottom', `${bottomInset}px`, 'important');
-  menu.style.setProperty('max-height', `${viewportHeight * 0.75}px`, 'important');
-  menu.style.setProperty('border-radius', '20px 20px 0 0', 'important');
+  menu.style.setProperty('bottom', `${bottom}px`, 'important');
+  menu.style.setProperty('max-height', `${Math.min(room, viewportHeight * 0.75)}px`, 'important');
+  menu.style.removeProperty('border-radius');
   menu.dataset.menuSide = 'sheet';
 }
 
@@ -103,7 +121,13 @@ export function positionComposerToolsMenu(
   if (viewportWidth <= 768) {
     // The keyboard can shrink the visual viewport without resizing the
     // layout viewport. Keep the sheet inside the visible part of the screen.
-    positionMobileMenu(menu, viewportHeight, Math.max(0, window.innerHeight - viewportBottom));
+    const frame = trigger.closest('[data-composer-frame]') ?? trigger.closest('.composer-shell');
+    positionMobileMenu(
+      menu,
+      viewportHeight,
+      Math.max(0, window.innerHeight - viewportBottom),
+      frame ? frame.getBoundingClientRect().top : null,
+    );
     return;
   }
 

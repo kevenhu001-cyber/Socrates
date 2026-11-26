@@ -17,6 +17,7 @@ import { entryId } from './messageIdentity';
 import { updateScrollFadeMask } from './messageScroll';
 import { useProgressiveMessageMount } from './useProgressiveMessageMount';
 import { getVisibleMessagesSnapshot } from './visibleMessages';
+import { ConversationTimestamp } from './ConversationTimestamp';
 import { getMathRenderRevision } from '../../render/mathRevision.ts';
 import {
   getHistoryPagingSnapshot,
@@ -152,6 +153,7 @@ function MessageList({ readOnly = false }: Readonly<{ readOnly?: boolean }>) {
   return (
     <Suspense fallback={null}>
       {showsHistoryStatus(paging, start, readOnly) ? <HistoryPageStatus paging={paging} /> : null}
+      {start === 0 && !paging.hasMore ? <ConversationTimestamp first={visibleMessages[0]} /> : null}
       {mounted.map((entry, index) => {
         const id = entryId(entry, `idx-${index + start}`);
         const isLatest = index + start === visibleMessages.length - 1;

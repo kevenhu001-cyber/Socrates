@@ -102,6 +102,9 @@ export function ThinkingSurface({
           minWidth: 0,
           flexWrap: 'nowrap',
           alignItems: 'center',
+          /* Global button resets centre flex content; the activity caption
+             reads from the left edge like the reference ("已搜索… ⌄"). */
+          justifyContent: 'flex-start',
           gap: S[75],
           paddingInline: fullWidth ? 0 : S[75],
           marginLeft: fullWidth ? 0 : -S[75],
@@ -131,7 +134,10 @@ export function ThinkingSurface({
           numberOfLines={1}
           ellipsizeMode="tail"
           style={{
-            flex: fullWidth ? '1 1 0' : undefined,
+            /* The disclosure chevron follows the caption ("Thought for 8s ⌄",
+               2026-11-26 reference) instead of parking at the far edge; the
+               button keeps its full-width hit area. */
+            flex: fullWidth ? '0 1 auto' : undefined,
             flexShrink: 1,
             minWidth: 0,
             fontVariant: ['tabular-nums'],
@@ -283,6 +289,7 @@ export function ActivityStep({
         minWidth: 0,
         flexWrap: 'nowrap',
         alignItems: 'center',
+        justifyContent: 'flex-start',
         gap: ROW_GAP,
         paddingInline: ROW_PAD,
         borderRadius: R.row,

@@ -15,7 +15,7 @@ for (const viewport of [
     await expect(page.locator('vite-error-overlay')).toHaveCount(0);
     await page.evaluate(() => window.__socratesLegacy.profile.setLang('zh'));
     const input = page.locator('#composerInputWrap .tiptap');
-    await expect(input).toHaveAttribute('aria-label', '有问题，随便问');
+    await expect(input).toHaveAttribute('aria-label', '询问 Socrates');
     await expect
       .poll(() => page.evaluate(() => window.t('chat.placeholder')))
       .toBe('输入你的想法……');

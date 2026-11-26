@@ -66,10 +66,12 @@
   --ui-radius-composer: 24px;
   /* Desktop composer capsule (chatgpt.com: 28px on a 52px single row). */
   --ui-radius-composer-desktop: 28px;
+  /* 2026-11-26 phone reference: the two-row question box is a 32px capsule. */
+  --ui-radius-composer-phone: 32px;
   /* chatgpt.com row radius: sidebar rows, menu items. */
   --ui-radius-row: 8px;
   --ui-radius-sidebar-row: 10px;
-  --ui-radius-bubble: 24px;
+  --ui-radius-bubble: 28px;
   --ui-radius-pill: 999px;
   /* Menus take the reference's 12px corner; dialogs keep the 24px sheet. */
   --ui-radius-popover: var(--ui-radius-md);

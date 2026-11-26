@@ -118,7 +118,7 @@
      edge (a 32px pitch) with 18px glyphs. The tap extension grows only
      vertically so neighbours never overlap. */
   #appShell .msg-toolbar {
-    gap: 0;
+    gap: var(--ui-step-25, 2px);
     height: var(--ui-control-sm);
   }
   #appShell .msg-toolbar-btn::before {
@@ -258,7 +258,10 @@
 }
 
 @media (max-width: 768px) {
-  #appShell .msg-toolbar-feedback {
+  /* 2026-11-26 reference: the answer row keeps feedback inline (copy ·
+     feedback · read aloud · share · regenerate · more); only the user row's
+     delete moves to the long-press menu. */
+  #appShell .msg-toolbar-desktop-only {
     display: none;
   }
   .msg-action-menu button {
