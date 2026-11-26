@@ -33,6 +33,8 @@ export interface DemonstrationViewBase {
 }
 export interface DemonstrationPlot extends DemonstrationViewBase {
   kind: 'plot';
+  /** Evaluate curves along simulation time rather than a spatial axis. */
+  history?: boolean;
   curves: DemonstrationCurve[];
   markers?: DemonstrationMarker[];
 }
@@ -108,6 +110,10 @@ export interface DemonstrationProgram {
     derivatives: Record<string, DemonstrationValue>;
     duration: number;
     step: number;
+    method?: 'rk4' | 'rk45';
+    rtol?: number;
+    atol?: number;
+    events?: { expression: DemonstrationValue; direction?: -1 | 0 | 1; terminal?: boolean; reset?: Record<string, DemonstrationValue> }[];
   };
   duration?: number;
   views: DemonstrationView[];
