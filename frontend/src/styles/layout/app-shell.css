@@ -165,9 +165,6 @@ html[data-show-grid='false'] .main-bg {
 #appShell .top-model-slot {
   display: contents;
 }
-#appShell .toggle-sidebar .glyph-hamburger {
-  display: none;
-}
 
 @media (min-width: 769px) {
   #appShell #topicSetup .topic-title.greeting {
@@ -214,16 +211,6 @@ html[data-show-grid='false'] .main-bg {
 }
 
 @media (max-width: 768px) {
-  /* Reference phone header: hamburger left, centered mode pill, one
-     circular new-chat button right. The incognito toggle moved into the
-     sidebar 更多 popover; the desktop panel-collapse glyph becomes a
-     three-line hamburger. */
-  #appShell .toggle-sidebar .glyph-panel {
-    display: block;
-  }
-  #appShell .toggle-sidebar .glyph-hamburger {
-    display: none;
-  }
   /* The landing column owns its 12px inset itself — the legacy
      .main-inner adds another 8px at ≤480px which would double the
      composer's side margin versus the in-session bar. */

@@ -43,13 +43,6 @@
   #appShell .top-bar-right {
     --ui-ink-secondary: var(--ui-text-primary);
   }
-  /* Reference: the sidebar glyph (rounded frame + rail line), not a hamburger. */
-  #appShell #sidebarOpenBtn .glyph-panel {
-    display: block;
-  }
-  #appShell #sidebarOpenBtn .glyph-hamburger {
-    display: none;
-  }
   #appShell .mobile-newchat-btn {
     display: inline-flex;
     align-items: center;
@@ -92,18 +85,6 @@
     .top-bar
     :is(button, a, [role='button']) {
     pointer-events: auto;
-  }
-  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
-    #appShell
-    #sidebarOpenBtn
-    .glyph-panel {
-    display: none;
-  }
-  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
-    #appShell
-    #sidebarOpenBtn
-    .glyph-hamburger {
-    display: block;
   }
   body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
     #appShell
@@ -165,26 +146,31 @@
   body.workspace-active #appShell .mobile-newchat-btn {
     display: none;
   }
-  /* Reference conversation header: drawer · new chat · title, actions on
-     the trailing edge. The left group takes the free width so the title
-     can ellipsize instead of pushing find / share off the bar. */
+  /* Equal side reserves keep the title centred on the viewport, not on
+     the leftover space between asymmetrical action groups. */
   body[data-conversation-active='true'] #appShell .top-bar-left {
-    flex: 1 1 auto;
+    flex: 0 0 auto;
     min-width: 0;
     gap: 0;
   }
+  body[data-conversation-active='true'] #appShell .top-bar-right {
+    margin-inline-start: auto;
+  }
   #appShell .top-conversation-title {
-    flex: 1 1 auto;
+    position: absolute;
+    inset-inline-start: 50%;
+    top: calc(50% + env(safe-area-inset-top, 0px) / 2);
+    transform: translate(-50%, -50%);
+    max-width: calc(100% - 2 * (var(--ui-control-touch) * 2 + var(--ui-mobile-page-gutter)));
     min-width: 0;
-    /* Centre the title in the remaining space; keep both action groups reachable. */
-    margin-inline-start: 0;
     padding: 0 var(--ui-space-xs);
+    pointer-events: none;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
     color: var(--ui-text-primary);
     font-size: var(--ui-font-size-md);
-    font-weight: var(--ui-font-weight-medium);
+    font-weight: var(--ui-font-weight-semibold);
     line-height: 24px;
     text-align: center;
   }

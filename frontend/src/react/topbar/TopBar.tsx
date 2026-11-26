@@ -1,5 +1,6 @@
 import { useSyncExternalStore, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { Button } from '../ui/shadcn/button';
+import { Icon } from '../../legacy/Icon';
 import { i18n } from '../../ui/legacyI18n.ts';
 import { mountOwnedRoot } from '../lib/boot/ownedRoot';
 import { useExamStore, useSessionStore, useUiStore } from '../../store/index.ts';
@@ -89,7 +90,7 @@ function anchor(id: string): HTMLElement | null {
 
 /* ── Left: sidebar toggle · model switcher · tutor pill · exam title ───── */
 
-function SidebarToggle() {
+function SidebarToggle({ conversationActive }: { conversationActive: boolean }) {
   const isOpen = useSidebarStore((snapshot) => snapshot.isOpen);
   const isMobile = useMobileViewport();
   const labelKey = isMobile
@@ -131,34 +132,7 @@ function SidebarToggle() {
       style={{ display: isMobile ? (isOpen ? 'none' : undefined) : 'none' }}
       onClick={() => toggleSidebar()}
     >
-      {/* Reference phone glyph: a soft frame with a short rail stroke. */}
-      <svg
-        className="glyph-panel"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={1.75}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-        focusable="false"
-      >
-        <rect x="3" y="3" width="18" height="18" rx="3" />
-        <path d="M9 3v18" />
-      </svg>
-      {/* Phone navigation uses the reference's quiet, two-line menu glyph. */}
-      <svg
-        className="glyph-hamburger"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={1.75}
-        strokeLinecap="round"
-        aria-hidden="true"
-      >
-        <path d="M4 8h16" />
-        <path d="M4 16h11" />
-      </svg>
+      <Icon name={conversationActive ? 'menuCompact' : 'panel'} size={20} />
       <span className="mobile-sidebar-status" aria-hidden="true" />
     </Button>
   );
@@ -284,14 +258,14 @@ function ExamTitle() {
  * desktop keeps the model lockup in this slot instead.
  */
 function ConversationTitle({
-  phone: _phone,
+  phone,
   conversationActive,
 }: {
   phone: boolean;
   conversationActive: boolean;
 }) {
   const title = useSessionStore((snapshot) => snapshot.sessionTitle || snapshot.topic);
-  if (!conversationActive || !title) return null;
+  if (!phone || !conversationActive || !title) return null;
   return (
     <span className="top-conversation-title" id="topConversationTitle" title={title}>
       {title}
@@ -308,7 +282,7 @@ function TopBarLeft({
 }) {
   return (
     <div className="top-bar-left">
-      <SidebarToggle />
+      <SidebarToggle conversationActive={conversationActive} />
       <WebUiTheme>
         <span className="mobile-newchat-btn" data-topbar-slot="new-chat">
           <TopBarAction
@@ -330,7 +304,6 @@ function TopBarLeft({
         <PracticeProgress phone={phone} conversationActive={conversationActive} />
         <StageProgress phone={phone} conversationActive={conversationActive} />
       </WebUiTheme>
-      <ConversationTitle phone={phone} conversationActive={conversationActive} />
       <ExamTitle />
     </div>
   );
@@ -465,6 +438,7 @@ export function TopBar() {
     <>
       <TopBarLeft phone={phone} conversationActive={conversationActive} />
       <ModeSwitch phone={phone} conversationActive={conversationActive} />
+      <ConversationTitle phone={phone} conversationActive={conversationActive} />
       <TopBarRight phone={phone} conversationActive={conversationActive} />
     </>
   );
