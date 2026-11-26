@@ -2,6 +2,8 @@ import type { Point3 } from './types';
 
 /** Bounded marching tetrahedra on normalized regular-grid samples. */
 export function* extractIsosurface(values: Float64Array, size: number, level: number): Generator<void, [Point3,Point3,Point3][], void> {
+  if (!Number.isInteger(size) || size < 2 || size > 17 || values.length !== size ** 3 || !Number.isFinite(level))
+    throw Error('Isosurface requires a finite level and a cubic grid of 2–17 samples per axis');
   const at=(i:number,j:number,k:number)=>(k*size+j)*size+i;
   const corners=[[0,0,0],[1,0,0],[1,1,0],[0,1,0],[0,0,1],[1,0,1],[1,1,1],[0,1,1]];
   // The same body diagonal in every cube yields compatible face diagonals.
