@@ -182,6 +182,47 @@ machine precision. All 19 scientific examples and 15 historical examples
 validated and executed without runtime warnings. Added unit and E2E cases;
 full CI, browser visual testing and real device performance remain pending.
 
+## Stage six: chemistry and biology
+
+- Stoichiometric reaction-network compiler: 1–16 species (8 for SDIRK2),
+  1–16 reaction channels, integer stoichiometry, mass-action rate constants
+  or custom nonnegative flux expressions. Fixed-volume, consistent
+  concentration/amount units. Reverse reactions are separate channels.
+  Optional elemental composition on every species checks reaction balance
+  and generates total_<element> conserved quantities; rate_<id> exposes
+  flux. With no composition, open source/sink channels are supported.
+  Accepted negative states below -atol are rejected, small negative
+  numerical undershoots are clamped; interpolated concentrations are
+  nonnegative. This is not an exactly positivity-preserving or
+  conservation-projection integrator.
+- Gillespie direct SSA for stationary mass-action molecule-count models,
+  seeded reproducibility, nonnegative integer counts, propensity
+  k*product(binomial(count,stoichiometry)), up to 10,000 reactions and
+  1e8 counts per species. Discrete state history is piecewise constant;
+  optional sampled staircase plot is not an exact event raster. A single
+  stochastic realization is not an ensemble mean.
+- Chemical/biological scene primitives: atom symbols, single/double/triple
+  bonds, reaction and reversible arrows, inhibition and schematic
+  eukaryotic cell icons. Explicitly authored coordinates, not automatic
+  molecular structure, force fields, chemical identity or cell morphology.
+- Eight additional cases: reversible reaction, explicit enzyme binding and
+  catalysis, stochastic birth/death expression, logistic population growth,
+  predator/prey phase plane, compartment exchange, water/carbon dioxide
+  diagrams and ideal Henderson–Hasselbalch buffer curve.
+- Corrected the prior surface test to match existing numeric-range
+  normalization (reversed bounds are sorted, malformed length rejected).
+  Previous CI passed Security, Server, Image, Android and Agent lanes.
+  Frontend unit lane failed the range assertion and an unrelated
+  streamingMath test unchanged on main. No CI guard relaxed.
+
+Direct checks: reversible concentration error 2.686e-10 at t=2;
+declared carbon-equivalent conservation exactly 1 in that check; unbalanced
+reaction rejected. Enzyme and substrate pool maximum sampled residual
+1.999e-15 over 101 times. Seeded SSA test gave reproducible integer counts
+and 149 events over 20 s; 27 scientific and 15 historical examples validate
+and execute without warnings. Added unit and browser regressions. Browser
+rendering and newest full CI remain unverified. No added runtime dependencies.
+
 ## Deliberate limits / next steps
 
 This is a bounded educational engine, not an industrial multiphysics solver.
