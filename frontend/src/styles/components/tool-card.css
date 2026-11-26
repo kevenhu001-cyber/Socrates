@@ -42,9 +42,11 @@
 .tool-inline-attachments {
   display: flex;
   flex-wrap: wrap;
+  width: 100%;
   min-width: 0;
+  max-width: 100%;
   gap: var(--ui-space-sm);
-  margin: var(--ui-space-sm) 0 var(--ui-space-xxs) 26px;
+  margin: var(--ui-space-sm) 0 var(--ui-space-xxs);
 }
 .tool-inline-attachments:empty {
   display: none;
@@ -54,7 +56,8 @@
   display: block;
   position: relative;
   min-width: 0;
-  width: min(100%, 440px);
+  width: 100%;
+  max-width: 100%;
   margin: var(--ui-space-sm) 0;
   padding: 0;
   overflow: hidden;
@@ -62,13 +65,10 @@
   border-radius: var(--ui-radius-md);
   background: var(--ui-bg-surface);
 }
-.exec-artifact-html {
-  width: min(100%, 560px);
-}
 .exec-artifact-html-frame {
   display: block;
   width: 100%;
-  height: 300px;
+  height: clamp(320px, 60vh, 520px);
   border: 0;
   /* Generated HTML has its own palette, independent of the host theme. */
   background: white;
@@ -161,13 +161,7 @@
 }
 
 @media (max-width: 768px) {
-  .tool-inline-attachments {
-    margin-inline-start: 0;
-  }
-  .exec-artifact {
-    width: 100%;
-  }
   .exec-artifact-html-frame {
-    height: 240px;
+    height: clamp(320px, 55vh, 480px);
   }
 }
