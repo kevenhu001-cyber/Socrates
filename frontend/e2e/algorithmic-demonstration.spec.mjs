@@ -583,3 +583,20 @@ test('chemistry and biological models render molecular symbols and linked reacti
   await expect(enzyme.getByRole('slider',{name:'Binding rate'})).toBeVisible();
   await expectNoGlobalError(page);
 });
+
+test('general numerical views expose local roots, field slices and linked controls',async({page})=>{
+  const scientific=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
+  const nodes=[{id:'root',type:'demonstration',title:'Nonlinear root',program:scientific.nonlinearEquilibrium},{id:'slice',type:'demonstration',title:'Volume slice',program:scientific.volumeSlice}];
+  await prepareChatWorkbench(page,{lang:'en',viewport:{width:390,height:844},messages:nodes.map(node=>({clientId:node.id,role:'assistant',type:'assistant',rawText:'\x60\x60\x60socrates-ui\n'+JSON.stringify(node)+'\n\x60\x60\x60'}))});
+  const root=page.getByRole('region',{name:'Nonlinear root',exact:true});
+  await root.scrollIntoViewIfNeeded();
+  await expect(root).toHaveAttribute('data-demo-quality','full');
+  await expect(root.getByText('Root q',{exact:true})).toBeVisible();
+  const slice=page.getByRole('region',{name:'Volume slice',exact:true});
+  await slice.scrollIntoViewIfNeeded();
+  await expect(slice).toHaveAttribute('data-demo-quality','full');
+  await expect(slice.getByText('Slice plane: z = 0.3',{exact:true})).toBeVisible();
+  await slice.getByRole('slider',{name:'Slice position'}).fill('0.8');
+  await expect(slice.getByText('Slice plane: z = 0.8',{exact:true})).toBeVisible();
+  await expectNoGlobalError(page);
+});
