@@ -890,6 +890,11 @@
 #appShell .viz-mermaid-glyph {
   flex: none;
 }
+/* The reference header carries only the view pill at its right edge; the
+   hover-only "Interactive" status chip kept an invisible slot after it. */
+#appShell .viz[data-viz-kind='mermaid'] .viz-status {
+  display: none;
+}
 #appShell .viz[data-viz-kind='mermaid'] .viz-seg {
   gap: 0;
   padding: 3px;
