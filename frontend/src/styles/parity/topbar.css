@@ -56,7 +56,7 @@ body.admin-active #shareBtn {
  * (packages/ui/src/shell/TopBar.tsx): the model switcher, the 聊天 / 辅导
  * segmented track, the tutor stage and practice capsules, find, share and
  * the phone new-chat action paint themselves from the site tokens. This
- * owner keeps what only the page can do: the 48px bar and scroll divider,
+ * owner keeps what only the page can do: the 48px borderless bar,
  * the left / centre / right groups, the centred mode track, phone
  * placement, and hiding chat chrome on surfaces that are not the chat.
  */
@@ -114,17 +114,6 @@ html[data-main-view='settingsPage'] #appShell .top-bar {
   }
 }
 
-/* A hairline separates the header only once the transcript has scrolled. */
-body[data-transcript-scrolled='true'] #appShell .top-bar::after {
-  content: '';
-  position: absolute;
-  inset-inline: 0;
-  inset-block-end: 0;
-  height: 1px;
-  background: var(--ui-border-subtle);
-  pointer-events: none;
-}
-
 @media (min-width: 769px) {
   #appShell .top-bar {
     grid-column: 1;
@@ -144,10 +133,7 @@ body[data-transcript-scrolled='true'] #appShell .top-bar::after {
     padding: 0 max(var(--ui-space-md), env(safe-area-inset-right, 0px)) 0
       max(var(--ui-space-md), env(safe-area-inset-left, 0px));
     border: 0;
-    /* No standing rule under the header, and no glass: the bar is simply the
-       top of the canvas. The separator is drawn by ::after, and only
-       while there is content to separate. */
-    border-bottom: 0;
+    /* The transcript mask alone softens the boundary; no rule or glass. */
     background: transparent;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
@@ -283,9 +269,6 @@ html[data-main-view$='Panel'] #appShell .mobile-newchat-btn {
   /* The transcript mask owns the mobile fade; avoid painting a second one. */
   #appShell .top-bar {
     z-index: var(--ui-z-header);
-  }
-  body[data-transcript-scrolled='true'] #appShell .top-bar::after {
-    display: none;
   }
   #appShell .top-bar-left,
   #appShell .top-bar-right {
