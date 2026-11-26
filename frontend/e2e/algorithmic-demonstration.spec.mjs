@@ -615,3 +615,15 @@ test('parametric mesh and optimization marker are linked scientific views',async
   await expect(opt.getByText('Computed local optimum: (1, 1)',{exact:true})).toBeVisible();
   await expectNoGlobalError(page);
 });
+
+test('spectral analysis renders exact-bin stem paths and low-pass slider',async({page})=>{
+  const scientific=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
+  const node={id:'spectrum',type:'demonstration',title:'FFT spectrum',program:scientific.fftSignal};
+  await prepareChatWorkbench(page,{lang:'en',viewport:{width:390,height:844},messages:[{clientId:node.id,role:'assistant',type:'assistant',rawText:'\x60\x60\x60socrates-ui\n'+JSON.stringify(node)+'\n\x60\x60\x60'}]});
+  const region=page.getByRole('region',{name:'FFT spectrum',exact:true});
+  await region.scrollIntoViewIfNeeded();
+  await expect(region).toHaveAttribute('data-demo-quality','full');
+  await expect(region.getByText('Peak frequency',{exact:true})).toBeVisible();
+  await expect(region.getByRole('slider',{name:'Low-pass cutoff'})).toBeVisible();
+  await expectNoGlobalError(page);
+});
