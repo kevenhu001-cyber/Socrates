@@ -106,7 +106,7 @@
   gap: var(--ui-space-xxs);
   padding: var(--ui-space-xxs) var(--ui-space-xs);
   border-radius: var(--ui-radius-pill);
-  background: var(--secondary);
+  background: var(--ui-bg-control);
   color: var(--ui-text-tertiary);
   font-size: var(--ui-font-size-xs);
   font-variant-numeric: tabular-nums;
@@ -118,8 +118,8 @@
   color: var(--ui-ink);
 }
 .intui-metric-delta[data-trend='down'] {
-  background: color-mix(in srgb, var(--destructive) 12%, transparent);
-  color: var(--destructive);
+  background: color-mix(in srgb, var(--ui-danger) 12%, transparent);
+  color: var(--ui-danger);
 }
 /* A note is a soft block, not a margin rule. Manus never draws a rail beside
    a note: the surface stays the same quiet grey for every tone, and one small
@@ -132,7 +132,7 @@
   padding: var(--ui-space-md) var(--ui-space-lg);
   border: 0;
   border-radius: var(--ui-radius-md);
-  background: var(--secondary);
+  background: var(--ui-bg-control);
   color: var(--ui-text-secondary);
 }
 .intui-callout-title {
@@ -155,7 +155,7 @@
   --intui-tone: var(--ui-warning);
 }
 .intui-callout[data-tone='danger'] {
-  --intui-tone: var(--destructive);
+  --intui-tone: var(--ui-danger);
 }
 .intui-callout[data-tone='neutral'] {
   --intui-tone: var(--ui-text-tertiary);
@@ -212,10 +212,19 @@
   grid-row: 1;
   text-align: end;
 }
+
 .intui-slider input[type='range'] {
   grid-column: 2;
   grid-row: 1;
   min-width: 0;
+  appearance: none;
+  width: 100%;
+  height: var(--ui-control-touch);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
 }
 @container (max-width: 320px) {
   .intui-slider {
@@ -229,25 +238,15 @@
     grid-row: 2;
   }
 }
-.intui-slider input[type='range'] {
-  appearance: none;
-  width: 100%;
-  height: var(--ui-control-touch);
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-}
 .intui-slider input::-webkit-slider-runnable-track {
   height: var(--ui-space-xs);
   border-radius: var(--ui-radius-pill);
-  background: var(--secondary);
+  background: var(--ui-bg-control);
 }
 .intui-slider input::-moz-range-track {
   height: var(--ui-space-xs);
   border-radius: var(--ui-radius-pill);
-  background: var(--secondary);
+  background: var(--ui-bg-control);
 }
 .intui-slider input::-webkit-slider-thumb {
   appearance: none;
@@ -292,7 +291,7 @@
   --intui-tone: var(--ui-warning);
 }
 .intui-progress[data-tone='danger'] {
-  --intui-tone: var(--destructive);
+  --intui-tone: var(--ui-danger);
 }
 .intui-progress-track {
   position: relative;
@@ -300,7 +299,7 @@
   height: var(--ui-space-xs);
   overflow: hidden;
   border-radius: var(--ui-radius-pill);
-  background: var(--secondary);
+  background: var(--ui-bg-control);
 }
 .intui-progress-value {
   display: block;
@@ -635,7 +634,7 @@
   height: 4.5rem;
   object-fit: cover;
   border-radius: var(--ui-radius-md);
-  background: var(--secondary);
+  background: var(--ui-bg-control);
 }
 .intui .intui-entity-body,
 .intui .intui-entity-head {
@@ -702,7 +701,7 @@
   aspect-ratio: 4 / 3;
   object-fit: cover;
   border-radius: var(--ui-radius-md);
-  background: var(--secondary);
+  background: var(--ui-bg-control);
 }
 .intui .intui-image-gallery figcaption {
   overflow: hidden;
