@@ -111,6 +111,8 @@ export const en = {
   'intui.demo.diag.eigenResidual': 'Scaled eigen residual',
   'intui.demo.diag.eigenOrthogonality': 'Orthogonality error',
   'intui.demo.diag.eigenIterations': 'Eigen rotations',
+  'intui.demo.isoLevel': 'Isosurface level',
+  'intui.demo.diag.transportCFL': 'Combined transport CFL',
   'intui.demo.diagnostics': 'Solver diagnostics',
   'intui.demo.diag.acceptedSteps': 'Accepted steps',
   'intui.demo.diag.rejectedSteps': 'Rejected steps',
