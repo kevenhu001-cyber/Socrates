@@ -5,12 +5,11 @@ import {
   DetailSection,
   ImageOutput,
   PlainDetail,
-  SourceList,
   sourceCardsOf,
 } from '@socrates/ui/turn';
 import { UiButton } from '@socrates/ui/primitives';
 import { useWindowDimensions } from '../rn/useWindowDimensions';
-import { faviconProxyUrl } from '../../legacy/faviconProxy';
+import { SourceAvatar } from '../sources/SourceAvatar';
 import { basename, tf, translate } from '../../legacy/toolPresentationModel.ts';
 import { copyText, openExternal } from './copyText';
 import { toolOutputsOf } from './toolOutputs';
@@ -77,16 +76,41 @@ function ResultSection({ section, entryKey }: { section: Section; entryKey: stri
       host: item.host,
       date: item.date,
       source: item.source,
+      snippet: item.snippet,
     }));
     return (
       <DetailSection title={section.title} kind="sources">
-        <SourceList
-          sources={sourceCardsOf(section.items).map((source) => ({
-            ...source,
-            favicon: source.url ? faviconProxyUrl(source.url) : null,
-          }))}
-          onOpen={openExternal}
-        />
+        <div className="tool-source-results" data-testid="tool-sources">
+          {sourceCardsOf(section.items).map((source) => (
+            <button
+              key={source.key}
+              type="button"
+              className="tool-source-result"
+              data-testid="tool-source"
+              role={source.url ? 'link' : undefined}
+              disabled={!source.url}
+              aria-label={[source.title, source.host].filter(Boolean).join(' · ')}
+              onClick={() => source.url && openExternal(source.url)}
+            >
+              <SourceAvatar
+                url={source.url || ''}
+                host={source.host || source.monogram}
+                className="tool-source-avatar"
+                testId="tool-source-monogram"
+              />
+              <span className="tool-source-content">
+                <span className="tool-source-name" data-testid="tool-source-title">
+                  {source.title}
+                </span>
+                {source.host ? (
+                  <span className="tool-source-domain" data-testid="tool-source-host">
+                    {source.host}
+                  </span>
+                ) : null}
+              </span>
+            </button>
+          ))}
+        </div>
         <UiButton
           testID="tool-sources-open"
           variant="ghost"
@@ -105,7 +129,21 @@ function ResultSection({ section, entryKey }: { section: Section; entryKey: stri
   if (section.kind === 'files') {
     return (
       <DetailSection title={section.title} kind="files">
-        <CodeBlock text={section.paths.map(basename).join('\n')} {...copyLabels()} />
+        <ul className="tool-file-list">
+          {section.paths.map((path, index) => (
+            <li key={`${path}-${index}`} title={path}>
+              <span>{basename(path)}</span>
+              {path !== basename(path) ? <small>{path}</small> : null}
+            </li>
+          ))}
+        </ul>
+      </DetailSection>
+    );
+  }
+  if (section.kind === 'error' && section.title !== 'stderr' && !section.fullText) {
+    return (
+      <DetailSection title={section.title} kind="error">
+        <p className="tool-detail-error-message">{section.text}</p>
       </DetailSection>
     );
   }
@@ -136,7 +174,7 @@ function LiveOutputSection({ view }: LiveOutputSectionProps) {
       {view.livePreview ? (
         <CodeBlock
           testID="tool-live-preview"
-          maxHeight={200}
+          maxHeight={280}
           text={view.livePreview}
           {...copyLabels()}
         />
