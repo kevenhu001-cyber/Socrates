@@ -281,19 +281,16 @@
   object-fit: contain;
 }
 
-/* Long output scrolls beneath the trigger without moving the answer out of view. */
+/* Individual logs scroll; the detail itself remains in the transcript flow. */
 .tool-run-detail-body {
   display: flex;
   flex-direction: column;
   gap: var(--ui-gap-3);
   min-width: 0;
-  max-height: min(440px, 55dvh);
-  padding-inline-start: calc(1em + var(--ui-space-xs));
+  max-width: 100%;
+  padding-inline-start: 0;
   margin-block: var(--ui-space-xs) var(--ui-space-sm);
-  overflow: auto;
   overflow-wrap: anywhere;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
 }
 
 /* Public timeline entries remain still beneath the one live caption. */
@@ -644,10 +641,10 @@
   flex-direction: column;
   gap: 5px;
   margin: 1px 0 6px;
-  padding: 0 0 0 26px;
+  padding: 0;
 }
 .agent-step-pre {
-  max-height: 200px;
+  max-height: 320px;
   margin: 0;
   padding: 6px 9px;
   overflow: auto;
