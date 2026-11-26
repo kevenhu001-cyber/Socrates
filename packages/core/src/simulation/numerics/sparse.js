@@ -88,4 +88,3 @@ function* solveSparseSystem(spec,params,compile){
 }
 
 export { solveSparseSystem };
-export { sparseSystemSpec, lowerSparseSystem } from '../models/sparse.js';
