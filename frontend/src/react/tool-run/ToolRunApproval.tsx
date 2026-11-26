@@ -72,7 +72,7 @@ export function ToolRunApproval({ view, messageId, toolCallId, readOnly }: ToolR
               {i18n('tool.codexApprovalCopy', 'Review the action before it continues.')}
             </p>
           ) : null}
-          {view.facts.length ? (
+          {view.state === 'pending' && view.facts.length ? (
             <dl className="tool-approval-facts">
               {view.facts.map((fact) => (
                 <div key={fact.label}>
