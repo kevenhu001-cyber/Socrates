@@ -352,6 +352,51 @@ stems / 258 arcs. All 40 scientific plus 15 historical examples validate
 and execute without warnings. Added targeted unit and browser regression
 cases; newest full CI and browser/device verification pending.
 
+## Stage ten: geometric mechanics, finite elements, transport and implicit geometry
+
+- Velocity Verlet for autonomous separable position/velocity systems,
+  1–8 coordinate pairs, duration up to 300 and at most 10000 steps.
+  Position-dependent accelerations only; symplectic for compatible
+  conservative Hamiltonians, not arbitrary acceleration, damping,
+  constraints or impacts. Fixed steps; linear display interpolation.
+  A preallocated Float64 history stores at most 160016 scalar values.
+  Corrected normalization that formerly clipped duration to 30.
+- Stationary P1 Galerkin FEM for -(a u')' + c u = f in one dimension:
+  3–257 strictly increasing, possibly nonuniform mesh nodes, positive
+  diffusion and nonnegative reaction sampled by two-point Gauss
+  quadrature, Dirichlet endpoints, tridiagonal elimination. Piecewise
+  linear values and piecewise constant gradients, scaled assembled
+  equation residual. Not general 2D/3D FEM or a PDE error certificate.
+- Optional constant per-field advection in existing periodic coupled
+  grids (one or two spatial axes), conservative first-order upwind
+  fluxes and Heun time stepping. Combined transport/diffusion CFL
+  <= 1; report both CFL diagnostics. No advection through no-flux
+  boundaries, variable velocity, high-order limiter or stiff reaction
+  stability guarantee. Upwind numerical diffusion remains.
+- Scalar isosurface geometry by marching tetrahedra (11^3 preview,
+  17^3 full sampled grids, at most 6000 triangles); consistent cube
+  face diagonals, reject nonfinite cells and degenerate triangles,
+  shared camera, wireframe or height-colored depth-sorted SVG.
+  Not GPU volume rendering, adaptive mesh or a 3D PDE solver.
+- Four new scientific examples, targeted numerical and browser
+  regression tests. Fixed prior failing nonsymmetric-eigen negative
+  test: use a 3x3 nonsymmetric input so existing 3-component plot
+  validation does not fail before the intended matrix symmetry check.
+
+Direct verification: 100 time units/5000 Verlet steps, maximum
+oscillator energy error 5.0e-5 with energy 0.5, 5001 derivative
+evaluations and 80016 bytes of raw typed history. 65-node FEM
+Poisson test nodal error 2.387e-15, scaled residual 5.551e-17.
+Positive/negative periodic transport preserve mean 1 within 2.221e-16
+at CFL 0.16 (peak attenuated from 1.5 to 1.46236, numerical diffusion).
+Sphere isosurface full sampling 4992 triangles, squared-radius residual
+<=0.01674 at triangle vertices; preview 1992 triangles and residual
+<=0.04319. All 44 scientific and 15 historical examples validate and
+execute without warnings. Previous Agent, Server, Security, Image and
+Android workflows passed; frontend CI failed the negative test fixture
+described above, now corrected and directly checked. Latest complete
+CI/browser/device verification pending. No new runtime dependencies.
+
 ## Deliberate limits / next steps
 
 This is a bounded educational engine, not an industrial multiphysics solver.
