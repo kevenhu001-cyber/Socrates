@@ -661,3 +661,25 @@ test('surface sampling provides real bounded mesh values without raster allocati
   assert.equal(sample.surface.values[0],2);
   assert.equal(validateDemonstration({version:1,views:[{...view,zRange:[2,0]}]}).ok,false);
 });
+
+test('matrix-free implicit grid resolves a 65 by 65 heat mode within bounded history', () => {
+  const program = {version:1,dynamics:{method:'grid-implicit',duration:.2,step:.001,
+    spatial:{dimension:2,nx:65,ny:65,xDomain:[0,1],yDomain:[0,1],diffusivity:.1,
+      initial:'sin(pi*x)*sin(pi*y)',boundary:0}},
+    views:[{kind:'field',x:[0,1],y:[0,1],expression:'gridValue'}]};
+  const runtime=createDemonstrationRuntime(program);
+  assert.deepEqual(runtime.warnings,[]);
+  assert.ok(Math.abs(runtime.evaluate('gridValue',.2,.5,.5)-Math.exp(-.04*Math.PI**2))<.001);
+  assert.equal(runtime.evaluate('gridValue',.2,0,.5),0);
+  assert.ok(runtime.evaluate('gridMean',.2)<runtime.evaluate('gridMean',0));
+  assert.equal(validateDemonstration({...program,dynamics:{...program.dynamics,step:.00001}}).ok,false);
+});
+test('implicit diffusion uses stationary nonzero boundaries and sources', () => {
+  const program={version:1,dynamics:{method:'grid-implicit',duration:1,step:.01,
+    spatial:{nodes:129,domain:[0,1],diffusivity:.1,initial:'20+10*x',left:20,right:30}},
+    views:[{kind:'plot',x:[0,1],y:[20,30],curves:[{expression:'gridValue'}]}]};
+  const runtime=createDemonstrationRuntime(program);
+  assert.deepEqual(runtime.warnings,[]);
+  assert.ok(Math.abs(runtime.evaluate('gridValue',1,.37)-23.7)<1e-8);
+  assert.equal(validateDemonstration({...program,dynamics:{...program.dynamics,spatial:{...program.dynamics.spatial,diffusivity:'1+t'}}}).ok,false);
+});
