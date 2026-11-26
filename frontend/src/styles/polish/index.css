@@ -13,7 +13,6 @@
  *
  * Component map:
  *   sidebar.css     — shared sidebar affordances; desktop geometry in parity/sidebar.css
- *   topbar.css      — 52px bar chrome, Chat/Tutor mode pill
  *   composer.css    — landing typography and the sole composer attachment owner
  *   transcript.css  — user bubble, msg toolbar, code blocks, cursor, toasts
  *   overlays.css    — cmdk / profile / share / usage / shared overlays
@@ -32,7 +31,6 @@
  */
 
 @import './sidebar.css';
-@import './topbar.css';
 @import './composer.css';
 @import './transcript.css';
 @import './overlays.css';
