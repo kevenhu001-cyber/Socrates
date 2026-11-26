@@ -95,4 +95,3 @@ function* prepareImplicitGrid(g,params,compile,warnings) {
 }
 
 export { prepareImplicitGrid };
-export { implicitGridSpec, lowerImplicitGrid } from '../models/implicitGrid.js';
