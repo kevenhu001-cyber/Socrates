@@ -97,6 +97,8 @@ export const en = {
   'intui.demo.failedView': 'This view could not be computed',
   'intui.demo.curve': 'Curve {n}',
   'intui.demo.marker': 'Marker {n}',
+  'intui.demo.colorScale': 'Color scale',
+  'intui.demo.contourLevels': 'Contour levels',
   'intui.demo.dynamicsStopped': 'The simulation stopped at t = {t} s',
   'intui.simSpeed': 'Speed',
   'intui.simAngle': 'Angle',
