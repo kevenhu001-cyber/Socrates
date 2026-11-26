@@ -125,12 +125,17 @@ export function ThinkingSurface({
         <UiText
           testID="turn-activity-label"
           className={labelClassName}
-          variant={fullWidth ? "body" : "bodySm"}
+          variant={fullWidth ? 'body' : 'bodySm'}
           tone="secondary"
           role={live ? 'status' : undefined}
           numberOfLines={1}
           ellipsizeMode="tail"
-          style={{ flex: fullWidth ? '1 1 0' : undefined, flexShrink: 1, minWidth: 0, fontVariant: ['tabular-nums'] }}
+          style={{
+            flex: fullWidth ? '1 1 0' : undefined,
+            flexShrink: 1,
+            minWidth: 0,
+            fontVariant: ['tabular-nums'],
+          }}
         >
           {label}
         </UiText>
@@ -147,7 +152,7 @@ export function ThinkingSurface({
             <UiText
               testID="turn-activity-duration"
               className={durationClassName}
-              variant={fullWidth ? "bodySm" : "labelSm"}
+              variant={fullWidth ? 'bodySm' : 'labelSm'}
               tone="secondary"
               aria-live="off"
               numberOfLines={1}
