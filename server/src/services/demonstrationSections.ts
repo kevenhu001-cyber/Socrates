@@ -18,11 +18,11 @@ export type DemonstrationSection = keyof typeof DEMONSTRATION_SECTIONS;
 const GUIDES = {
   basics: `Build a new algorithmic demonstration without choosing a preset physics model. Arguments are JSON, not markup: every list is a JSON array, every numeric field is a JSON number, and program.version is the number 1. Never encode a list as {"item": [...]}, never wrap an array in tags, and never send "1" where a number belongs.
 
-A demonstration node is {"id":"demo","type":"demonstration","title":"...","program":{"version":1,"parameters":[],"definitions":{},"views":[]}}. views has 1-8 entries. Required per view: plot -> x, y and 1-6 curves; field -> x, y and expression; trajectory -> x, y, horizontal, vertical and program.dynamics; scene -> x, y and 1-32 objects; metrics -> 1-6 values; controls -> nothing. At most one controls, two field views and twelve curves total. The schema marks per-kind fields optional because JSON Schema cannot express the condition; validation still requires them. Fix every field named in an error in one corrected call.
+A demonstration node is {"id":"demo","type":"demonstration","title":"...","program":{"version":1,"parameters":[],"definitions":{},"views":[]}}. views has 1-8 entries. Required per view: plot -> x, y and 1-6 curves; field -> x, y and expression; trajectory -> x, y, horizontal, vertical and program.dynamics; scene -> x, y and 1-32 objects; metrics -> 1-6 values; controls -> nothing. At most one controls, two field views and twelve curves total. The compact schema marks per-kind fields optional; semantic validation still requires them. Fix every field named in an error in one corrected call.
 
 All views share parameters, definitions, time t and optional ODE state. To drive an existing demonstration from the conversation, patch its program with changed parameter value fields: edited defaults apply immediately while unrelated manual control values survive. Set or change the optional resetKey string to restore all declared defaults, including a value equal to a previous default. This is the preferred route for novel mathematical/physical demonstrations and custom compositions.
 
-Display labels and units use inline LaTeX for formulas and symbols. In JSON use dollar delimiters and escape each backslash, for example {"xLabel":"$t\\\\,(\\\\mathrm{s})$","yLabel":"$I/I_0$","unit":"$\\\\theta_R$"}. Keep expressions in the executable mathematical syntax above.
+Display labels and units use inline LaTeX for formulas and symbols. In JSON use dollar delimiters and escape each backslash, for example {"xLabel":"$t\\\\,(\\\\mathrm{s})$","yLabel":"$I/I_0$","unit":"$\\\\theta_R$"}. Keep expressions in executable mathematical syntax (see expressions section).
 
 Views are ordered freely (1–8). Every view has "kind" (not "type"). Axis bounds are a two-element JSON array [min,max] of finite numbers or expressions evaluated at the current time with x=y=0; use parameter-dependent bounds to keep important features visible, for example "y":[0,"max(1.12,1.12*total)"]. Bounds must remain finite, increasing and within ±1e6:
 
@@ -91,7 +91,16 @@ For a true parametric 3D surface use field presentation:'parametricSurface', sur
 
 For 3D scalar isosurfaces set field presentation:'isosurface', expression:'x^2+y^2+spaceZ^2', isoLevel:1, x/y/zRange:[-1.2,1.2], surfaceStyle:'shaded' or 'wireframe'. Marching tetrahedra on bounded 11^3/17^3 grids with triangle cap and local camera, not volume rendering, arbitrary 3D PDE or exact surface.`,
   scenes: `- scene: needs x, y and 1-32 objects. Compose physical bodies and apparatus with the SAME parameters, definitions, ODE state and time as plots/fields/metrics. Coordinates and sizes are in axis units, y points upward, angles are radians, and aspect ratio is preserved. Object shapes: {kind:"body",center:[expression,expression],radius:expression}; {kind:"block",center:[expression,expression],width:expression,height:expression,angle?:expression}; {kind:"rod"|"spring"|"vector",from:[expression,expression],to:[expression,expression]}. Engineering symbols use the same from/to endpoint format: resistor, capacitor, inductor, voltageSource, currentSource, dimension (double-ended arrow), pin, roller, ground (from is the connection, to sets orientation/extent). Draw wires with path/rod and labels with symbol label. These symbols are visual only; use dynamics.circuit for the actual electrical model. A path is {kind:"path",points:[[expression,expression],...],closed?:boolean,dashed?:boolean}, with 2-64 points, for slopes, wires, ropes and ray paths. Each object may have label and color (ink, muted, blue, orange, red, green, violet). Sizes must remain positive and all geometry finite within ±1e6. Objects draw in array order. A vector's endpoints express the displayed vector; derive and label the force/velocity scale explicitly. Springs are schematic connectors, not automatic force laws: author the equations in dynamics/definitions. Use scenes for pendulum mechanisms, mass-spring assemblies, coupled oscillators, orbits, force diagrams and ray paths; pair them with actual calculated fields when needed. Scene objects only display the authored model; they do not add collision, contact or circuit solvers.`,
-  examples: ['Editable physics examples and assumptions:', ...Object.entries(PHYSICS_EXAMPLES).map(([id,program])=>id+': '+(PHYSICS_EXAMPLE_ASSUMPTIONS[id as keyof typeof PHYSICS_EXAMPLE_ASSUMPTIONS]??'')+'\\n'+JSON.stringify(program))].join('\\n'),
+  examples: [
+    'Available composed examples and assumptions:',
+    ...Object.entries(PHYSICS_EXAMPLE_ASSUMPTIONS).map(([id,assumptions])=>id+': '+assumptions),
+    'Editable coupled dynamics example:',
+    JSON.stringify(PHYSICS_EXAMPLES.coupledOscillators),
+    'Editable electromagnetic example:',
+    JSON.stringify(PHYSICS_EXAMPLES.chargedParticle),
+    'Editable diffraction-grating example:',
+    `{"version":1,"parameters":[{"id":"N","label":"Slits N","value":6,"min":2,"max":12,"step":1},{"id":"ratio","label":"d / a","value":4,"min":1,"max":8,"step":0.1},{"id":"gamma","label":"Display gamma","value":0.4,"min":0.2,"max":1,"step":0.05,"advanced":true}],"definitions":{"envelope":"sinc(pi*x/ratio)^2","intensity":"envelope*sinratio(N,pi*x)^2"},"views":[{"kind":"controls"},{"kind":"plot","x":[-3.3,3.3],"y":[0,1.08],"xLabel":"$d\\\\sin\\\\theta / \\\\lambda$","yLabel":"$I/I_0$","curves":[{"expression":"intensity","label":"Total intensity","color":"blue"},{"expression":"envelope","label":"Single-slit envelope","color":"muted","dashed":true}]},{"kind":"field","x":[-3.3,3.3],"y":[-1,1],"expression":"intensity","gamma":"gamma","tint":[0.55,1,0.08],"height":96}]}`,
+  ].join('\n'),
 } as const;
 
 export function demonstrationSectionContent(section: DemonstrationSection): string {
@@ -100,3 +109,5 @@ export function demonstrationSectionContent(section: DemonstrationSection): stri
 export function demonstrationSectionIndex(): string {
   return 'Choose a section with get_ui_contract({kind:"demonstration",section:"..."}). Read basics first if new to the DSL.\\n'+Object.entries(DEMONSTRATION_SECTIONS).map(([id,description])=>id+': '+description).join('\\n');
 }
+
+export const DEMONSTRATION_GUIDANCE = Object.values(GUIDES).join('\n\n');
