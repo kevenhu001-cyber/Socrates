@@ -156,21 +156,22 @@ function* sample(
     runtime.evaluate(expression, t, x, slice);
   const sources =
     view.kind === 'plot'
-      ? view.curves.map((curve) => ({ expression: curve.expression, label: curve.label }))
-      : [{ expression: view.vertical, label: view.label }];
+      ? view.curves.map((curve) => ({ expression: curve.expression, label: curve.label, samples:curve.samples }))
+      : [{ expression: view.vertical, label: view.label, samples:undefined }];
   const curves: Point[][] = [];
   for (const [index, curve] of sources.entries()) {
     const reusable =
       view.kind === 'plot' && !view.history &&
       ![...view.x, ...(view.sliceY === undefined ? [] : [view.sliceY]), curve.expression].some((expression) => runtime.dependencies(expression) & 4);
-    const key = `${index}:${samples}`;
+    const intervals=curve.samples!==undefined?curve.samples-1:samples;
+    const key = `${index}:${intervals}`;
     let sampled = reusable ? cache.get(key) : undefined;
     if (!sampled) {
       const { points, finite, firstError } = yield* sampleCurvePoints(
         view,
         curve,
         time,
-        samples,
+        intervals,
         xDomain,
         read,
       );
@@ -199,7 +200,7 @@ function* sample(
     yDomain,
     xScale,
     yScale,
-    paths: curves.map((points,index) => pathFor(points, sx, sy, view.kind==='plot'&&view.curves[index].interpolation==='step')),
+    paths: curves.map((points,index) => pathFor(points, sx, sy, view.kind==='plot'?view.curves[index].interpolation:undefined,sy(Math.max(yDomain[0],Math.min(yDomain[1],0))))),
     markers,
     issues,
     ...(view.kind === 'plot' && view.history ? { playhead: time, eventTimes: (runtime.eventTimes ?? []).filter((t) => t <= time && t >= xDomain[0] && t <= xDomain[1]) } : {}),
@@ -269,7 +270,8 @@ function pathFor(
   points: Point[],
   sx: (value: number) => number,
   sy: (value: number) => number,
-  staircase = false,
+  interpolation?: 'linear'|'step'|'points'|'stem',
+  baseline=0,
 ): string {
   let pen = false;
   let path = '';
@@ -285,7 +287,12 @@ function pathFor(
       pen = false;
       continue;
     }
-    path += pen&&staircase?`H${px.toFixed(2)}V${py.toFixed(2)}`:`${pen ? 'L' : 'M'}${px.toFixed(2)},${py.toFixed(2)}`;
+    if(interpolation==='points'||interpolation==='stem'){
+      if(interpolation==='stem')path+=`M${px.toFixed(2)},${baseline.toFixed(2)}V${py.toFixed(2)}`;
+      path+=`M${(px-1.8).toFixed(2)},${py.toFixed(2)}a1.8,1.8 0 1,0 3.6,0a1.8,1.8 0 1,0 -3.6,0`;
+      continue;
+    }
+    path += pen&&interpolation==='step'?`H${px.toFixed(2)}V${py.toFixed(2)}`:`${pen ? 'L' : 'M'}${px.toFixed(2)},${py.toFixed(2)}`;
     pen = true;
   }
   return path;
