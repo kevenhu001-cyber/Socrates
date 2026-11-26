@@ -90,7 +90,7 @@ export type DemonstrationObject =
       dashed?: boolean;
     })
   | (DemonstrationObjectBase & {
-      kind: 'rod' | 'spring' | 'vector';
+      kind: 'rod' | 'spring' | 'vector' | 'resistor' | 'capacitor' | 'inductor' | 'voltageSource' | 'currentSource' | 'dimension' | 'pin' | 'roller' | 'ground';
       from: DemonstrationPoint;
       to: DemonstrationPoint;
     });
