@@ -603,3 +603,30 @@ test('spatial slice evaluates the requested y-coordinate', () => {
   assert.ok(sample.paths[0].startsWith('M48.00,149.00'));
   assert.ok(sample.paths[0].endsWith('L508.00,59.00'));
 });
+
+test('stiff integration damps a fast mode while retaining a slow mode', () => {
+  const runtime = createDemonstrationRuntime({
+    version: 1, dynamics: { method: 'sdirk2', duration: 1, step: 0.1,
+      rtol: 1e-5, atol: 1e-8, initial: { fast: 1, slow: 1 },
+      derivatives: { fast: '-10000*fast', slow: '-slow' } },
+    views: [{ kind: 'metrics', values: [{ expression: 'slow' }] }],
+  });
+  assert.deepEqual(runtime.warnings, []);
+  assert.ok(Math.abs(runtime.stateAt(1).slow - Math.exp(-1)) < 1e-4);
+  assert.ok(Math.abs(runtime.stateAt(1).fast) < 1e-7);
+});
+test('linear MNA supports series RLC with capacitor and inductor states', () => {
+  const runtime = createDemonstrationRuntime({
+    version: 1, dynamics: { method: 'rk45', duration: 2, step: 0.02,
+      circuit: { nodes: ['a','b','c'], elements: [
+        { kind: 'V', id: 'v', p: 'a', n: '0', value: 1 },
+        { kind: 'R', id: 'r', p: 'a', n: 'b', value: 2 },
+        { kind: 'L', id: 'l', p: 'b', n: 'c', value: 1 },
+        { kind: 'C', id: 'c', p: 'c', n: '0', value: 1 },
+      ] } },
+    views: [{ kind: 'metrics', values: [{ expression: 'voltage_c' }] }],
+  });
+  assert.deepEqual(runtime.warnings, []);
+  assert.ok(Math.abs(runtime.evaluate('voltage_c', 2) - (1-3*Math.exp(-2))) < 1e-5);
+  assert.ok(Math.abs(runtime.evaluate('current_l-current_c',2)) < 1e-10);
+});
