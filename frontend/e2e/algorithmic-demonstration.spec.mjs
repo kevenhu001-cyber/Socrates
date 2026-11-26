@@ -566,3 +566,20 @@ test('spatial vector field and sparse diagnostics use native scientific views',a
   await expect(sparse.getByText('Matrix nonzero entries',{exact:true})).toBeVisible();
   await expectNoGlobalError(page);
 });
+
+test('chemistry and biological models render molecular symbols and linked reaction curves',async({page})=>{
+  const scientific=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
+  const nodes=[{id:'molecules',type:'demonstration',title:'Molecular structures',program:scientific.molecularStructures},{id:'enzyme',type:'demonstration',title:'Enzyme kinetics',program:scientific.enzymeKinetics}];
+  await prepareChatWorkbench(page,{lang:'en',viewport:{width:390,height:844},messages:nodes.map(node=>({clientId:node.id,role:'assistant',type:'assistant',rawText:'\x60\x60\x60socrates-ui\n'+JSON.stringify(node)+'\n\x60\x60\x60'}))});
+  const molecules=page.getByRole('region',{name:'Molecular structures',exact:true});
+  await molecules.scrollIntoViewIfNeeded();
+  await expect(molecules).toHaveAttribute('data-demo-quality','full');
+  await expect(molecules.locator('[data-scene-object="atom"]')).toHaveCount(6);
+  await expect(molecules.locator('[data-scene-object="doubleBond"]')).toHaveCount(2);
+  const enzyme=page.getByRole('region',{name:'Enzyme kinetics',exact:true});
+  await enzyme.scrollIntoViewIfNeeded();
+  await expect(enzyme).toHaveAttribute('data-demo-quality','full');
+  await expect(enzyme.locator('[data-scene-object="reversibleArrow"]')).toBeVisible();
+  await expect(enzyme.getByRole('slider',{name:'Binding rate'})).toBeVisible();
+  await expectNoGlobalError(page);
+});
