@@ -106,9 +106,9 @@ test('mobile conversation home matches the compact dark reference layout', async
   expect(geometry.topicFontSize).toBeGreaterThanOrEqual(16);
   expect(geometry.topicFontSize).toBeLessThanOrEqual(18);
   expect(geometry.composer?.y).toBeGreaterThan(550);
-  /* The mobile canvas shares the pure-black reference page token with desktop. */
-  expect(geometry.background).toBe('rgb(0, 0, 0)');
-  expect(geometry.pageToken).toBe('#000');
+  /* The mobile canvas shares the sampled November page token with desktop. */
+  expect(geometry.background).toBe('rgb(14, 14, 14)');
+  expect(geometry.pageToken).toBe('#0e0e0e');
 
   /* Center the greeting in the live space above the bottom composer. */
   const centering = await page.evaluate(() => {
