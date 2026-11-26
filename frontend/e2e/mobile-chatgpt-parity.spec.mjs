@@ -20,7 +20,7 @@ for (const width of [360, 390, 430]) {
     const header = page.locator('.top-bar');
     /* The bar overlaps the transcript, so it must paint the page colour: a
        translucent bar lets the scrolled transcript show through the title. */
-    await expect(header).toHaveCSS('background-color', 'rgb(0, 0, 0)');
+    await expect(header).toHaveCSS('background-color', 'rgb(14, 14, 14)');
     const headerChrome = await page.evaluate(() => ({
       bar: getComputedStyle(document.querySelector('.top-bar')).backgroundColor,
       page: getComputedStyle(document.body).backgroundColor,
