@@ -24,6 +24,8 @@ export function fieldExpressions(view: DemonstrationField): DemonstrationValue[]
     ...(view.curve3d ?? []),
     ...(view.vector3d ?? []),
     ...(view.parameterRange ?? []),
+    ...(view.uRange ?? []),...(view.vRange ?? []),...(view.surface3d ?? []),
+    ...(view.markers ?? []).flatMap(m=>[m.x,m.y]),
     ...(view.curveHistory ? ['t'] : []),
     ...(view.contours ?? []),
     ...(view.vectorScale === undefined ? [] : [view.vectorScale]),
@@ -337,6 +339,7 @@ type Point3 = [number,number,number];
 export interface SurfaceSample {
   size: number;
   values: number[];
+  vertices?: (Point3 | null)[];
   curve?: (Point3 | null)[];
   arrows3d?: {from:Point3;to:Point3;magnitude:number}[];
   reference?: number;
@@ -374,7 +377,21 @@ function* sampleSpace(view: DemonstrationField,runtime:DemonstrationRuntime,time
   const ranges=[x,y,z];
   const normalize=(p:Point3):Point3=>p.map((v,i)=>2*(v-ranges[i][0])/(ranges[i][1]-ranges[i][0])-1) as Point3;
   const result:SurfaceSample={size:0,values:[],x,y,z};
-  if(view.presentation==='curve3d'&&view.curve3d){
+  if(view.presentation==='parametricSurface'&&view.surface3d&&view.uRange&&view.vRange){
+    const u=demonstrationDomain(view.uRange,runtime,time),v=demonstrationDomain(view.vRange,runtime,time);
+    const size=preview?17:33,vertices:(Point3|null)[]=[];
+    for(let j=0;j<size;j++){
+      for(let i=0;i<size;i++){
+        try{
+          const p=view.surface3d.map(expr=>runtime.evaluate(expr,time,u[0]+(u[1]-u[0])*i/(size-1),v[0]+(v[1]-v[0])*j/(size-1))) as Point3;
+          vertices.push(p.every((q,k)=>Number.isFinite(q)&&q>=ranges[k][0]-1e-10&&q<=ranges[k][1]+1e-10)?normalize(p):null);
+        }catch(error){if(isDemonstrationBudgetError(error))throw error;vertices.push(null);}
+      }
+      yield;
+    }
+    if(!vertices.some(Boolean))throw Error('No finite parametric surface points within declared bounds');
+    result.size=size;result.vertices=vertices;
+  }else if(view.presentation==='curve3d'&&view.curve3d){
     const domain:Domain=view.curveHistory?[0,Math.max(0,time)]:demonstrationDomain(view.parameterRange!,runtime,time);
     const steps=preview?120:480,curve:(Point3|null)[]=[];
     for(let i=0;i<=steps;i++){
@@ -432,13 +449,13 @@ export function* sampleField(
   runtime.resetBudget();
   const x = demonstrationDomain(view.x, runtime, time);
   const y = demonstrationDomain(view.y, runtime, time);
-  if (view.presentation === 'curve3d' || view.presentation === 'vectors3d') {
+  if (view.presentation === 'curve3d' || view.presentation === 'vectors3d' || view.presentation==='parametricSurface') {
     const surface=yield* sampleSpace(view,runtime,time,x,y,preview);
-    return {pixels:new ArrayBuffer(0),arrows:[],contours:[],colorRange:undefined,surface,slice:undefined,streamlines:[] as number[][]};
+    return {pixels:new ArrayBuffer(0),arrows:[],contours:[],colorRange:undefined,surface,slice:undefined,streamlines:[] as number[][],markers:[] };
   }
   if (view.presentation === 'surface') {
     const surface = yield* sampleSurface(view, runtime, time, x, y, preview ? 17 : 33);
-    return { pixels: new ArrayBuffer(0), arrows: [], contours: [], colorRange: undefined, surface,slice:undefined,streamlines:[] as number[][] };
+    return { pixels: new ArrayBuffer(0), arrows: [], contours: [], colorRange: undefined, surface,slice:undefined,streamlines:[] as number[][],markers:[] };
   }
   const {runtime:projected,slice}=sliceRuntime(view,runtime,time);
   const colorRange = view.colorRange?.map((v) => runtime.evaluate(v, time)) as Domain | undefined;
@@ -450,7 +467,13 @@ export function* sampleField(
       const arrows = yield* sampleVectors(view, runtime, time, x, y);
       const contours = yield* sampleContours(view, projected, time, x, y, stride);
       const streamlines=yield* sampleStreamlines(view,runtime,time,x,y,preview||stride>1);
-      return { pixels: pixels.buffer, arrows, contours, colorRange, surface: undefined,slice,streamlines };
+      const markers=(view.markers??[]).flatMap(m=>{
+        try{const px=runtime.evaluate(m.x,time),py=runtime.evaluate(m.y,time);
+          if(!Number.isFinite(px)||!Number.isFinite(py)||px<x[0]||px>x[1]||py<y[0]||py>y[1])return [];
+          return [{x:px,y:py,px:(px-x[0])/(x[1]-x[0])*(FIELD_WIDTH-1),py:(y[1]-py)/(y[1]-y[0])*(fieldHeight(view)-1),label:m.label}];
+        }catch(error){if(isDemonstrationBudgetError(error))throw error;return [];}
+      });
+      return { pixels: pixels.buffer, arrows, contours, colorRange, surface: undefined,slice,streamlines,markers };
     } catch (error) {
       if (!isDemonstrationBudgetError(error)) throw error;
     }
