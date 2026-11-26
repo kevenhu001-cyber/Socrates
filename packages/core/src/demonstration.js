@@ -976,6 +976,7 @@ export function normalizeDemonstrationProgram(input) {
       dynamics.events = dynamics.events.map((event) =>
         record(event)
           ? { ...event, expression: expressionLike(event.expression),
+              ...(event.rearmTolerance !== undefined ? {rearmTolerance:numberLike(event.rearmTolerance)} : {}),
               ...(record(event.reset) ? { reset: mapValues(event.reset, expressionLike) } : {}) }
           : event,
       );
@@ -1803,6 +1804,8 @@ export function validateDemonstration(input) {
         if (!record(event) || ![-1, 0, 1].includes(event.direction ?? 0) ||
             (event.terminal !== undefined && typeof event.terminal !== 'boolean'))
           throw Error('Event needs expression, direction -1/0/1 and optional boolean terminal');
+        if (event.rearmTolerance !== undefined && (!finite(event.rearmTolerance) || event.rearmTolerance < 0 || event.rearmTolerance > 1e6))
+          throw Error('Event rearm tolerance must be a finite nonnegative number ≤1e6');
         check(event.expression);
         if (event.reset !== undefined && !record(event.reset))
           throw Error('Event reset must be a map of state expressions');
@@ -2205,6 +2208,7 @@ function* integrateAdaptive(dynamics, names, initial, derivative, eventValue, ev
   };
   let eventCount = 0;
   const eventTimes = [];
+  const disarmed = new Set();
   const rtol = dynamics.rtol ?? 1e-6, atol = dynamics.atol ?? 1e-9;
   const stiff = dynamics.method === 'sdirk2';
   const rhsVector = (v, time) => { const k = derivative(toState(v), time); return checked(Float64Array.from(names, (name) => k[name])); };
@@ -2248,7 +2252,7 @@ function* integrateAdaptive(dynamics, names, initial, derivative, eventValue, ev
         continue;
       }
       const segment = { t, h, end: t + h, a: current, b: next, k0, k1 };
-      const hits = [];
+      const hits = [], rearm = [];
       for (const event of events) {
         const direction = event.direction ?? 0;
         const crosses = (a, b) => (direction <= 0 && a > 0 && b <= 0) || (direction >= 0 && a < 0 && b >= 0);
@@ -2256,7 +2260,13 @@ function* integrateAdaptive(dynamics, names, initial, derivative, eventValue, ev
         const mid = t + h / 2;
         const m = readEvent(event, mid, interpolate(segment, mid));
         const b = readEvent(event, hi, next);
-        if (crosses(a, m)) hi = mid;
+        const tolerance = event.rearmTolerance ?? 1e-9;
+        if (disarmed.has(event)) {
+          if (Math.abs(a) > tolerance) rearm.push({event,time:t});
+          else if (Math.abs(m) > tolerance) {rearm.push({event,time:mid});lo=mid;a=m;}
+          else {if (Math.abs(b)>tolerance) rearm.push({event,time:hi});continue;}
+        }
+        if (lo===t && crosses(a, m)) hi = mid;
         else if (crosses(m, b)) { lo = mid; a = m; }
         else continue;
         for (let i = 0; i < 40 && hi - lo > Math.max(1e-12, h * 1e-9); i++) {
@@ -2269,6 +2279,7 @@ function* integrateAdaptive(dynamics, names, initial, derivative, eventValue, ev
       }
       hits.sort((a, b) => a.time - b.time);
       const hit = hits[0];
+      for (const item of rearm) if (item.time <= (hit?.time ?? t+h)) disarmed.delete(item.event);
       if (hit) {
         if (++eventCount > 128) throw Error('Event budget exceeded; possible chattering or repeated contact');
         const before = interpolate(segment, hit.time);
@@ -2277,6 +2288,7 @@ function* integrateAdaptive(dynamics, names, initial, derivative, eventValue, ev
         const assigned = new Set();
         const simultaneous = hits.filter((item) => Math.abs(item.time - hit.time) <= Math.max(1e-12, h * 1e-8));
         for (const { event } of simultaneous) {
+          disarmed.add(event);
           const result = eventReset(event, hit.time, prior);
           for (const key of Object.keys(event.reset ?? {})) {
             if (assigned.has(key)) throw Error('Simultaneous events reset the same state; combine their reset maps');
