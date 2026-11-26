@@ -46,6 +46,7 @@ export interface DemonstrationField extends DemonstrationViewBase {
   kind: 'field';
   expression: DemonstrationValue;
   presentation?: 'map' | 'surface';
+  surfaceStyle?: 'wireframe' | 'shaded';
   zRange?: [DemonstrationValue, DemonstrationValue];
   palette?: 'light' | 'signed' | 'heat';
   tint?: [number, number, number];
