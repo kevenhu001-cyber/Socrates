@@ -223,7 +223,7 @@ test('the running tool names itself on its row, and its detail opens inline', as
   await expect(detail.locator(TURN.source).last().getByTestId('tool-source-monogram')).toHaveText(
     'B',
   );
-  await expect(detail.getByTestId('tool-input-toggle')).toHaveAttribute('aria-expanded', 'false');
+  await expect(detail.getByTestId('tool-input-toggle')).toHaveCount(0);
   await page.evaluate(() => {
     window.open = (url) => {
       window.__openedSource = url;
@@ -303,12 +303,9 @@ test('parallel tools keep their order, DOM identity, and open details as later c
   await toolRowButton(bubble, 'first-slow').click();
   const detail = page.locator(TURN.detail);
   await expect(detail).toBeVisible();
-  const inputToggle = detail.getByTestId('tool-input-toggle');
-  await inputToggle.click();
-  await inputToggle.focus();
-  await expect(detail.locator('[data-testid="tool-detail-section-input"]')).toContainText(
-    'slow.ts',
-  );
+  const rowButton = toolRowButton(bubble, 'first-slow');
+  await rowButton.focus();
+  await expect(detail.getByTestId('tool-input-toggle')).toHaveCount(0);
   const detailHandle = await detail.elementHandle();
   await page.evaluate(() =>
     window.__pushThinkingFrame('tool_result', {
@@ -321,7 +318,7 @@ test('parallel tools keep their order, DOM identity, and open details as later c
     }),
   );
   await expect(toolRow(bubble, 'second-fast')).toHaveAttribute('data-state', 'done');
-  await expect(inputToggle).toBeFocused();
+  await expect(rowButton).toBeFocused();
   /* A sibling settling neither closes nor remounts the open panel. */
   await expect(detail).toBeVisible();
   expect(
@@ -349,7 +346,7 @@ test('parallel tools keep their order, DOM identity, and open details as later c
     }),
   );
   await expect(first).toHaveAttribute('data-state', 'done');
-  await expect(inputToggle).toBeFocused();
+  await expect(rowButton).toBeFocused();
   expect(
     await page.evaluate(
       (node) => node === document.querySelector('.rn-tool-row[data-tcid="first-slow"]'),
@@ -362,9 +359,8 @@ test('parallel tools keep their order, DOM identity, and open details as later c
       detailHandle,
     ),
   ).toBe(true);
-  await expect(
-    detail.locator(TURN.codeOutput).filter({ hasText: 'export const value = 1;' }),
-  ).toBeVisible();
+  await expect(detail.locator(TURN.codeOutput)).toHaveCount(0);
+  await expect(bubble.getByText('export const value = 1;', { exact: true })).toHaveCount(0);
   await expect(page.locator(TURN.detail)).toHaveCount(1);
   await page.evaluate(() => window.__finishPlain());
 });
@@ -544,14 +540,8 @@ for (const theme of ['light', 'dark']) {
       await toolRowButton(bubble, 'search-example').click();
       const detail = page.locator(TURN.detail);
       await expect(detail).toBeVisible();
-      await expect(detail.getByTestId('tool-input-toggle')).toHaveAttribute(
-        'aria-expanded',
-        'false',
-      );
-      await detail.getByTestId('tool-input-toggle').click();
-      await expect(detail.locator('[data-testid="tool-detail-section-input"]')).toContainText(
-        longQuery.slice(0, 20),
-      );
+      await expect(detail.getByTestId('tool-input-toggle')).toHaveCount(0);
+      await expect(detail.getByTestId('tool-detail-section-input')).toHaveCount(0);
       await expect(detail.locator(TURN.source)).toHaveCount(2);
       expect(
         await bubble.evaluate((node) => node.scrollWidth - node.clientWidth),
