@@ -2010,6 +2010,7 @@ function coupledGridSpec(program){
   const coord=new Set([...params,'x','y']),local=new Set([...coord,'t',...ids]);
   const check=(v,scope)=>{try{expressionNames(parseDemonstrationExpression(v),scope);}catch(e){fail(String(e));}};
   for(const f of s.fields){check(f.initial,coord);check(f.diffusivity,params);check(f.reaction??0,local);
+    if(f.advection!==undefined){if(s.boundary!=='periodic'||!Array.isArray(f.advection)||f.advection.length!==(two?2:1))fail('Advection requires periodic boundaries and one velocity per axis');f.advection.forEach(v=>check(v,params));}
     if(finite(f.diffusivity)&&f.diffusivity<0)fail('Diffusivity must be nonnegative');}
   return {...s,two,nx,ny,x,y,steps,dt:d.duration/steps,duration:d.duration,ids};
 }
@@ -2027,10 +2028,13 @@ function* prepareCoupledGrid(g,params,compile,warnings){
   const read=ast=>evaluateDemonstrationExpression(ast,scope,budget);
   const initial=g.fields.map(f=>compile(f.initial)),reaction=g.fields.map(f=>compile(f.reaction??0));
   const alpha=g.fields.map(f=>read(compile(f.diffusivity)));
+  const velocities=g.fields.map(f=>(f.advection??(two?[0,0]:[0])).map(v=>read(compile(v))));
   const fail=m=>{throw located('dynamics.coupledFields',Error(m));};
   if(alpha.some(v=>!finite(v)||v<0))fail('Diffusivity must be finite and nonnegative');
   const cfl=Math.max(...alpha)*dt*(1/dx**2+(two?1/dy**2:0));
-  if(cfl>0.5+1e-12)fail('Explicit diffusion CFL exceeds 0.5; reduce step or grid resolution');
+  if(velocities.some(v=>!v.every(finite)))fail('Advection velocities must be finite');
+  const transportCFL=Math.max(...alpha.map((a,i)=>dt*(2*a*(1/dx**2+(two?1/dy**2:0))+Math.abs(velocities[i][0])/dx+(two?Math.abs(velocities[i][1])/dy:0))));
+  if(transportCFL>1+1e-12)fail('Explicit transport/diffusion CFL exceeds 1; reduce step or grid resolution');
   const left=new Int32Array(m),right=new Int32Array(m),up=new Int32Array(m),down=new Int32Array(m);
   const index=(i,j)=>j*nx+i;
   const bound=(i,n)=>periodic?(i+n)%n:Math.max(0,Math.min(n-1,i));
@@ -2060,7 +2064,10 @@ function* prepareCoupledGrid(g,params,compile,warnings){
         for(let f=0;f<n;f++){
           const off=f*m,u=a[off+k],lap=(a[off+left[k]]-2*u+a[off+right[k]])/dx**2+
             (two?(a[off+up[k]]-2*u+a[off+down[k]])/dy**2:0);
-          out[off+k]=alpha[f]*lap+read(reaction[f]);
+          const [vx,vy=0]=velocities[f];
+          const advX=vx>=0?vx*(u-a[off+left[k]])/dx:vx*(a[off+right[k]]-u)/dx;
+          const advY=two?(vy>=0?vy*(u-a[off+down[k]])/dy:vy*(a[off+up[k]]-u)/dy):0;
+          out[off+k]=alpha[f]*lap-advX-advY+read(reaction[f]);
         }
       }
       if(j%4===0)yield;
@@ -2091,7 +2098,7 @@ function* prepareCoupledGrid(g,params,compile,warnings){
     const [lo,hi,w]=interval(t);return sample(frames[lo])*(1-w)+sample(frames[hi])*w;
   }
   return {duration,ids,value,mean(id,t){const [lo,hi,w]=interval(t),f=ids.indexOf(id);return means[lo][f]*(1-w)+means[hi][f]*w;},
-    diagnostics:{acceptedSteps:frames.length-1,gridNodes:m,storedValues:total*frames.length,minStep:dt,maxStep:dt,diffusionCFL:cfl}};
+    diagnostics:{acceptedSteps:frames.length-1,gridNodes:m,storedValues:total*frames.length,minStep:dt,maxStep:dt,diffusionCFL:cfl,transportCFL}};
 }
 
 function lowerImplicitGrid(program) {
@@ -2308,7 +2315,7 @@ function scientificAnalysisSpec(program){
   const fail=m=>{throw located('analysis',Error(m));};
   if(!record(a)||!['fft','eigen','sweep'].includes(a.kind))fail('Use fft, eigen or sweep analysis');
   const params=Array.isArray(program.parameters)?program.parameters:[],d=program.dynamics;
-  if(program.optimization!==undefined||program.nonlinearSystem!==undefined||program.sparseSystem!==undefined)
+  if(program.optimization!==undefined||program.nonlinearSystem!==undefined||program.sparseSystem!==undefined||program.finiteElement!==undefined)
     fail('Analysis cannot be combined with a stationary solver');
   const names=new Set([...params.map(p=>p?.id),...Object.keys(program.definitions??{}),...Object.keys(d?.initial??{}),...Object.keys(d?.algebraic?.guess??{})]);
   let outputs,subprogram;
@@ -2468,12 +2475,119 @@ function* prepareScientificAnalysis(s,runtime,params,compile){
   return {read(name,x){if(Object.hasOwn(scalars,name))return scalars[name];return linearSample(name==='sweepValue'?values:slopes,(x-lo)/h);},diagnostics:{analysisSamples:n}};
 }
 
+
+// Separable autonomous mechanical systems q'=v, v'=a(q). The user
+// supplies the physical acceleration; symplecticity assumes conservative
+// forces and compatible canonical coordinates/masses.
+function verletSpec(program){
+  const d=program.dynamics;if(!record(d)||d.mechanics===undefined)return null;
+  const s=d.mechanics,fail=m=>{throw located('dynamics.mechanics',Error(m));};
+  if(d.method!=='verlet'||!record(s)||!Array.isArray(s.coordinates)||s.coordinates.length<1||s.coordinates.length>8||
+    ['initial','derivatives','massMatrix','algebraic','events','rtol','atol','spatial','coupledFields','reactionNetwork','circuit','stateSpace'].some(k=>d[k]!==undefined))fail('Use standalone Verlet mechanics with 1–8 coordinate pairs');
+  if(!finite(d.duration)||d.duration<=0||d.duration>300||!finite(d.step)||d.step<1e-6||d.step>1||Math.ceil(d.duration/d.step)>10000)fail('Verlet duration/step exceeds limits');
+  const params=new Set((Array.isArray(program.parameters)?program.parameters:[]).map(p=>p?.id)),used=new Set([...params,...Object.keys(program.definitions??{})]),positions=[];
+  const check=(v,scope)=>{try{expressionNames(parseDemonstrationExpression(v),scope);}catch(e){fail(String(e));}};
+  for(const q of s.coordinates){
+    if(!record(q)||!name(q.position)||!name(q.velocity)||q.position===q.velocity||used.has(q.position)||used.has(q.velocity))fail('Coordinate and velocity names must be distinct');
+    used.add(q.position);used.add(q.velocity);positions.push(q.position);
+    check(q.initialPosition,params);check(q.initialVelocity,params);
+  }
+  for(const q of s.coordinates)check(q.acceleration,new Set([...params,...positions]));
+  return s;
+}
+function lowerVerlet(program){
+  const s=verletSpec(program);if(!s)return program;
+  const {mechanics:_m,...d}=program.dynamics,initial={},derivatives={};
+  for(const q of s.coordinates){initial[q.position]=q.initialPosition;initial[q.velocity]=q.initialVelocity;derivatives[q.position]=q.velocity;derivatives[q.velocity]=q.acceleration;}
+  return {...program,dynamics:{...d,method:'rk45',initial,derivatives}};
+}
+function* integrateVerlet(d,s,state,derivative,warnings){
+  const count=Math.ceil(d.duration/d.step),h=d.duration/count,coords=s.coordinates,frames=[state];
+  const valid=v=>Object.values(v).every(q=>finite(q)&&Math.abs(q)<=1e12);
+  let current=state;
+  try{
+    let a=derivative(current,0);
+    for(let i=1;i<=count;i++){
+      const next={...current};
+      for(const q of coords){next[q.velocity]=current[q.velocity]+h*a[q.velocity]/2;next[q.position]=current[q.position]+h*next[q.velocity];}
+      if(!valid(next))throw Error('Nonfinite Verlet predictor');
+      const b=derivative(next,i*h);
+      for(const q of coords)next[q.velocity]+=h*b[q.velocity]/2;
+      if(!valid(next))throw Error('Nonfinite Verlet step');
+      frames.push(next);current=next;a=b;if(i%32===0)yield;
+    }
+  }catch(error){warnings.push({path:'dynamics.mechanics',time:(frames.length-1)*h,message:String(error)});}
+  const duration=frames.length===count+1?d.duration:(frames.length-1)*h;
+  return {duration,eventTimes:[],diagnostics:{acceptedSteps:frames.length-1,rejectedSteps:0,events:0,minStep:h,maxStep:h},
+    stateAt(t){const u=Math.max(0,Math.min(frames.length-1,(finite(t)?t:0)/h)),i=Math.floor(u),f=u-i,a=frames[i],b=frames[Math.min(i+1,frames.length-1)];
+      return Object.fromEntries(Object.keys(a).map(k=>[k,a[k]+f*(b[k]-a[k])]));}};
+}
+
+// Piecewise-linear 1D Galerkin finite elements on a user-supplied mesh.
+// -(a u')' + c u = f, positive a, nonnegative c, Dirichlet endpoints.
+// Two-point Gauss quadrature; tridiagonal assembly and elimination.
+function finiteElementSpec(program){
+  const s=program.finiteElement;if(s===undefined)return null;
+  const fail=m=>{throw located('finiteElement',Error(m));};
+  if(!record(s)||program.dynamics!==undefined||program.duration!==undefined||
+    ['optimization','nonlinearSystem','sparseSystem','analysis'].some(k=>program[k]!==undefined))fail('Use standalone stationary finiteElement model');
+  const nodes=s.nodes;
+  if(!Array.isArray(nodes)||nodes.length<3||nodes.length>257||nodes.some((v,i)=>!finite(v)||Math.abs(v)>1e6||(i>0&&v-nodes[i-1]<1e-9)))fail('Use 3–257 strictly increasing mesh coordinates');
+  const params=new Set((Array.isArray(program.parameters)?program.parameters:[]).map(p=>p?.id));
+  const outputs={femValue:'0*x',femGradient:'0*x',femResidual:0,femNodes:0};
+  if(Object.keys(outputs).some(k=>params.has(k)||Object.hasOwn(program.definitions??{},k)))fail('Finite element output name collision');
+  const check=(v,scope)=>{try{expressionNames(parseDemonstrationExpression(v),scope);}catch(e){fail(String(e));}};
+  for(const v of [s.diffusion,s.reaction??0,s.source])check(v,new Set([...params,'x']));
+  for(const v of [s.left,s.right])check(v,params);
+  return {...s,outputs};
+}
+function lowerFiniteElement(program){
+  const s=finiteElementSpec(program);return s?{...program,definitions:{...program.definitions,...s.outputs}}:program;
+}
+function* solveFiniteElement(s,params,compile){
+  const nodes=s.nodes,n=nodes.length,diag=new Float64Array(n),off=new Float64Array(n-1),rhs=new Float64Array(n),u=new Float64Array(n);
+  const scope=Object.assign(Object.create(null),params),budget={remaining:DYNAMICS_BUDGET},read=expr=>evaluatePreparedExpression(compile(expr),scope,budget);
+  const fail=m=>{throw located('finiteElement',Error(m));};
+  u[0]=read(s.left);u[n-1]=read(s.right);
+  if(!finite(u[0])||!finite(u[n-1]))fail('Nonfinite boundary value');
+  for(let i=0;i<n-1;i++){
+    const h=nodes[i+1]-nodes[i];
+    for(const g of [-1/Math.sqrt(3),1/Math.sqrt(3)]){
+      const l=(1-g)/2,r=(1+g)/2;scope.x=nodes[i]+r*h;
+      const a=read(s.diffusion),c=read(s.reaction??0),f=read(s.source),w=h/2;
+      if(!finite(a)||a<=0||!finite(c)||c<0||!finite(f))fail('Require positive diffusion, nonnegative reaction and finite source at quadrature points');
+      diag[i]+=w*(a/(h*h)+c*l*l);diag[i+1]+=w*(a/(h*h)+c*r*r);off[i]+=w*(-a/(h*h)+c*l*r);
+      rhs[i]+=w*f*l;rhs[i+1]+=w*f*r;
+    }
+    if(i%16===0)yield;
+  }
+  rhs[1]-=off[0]*u[0];rhs[n-2]-=off[n-2]*u[n-1];
+  const d=diag.slice(),b=rhs.slice();
+  for(let i=1;i<n-1;i++){
+    if(i>1){const q=off[i-1]/d[i-1];d[i]-=q*off[i-1];b[i]-=q*b[i-1];}
+    if(!(d[i]>0)||!finite(d[i]))fail('Invalid finite element pivot');
+  }
+  for(let i=n-2;i>=1;i--)u[i]=(b[i]-(i<n-2?off[i]*u[i+1]:0))/d[i];
+  if(!u.every(finite))fail('Nonfinite finite element solution');
+  let residual=0,scale=0;
+  for(let i=1;i<n-1;i++){
+    const a=diag[i]*u[i],l=i>1?off[i-1]*u[i-1]:0,r=i<n-2?off[i]*u[i+1]:0;
+    residual=Math.max(residual,Math.abs(a+l+r-rhs[i]));scale=Math.max(scale,Math.abs(a)+Math.abs(l)+Math.abs(r)+Math.abs(rhs[i]));
+  }
+  residual/=Math.max(scale,Number.MIN_VALUE);
+  const locate=x=>{let lo=0,hi=n-1;while(hi-lo>1){const m=(lo+hi)>>1;if(nodes[m]<=x)lo=m;else hi=m;}return lo;};
+  return {read(name,x){if(name==='femResidual')return residual;if(name==='femNodes')return n;
+    if(!finite(x)||x<nodes[0]||x>nodes[n-1])return Number.NaN;const i=locate(x),h=nodes[i+1]-nodes[i],slope=(u[i+1]-u[i])/h;
+    return name==='femGradient'?slope:u[i]+slope*(x-nodes[i]);},diagnostics:{gridNodes:n,relativeResidual:residual}};
+}
+
 function lowerNumericalProgram(program, metadata){
   let lowered=lowerLinearAlgebra(program);
   const d=lowered.dynamics;
   if(record(d)){
-    const forms=['spatial','coupledFields','circuit','stateSpace','reactionNetwork'].filter(key=>d[key]!==undefined);
+    const forms=['spatial','coupledFields','circuit','stateSpace','reactionNetwork','mechanics'].filter(key=>d[key]!==undefined);
     if(forms.length>1)throw located('dynamics',Error('Choose exactly one specialized dynamics model'));
+    if(d.method==='verlet'&&!d.mechanics)throw located('dynamics.method',Error('Verlet requires mechanics'));
     if(d.method==='ssa'&&!d.reactionNetwork)throw located('dynamics.method',Error('SSA requires a reaction network'));
     if(d.method==='grid-heun'&&!d.coupledFields)throw located('dynamics.method',Error('grid-heun requires coupledFields'));
   }
@@ -2486,8 +2600,9 @@ function lowerNumericalProgram(program, metadata){
     coupledSpec:coupledGridSpec(lowered),
     optimizationSpec:optimizationSpec(lowered),
     analysisSpec:scientificAnalysisSpec(lowered),
+    verletSpec:verletSpec(lowered),finiteElementSpec:finiteElementSpec(lowered),
   });
-  for(const lower of [lowerScientificAnalysis,lowerOptimization,lowerNonlinearSystem,lowerSparseSystem,lowerCoupledGrid,lowerImplicitGrid,lowerReactionNetwork,lowerStateSpace,lowerCircuitProgram,lowerSpatialProgram])
+  for(const lower of [lowerFiniteElement,lowerVerlet,lowerScientificAnalysis,lowerOptimization,lowerNonlinearSystem,lowerSparseSystem,lowerCoupledGrid,lowerImplicitGrid,lowerReactionNetwork,lowerStateSpace,lowerCircuitProgram,lowerSpatialProgram])
     lowered=lower(lowered);
   return lowered;
 }
@@ -3250,7 +3365,7 @@ function* integrateAdaptive(dynamics, names, initial, derivative, eventValue, ev
 
 /** Yield between integration batches so a host can cancel them. */
 function* prepareRuntime(program, definitions, stateNames, compile, dependencies, values, solver) {
-  const {implicitGrid,sparseSpec,reactionModel,reactionSSA,rootSpec,coupledSpec,optimizationSpec:optSpec,analysisSpec}=solver;
+  const {implicitGrid,sparseSpec,reactionModel,reactionSSA,rootSpec,coupledSpec,optimizationSpec:optSpec,analysisSpec,verletSpec:mechanics,finiteElementSpec:femSpec}=solver;
   const budget = { remaining: BUDGET };
   const warnings = [];
   const params = Object.fromEntries(
@@ -3263,6 +3378,7 @@ function* prepareRuntime(program, definitions, stateNames, compile, dependencies
   const base = Object.assign(Object.create(null), params,hasSpaceZ?{spaceZ:0}:{});
   const constants = new Map();
   let grid,coupled,analysisResult;
+  const fem=femSpec?yield* solveFiniteElement(femSpec,params,compile):null;
   const sparse = sparseSpec ? yield* solveSparseSystem(sparseSpec,params,compile) : null;
   const root = rootSpec ? yield* solveNonlinearSystem(rootSpec,params,compile) : null;
   const optimum=optSpec?yield* solveOptimization(optSpec,params,compile):null;
@@ -3274,6 +3390,7 @@ function* prepareRuntime(program, definitions, stateNames, compile, dependencies
     if (!definitions.size) return scope;
     const sample = reusableSample ?? new Map();
     scope[resolveDefinition] = (name) => {
+      if(fem&&Object.hasOwn(femSpec.outputs,name))return fem.read(name,scope.x);
       if(analysisResult&&Object.hasOwn(analysisSpec.outputs,name))return analysisResult.read(name,scope.x);
       if(optimum&&Object.hasOwn(optimum.values,name))return optimum.values[name];
       if(optimum&&name==='optObjective')return optimum.objective;
@@ -3403,7 +3520,9 @@ function* prepareRuntime(program, definitions, stateNames, compile, dependencies
     };
     const add = (s, k, factor) =>
       Object.fromEntries(names.map((key) => [key, s[key] + factor * k[key]]));
-    if(reactionSSA){
+    if(mechanics){
+      adaptiveResult=yield* integrateVerlet(dynamics,mechanics,state,derivative,warnings);duration=adaptiveResult.duration;
+    } else if(reactionSSA){
       adaptiveResult=yield* integrateReactionSSA(reactionSSA,dynamics,names,state,expr=>evalDynamics(expr,base),warnings);
       duration=adaptiveResult.duration;
     } else if (['rk45', 'sdirk2'].includes(dynamics.method)) {
@@ -3479,8 +3598,8 @@ function* prepareRuntime(program, definitions, stateNames, compile, dependencies
   const runtime = {
     duration,
     eventTimes: adaptiveResult?.eventTimes ?? [],
-    diagnostics: optimum ? {method:'Projected BFGS',unknowns:optSpec.ids.length,iterations:optimum.iterations,projectedGradient:optimum.error,objectiveEvaluations:optimum.evaluations,adColumns:optimum.adColumns,finiteDifferenceColumns:optimum.finiteDifferenceColumns} : root ? {method:'Newton',unknowns:rootSpec.ids.length,iterations:root.iterations,absoluteResidual:root.error,adColumns:root.adColumns,finiteDifferenceColumns:root.finiteDifferenceColumns} : sparse ? {method:sparse.method??'PCG',unknowns:sparse.x.length,nonzeros:sparse.nnz,iterations:sparse.iterations,relativeResidual:sparse.error} :
-      coupled ? {method:'grid-heun',...coupled.diagnostics} : grid ? {method:'grid-implicit',...grid.diagnostics} : dynamics ? {method:dynamics.method??'rk4',derivativeEvaluations,
+    diagnostics: fem ? {method:'P1 FEM',...fem.diagnostics} : optimum ? {method:'Projected BFGS',unknowns:optSpec.ids.length,iterations:optimum.iterations,projectedGradient:optimum.error,objectiveEvaluations:optimum.evaluations,adColumns:optimum.adColumns,finiteDifferenceColumns:optimum.finiteDifferenceColumns} : root ? {method:'Newton',unknowns:rootSpec.ids.length,iterations:root.iterations,absoluteResidual:root.error,adColumns:root.adColumns,finiteDifferenceColumns:root.finiteDifferenceColumns} : sparse ? {method:sparse.method??'PCG',unknowns:sparse.x.length,nonzeros:sparse.nnz,iterations:sparse.iterations,relativeResidual:sparse.error} :
+      coupled ? {method:'grid-heun',...coupled.diagnostics} : grid ? {method:'grid-implicit',...grid.diagnostics} : dynamics ? {method:mechanics?'verlet':dynamics.method??'rk4',derivativeEvaluations,
         ...(adaptiveResult?.diagnostics??{acceptedSteps:Math.max(0,trajectory.length-1),rejectedSteps:0,events:0,minStep:step,maxStep:step})} : undefined,
     parameters: params,
     warnings,
