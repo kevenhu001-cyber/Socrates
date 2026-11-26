@@ -35,6 +35,8 @@ export interface DemonstrationPlot extends DemonstrationViewBase {
   kind: 'plot';
   /** Evaluate curves along simulation time rather than a spatial axis. */
   history?: boolean;
+  /** Fixed spatial y coordinate for a cross section of a 2D field. */
+  sliceY?: DemonstrationValue;
   xScale?: 'linear' | 'log';
   yScale?: 'linear' | 'log';
   curves: DemonstrationCurve[];
@@ -138,6 +140,10 @@ export interface DemonstrationProgram {
       initial: DemonstrationValue;
       boundary: DemonstrationValue;
       source?: DemonstrationValue;
+    };
+    circuit?: {
+      nodes: string[];
+      elements: { kind: 'R' | 'L' | 'C' | 'V' | 'I'; id: string; p: string; n: string; value: DemonstrationValue; initial?: DemonstrationValue }[];
     };
     duration: number;
     step: number;
