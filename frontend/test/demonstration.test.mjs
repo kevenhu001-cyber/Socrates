@@ -797,3 +797,12 @@ test('molecular symbols validate and sample their authored geometry',()=>{
   bad.views[0].objects[2].element='invalid';
   assert.equal(validateDemonstration(bad).ok,false);
 });
+
+test('stochastic plot uses a sampled staircase instead of fractional slopes',()=>{
+  const scientific=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
+  const program=scientific.stochasticExpression;
+  const runtime=createDemonstrationRuntime(program);
+  const sample=finishGenerator(samplePlot(program.views[0],runtime,10,false,new Map()));
+  assert.match(sample.paths[0],/H[0-9.]+V[0-9.]+/);
+  assert.doesNotMatch(sample.paths[1],/H[0-9.]+V[0-9.]+/);
+});
