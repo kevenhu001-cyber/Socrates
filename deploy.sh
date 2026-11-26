@@ -31,6 +31,7 @@ deploy.sh — publish the Socrates web properties.
 Usage:
   ./deploy.sh                          full release: SPA bundle + backend
                                        (frontend build, migrations, restart)
+                                       no persistent deployment backups
   ./deploy.sh --require-ci             optionally require a green GitHub Actions
                                        merge gate before deploying
   ./deploy.sh --no-ci-check            default: do NOT enforce the merge gate; a red CI
@@ -113,56 +114,6 @@ fi
 # backend build so the --site-only path can publish exactly this tree
 # without compiling or restarting anything.
 
-# Snapshot every page and stylesheet we publish, so a failed health gate
-# can restore the previous site. backup_previous() only keeps the SPA-style
-# index.html, which is not enough to roll back ~50 marketing pages.
-backup_site_previous() {
-  [[ -d "$SITE_WEB_ROOT" ]] || { echo ""; return 0; }
-  local stamp dest f rel
-  stamp=$(date +%Y%m%d-%H%M%S)
-  dest="$SITE_WEB_ROOT/.previous/site-$stamp"
-  $SUDO mkdir -p "$dest"
-  while IFS= read -r -d '' f; do
-    rel="${f#"$SITE_WEB_ROOT"/}"
-    $SUDO mkdir -p "$dest/$(dirname "$rel")"
-    $SUDO cp -a "$f" "$dest/$rel"
-  done < <(find "$SITE_WEB_ROOT" -maxdepth 3 \( -name '*.html' -o -name '*.css' \) -print0)
-  echo "$dest"
-}
-
-# Restore the snapshot taken before a failed publish.
-restore_site_previous() {
-  local snap="$1" f rel
-  [[ -n "$snap" && -d "$snap" ]] || return 0
-  echo "Restoring the previous marketing site from $snap…" >&2
-  while IFS= read -r -d '' f; do
-    rel="${f#"$snap"/}"
-    $SUDO mkdir -p "$SITE_WEB_ROOT/$(dirname "$rel")"
-    $SUDO cp -a "$f" "$SITE_WEB_ROOT/$rel"
-  done < <(find "$snap" -type f -print0)
-}
-
-# Bound the site snapshot history.
-#
-# Why: backup_site_previous() writes a fresh site-<TS>/ tree on every publish
-# and nothing removed them, so $SITE_WEB_ROOT/.previous grew by one full copy
-# of the marketing tree per run, without limit. The rollback path only ever
-# reads the snapshot taken by the current run (its path is held in $snapshot),
-# so once a publish passes its gate the older snapshots are history rather
-# than recovery material. Keeping the newest few preserves a manual rollback
-# target while bounding the footprint.
-prune_site_snapshots() {
-  local keep="${SITE_SNAPSHOT_RETENTION:-3}" stale
-  [[ "$keep" =~ ^[0-9]+$ ]] || keep=3
-  [[ -d "$SITE_WEB_ROOT/.previous" ]] || return 0
-  # Newest first, then drop everything past the retention count.
-  while IFS= read -r stale; do
-    [[ -n "$stale" ]] || continue
-    $SUDO rm -rf "$stale"
-  done < <(find "$SITE_WEB_ROOT/.previous" -maxdepth 1 -mindepth 1 -type d -name 'site-*' \
-             -printf '%T@ %p\n' 2>/dev/null | sort -rn | tail -n "+$((keep + 1))" | cut -d' ' -f2-)
-}
-
 # Every internal reference in the published tree must resolve to a file we
 # actually publish. nginx serves the tree with
 #   try_files $uri $uri.html $uri/ =404
@@ -223,28 +174,8 @@ site_content_check() {
 }
 
 # Publish the marketing site and nothing else.
-# backup_previous() used to live below the site branch, where the full
-# release path called it but the --site-only path could not: bash resolves
-# a function at call time, so a definition after the call site is invisible.
-
-backup_previous() {
-  local web_root="$1"
-  [[ -d "$web_root" ]] || return 0
-  $SUDO mkdir -p "$web_root/.previous"
-  # Stable-name files (e.g. /var/www/topodrive.top/index.html) copy as
-  # themselves; versioned files (index.<TS>.html) keep their timestamp.
-  for f in "$web_root"/index*.html "$web_root"/index*.html.gz "$web_root"/index*.html.br "$web_root"/status*.html; do
-    [[ -f "$f" ]] || continue
-    $SUDO cp -a "$f" "$web_root/.previous/$(basename "$f")"
-  done
-  if [[ -d "$web_root/assets" ]]; then
-    $SUDO rm -rf "$web_root/.previous/assets"
-    $SUDO cp -a "$web_root/assets" "$web_root/.previous/assets"
-  fi
-}
-
 run_site_only_deploy() {
-  local snapshot html_pages
+  local html_pages
 
   echo "══ marketing site only ══"
   echo "  source:  $SITE_DIR"
@@ -282,29 +213,19 @@ run_site_only_deploy() {
     exit 0
   fi
 
-  # Snapshot first: a failed gate restores from here.
-  snapshot=$(backup_site_previous)
-  echo "  snapshot: ${snapshot:-<none>}"
-
   deploy_marketing_site
 
   echo "── gate ──"
-  site_content_check "site home          " "${SITE_PUBLIC_URL%/}/"                          'href="/pricing"'
-  site_content_check "site product       " "${SITE_PUBLIC_URL%/}/product"                   'href="/pricing"'
-  site_content_check "site zh home       " "${SITE_PUBLIC_URL%/}/zh/"                       'href="/zh/pricing"'
-  site_content_check "site research note " "${SITE_PUBLIC_URL%/}/research/memory-recall/"  'The route back to an idea'
-  site_content_check "site pricing       " "${SITE_PUBLIC_URL%/}/pricing"                   'Pricing'
+  site_content_check "site home          " "${SITE_PUBLIC_URL%/}/"                          'href="/pricing"' || true
+  site_content_check "site product       " "${SITE_PUBLIC_URL%/}/product"                   'href="/pricing"' || true
+  site_content_check "site zh home       " "${SITE_PUBLIC_URL%/}/zh/"                       'href="/zh/pricing"' || true
+  site_content_check "site research note " "${SITE_PUBLIC_URL%/}/research/memory-recall/"  'The route back to an idea' || true
+  site_content_check "site pricing       " "${SITE_PUBLIC_URL%/}/pricing"                   'Pricing' || true
 
   if [[ $GATE_FAILED -ne 0 ]]; then
-    echo "ERROR: the marketing site failed its health gate — restoring the previous pages." >&2
-    restore_site_previous "$snapshot"
+    echo "ERROR: the marketing site failed its health gate — no automatic site backup or restore is performed." >&2
     exit 1
   fi
-
-  # The gate passed, so the snapshot is no longer needed for this run. Bound the
-  # snapshot history instead of letting it grow without limit: every --site-only
-  # publish writes a fresh site-<TS>/ tree and nothing else removed them.
-  prune_site_snapshots
 
   # Record the site-only release separately. The main .deploy-state.json
   # describes a full release (SPA bundle, migrations, backend); claiming
@@ -326,7 +247,7 @@ run_site_only_deploy() {
     "worktreeDirtyFiles": ${dirty},
     "timestamp": "${ts}",
     "htmlPages": ${html_pages},
-    "snapshot": "${snapshot}",
+    "snapshot": "",
     "ciGate": "${DEPLOY_CI_GATE_STATUS}",
     "checks": {
       "siteHomeReachable": true,
@@ -347,14 +268,13 @@ EOF
   echo "✓ marketing site published ($html_pages pages)"
   echo "  url:    ${SITE_PUBLIC_URL%/}/"
   echo "  state:  $state_tmp"
-  echo "  rollback: ${snapshot:-<none>}"
+  echo "  backup: disabled"
   echo "  note:   edge caches HTML for 5 minutes; a hard refresh may be needed."
   exit 0
 }
 
 deploy_marketing_site() {
   if [ -d "$SITE_DIR" ]; then
-    backup_previous "$SITE_WEB_ROOT"
     $SUDO install -m 644 -o www-data -g www-data "$SITE_DIR/index.html" "$SITE_WEB_ROOT/index.html"
     for page in pricing guide about contact terms privacy account api-keys profile checkout announcements documents learn principles product research developers download; do
       if [ -f "$SITE_DIR/$page.html" ]; then
@@ -915,18 +835,6 @@ repair_node_modules_ownership() {
 repair_node_modules_ownership "$SERVER_DIR"
 repair_node_modules_ownership "$FRONTEND_DIR"
 
-# Backup previous deployment so a bad build can be reverted. The
-# .previous/ folder holds the prior filename + content pair so a
-# rollback restores the exact bundle the previous deploy shipped
-# (matching the nginx try_files sed target).
-#
-# For the SPA (app.topodrive.top) the active file is a versioned
-# `index.<TS>.html` written by this deploy script; the previous
-# filename will differ. We copy every `index.*.html` in the webroot
-# to .previous/ using its existing name so the rollback path
-# `cp -a .previous/index.<old-ts>.html .` followed by `sed` to
-# repoint nginx try_files is symmetric with the deploy path.
-
 # Point the SPA fallback at the exact entry written by this deploy. Older
 # versions only replaced the /__APP_INDEX__ placeholder, so the first
 # versioned deploy permanently pinned nginx to that one filename. Also remove
@@ -984,26 +892,19 @@ current_app_index_target() {
   return 1
 }
 
-# Restore the SPA bundle that was live before this deploy.
+# Restore the prior versioned SPA entry in place; assets are retained until the gate passes.
 rollback_frontend() {
   local previous="$1"
   if [[ -z "$previous" ]]; then
     echo "ERROR: no previous SPA entry was recorded; cannot restore the frontend automatically" >&2
     return 1
   fi
-  if [[ ! -f "$APP_WEB_ROOT/.previous/$previous" ]]; then
-    echo "ERROR: previous SPA entry $previous is missing from $APP_WEB_ROOT/.previous/" >&2
+  if [[ ! -f "$APP_WEB_ROOT/$previous" ]]; then
+    echo "ERROR: previous SPA entry $previous is missing from $APP_WEB_ROOT/" >&2
     return 1
   fi
 
-  echo "Restoring the previous SPA entry: $previous" >&2
-  $SUDO cp -a "$APP_WEB_ROOT/.previous/$previous" "$APP_WEB_ROOT/$previous"
-  for sibling in "$previous.gz" "$previous.br"; do
-    if [[ -f "$APP_WEB_ROOT/.previous/$sibling" ]]; then
-      $SUDO cp -a "$APP_WEB_ROOT/.previous/$sibling" "$APP_WEB_ROOT/$sibling"
-    fi
-  done
-
+  echo "Re-pointing nginx at the previous SPA entry: $previous" >&2
   if ! set_app_index_target "$previous"; then
     echo "ERROR: failed to re-point nginx at $previous" >&2
     return 1
@@ -1222,7 +1123,7 @@ install_spa_cache_policy() {
 
   return $rc
 }
-# immediately before restart. Keep one known-good dist tree for rollback.
+# Keep the old dist by rename only until the health gate finishes; no persistent backup.
 BACKEND_DIST="$SERVER_DIR/dist"
 BACKEND_PREVIOUS="$SERVER_DIR/dist.previous"
 BACKEND_CANDIDATE=""
@@ -1262,6 +1163,9 @@ rollback_backend() {
     echo "ERROR: previous backend build was restored but failed to start" >&2
   else
     BACKEND_STOPPED=0
+    if ! rm -rf -- "$failed_dist"; then
+      echo "WARNING: failed backend tree could not be removed" >&2
+    fi
   fi
 }
 
@@ -1381,7 +1285,6 @@ if [[ "${1:-}" != "" && -f "${1}" ]]; then
   # rewritten to a real filename even in this path.
   LEGACY_SRC="$1"
   echo "Legacy mode: deploying single file $LEGACY_SRC"
-  backup_previous "$APP_WEB_ROOT"
   APP_TS=$(date +%s)
   APP_FILE="index.${APP_TS}.html"
   while [[ -e "$APP_WEB_ROOT/$APP_FILE" ]]; do
@@ -1420,11 +1323,6 @@ else
     echo "ERROR: built bundle has no admin console entry (#adminPanel missing from dist/index.html)" >&2
     exit 1
   fi
-
-  # Snapshot the previous bundle (filename + content) so a rollback can
-  # restore the exact prior version. See the rollback block at the end
-  # of this script for the restore + nginx re-point sequence.
-  backup_previous "$APP_WEB_ROOT"
 
   # Verify no raw TypeScript/JSX/sourcemap files leaked into dist/
   if find "$DIST_DIR" -type f \( -name "*.ts" -o -name "*.tsx" -o -name "*.jsx" -o -name "*.map" \) -print -quit 2>/dev/null | grep -q .; then
@@ -1960,6 +1858,11 @@ if [[ $GATE_FAILED -eq 0 ]]; then
 EOF
   mv "$tmp" "$STATE_FILE"
   GATE_RESULTS+=("  state: $STATE_FILE updated")
+  # Release committed: the prior backend is no longer needed for this transaction.
+  BACKEND_SWAPPED=0
+  if ! rm -rf -- "$BACKEND_PREVIOUS"; then
+    echo "WARNING: temporary backend rollback tree could not be removed" >&2
+  fi
   if ! $SUDO find "$APP_WEB_ROOT/assets" -type f -mtime +"$ASSET_RETENTION_DAYS" -delete; then
     echo "WARNING: old asset cleanup failed; retained assets remain available" >&2
   fi
@@ -2031,25 +1934,15 @@ if [[ $GATE_FAILED -eq 0 ]]; then
     echo "    Set ADMIN_PASSWORD (8+ chars) and ADMIN_IP_ALLOWLIST in the service env,"
     echo "    then restart socrates-api to enable the operator console."
   fi
-  # Rollback path for the versioned SPA entry. .previous/ holds the
-  # prior index.<TS>.html filename + content, so the restore must also
-  # repoint the nginx try_files sentinel to that filename and reload.
-  echo "  frontend rollback:"
-  echo "    ls $APP_WEB_ROOT/.previous/index.*.html  # pick the prior TS"
-  echo "    sudo cp -a \$TS_FILE $APP_WEB_ROOT/"
-  echo "    sudo sed -i 's|/index\\.[0-9]\\+\\.html|/\${TS}|' $NGINX_APP_CONF"
-  echo "    sudo nginx -s reload"
-  echo "  backend rollback build: $BACKEND_PREVIOUS"
+  echo "  backup: disabled (no persistent deployment snapshot)"
 else
   echo "✗ DEPLOY GATE FAILED ($GATE_FAILED check(s))" >&2
   echo "─── gate ───"
   printf '%s\n' "${GATE_RESULTS[@]}" >&2
   echo "────────────" >&2
-  echo "The previous bundle (versioned filename + content) is preserved at $APP_WEB_ROOT/.previous/" >&2
   echo "The backend build and the SPA entry were restored automatically when a previous build was available." >&2
   if [[ "${FRONTEND_ROLLBACK_OK:-false}" != "true" ]]; then
     echo "The frontend was NOT restored automatically. To restore it by hand:" >&2
-    echo "    sudo cp -a $APP_WEB_ROOT/.previous/index.<old-ts>.html $APP_WEB_ROOT/" >&2
     echo "    sudo sed -i 's|/index\\.[0-9]\\+\\.html|/index.<old-ts>.html|' $NGINX_APP_CONF" >&2
     echo "    sudo nginx -s reload" >&2
   fi

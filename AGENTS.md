@@ -90,8 +90,9 @@ them — those files are dated snapshots, not current state.
   (36 px search, 40 px tabs) is asserted by `e2e/reference-ui-visual.spec.mjs` against
   `docs/ref/mobile-reference-2026-10-04.md`; do not align mobile to desktop. Pick the ladder rung that
   matches the surface, and `npm run lint:button-sizes` blocks new literal off-ladder heights.
-- `deploy.sh` must remain single-writer, preserve `dist.previous`, and restore the previous backend
-  after a failed restart or health gate. If you change its swap/rollback flow, test the lock,
+- `deploy.sh` must remain single-writer, keep `dist.previous` only during the deployment transaction,
+  remove it on success, and restore the previous backend after a failed restart or health gate.
+  Do not copy frontend assets or marketing pages to persistent backup directories. If you change its swap/rollback flow, test the lock,
   candidate cleanup and error-trap paths. The CI merge gate is advisory by default
   (`--require-ci` / `DEPLOY_REQUIRE_CI_CHECK=1` makes it enforcing) — keep the verdict recorded in
   `.deploy-state.json` either way.

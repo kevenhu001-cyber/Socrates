@@ -13,7 +13,7 @@ make_fixture() {
   printf 'old backend\n' > "$base/server/dist-marker"
   mkdir -p "$base/server/dist"
   mv "$base/server/dist-marker" "$base/server/dist/index.runtime.js"
-  printf 'old frontend\n' > "$base/app-root/index.html"
+  printf 'old frontend\n' > "$base/app-root/index.1.html"
   printf 'old asset\n' > "$base/app-root/assets/old.js"
   printf 'aged asset\n' > "$base/app-root/assets/aged.js"
   touch -d '40 days ago' "$base/app-root/assets/aged.js"
@@ -27,7 +27,7 @@ make_fixture() {
 server {
   location / {
     add_header Cache-Control "no-cache, no-store, must-revalidate" always;
-    try_files $uri $uri/ /__APP_INDEX__;
+    try_files $uri /index.1.html;
   }
   location ~ ^/index\.[0-9]+\.html$ {
     add_header Cache-Control "no-cache, no-store, must-revalidate" always;
@@ -360,7 +360,8 @@ for ci_case in failure missing unverifiable; do
   grep -q 'advisory mode, proceeding' "$ci_default_base/output.log"
   grep -q '"ciGate": "not-enforced:' "$ci_default_base/deploy-state.json"
   grep -q 'new backend' "$ci_default_base/server/dist/index.runtime.js"
-  grep -q 'old backend' "$ci_default_base/server/dist.previous/index.runtime.js"
+  test ! -e "$ci_default_base/server/dist.previous"
+  test ! -e "$ci_default_base/app-root/.previous"
 done
 
 # Explicit operator opt-out: --no-ci-check still checks the gate, but lets a
@@ -428,7 +429,9 @@ grep -q 'advisory mode, proceeding' "$WORK/ci-default-advisory.log"
 success_base=$(make_fixture success)
 run_deploy "$success_base" >"$success_base/output.log"
 grep -q 'new backend' "$success_base/server/dist/index.runtime.js"
-grep -q 'old backend' "$success_base/server/dist.previous/index.runtime.js"
+test ! -e "$success_base/server/dist.previous"
+test ! -e "$success_base/app-root/.previous"
+test ! -e "$success_base/site-root/.previous"
 grep -q 'old asset' "$success_base/app-root/assets/old.js"
 grep -q 'new asset' "$success_base/app-root/assets/app.js"
 test ! -e "$success_base/app-root/assets/aged.js"
@@ -536,6 +539,14 @@ if run_deploy "$rollback_base" MOCK_GATE_FAIL=1 >"$rollback_base/output.log" 2>&
   exit 1
 fi
 grep -q 'old backend' "$rollback_base/server/dist/index.runtime.js"
+grep -Fq 'try_files $uri /index.1.html;' "$rollback_base/etc/app.conf"
+grep -q 'old frontend' "$rollback_base/app-root/index.1.html"
+test ! -e "$rollback_base/app-root/.previous"
+test ! -e "$rollback_base/server/dist.previous"
+if compgen -G "$rollback_base/server/dist.failed.*" >/dev/null; then
+  echo "failed backend tree was not removed after successful rollback" >&2
+  exit 1
+fi
 grep -q 'old asset' "$rollback_base/app-root/assets/old.js"
 test -e "$rollback_base/app-root/assets/aged.js"
 test ! -e "$rollback_base/deploy-state.json"
@@ -582,6 +593,7 @@ if ! jq -e '.lastSuccessfulSiteDeploy.worktreeDirtyFiles == 0' "$site_state_base
   exit 1
 fi
 jq -e '.lastSuccessfulSiteDeploy.htmlPages == 6' "$site_state_base/deploy-state.site.json" >/dev/null
+test ! -e "$site_state_base/site-root/.previous"
 for file in download.html zh/download.html media/downloads/fixture.apk; do
   cmp "$site_state_base/site/$file" "$site_state_base/site-root/$file"
 done
