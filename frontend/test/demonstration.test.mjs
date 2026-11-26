@@ -897,3 +897,38 @@ test('compiled arithmetic and interpreter agree at varied coordinates and lazy b
   assert.equal(runtime.evaluate('if(x==0,1,1/x)',0,0),1);
   assert.ok(Math.abs(runtime.evaluate('integral(s,0,pi,sin(s)^2)')-Math.PI/2)<1e-9);
 });
+
+test('FFT measures one-sided amplitude, resolves simulated oscillator and reconstructs ideal low-pass',()=>{
+  const scientific=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
+  const p=scientific.fftSignal,rt=createDemonstrationRuntime(p);
+  assert.equal(rt.evaluate('fftPeakFrequency'),5);
+  assert.ok(Math.abs(rt.evaluate('fftAmplitude',0,5)-2)<1e-12);
+  assert.ok(Math.abs(rt.evaluate('fftAmplitude',0,19)-.5)<1e-12);
+  assert.ok(Math.abs(rt.evaluate('fftFiltered',0,.125)-2*Math.sin(2*Math.PI*5*.125))<1e-12);
+  assert.equal(rt.evaluate('fftNyquist'),128);
+  const hann=createDemonstrationRuntime({...p,analysis:{...p.analysis,window:'hann'}});
+  assert.ok(Math.abs(hann.evaluate('fftAmplitude',0,5)-2)<1e-12);
+  const oscillator=createDemonstrationRuntime(scientific.fftOscillator);
+  assert.equal(oscillator.evaluate('fftPeakFrequency'),3);
+  assert.ok(Math.abs(oscillator.evaluate('fftPeakAmplitude')-1)<1e-5);
+  assert.equal(validateDemonstration({...p,analysis:{...p.analysis,samples:100}}).ok,false);
+  const plot=finishGenerator(samplePlot(p.views[0],rt,0,false,new Map()));
+  assert.equal((plot.paths[0].match(/a1\.8,1\.8/g)||[]).length,258);
+});
+test('Jacobi symmetric eigenvectors satisfy residual and orthogonality, and sweep reruns ODE',()=>{
+  const scientific=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
+  const eigen=createDemonstrationRuntime(scientific.symmetricEigen);
+  const exact=[2-Math.sqrt(2),2,2+Math.sqrt(2)];
+  for(let i=0;i<3;i++)assert.ok(Math.abs(eigen.evaluate('eigenValue',0,i)-exact[i])<1e-12);
+  assert.ok(eigen.diagnostics.eigenResidual<1e-12);
+  assert.ok(eigen.diagnostics.eigenOrthogonality<1e-12);
+  const nonsymmetric={...scientific.symmetricEigen,analysis:{kind:'eigen',matrix:[[1,2],[3,4]]}};
+  assert.throws(()=>createDemonstrationRuntime(nonsymmetric),/symmetric/);
+  const p=scientific.odeParameterSweep,rt=createDemonstrationRuntime(p);
+  assert.equal(rt.evaluate('sweepCount'),9);
+  assert.equal(rt.evaluate('sweepMinAt'),3);
+  for(let i=0;i<9;i++)assert.ok(Math.abs(rt.evaluate('sweepValue',0,1+i*.25)-Math.exp(-1-i*.25))<1e-7);
+  assert.ok(Math.abs(rt.evaluate('sweepSensitivity',0,2)+Math.exp(-2))<.002);
+  const plot=finishGenerator(samplePlot(p.views[0],rt,0,false,new Map()));
+  assert.equal((plot.paths[0].match(/a1\.8,1\.8/g)||[]).length,18);
+});
