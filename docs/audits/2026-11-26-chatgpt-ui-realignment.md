@@ -81,7 +81,24 @@
 
 ## 已知差距（未在本轮完成）
 
-- 行内来源胶囊仍显示编号，参考显示「favicon + 域名 +N」：需要改证据渲染，不只是样式。
 - 手机表格仍是可横向滚动的 `display: block`，窄表不能拉满列宽。
-- 参考顶栏右侧的无痕图标、未登录首页的「登录」胶囊与建议胶囊、App 变体的浮动圆形顶栏不在本轮范围。
+- 未登录首页的「登录」胶囊与建议胶囊、App 变体的浮动圆形顶栏不在本轮范围。
 - 没有「语音对话」模式；蓝色声波圆盘触发的是现有听写，与麦克风同一能力。
+
+## 第三轮（2026-11-26 晚）
+
+1. **行内来源胶囊**（`react/citations/TurnEvidence.tsx`、`styles/components/turn-evidence.css`）：Markdown 里仍是应用生成的
+   `[n](#socrates-citation-*)` 链接（校验、剥离、预览逻辑不变），`TurnEvidence` 在渲染后（含流式，MutationObserver）把它们改装成
+   参考样式：22px 高胶囊、`--ui-bg-control` 底（深色 `#2e2e2e` / 浅色 `#f2f2f2`）、首个来源的 favicon（加载失败时显示域名首字母，
+   字母由 `data-glyph` 画出，不进入链接文字）+ 去掉 `www.` 的域名 + 「+N」。相邻的单源标记（`[1, 2]` → 两个链接）合并成一个胶囊，
+   点击预览列出这一串的全部来源。无障碍名：`citation.chip`「来源：{host}」/ `citation.chipMore`「来源：{host}，另有 {n} 个」。
+   删除了 `parity/transcript.css` 里旧的数字胶囊覆盖。
+2. **手机首页顶栏无痕按钮**（`react/topbar/TopBar.tsx`）：应用已有无痕（临时对话）状态 `app/lifecycle/incognitoState.ts`，
+   因此在手机首页顶栏右侧新增 `#homeIncognitoBtn`（读 React 状态 `useIncognito`；不复用已退役的隐藏镜像 id `mobileIncognitoBtn`，`styleArchitecture` 守卫保持原样）（`incognito` 眼镜图标，`aria-pressed` 反映状态，调用 `toggleIncognito`）；
+   「更多」菜单里的入口保留；进入对话后让位给查找 / 分享。`voice-input.spec` 的旧断言（顶栏无此按钮）随之改写。
+   「聊天 | 辅导」分段胶囊保持产品命名与现有样式。
+3. **浅色 Mermaid 头部**：浅色里 elevated 阶就是白纸，头部与卡片同色；浅色改用 panel 阶（`#f2f2f2`），深色不变。
+
+守卫与基线：未放宽守卫、未改基线；lint 0 error（警告数与改前相同），`check-surface-ladder` 不变。
+
+剩余差距：未登录首页变体、App 浮动圆形顶栏；手机窄表仍可横向滚动；无独立「语音对话」模式。

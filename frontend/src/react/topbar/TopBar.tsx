@@ -408,7 +408,7 @@ function IncognitoAction({ visible }: { visible: boolean }) {
   const on = useIncognito();
   return (
     <TopBarAction
-      id="mobileIncognitoBtn"
+      id="homeIncognitoBtn"
       icon="incognito"
       label={t('sidebar.nav.incognito', 'Incognito chat')}
       pressed={on}

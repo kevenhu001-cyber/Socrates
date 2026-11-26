@@ -128,7 +128,7 @@ test('phone home header carries the incognito toggle; new-chat stays out of it',
      mode pill, with the temporary-chat (glasses) toggle on the right.
      New-chat is hidden here. The 更多 menu keeps its incognito item too. */
   const newChat = page.locator('#mobileNewChatBtn');
-  const incognito = page.locator('#mobileIncognitoBtn');
+  const incognito = page.locator('#homeIncognitoBtn');
   await expect(newChat).toBeHidden();
   await expect(incognito).toBeVisible();
   await expect(incognito).toHaveAttribute('aria-label', 'Incognito chat');
