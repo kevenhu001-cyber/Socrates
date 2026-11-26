@@ -61,6 +61,7 @@ export interface DemonstrationField extends DemonstrationViewBase {
   height?: number;
   vector?: [DemonstrationValue, DemonstrationValue];
   vectorScale?: DemonstrationValue;
+  streamlines?: boolean;
   colorRange?: [DemonstrationValue, DemonstrationValue];
   unit?: string;
   contours?: DemonstrationValue[];
