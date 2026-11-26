@@ -29,3 +29,6 @@ PR #233 implements palette, typography, mobile composer, greeting, header fade, 
 - Refined Intelligent UI typography and removed nonfunctional panel clipping. All changes in this follow-up are under frontend/ except this document.
 
 The earlier CI run reached TypeScript successfully, then stopped at CSS debt. New checks have not yet established a passing build or browser result. This document records implementation intent, not a claim of runtime parity.
+
+### Activity screenshot acceptance refinement
+The supplied expanded activity screenshot is the reference for a single full-width header: up to three actual, unique source favicons on the left, the current public action, elapsed time and a down/up disclosure glyph on the right. Default collapsed; no outer or per-step cards. Expanded history has a common icon/text grid, a check only for completed public steps, search glyph for completed search calls, two distinct-site title/domain preview rows, and the current running action in muted ink with a radial spinner. Source rows open the original page; tool-row disclosure retains full results, output, input, and technical details. Keep connector brands and real approval/error semantics. No private reasoning text or fabricated activity. Verify both themes and desktop/phone screenshots; actual browser validation remains pending.
