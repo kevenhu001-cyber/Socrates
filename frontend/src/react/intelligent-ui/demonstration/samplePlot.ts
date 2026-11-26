@@ -149,8 +149,11 @@ function* sample(
   const xScale = view.kind === 'plot' ? view.xScale ?? 'linear' : 'linear';
   const yScale = view.kind === 'plot' ? view.yScale ?? 'linear' : 'linear';
   positiveDomain(xDomain, xScale, 'x');
+  const slice = view.kind === 'plot' && view.sliceY !== undefined
+    ? runtime.evaluate(view.sliceY, time) : 0;
+  if (!Number.isFinite(slice)) throw Error('Slice coordinate must be finite');
   const read = (expression: DemonstrationValue, t: number, x: number) =>
-    runtime.evaluate(expression, t, x);
+    runtime.evaluate(expression, t, x, slice);
   const sources =
     view.kind === 'plot'
       ? view.curves.map((curve) => ({ expression: curve.expression, label: curve.label }))
@@ -159,7 +162,7 @@ function* sample(
   for (const [index, curve] of sources.entries()) {
     const reusable =
       view.kind === 'plot' && !view.history &&
-      ![...view.x, curve.expression].some((expression) => runtime.dependencies(expression) & 4);
+      ![...view.x, ...(view.sliceY === undefined ? [] : [view.sliceY]), curve.expression].some((expression) => runtime.dependencies(expression) & 4);
     const key = `${index}:${samples}`;
     let sampled = reusable ? cache.get(key) : undefined;
     if (!sampled) {
@@ -212,6 +215,7 @@ export function plotExpressions(view: PlotView) {
         ...view.x,
         ...view.y,
         ...(view.history ? ['t'] : []),
+        ...(view.sliceY === undefined ? [] : [view.sliceY]),
         ...view.curves.map((curve) => curve.expression),
         ...(view.markers ?? []).flatMap((marker) => [marker.x, marker.y]),
       ]
