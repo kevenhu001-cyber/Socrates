@@ -501,7 +501,7 @@
     color: var(--foreground);
   }
   #appShell #sidebarHeader .btn-icon:active {
-    background: var(--ui-bg-active);
+    background: var(--ui-bg-selected);
   }
   #appShell #sidebarHeader .btn-icon svg {
     width: 20px;
@@ -562,7 +562,7 @@
     background: var(--accent);
   }
   #appShell #sidebarNav .sidebar-nav-btn:active {
-    background: var(--ui-bg-active);
+    background: var(--ui-bg-selected);
   }
   #appShell #sidebarNav .nav-label {
     line-height: 24px;
@@ -600,7 +600,7 @@
     background: var(--accent);
   }
   #appShell .sidebar-project-create:active {
-    background: var(--ui-bg-active);
+    background: var(--ui-bg-selected);
   }
   #appShell #sidebarNav :is(#navNew, #navSearch, #navImages, #navAssistants, #navSkills, #navExam) {
     display: none;
@@ -677,7 +677,7 @@
     background: var(--accent);
   }
   #appShell .recent-item:active {
-    background: var(--ui-bg-active);
+    background: var(--ui-bg-selected);
   }
   #appShell .recent-item-text {
     font-size: inherit;
@@ -714,7 +714,7 @@
     color: var(--foreground);
   }
   #appShell .recent-item-overflow:is(:active, .is-pressed) {
-    background: var(--ui-bg-active);
+    background: var(--ui-bg-selected);
     color: var(--foreground);
   }
   #appShell .recent-item.active,
@@ -854,7 +854,7 @@
   }
   #appShell #sidebarNav .sidebar-nav-btn:active,
   #appShell #sidebarNav #navNew.sidebar-nav-btn:active {
-    --sidebar-nav-bg: var(--ui-bg-active);
+    --sidebar-nav-bg: var(--ui-bg-selected);
   }
 }
 
