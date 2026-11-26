@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import type { DemonstrationProgram, DemonstrationWarning, DemonstrationDiagnostics } from '@socrates/core/demonstration';
 import { connectDemonstration } from './demonstrationClient';
-import { errorMessage } from './sampleField';
+import { errorMessage } from './fieldCommon';
 import type { Problem, ViewSample } from './demonstrationProtocol';
 
 export function useDemonstrationVisibility(host: RefObject<HTMLElement | null>) {
