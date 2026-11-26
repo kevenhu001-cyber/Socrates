@@ -259,7 +259,7 @@ test('header and transcript fades keep one paint recipe per surface', async () =
     read('src/styles/components/chat.css'),
   ]);
   assert.doesNotMatch(topbar, /background: linear-gradient\(/);
-  assert.match(topbar, /\.top-bar::after\s*\{[^}]*background: var\(--ui-border-subtle\)/);
+  assert.doesNotMatch(topbar, /\.top-bar::(?:before|after)\s*\{/);
   assert.doesNotMatch(topbar, /#pluginWorkspaceTabs\s*\{/);
   assert.match(topbar, /\.top-bar \.toggle-sidebar:hover\s*\{/);
   assert.doesNotMatch(await read('src/styles/polish/index.css'), /\.\/(?:topbar|transcript)\.css/);
