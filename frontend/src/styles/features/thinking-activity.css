@@ -400,7 +400,7 @@
 }
 .rn-turn-activity .activity-duration {
   flex: none;
-  font-size: var(--ui-font-size-xs);
+  font-size: var(--ui-font-size-sm);
   font-variant-numeric: tabular-nums;
   color: var(--ui-text-secondary);
 }
@@ -427,22 +427,43 @@
   flex-direction: column;
   gap: var(--ui-space-sm);
   min-width: 0;
-  margin-block: var(--ui-space-xs) var(--ui-space-md);
+  margin-block: var(--ui-space-sm) var(--ui-space-md);
   /* The activity list shares the caption's text edge. A rail without nodes
      reads as an accidental border, not as a meaningful timeline. */
-  padding-inline-start: 0;
+  padding-inline-start: var(--ui-space-sm);
   border-inline-start: 0;
 }
-.activity-summary-step {
-  display: flex;
-  flex-direction: column;
-  gap: var(--ui-space-xs);
-  font-size: var(--ui-font-size-sm);
+.activity-summary-step,
+.activity-current-step {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: start;
+  gap: var(--ui-space-sm);
+  min-height: var(--ui-control-sm);
+  padding-block: var(--ui-space-xs);
+  font-size: var(--prose-size, var(--ui-text-body));
   line-height: var(--ui-line-height-relaxed);
 }
+.activity-summary-copy {
+  display: grid;
+  min-width: 0;
+  gap: var(--ui-space-xs);
+}
 .activity-summary-title {
-  color: var(--foreground);
-  font-weight: var(--ui-font-weight-medium);
+  color: var(--ui-text-primary);
+  font-weight: var(--ui-font-weight-regular);
+  overflow-wrap: anywhere;
+}
+.activity-step-glyph {
+  flex: none;
+  color: var(--ui-text-secondary);
+  align-self: center;
+}
+.activity-current-step {
+  color: var(--ui-text-secondary);
+}
+.activity-current-step > span {
+  overflow-wrap: anywhere;
 }
 .rn-turn-activity .activity-summary-step .thinking-step-summary {
   margin: 0;
@@ -461,13 +482,15 @@
   isolation: isolate;
 }
 .rn-turn-activity .rn-turn-activity-toggle .tool-site-mark {
-  box-sizing: content-box;
-  border: 2px solid var(--background);
+  box-sizing: border-box;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--ui-bg-page);
   border-radius: var(--ui-radius-pill);
   overflow: hidden;
 }
 .rn-turn-activity .rn-turn-activity-toggle .tool-site-mark + .tool-site-mark {
-  margin-inline-start: -5px;
+  margin-inline-start: 0;
 }
 
 /* Agent execution steps: one disclosure and one neutral palette. */
