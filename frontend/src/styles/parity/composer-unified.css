@@ -319,10 +319,10 @@
   opacity: 0.65;
 }
 
-/* ── Phone: compact at rest, with room for a separate input row ────────── */
+/* ── Phone: stable two-row composer, including the empty state ────────── */
 @media (max-width: 768px) {
   #appShell .composer-shell {
-    --ui-card: var(--ui-bg-field, var(--ui-bg-composer));
+    --ui-card: var(--ui-bg-ask);
     --composer-disabled-send-opacity: 0.86;
     --ui-ink-secondary: var(--ui-text-primary);
     --ui-ink-tertiary: var(--ui-text-placeholder);
@@ -346,7 +346,7 @@
       box-shadow var(--ui-duration-fast) var(--ui-ease-out);
   }
   #appShell .composer-shell [data-composer-frame][data-layout='inline'] {
-    background: var(--ui-bg-field, var(--ui-bg-composer));
+    background: var(--ui-bg-ask);
     box-shadow: none;
   }
   #appShell .composer-shell [data-composer-frame][data-layout='inline']::before {
@@ -371,7 +371,7 @@
   }
   #appShell .composer-shell [data-composer-frame][data-layout='inline'][data-expanded='true'],
   #appShell .composer-shell:is(.has-plugin-chips, .has-queue) [data-layout='inline'] {
-    --composer-frame-radius: var(--ui-radius-composer);
+    --composer-frame-radius: var(--ui-radius-composer-desktop);
     --composer-editor-inset-start: var(--ui-step-75);
     --composer-editor-inset-end: var(--ui-step-75);
     --composer-toolbar-space: calc(var(--composer-control-size) + var(--ui-step-50));
