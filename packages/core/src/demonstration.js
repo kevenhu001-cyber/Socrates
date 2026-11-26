@@ -1573,7 +1573,7 @@ function sparseSystemSpec(program) {
   const fail=message=>{throw located('sparseSystem',Error(message));};
   if(!record(s)||!Number.isInteger(s.size)||s.size<1||s.size>1024||
       !Array.isArray(s.entries)||s.entries.length<1||s.entries.length>8192||
-      !Array.isArray(s.rhs)||s.rhs.length!==s.size)fail('Sparse system needs 1–1024 unknowns, 1–8192 upper-triangle entries and matching rhs');
+      !Array.isArray(s.rhs)||s.rhs.length!==s.size)fail('Sparse system needs 1–1024 unknowns, 1–8192 coordinate entries and matching rhs');
   if(program.dynamics!==undefined||program.duration!==undefined)fail('Sparse system is a standalone stationary model');
   if(program.parameters!==undefined&&!Array.isArray(program.parameters))fail('Invalid parameters');
   if(program.definitions!==undefined&&!record(program.definitions))fail('Invalid definitions');
@@ -1586,10 +1586,10 @@ function sparseSystemSpec(program) {
   const symmetric=method==='pcg';
   const seen=new Set(),diag=new Set();
   for(const entry of s.entries){
-    if(!Array.isArray(entry)||entry.length!==3)fail('Entry must be [row,column,value], zero-based upper triangle');
+    if(!Array.isArray(entry)||entry.length!==3)fail('Entry must be [row,column,value], zero-based; PCG uses upper triangle');
     const [i,j,v]=entry;
     if(!Number.isInteger(i)||!Number.isInteger(j)||i<0||i>=s.size||j<0||j>=s.size||(symmetric&&j<i)||seen.has(i*s.size+j))
-      fail('Duplicate or invalid upper triangle coordinate');
+      fail('Duplicate or invalid sparse coordinate');
     seen.add(i*s.size+j);if(i===j)diag.add(i);check(v);
   }
   if(diag.size!==s.size)fail('Every row needs an explicit diagonal');
@@ -2062,6 +2062,30 @@ const at = (path, fn) => {
   }
 };
 /** Validate identifiers, syntax, dependencies and finite resource limits before storage. */
+// One lowering pipeline shared by validation and compilation. Specialized
+// models supply the same scalar view contract; the runtime selects a solver
+// once, rather than branching on discipline or view type.
+function lowerNumericalProgram(program, metadata){
+  let lowered=lowerLinearAlgebra(program);
+  const d=lowered.dynamics;
+  if(record(d)){
+    const forms=['spatial','coupledFields','circuit','stateSpace','reactionNetwork'].filter(key=>d[key]!==undefined);
+    if(forms.length>1)throw located('dynamics',Error('Choose exactly one specialized dynamics model'));
+    if(d.method==='ssa'&&!d.reactionNetwork)throw located('dynamics.method',Error('SSA requires a reaction network'));
+    if(d.method==='grid-heun'&&!d.coupledFields)throw located('dynamics.method',Error('grid-heun requires coupledFields'));
+  }
+  if(metadata)Object.assign(metadata,{
+    reactionModel:d?.reactionNetwork!==undefined,
+    reactionSSA:d?.method==='ssa'?d.reactionNetwork:null,
+    implicitGrid:implicitGridSpec(lowered),
+    sparseSpec:sparseSystemSpec(lowered),
+    rootSpec:nonlinearSpec(lowered),
+    coupledSpec:coupledGridSpec(lowered),
+  });
+  for(const lower of [lowerNonlinearSystem,lowerSparseSystem,lowerCoupledGrid,lowerImplicitGrid,lowerReactionNetwork,lowerStateSpace,lowerCircuitProgram,lowerSpatialProgram])
+    lowered=lower(lowered);
+  return lowered;
+}
 export function validateDemonstration(input) {
   try {
     if (!record(input) && typeof input !== 'string')
@@ -2083,7 +2107,7 @@ export function validateDemonstration(input) {
     if (program.diagnostics !== undefined && typeof program.diagnostics !== 'boolean')
       throw located('diagnostics',Error('Diagnostics must be boolean'));
     if (JSON.stringify(program).length > 40000) throw Error('Demonstration is too large');
-    program = lowerSpatialProgram(lowerCircuitProgram(lowerStateSpace(lowerReactionNetwork(lowerImplicitGrid(lowerCoupledGrid(lowerSparseSystem(lowerNonlinearSystem(lowerLinearAlgebra(program)))))))));
+    program = lowerNumericalProgram(program);
     const shape = demonstrationShapeIssues(program);
     if (shape.length) {
       const issues = shape.slice(0, SHAPE_ISSUE_LIMIT);
@@ -2535,13 +2559,8 @@ export function compileDemonstrationRuntime(input) {
     if (validation.path) error.path = validation.path;
     throw error;
   }
-  const reactionModel=program.dynamics?.reactionNetwork!==undefined;
-  const reactionSSA=program.dynamics?.method==='ssa'?program.dynamics.reactionNetwork:null;
-  const implicitGrid = implicitGridSpec(lowerLinearAlgebra(program));
-  const sparseSpec = sparseSystemSpec(lowerLinearAlgebra(program));
-  const rootSpec = nonlinearSpec(lowerLinearAlgebra(program));
-  const coupledSpec = coupledGridSpec(lowerLinearAlgebra(program));
-  program = lowerSpatialProgram(lowerCircuitProgram(lowerStateSpace(lowerReactionNetwork(lowerImplicitGrid(lowerCoupledGrid(lowerSparseSystem(lowerNonlinearSystem(lowerLinearAlgebra(program)))))))));
+  const solver={};
+  program=lowerNumericalProgram(program,solver);
   const compiled = new Map();
   const compile = (expression) => {
     const key = typeof expression === 'number' ? `#${expression}` : String(expression);
@@ -2583,7 +2602,7 @@ export function compileDemonstrationRuntime(input) {
   }
 
   return (values = {}) =>
-    prepareRuntime(program, definitions, stateNames, compile, dependencies, values, implicitGrid, sparseSpec,reactionModel,reactionSSA,rootSpec,coupledSpec);
+    prepareRuntime(program, definitions, stateNames, compile, dependencies, values, solver);
 }
 
 
@@ -2808,7 +2827,8 @@ function* integrateAdaptive(dynamics, names, initial, derivative, eventValue, ev
 }
 
 /** Yield between integration batches so a host can cancel them. */
-function* prepareRuntime(program, definitions, stateNames, compile, dependencies, values, implicitGrid, sparseSpec,reactionModel,reactionSSA,rootSpec,coupledSpec) {
+function* prepareRuntime(program, definitions, stateNames, compile, dependencies, values, solver) {
+  const {implicitGrid,sparseSpec,reactionModel,reactionSSA,rootSpec,coupledSpec}=solver;
   const budget = { remaining: BUDGET };
   const warnings = [];
   const params = Object.fromEntries(
