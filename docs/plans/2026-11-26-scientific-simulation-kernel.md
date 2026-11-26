@@ -397,6 +397,51 @@ Android workflows passed; frontend CI failed the negative test fixture
 described above, now corrected and directly checked. Latest complete
 CI/browser/device verification pending. No new runtime dependencies.
 
+## Stage eleven: modular core and shared compilation
+
+The stable package subpath @socrates/core/demonstration and its existing
+named exports, public types, DSL and Worker wire protocol are unchanged.
+The original 3675-line implementation is now a seven-line compatibility
+facade. Implementation is in packages/core/src/simulation/:
+
+- foundation.js: shared limits, validation primitives and errors.
+- expression/: functions, parser/normalization, evaluator/AD/tape.
+- compiler/: normalization, shape checks and semantic compilation.
+- models/: spatial method-of-lines, reaction networks, electrical and
+  state-space lowering, structured algebra.
+- numerics/: dense/sparse solvers, nonlinear and optimization, implicit
+  and coupled grids, FFT/eigen/sweep analysis, adaptive/Verlet ODE and FEM.
+- runtime/prepare.js: model-independent preparation, evaluation, trajectory
+  lookup and result dispatch (remaining solver-specific dispatch to refactor).
+
+22 internal modules; no circular imports in the extracted module graph.
+Analysis receives validation and compilation callbacks rather than
+importing its caller, preventing a compiler/analysis cycle. No new runtime
+dependencies and no native Android modifications. No claim of lower
+bundled size: imports remain static at this stage.
+
+Compilation now shares inspectProgram's normalized, lowered, validated
+program and reuses validated ASTs with type-preserving cache keys.
+One top-level lowering pipeline per compile, not validate-then-lower again.
+Solver spec validation and some specialized analysis source validations
+remain and should be consolidated separately; do not remove safety checks.
+Compiled factories keep parameter-specific runtime results isolated.
+
+Direct migration check compared pre-split and extracted implementations
+on all 59 fixtures, 738 expression observations plus states, diagnostics,
+duration and warnings. After shared compilation, 118 runtime preparations
+(two value revisions per fixture), 1476 expression observations, and
+invalid AST key rejection match the previous engine. This is isolated
+JS numerical verification, not complete browser/build verification.
+Added unit regressions for acyclic module imports, public facade and
+compiled-factory revision isolation. Full latest CI pending.
+
+Next: separate semantic validation from execution and pure numerics from
+model-specific adapters; consolidate spec construction and dispatch;
+split 2D sampling and 3D geometry; measure actual bundle/device baselines
+before introducing dynamic imports; modularize model-facing contracts.
+Do not add new solvers during the equivalence migration.
+
 ## Deliberate limits / next steps
 
 This is a bounded educational engine, not an industrial multiphysics solver.
