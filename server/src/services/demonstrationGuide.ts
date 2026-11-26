@@ -7,13 +7,13 @@ A demonstration node is {"id":"demo","type":"demonstration","title":"...","progr
 
 All views share parameters, definitions, time t and optional ODE state. To drive an existing demonstration from the conversation, patch its program with changed parameter value fields: edited defaults apply immediately while unrelated manual control values survive. Set or change the optional resetKey string to restore all declared defaults, including a value equal to a previous default. This is the preferred route for novel mathematical/physical demonstrations and custom compositions.
 
-Parameters: up to 12 entries with id, label, value, min, max and optional step, unit, advanced. IDs are ASCII identifiers, never x,y,t,pi,e or function names, and expressions must use exactly the same spelling (names are case-sensitive). min < max and value lies inside [min,max]. Definitions: up to 24 name:expression entries, where an expression is a number or mathematical string. Definitions can use each other in any order (no cycles), parameters, x,y,t and ODE states. They are reevaluated at the current sample coordinates/time, so refer to a definition by its name (f, not f(x)). Operators + - * / % ^ < > <= >= == != && || and condition ? yes : no; write powers as x^2, multiplication as * (2*x; 2x is also read as 2*x), pi for π. Angles are radians; convert degrees with deg*pi/180. Functions sin cos tan asin acos atan atan2 sqrt abs exp log (natural; ln is accepted) log10 pow min max floor ceil round sign hypot sinh cosh tanh clamp(v,min,max), sinc(z)=sin(z)/z with limit 1, sinratio(n,z)=sin(n*z)/(n*sin(z)) with removable singularities filled for integer n, besselJ1(z), airy(u)=[2J1(u)/u]^2 with limit 1. sum(i,first,last,expression) sums at most 1000 integer-indexed terms; iterate(v,initial,count,expression) applies a scalar recurrence at most 1000 times. if(condition,yes,no) is lazy. Use mathematical expressions, not JavaScript syntax; no Math. prefixes, property access, code, callbacks, imports, HTML or shaders. A sample that divides by zero or leaves a function's domain is drawn as a gap rather than failing the view, but keep the plotted range where the model is defined. Express new algorithms through definitions, sums, recurrences and ODEs. Each expression is ≤1600 characters and the entire program ≤40000.
-Dynamics, optional: {"initial":{"X":1,"Y":1,"Z":1},"derivatives":{"X":"sigma*(X-Y)","Y":"X*(rho-Z)-Y","Z":"X*Y-beta*Z"},"duration":20,"step":0.01}. Initial values are numbers/parameter expressions; derivatives can use all current states, definitions and parameters. State IDs cannot collide with parameters/definitions/x/y/t. Up to 6 states, duration ≤30 seconds, step 0.002–0.05 and ≤10000 fixed RK4 steps. A program may instead specify duration for algebraic time animation without dynamics. Numeric dynamics may diverge; the app then keeps the history up to that time and stops there, so choose sensible steps/ranges and keep physical assumptions in prose.
+Parameters: up to 12 entries with id, label, value, min, max and optional step, unit, advanced. IDs are ASCII identifiers, never x,y,t,pi,e or function names, and expressions must use exactly the same spelling (names are case-sensitive). min < max and value lies inside [min,max]. Definitions: up to 24 name:expression entries, where an expression is a number or mathematical string. Definitions can use each other in any order (no cycles), parameters, x,y,t and ODE states. They are reevaluated at the current sample coordinates/time, so refer to a definition by its name (f, not f(x)). Operators + - * / % ^ < > <= >= == != && || and condition ? yes : no; write powers as x^2, multiplication as * (2*x; 2x is also read as 2*x), pi for π. Angles are radians; convert degrees with deg*pi/180. Functions sin cos tan asin acos atan atan2 sqrt abs exp log (natural; ln is accepted) log10 pow min max floor ceil round sign hypot sinh cosh tanh expm1 log1p heaviside (1 for nonnegative arguments) clamp(v,min,max), sinc(z)=sin(z)/z with limit 1, sinratio(n,z)=sin(n*z)/(n*sin(z)) with removable singularities filled for integer n, besselJ1(z), airy(u)=[2J1(u)/u]^2 with limit 1. sum(i,first,last,expression) sums at most 1000 integer-indexed terms; iterate(v,initial,count,expression) applies a scalar recurrence at most 1000 times. if(condition,yes,no) is lazy. Use mathematical expressions, not JavaScript syntax; no Math. prefixes, property access, code, callbacks, imports, HTML or shaders. A sample that divides by zero or leaves a function's domain is drawn as a gap rather than failing the view, but keep the plotted range where the model is defined. Express new algorithms through definitions, sums, recurrences and ODEs. Each expression is ≤1600 characters and the entire program ≤40000.
+Dynamics, optional: {"initial":{"X":1,"Y":1,"Z":1},"derivatives":{"X":"sigma*(X-Y)","Y":"X*(rho-Z)-Y","Z":"X*Y-beta*Z"},"duration":20,"step":0.01}. Initial values are numbers/parameter expressions; derivatives can use all current states, definitions and parameters. State IDs cannot collide with parameters/definitions/x/y/t. Prefer method "rk45" for new dynamics: up to 32 scalar states, duration ≤300 seconds, step is maximum step (1e-6 to 1 s; duration/step ≤10000), rtol/atol optional (1e-10 to 0.01; defaults 1e-6 and 1e-9). Existing programs without method keep fixed RK4 (6 states, 30 s, 0.002–0.05 s). Adaptive integration is limited to 10000 attempts and a finite operation budget. RK45 is for nonstiff systems; do not claim stiff solving. Optional events (up to 8) detect sign crossings of expression, direction -1 falling, 0 either, 1 rising. Each has terminal:true or a reset map of state expressions evaluated simultaneously at the event; use explicit reset coordinates and avoid immediate retriggering. At most 128 events, endpoint sign detection can miss multiple crossings per step; choose a smaller maximum step for switching. For scheduled transitions use an explicit clock surface, not boolean conditions. No implicit contact solver. A program may instead specify duration for algebraic time animation without dynamics. Numeric dynamics may diverge; the app then keeps the history up to that time and stops there, so choose sensible steps/ranges and keep physical assumptions in prose.
 Display labels and units use inline LaTeX for formulas and symbols. In JSON use dollar delimiters and escape each backslash, for example {"xLabel":"$t\\\\,(\\\\mathrm{s})$","yLabel":"$I/I_0$","unit":"$\\\\theta_R$"}. Keep expressions in the executable mathematical syntax above.
 Views are ordered freely (1–8). Every view has "kind" (not "type"). Axis bounds are a two-element JSON array [min,max] of finite numbers or expressions evaluated at the current time with x=y=0; use parameter-dependent bounds to keep important features visible, for example "y":[0,"max(1.12,1.12*total)"]. Bounds must remain finite, increasing and within ±1e6:
 
 - controls: places the compact shared parameter sliders here. At most one; without it controls follow the views. Advanced parameters are disclosed separately. No tool or model selector is shown to the learner.
-- plot: needs x, y and 1–6 curves of {expression, label?, color?, dashed?}, plus optional markers of {x, y, label?, color?}. It evaluates curves over x at current t with y=0. Up to 6 curves/view and 12 total. Colors: ink, muted, blue, orange, red, green, violet. Use multiple labeled curves, dashed envelopes, calibrated axes and markers when they clarify the phenomenon.
+- plot: set history:true for multiple time histories, with x bounds in seconds and curves evaluated at each sample time up to current playback time (not at a frozen state); requires dynamics. Otherwise it samples the spatial x axis. Needs x, y and 1–6 curves of {expression, label?, color?, dashed?}, plus optional markers of {x, y, label?, color?}. It evaluates curves over x at current t with y=0. Up to 6 curves/view and 12 total. Colors: ink, muted, blue, orange, red, green, violet. Use multiple labeled curves, dashed envelopes, calibrated axes and markers when they clarify the phenomenon.
 - field: needs x, y and expression, with optional palette (light, signed or heat), tint (three 0–1 channels), gamma, exposure, height (64–320) and vector (two expressions). It computes pixels locally. At most 2 field views. The light palette maps nonnegative physical intensity with separate display gamma/exposure; the signed palette distinguishes positive/negative fields; the optional vector pair overlays direction arrows. The field is 320 units wide; height 64–96 makes a compact intensity strip and 160 suits a 2:1 2D field. Match height to 320 times the y-span/x-span for geometrically faithful 2D fields. Never substitute circles or searched pictures for a calculated field.
 - trajectory: needs x, y, horizontal and vertical, with optional color and labels. It draws the ODE history up to current t with a moving endpoint and requires dynamics. Use a plot for another projection or a time-dependent quantity.
 - scene: needs x, y and 1-32 objects. Compose physical bodies and apparatus with the SAME parameters, definitions, ODE state and time as plots/fields/metrics. Coordinates and sizes are in axis units, y points upward, angles are radians, and aspect ratio is preserved. Object shapes: {kind:"body",center:[expression,expression],radius:expression}; {kind:"block",center:[expression,expression],width:expression,height:expression,angle?:expression}; {kind:"rod"|"spring"|"vector",from:[expression,expression],to:[expression,expression]}. A path is {kind:"path",points:[[expression,expression],...],closed?:boolean,dashed?:boolean}, with 2-64 points, for slopes, wires, ropes and ray paths. Each object may have label and color (ink, muted, blue, orange, red, green, violet). Sizes must remain positive and all geometry finite within ±1e6. Objects draw in array order. A vector's endpoints express the displayed vector; derive and label the force/velocity scale explicitly. Springs are schematic connectors, not automatic force laws: author the equations in dynamics/definitions. Use scenes for pendulum mechanisms, mass-spring assemblies, coupled oscillators, orbits, force diagrams and ray paths; pair them with actual calculated fields when needed. Scene objects only display the authored model; they do not add collision, contact or circuit solvers.
@@ -94,14 +94,31 @@ export const DEMONSTRATION_PROGRAM_SCHEMA = {
       required: ['initial', 'derivatives', 'duration', 'step'],
       description: 'Optional for algebraic time animation; required for trajectory views.',
       properties: {
-        initial: { type: 'object', maxProperties: 6, additionalProperties: EXPRESSION },
+        initial: { type: 'object', maxProperties: 32, additionalProperties: EXPRESSION },
         derivatives: {
           type: 'object',
-          maxProperties: 6,
-          additionalProperties: { type: 'string', maxLength: 1600 },
+          maxProperties: 32,
+          additionalProperties: EXPRESSION,
         },
-        duration: { type: 'number', exclusiveMinimum: 0, maximum: 30 },
-        step: { type: 'number', minimum: 0.002, maximum: 0.05 },
+        duration: { type: 'number', exclusiveMinimum: 0, maximum: 300 },
+        step: { type: 'number', minimum: 0.000001, maximum: 1 },
+        method: { type: 'string', enum: ['rk4', 'rk45'] },
+        rtol: { type: 'number', minimum: 1e-10, maximum: 0.01 },
+        atol: { type: 'number', minimum: 1e-10, maximum: 0.01 },
+        events: {
+          type: 'array',
+          maxItems: 8,
+          items: {
+            type: 'object',
+            required: ['expression'],
+            properties: {
+              expression: EXPRESSION,
+              direction: { type: 'integer', enum: [-1, 0, 1] },
+              terminal: { type: 'boolean' },
+              reset: { type: 'object', maxProperties: 32, additionalProperties: EXPRESSION },
+            },
+          },
+        },
       },
     },
     views: {
@@ -125,6 +142,7 @@ export const DEMONSTRATION_PROGRAM_SCHEMA = {
           yLabel: { type: 'string', maxLength: 200 },
           x: AXIS,
           y: AXIS,
+          history: { type: 'boolean', description: 'Plot only: multiple time histories up to the current playback time.' },
           objects: {
             type: 'array',
             minItems: 1,
