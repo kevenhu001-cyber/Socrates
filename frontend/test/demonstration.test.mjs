@@ -630,3 +630,34 @@ test('linear MNA supports series RLC with capacitor and inductor states', () => 
   assert.ok(Math.abs(runtime.evaluate('voltage_c', 2) - (1-3*Math.exp(-2))) < 1e-5);
   assert.ok(Math.abs(runtime.evaluate('current_l-current_c',2)) < 1e-10);
 });
+
+test('structured state space matrices match a critically damped step response', () => {
+  const scientific = JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json', import.meta.url), 'utf8'));
+  const runtime = createDemonstrationRuntime(scientific.stateSpace);
+  assert.deepEqual(runtime.warnings, []);
+  assert.ok(Math.abs(runtime.evaluate('response',2)-(1-3*Math.exp(-2)))<1e-7);
+  const bad=JSON.parse(JSON.stringify(scientific.stateSpace));
+  bad.dynamics.stateSpace.A=[[1]];
+  assert.equal(validateDemonstration(bad).ok,false);
+});
+test('semi-explicit index-one constraints reconstruct consistent nonlinear algebraic states', () => {
+  const scientific = JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json', import.meta.url), 'utf8'));
+  const runtime = createDemonstrationRuntime(scientific.indexOneDAE);
+  assert.deepEqual(runtime.warnings, []);
+  assert.ok(Math.abs(runtime.stateAt(1).q-.25)<1e-6);
+  assert.ok(Math.abs(runtime.stateAt(1).aux-.5)<1e-6);
+  assert.ok(Math.abs(runtime.evaluate('aux^2-q',.333))<1e-10);
+  const bad=JSON.parse(JSON.stringify(scientific.indexOneDAE));
+  bad.dynamics.algebraic.guess.aux='q';
+  assert.equal(validateDemonstration(bad).ok,false);
+});
+test('surface sampling provides real bounded mesh values without raster allocation', () => {
+  const view={kind:'field',presentation:'surface',x:[-1,1],y:[-1,1],zRange:[0,2],expression:'x^2+y^2'};
+  const runtime=createDemonstrationRuntime({version:1,views:[view]});
+  const sample=finishGenerator(sampleField(view,runtime,0,false));
+  assert.equal(sample.pixels.byteLength,0);
+  assert.equal(sample.surface.size,33);
+  assert.equal(sample.surface.values[16*33+16],0);
+  assert.equal(sample.surface.values[0],2);
+  assert.equal(validateDemonstration({version:1,views:[{...view,zRange:[2,0]}]}).ok,false);
+});
