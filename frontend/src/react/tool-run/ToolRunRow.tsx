@@ -1,7 +1,11 @@
 import { memo, useId } from 'react';
-import { Chevron, Spinner, toolTargetOf, toolVerbOf } from '@socrates/ui/turn';
+import { Chevron, toolTargetOf, toolVerbOf } from '@socrates/ui/turn';
 import { translate } from '../../legacy/toolPresentationModel.ts';
 import { Button } from '../ui/shadcn/button';
+import { Icon } from '../../legacy/Icon';
+import { SourceAvatar } from '../sources/SourceAvatar';
+import { isInlineSearchTool } from '../../render/toolCategory';
+import { openExternal } from './copyText';
 import { useLocaleRefresh, WebUiTheme } from '../rn/WebUiTheme';
 import { ToolActivityIcon, toolActivitySites } from './ToolActivityIcon';
 import { ToolRunAgentSteps } from './ToolRunAgentSteps';
@@ -10,6 +14,7 @@ import { ToolRunDetail } from './ToolRunDetail';
 import { useToolRunDisclosure } from './ToolRunDisclosure';
 import {
   agentRunStateOf,
+  normalizeSources,
   runStartedAt,
   toolRunView,
   type ToolCallRecord,
@@ -42,9 +47,17 @@ export const ToolRunRow = memo(function ToolRunRow({
   const label = stateLabel ? toolActionLabel(call) : view.label;
   const expandable = hasToolDetail(view);
   const testId = `tool-row-${view.id}`;
+  const search = isInlineSearchTool(call.name);
+  const sources = search ? normalizeSources(call.results).filter((source) => source.url).slice(0, 2) : [];
   const rowContent = (
     <>
-      <ToolActivityIcon name={view.name} sites={toolActivitySites(call)} />
+      {running ? (
+        <Icon name="activitySpinner" size={18} className="activity-step-glyph socrates-step-spinner" data-testid="thinking-step-spinner" />
+      ) : search ? (
+        <Icon name="search" size={18} className="activity-step-glyph" />
+      ) : (
+        <ToolActivityIcon name={view.name} sites={toolActivitySites(call)} />
+      )}
       <span className="tool-run-label" data-testid="thinking-step-title">
         {label}
       </span>
@@ -53,7 +66,6 @@ export const ToolRunRow = memo(function ToolRunRow({
           {stateLabel}
         </span>
       ) : null}
-      {running ? <Spinner /> : null}
       {expandable ? <Chevron open={disclosure.open} size={6} /> : null}
     </>
   );
@@ -86,6 +98,19 @@ export const ToolRunRow = memo(function ToolRunRow({
             {rowContent}
           </div>
         )}
+        {sources.length > 0 && !disclosure.open ? (
+          <div className="activity-source-preview" data-testid="activity-source-preview">
+            {sources.map((source) => (
+              <button key={source.url} type="button" className="activity-source-row" onClick={() => openExternal(source.url)}>
+                <SourceAvatar url={source.url} host={source.host} className="tool-site-mark" testId="tool-site-mark" loadingFallback />
+                <span className="activity-source-copy">
+                  <span className="activity-source-title">{source.title || source.url}</span>
+                  <span className="activity-source-host">{source.host}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        ) : null}
         {disclosure.open && expandable ? (
           <div id={detailId} className="tool-run-detail-body" data-testid="tool-detail">
             <ToolRunDetail
