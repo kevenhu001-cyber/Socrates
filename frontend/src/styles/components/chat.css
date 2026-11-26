@@ -227,7 +227,7 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
 @media (max-width: 768px) {
   /* Include read-only transcripts that do not set conversation-active. */
   #appShell .msg-body {
-    --msg-para-gap: var(--ui-space-md);
+    --msg-para-gap: var(--ui-foundation-space-md);
   }
 
   body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
@@ -237,8 +237,8 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
     font-family: var(--font-sans);
     font-size: var(--ui-text-body);
     font-weight: var(--ui-font-weight-regular);
-    /* Phone reference prose: enlarged from 26px to 28px for improved readability and refinement. */
-    line-height: calc(28px * var(--app-type-scale));
+    /* Current phone screenshot: approximately 16px / 26px reading rhythm. */
+    line-height: calc(26px * var(--app-type-scale));
     letter-spacing: normal;
   }
 
