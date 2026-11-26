@@ -75,7 +75,7 @@
   border-radius: var(--ui-radius-xs);
   flex-shrink: 0;
   background: var(--ui-bg-chip);
-  font-size: 10px;
+  font-size: var(--ui-font-size-xxs);
   line-height: 1;
 }
 .turn-source-preview-favicon img {
