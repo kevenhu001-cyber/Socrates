@@ -48,10 +48,17 @@ export const ToolRunRow = memo(function ToolRunRow({
   const expandable = hasToolDetail(view);
   const testId = `tool-row-${view.id}`;
   const search = isInlineSearchTool(call.name);
-  const sources = search ? normalizeSources(call.results).filter((source) => source.url).slice(0, 2) : [];
+  const seenHosts = new Set<string>();
+  const sources = search
+    ? normalizeSources(call.results).filter((source) => {
+        if (!source.url || seenHosts.has(source.host)) return false;
+        seenHosts.add(source.host);
+        return true;
+      }).slice(0, 2)
+    : [];
   const rowContent = (
     <>
-      {running ? (
+      {running && search ? (
         <Icon name="activitySpinner" size={18} className="activity-step-glyph socrates-step-spinner" data-testid="thinking-step-spinner" />
       ) : search ? (
         <Icon name="search" size={18} className="activity-step-glyph" />
@@ -65,6 +72,9 @@ export const ToolRunRow = memo(function ToolRunRow({
         <span className="tool-run-state" data-testid="thinking-step-status">
           {stateLabel}
         </span>
+      ) : null}
+      {running && !search ? (
+        <Icon name="activitySpinner" size={16} className="activity-step-glyph socrates-step-spinner" data-testid="thinking-step-spinner" />
       ) : null}
       {expandable ? <Chevron open={disclosure.open} size={6} /> : null}
     </>
