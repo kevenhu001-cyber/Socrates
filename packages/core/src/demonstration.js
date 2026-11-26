@@ -2386,7 +2386,7 @@ function* prepareScientificAnalysis(s,runtime,params,compile){
   const read=expr=>evaluatePreparedExpression(compile(expr),scope,budget);
   if(s.kind==='fft'){
     const n=s.samples??256,[start,end]=s.timeRange,dt=(end-start)/n,df=1/(end-start),nyquist=1/(2*dt);
-    if(runtime.warnings.length||runtime.duration>0&&end>runtime.duration+1e-10)fail('FFT window exceeds completed trajectory');
+    if(runtime.warnings.length||(s.subprogram.dynamics!==undefined||runtime.duration>0)&&end>runtime.duration+1e-10)fail('FFT window exceeds completed trajectory');
     const signal=new Float64Array(n);runtime.resetBudget();
     for(let i=0;i<n;i++){signal[i]=runtime.evaluate(s.expression,start+i*dt);if(!finite(signal[i]))fail('Nonfinite signal sample');if(i%32===0)yield;}
     const mean=s.removeMean?signal.reduce((a,b)=>a+b,0)/n:0;
@@ -3127,7 +3127,7 @@ function* integrateAdaptive(dynamics, names, initial, derivative, eventValue, ev
       const remaining=dynamics.duration-t;
       h=Math.min(h,remaining);
       // Do not create a spurious sub-ulp tail step from accumulated clock rounding.
-      if(remaining-h<=16*Number.EPSILON*Math.max(1,dynamics.duration))h=remaining;
+      if(remaining-h<=Math.min(h*1e-6,4*(attempt+1)*Number.EPSILON*Math.max(1,dynamics.duration)))h=remaining;
       if (t + h === t) throw Error('Adaptive step underflow');
       let next, err = 0, k0, k1;
       if (implicit) {
