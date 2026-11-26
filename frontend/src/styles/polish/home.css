@@ -66,12 +66,19 @@
     justify-content: center;
     align-items: stretch;
     min-height: calc(100dvh - 56px);
+    box-sizing: border-box;
+    gap: 0;
+    padding-top: clamp(32px, 6vh, 80px);
+    padding-inline: max(12px, env(safe-area-inset-left, 0px)) max(12px, env(safe-area-inset-right, 0px));
+    scroll-padding-block: 16px 24px;
+    overscroll-behavior-y: contain;
     padding-bottom: calc(112px + var(--ui-safe-bottom));
     background: var(--ui-bg-page);
   }
   #appShell #topicSetup .topic-title.greeting {
     max-width: min(100%, 620px);
-    margin-inline: auto;
+    margin: 0 auto 10px;
+    letter-spacing: -0.025em;
     text-align: center;
   }
 }

@@ -450,3 +450,17 @@
   overflow: auto;
   max-height: none;
 }
+
+@media (max-width: 640px) {
+  .canvas-block-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .canvas-block-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  .canvas-block-chip {
+    align-self: flex-start;
+  }
+}

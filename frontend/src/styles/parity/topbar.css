@@ -103,7 +103,7 @@ body[data-transcript-scrolled='true'] #appShell .top-bar::after {
     height: 48px;
     min-height: 48px;
     margin: 0;
-    padding: 0 var(--ui-space-md);
+    padding: 0 max(var(--ui-space-md), env(safe-area-inset-right, 0px)) 0 max(var(--ui-space-md), env(safe-area-inset-left, 0px));
     border: 0;
     /* No standing rule under the header, and no glass: the bar is simply the
        top of the canvas. The separator is drawn by ::after below, and only

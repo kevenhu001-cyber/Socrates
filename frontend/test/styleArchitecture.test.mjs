@@ -211,7 +211,7 @@ test('new owner modules use the ui token namespace', async () => {
 });
 
 test('converged surfaces keep their canonical stylesheet ownership', async () => {
-  const [sidebar, sharedSidebar, menu, composer, settings, overlays, preview, legacyActivity] =
+  const [sidebar, sharedSidebar, menu, composer, settings, overlays, preview] =
     await Promise.all([
       read('src/styles/parity/sidebar.css'),
       read('src/styles/polish/sidebar.css'),
@@ -220,7 +220,6 @@ test('converged surfaces keep their canonical stylesheet ownership', async () =>
       read('src/styles/polish/settings-page.css'),
       read('src/styles/polish/overlays.css'),
       read('src/styles/components/docPreview.css'),
-      read('src/styles/legacy/15-thinking-activity.css'),
     ]);
   assert.match(sidebar, /#appShell #sidebarHeader/);
   assert.doesNotMatch(sharedSidebar, /@media\s*\(min-width:\s*769px\)/);
@@ -235,7 +234,8 @@ test('converged surfaces keep their canonical stylesheet ownership', async () =>
   assert.match(settings, /\.settings-memory-list/);
   assert.doesNotMatch(overlays, /\.settings-page|\.settings-memory-list|\.tone-preset-options/);
   assert.match(preview, /\.library-file-preview-card/);
-  assert.doesNotMatch(legacyActivity, /\.library-file-preview-card/);
+  await assert.rejects(access(new URL('src/styles/legacy/15-thinking-activity.css', root)));
+  await assert.rejects(access(new URL('src/styles/legacy/16-final-contract.css', root)));
 });
 
 test('sidebar history geometry and drawer paint stay in their canonical owners', async () => {
@@ -333,26 +333,17 @@ test('formula scrolling uses canonical theme tokens and one geometry owner', asy
   assert.doesNotMatch(interactive, /\.katex-display > \.katex\s*\{[^}]*font-size:/);
 });
 
-test('external link favicons have one chat style owner and retired chat tokens stay absent', async () => {
-  const [chat, legacy] = await Promise.all([
-    read('src/styles/components/chat.css'),
-    read('src/styles/legacy/16-final-contract.css'),
-  ]);
+test('external link favicons stay with chat and final compatibility slice is retired', async () => {
+  const chat = await read('src/styles/components/chat.css');
   assert.match(chat, /a\.has-site-favicon\s*\{/);
   assert.match(chat, /\.site-link-favicon\.is-unavailable\s*\{/);
-  assert.doesNotMatch(legacy, /\.site-link-favicon\s*\{/);
-  assert.doesNotMatch(
-    legacy,
-    /--chat-(?:bubble-pad-[xy]|code-header-pad-[xy]|tool-running|tool-error):/,
-  );
+  await assert.rejects(access(new URL('src/styles/legacy/16-final-contract.css', root)));
 });
 
 test('retired imperative tool cards retain history cleanup but no visual skin', async () => {
   const paths = [
     'src/styles/legacy/11-agent-tools.css',
     'src/styles/legacy/14-tool-surfaces.css',
-    'src/styles/legacy/15-thinking-activity.css',
-    'src/styles/legacy/16-final-contract.css',
     'src/styles/features/tool-surfaces.css',
   ];
   for (const path of paths) {
@@ -367,7 +358,6 @@ test('artifact preview, download and retry use one stylesheet owner', async () =
     read('src/styles/components/tool-card.css'),
     read('src/styles/legacy/11-agent-tools.css'),
     read('src/styles/legacy/12-tutor-inline-tools.css'),
-    read('src/styles/legacy/16-final-contract.css'),
   ]);
   for (const selector of [
     '.exec-artifact {',

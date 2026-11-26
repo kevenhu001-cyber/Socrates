@@ -59,8 +59,6 @@ const ORDERED_MANIFESTS = {
     './12-tutor-inline-tools.css',
     './13-composer-rich.css',
     './14-tool-surfaces.css',
-    './15-thinking-activity.css',
-    './16-final-contract.css',
   ],
   'parity/index.css': [
     './sidebar.css',

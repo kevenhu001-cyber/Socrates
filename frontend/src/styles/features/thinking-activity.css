@@ -370,3 +370,271 @@
 .rn-turn-activity .rn-turn-activity-toggle .tool-site-mark + .tool-site-mark {
   margin-inline-start: -5px;
 }
+
+/* Agent execution steps: one disclosure and one neutral palette. */
+
+.agent-run-host {
+  display: block;
+  margin: 2px 0 0;
+}
+.agent-run {
+  display: block;
+  margin: 6px 0 10px;
+  
+  padding: 0;
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-xs);
+  line-height: 20px;
+}
+.agent-run-shell {
+  display: block;
+  border: 0;
+  background: none;
+}
+.agent-run-summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+  padding: 0;
+  list-style: none;
+  cursor: pointer;
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xs);
+  line-height: 20px;
+}
+.agent-run-summary::-webkit-details-marker {
+  display: none;
+}
+.agent-run-summary::marker {
+  content: '';
+}
+.agent-run-summary:hover {
+  color: var(--ui-text-primary);
+}
+.agent-run-summary:focus-visible {
+  outline: 2px solid transparent;
+  box-shadow: var(--ui-focus-shadow);
+  outline-offset: 3px;
+  border-radius: var(--ui-radius-xs);
+}
+.agent-run-chev {
+  width: 8px;
+  height: 8px;
+  border: solid currentColor;
+  border-width: 0 1.3px 1.3px 0;
+  transform: rotate(45deg) translateY(-1px);
+  transition: transform 0.16s ease;
+  opacity: 0.75;
+}
+.agent-run-shell[open] > .agent-run-summary .agent-run-chev {
+  transform: rotate(225deg) translate(-1px, -1px);
+}
+.agent-run[data-state='running'] .agent-run-elapsed {
+  color: var(--ui-text-primary);
+}
+.agent-run[data-state='failed'] .agent-run-elapsed {
+  color: var(--ui-danger);
+}
+.agent-run-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  
+  padding: 6px 0 0;
+}
+.agent-step {
+  display: block;
+  border: 0;
+  background: none;
+  color: inherit;
+}
+.agent-step-head {
+  display: flex;
+  align-items: center;
+  width: max-content;
+  max-width: 100%;
+  min-height: 26px;
+  gap: 9px;
+  color: var(--ui-text-tertiary);
+  padding: 1px 0;
+  list-style: none;
+  cursor: pointer;
+  transition: color 0.16s ease;
+}
+.agent-step-head::-webkit-details-marker {
+  display: none;
+}
+.agent-step-head::marker {
+  content: '';
+}
+.agent-step-head:hover {
+  color: var(--ui-text-primary);
+}
+.agent-step-head:focus-visible {
+  outline: 2px solid transparent;
+  box-shadow: var(--ui-focus-shadow);
+  outline-offset: 3px;
+  border-radius: var(--ui-radius-xs);
+}
+.agent-step.is-flat > .agent-step-head {
+  cursor: default;
+}
+.agent-step-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  color: currentColor;
+  opacity: 0.9;
+}
+.agent-step-icon svg {
+  width: 17px;
+  height: 17px;
+  stroke-width: 1.55;
+}
+.agent-step-label {
+  flex: 0 1 auto;
+  min-width: 0;
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-medium);
+  line-height: 20px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.agent-step > .agent-step-head :is(.agent-step-cmd, .agent-step-meta) {
+  display: none;
+}
+.agent-step[data-state='running'] .agent-step-icon {
+  opacity: 1;
+  color: var(--ui-text-primary);
+}
+.agent-step[data-state='failed'] .agent-step-icon,
+.agent-step[data-state='failed'] .agent-step-label,
+.agent-step[data-state='failed'] .agent-step-meta {
+  color: var(--ui-danger);
+}
+.agent-step-body {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 1px 0 6px;
+  padding: 0 0 0 26px;
+}
+.agent-step-pre {
+  max-height: 200px;
+  margin: 0;
+  padding: 6px 9px;
+  overflow: auto;
+  border-radius: var(--ui-radius-row);
+  background: var(--ui-bg-code);
+  color: var(--ui-text-secondary);
+  font: var(--ui-font-size-xs)/1.5 var(--font-mono);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.agent-step-pre[data-kind='command'] {
+  color: var(--ui-text-secondary);
+}
+.agent-step-paths {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--ui-text-secondary);
+  font: var(--ui-font-size-xs)/1.5 var(--font-mono);
+}
+
+.agent-plan {
+  display: block;
+  margin: 2px 0 8px;
+  padding: 9px 12px 10px;
+  border-radius: var(--ui-radius-sm);
+  background: var(--ui-bg-code);
+}
+.agent-plan-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ui-text-primary);
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-medium);
+}
+.agent-plan-icon {
+  display: inline-flex;
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+}
+.agent-plan-icon svg {
+  width: 15px;
+  height: 15px;
+  stroke-width: 1.5;
+}
+.agent-plan-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 7px 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: agent-plan;
+}
+.agent-plan-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-sm);
+  line-height: 1.5;
+}
+.agent-plan-mark {
+  position: relative;
+  flex: 0 0 13px;
+  width: 13px;
+  height: 13px;
+  margin-top: 3px;
+  border: 1.3px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius-xs);
+}
+.agent-plan-item[data-status='in_progress'] {
+  color: var(--ui-text-primary);
+}
+.agent-plan-item[data-status='in_progress'] .agent-plan-mark {
+  border-color: var(--ui-text-primary);
+  background: var(--ui-bg-hover);
+}
+.agent-plan-item[data-status='done'] {
+  color: var(--ui-text-tertiary);
+}
+.agent-plan-item[data-status='done'] .agent-plan-text {
+  
+  text-decoration: none;
+  color: var(--ui-text-secondary);
+}
+.agent-plan-item[data-status='done'] .agent-plan-mark {
+  border-color: var(--ui-text-primary);
+  background: var(--ui-bg-selected);
+}
+.agent-plan-item[data-status='done'] .agent-plan-mark::after {
+  content: '';
+  position: absolute;
+  left: 3.2px;
+  top: 1px;
+  width: 4px;
+  height: 7px;
+  border: solid var(--ui-text-primary);
+  border-width: 0 1.4px 1.4px 0;
+  transform: rotate(42deg);
+}
+.agent-plan-note {
+  margin: 7px 0 0;
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xs);
+  line-height: 1.5;
+}

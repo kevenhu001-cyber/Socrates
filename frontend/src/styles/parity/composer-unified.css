@@ -592,3 +592,13 @@
     padding-block: 17px;
   }
 }
+
+@media (max-width: 768px) {
+  .rich-composer[data-surface='chat'] > div:last-child {
+    width: 100%;
+    min-width: 0;
+  }
+  .rich-composer[data-surface='chat'] .rich-composer-toolbar {
+    display: none;
+  }
+}

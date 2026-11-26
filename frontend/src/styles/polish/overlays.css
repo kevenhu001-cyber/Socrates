@@ -685,3 +685,128 @@ body.composer-tools-open.composer-tools-open::after {
   border-color: var(--ui-border-default);
   background: var(--ui-bg-hover);
 }
+
+/* Cookie consent shares the dialog palette and remains independently accessible. */
+.socrates-cookie-consent {
+  position: fixed;
+  inset: auto max(20px, env(safe-area-inset-right, 0px))
+    calc(20px + env(safe-area-inset-bottom, 0px)) auto;
+  margin: 0;
+  z-index: 2147483000;
+  box-sizing: border-box;
+  width: min(25rem, calc(100vw - 40px));
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 18px;
+  border-radius: var(--ui-radius-xl);
+  background: var(--ui-bg-surface);
+  border: 1px solid var(--ui-border-subtle);
+  box-shadow: var(--ui-shadow-dialog);
+  color: var(--ui-text-primary);
+  font-size: var(--ui-font-size-sm);
+  line-height: 1.5;
+  pointer-events: auto;
+}
+.socrates-cookie-consent-title {
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-medium);
+  color: var(--ui-text-primary);
+}
+.socrates-cookie-consent-message {
+  margin: 0;
+  color: var(--ui-text-secondary);
+}
+.socrates-cookie-consent-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
+}
+.socrates-cookie-consent-btn {
+  height: 36px;
+  padding: 0 16px;
+  border-radius: var(--ui-radius-md);
+  border: 1px solid var(--ui-border-default);
+  background: var(--ui-bg-page);
+  color: var(--ui-text-primary);
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-medium);
+  cursor: pointer;
+  transition:
+    background-color var(--ui-duration-fast) ease,
+    border-color var(--ui-duration-fast) ease;
+}
+.socrates-cookie-consent-btn:hover {
+  background: var(--ui-bg-hover);
+  color: var(--ui-text-primary);
+}
+.socrates-cookie-consent-btn:focus-visible {
+  outline: 0;
+  box-shadow: var(--ui-focus-shadow);
+}
+.socrates-cookie-consent-btn.primary {
+  background: var(--ui-accent-strong);
+  border-color: transparent;
+  color: var(--ui-on-accent);
+}
+.socrates-cookie-consent-btn.primary:hover {
+  filter: brightness(0.94);
+}
+.socrates-cookie-consent-link {
+  align-self: flex-start;
+  font-size: var(--ui-font-size-xs);
+  color: var(--ui-text-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.socrates-cookie-consent-link:hover {
+  color: var(--ui-text-secondary);
+}
+@media (max-width: 768px) {
+  .socrates-cookie-consent {
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    inset-inline: 0;
+    margin-inline: auto;
+    width: min(25rem, calc(100vw - 16px));
+    gap: 8px;
+    padding: 12px 14px;
+    border-radius: var(--ui-radius-lg);
+  }
+  .socrates-cookie-consent-title {
+    padding-right: 80px;
+    font-size: var(--ui-font-size-sm);
+  }
+  .socrates-cookie-consent-message {
+    font-size: var(--ui-font-size-sm);
+    line-height: 1.45;
+  }
+  .socrates-cookie-consent-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .socrates-cookie-consent-btn {
+    width: 100%;
+    height: 42px;
+    padding: 0 12px;
+    text-align: center;
+  }
+  .socrates-cookie-consent-link {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    font-size: var(--ui-font-size-xs);
+  }
+}
+
+/* Do not blur mobile scrims. Keep the underlying page inexpensive to composite. */
+@media (max-width: 768px) {
+  body :is(.cmd-k-overlay, .usage-overlay, .share-overlay, .workspace-dialog, .tutor-explore-overlay, .viz-modal-backdrop),
+  body.composer-tools-open::after {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
