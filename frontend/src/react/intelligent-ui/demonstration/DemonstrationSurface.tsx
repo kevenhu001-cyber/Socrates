@@ -16,10 +16,10 @@ export function DemoSurface({ sample, label, style = 'wireframe' }: { sample?: S
   const faces = useMemo(() => {
     if (!sample || style !== 'shaded') return [];
     const {size,values,z}=sample;
-    const vertices=values.map((v,k)=>{
-      if(!Number.isFinite(v))return null;
-      const x=2*(k%size)/(size-1)-1,y=2*Math.floor(k/size)/(size-1)-1;
-      const h=2*(v-z[0])/(z[1]-z[0])-1;
+    const points=sample.vertices??values.map((v,k):[number,number,number]|null=>Number.isFinite(v)?[2*(k%size)/(size-1)-1,2*Math.floor(k/size)/(size-1)-1,2*(v-z[0])/(z[1]-z[0])-1]:null);
+    const vertices=points.map(point=>{
+      if(!point)return null;
+      const [x,y,h]=point;
       const horizontal=x*Math.sin(a)+y*Math.cos(a);
       return {point:[260+82*(x*Math.cos(a)-y*Math.sin(a)),135+82*(horizontal*Math.sin(e)-h*Math.cos(e))],
         depth:horizontal*Math.cos(e)+h*Math.sin(e),height:(h+1)/2};
@@ -34,17 +34,17 @@ export function DemoSurface({ sample, label, style = 'wireframe' }: { sample?: S
       result.push({key:k,points:valid.map(v=>v.point.map(n=>n.toFixed(2)).join(',')).join(' '),
         depth:valid.reduce((sum,v)=>sum+v.depth,0)/4,fill:`hsl(${220*(1-h)},70%,50%)`});
     }
-    return result.sort((a,b)=>b.depth-a.depth);
+    return result.sort((a,b)=>a.depth-b.depth);
   },[sample,style,a,e]);
   const path = (row: boolean, index: number) => {
     if (!sample) return '';
     let d = '', pen = false;
     for (let k=0;k<sample.size;k++) {
       const i = row ? k : index, j = row ? index : k;
-      const z = sample.values[j*sample.size+i];
-      if (!Number.isFinite(z)) { pen=false; continue; }
-      const point = project(2*i/(sample.size-1)-1, 2*j/(sample.size-1)-1,
-        2*(z-sample.z[0])/(sample.z[1]-sample.z[0])-1);
+      const index=j*sample.size+i,z=sample.values[index];
+      const vertex=sample.vertices?sample.vertices[index]:Number.isFinite(z)?[2*i/(sample.size-1)-1,2*j/(sample.size-1)-1,2*(z-sample.z[0])/(sample.z[1]-sample.z[0])-1] as [number,number,number]:null;
+      if(!vertex){pen=false;continue;}
+      const point=project(...vertex);
       d += `${pen?'L':'M'}${point[0].toFixed(2)},${point[1].toFixed(2)}`;
       pen=true;
     }
