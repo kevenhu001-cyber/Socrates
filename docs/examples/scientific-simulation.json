@@ -4528,5 +4528,200 @@
         "kind": "controls"
       }
     ]
+  },
+  "calculus": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "freq",
+        "label": "Frequency",
+        "value": 2,
+        "min": 0.5,
+        "max": 4
+      }
+    ],
+    "definitions": {
+      "fn": "sin(freq*x)",
+      "slope": "diff(s,x,sin(freq*s))",
+      "area": "integral(s,0,x,sin(freq*s))"
+    },
+    "views": [
+      {
+        "kind": "plot",
+        "label": "Function, derivative and integral",
+        "x": [
+          0,
+          6.28
+        ],
+        "y": [
+          -4,
+          4
+        ],
+        "curves": [
+          {
+            "expression": "fn",
+            "label": "Function",
+            "color": "blue"
+          },
+          {
+            "expression": "slope",
+            "label": "Derivative",
+            "color": "orange"
+          },
+          {
+            "expression": "area",
+            "label": "Integral",
+            "color": "green"
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "optimizationRosenbrock": {
+    "version": 1,
+    "diagnostics": true,
+    "parameters": [
+      {
+        "id": "startQ",
+        "label": "Initial q",
+        "value": -1.2,
+        "min": -1.8,
+        "max": 1.8
+      },
+      {
+        "id": "startV",
+        "label": "Initial v",
+        "value": 1,
+        "min": -0.8,
+        "max": 2.8
+      }
+    ],
+    "optimization": {
+      "variables": [
+        {
+          "id": "q",
+          "min": -2,
+          "max": 2,
+          "initial": "startQ"
+        },
+        {
+          "id": "v",
+          "min": -1,
+          "max": 3,
+          "initial": "startV"
+        }
+      ],
+      "objective": "(1-q)^2+100*(v-q^2)^2",
+      "tolerance": 0.000001,
+      "maxIterations": 300
+    },
+    "views": [
+      {
+        "kind": "field",
+        "label": "Rosenbrock objective landscape (log scale)",
+        "x": [
+          -2,
+          2
+        ],
+        "y": [
+          -1,
+          3
+        ],
+        "expression": "log10(1+(1-x)^2+100*(y-x^2)^2)",
+        "palette": "heat",
+        "colorRange": [
+          0,
+          4
+        ],
+        "contours": [
+          0.3,
+          1,
+          2,
+          3
+        ],
+        "markers": [
+          {
+            "x": "q",
+            "y": "v",
+            "label": "Computed local optimum"
+          }
+        ],
+        "height": 280
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "expression": "q",
+            "label": "Optimal q",
+            "digits": 8
+          },
+          {
+            "expression": "v",
+            "label": "Optimal v",
+            "digits": 8
+          },
+          {
+            "expression": "optObjective",
+            "label": "Objective value",
+            "digits": 10
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "parametricTorus": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "minor",
+        "label": "Minor radius",
+        "value": 0.45,
+        "min": 0.2,
+        "max": 0.7
+      }
+    ],
+    "views": [
+      {
+        "kind": "field",
+        "label": "Parametric torus",
+        "presentation": "parametricSurface",
+        "x": [
+          -2,
+          2
+        ],
+        "y": [
+          -2,
+          2
+        ],
+        "zRange": [
+          -1,
+          1
+        ],
+        "uRange": [
+          0,
+          6.283185307179586
+        ],
+        "vRange": [
+          0,
+          6.283185307179586
+        ],
+        "surface3d": [
+          "(1+minor*cos(y))*cos(x)",
+          "(1+minor*cos(y))*sin(x)",
+          "minor*sin(y)"
+        ],
+        "surfaceStyle": "shaded"
+      },
+      {
+        "kind": "controls"
+      }
+    ]
   }
 }
