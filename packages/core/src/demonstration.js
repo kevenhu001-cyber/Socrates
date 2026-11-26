@@ -966,6 +966,10 @@ export function normalizeDemonstrationProgram(input) {
     for (const key of ['rtol', 'atol']) {
       if (dynamics[key] !== undefined) dynamics[key] = numberLike(dynamics[key]);
     }
+    if (record(dynamics.algebraic)) {
+      dynamics.algebraic = { ...dynamics.algebraic, guess: mapValues(dynamics.algebraic.guess, expressionLike), residuals: mapValues(dynamics.algebraic.residuals, expressionLike) };
+      if (dynamics.algebraic.tolerance !== undefined) dynamics.algebraic.tolerance = numberLike(dynamics.algebraic.tolerance);
+    }
     if (Array.isArray(dynamics.massMatrix))
       dynamics.massMatrix = dynamics.massMatrix.map((row) => Array.isArray(row) ? row.map(expressionLike) : row);
     if (Array.isArray(dynamics.events))
@@ -1526,6 +1530,20 @@ export function validateDemonstration(input) {
             dynamics.massMatrix.some((row) => !Array.isArray(row) || row.length !== keys.length)))
         throw located('dynamics.massMatrix', Error('A square mass matrix of 1–8 states requires an adaptive solver'));
       keys.forEach((key) => allowed.add(key));
+      if (dynamics.algebraic !== undefined) {
+        const a = dynamics.algebraic;
+        if (!['rk45','sdirk2'].includes(dynamics.method) || !record(a) || !record(a.guess) || !record(a.residuals))
+          throw located('dynamics.algebraic', Error('Algebraic constraints require an adaptive solver, guess and residuals maps'));
+        const ids = Object.keys(a.guess);
+        if (!ids.length || ids.length > 4 || Object.keys(a.residuals).length !== ids.length ||
+            ids.some(id => !name(id) || allowed.has(id) || !Object.hasOwn(a.residuals,id)))
+          throw located('dynamics.algebraic', Error('Use 1–4 distinct algebraic names with matching residual equations'));
+        if (a.tolerance !== undefined && (!finite(a.tolerance) || a.tolerance < 1e-12 || a.tolerance > 1e-3))
+          throw located('dynamics.algebraic.tolerance', Error('Residual tolerance must be 1e-12–1e-3'));
+        const guessScope = new Set(['pi','e',...params.map(p=>p.id)]);
+        for (const id of ids) at(`dynamics.algebraic.guess.${id}`, () => check(a.guess[id],guessScope));
+        ids.forEach(id=>allowed.add(id));
+      }
     }
     // Definitions may appear in any order; reject only genuine cycles.
     const defKeys = Object.keys(definitions);
@@ -1565,6 +1583,8 @@ export function validateDemonstration(input) {
     if (dynamics)
       for (const key of Object.keys(dynamics.initial))
         at(`dynamics.derivatives.${key}`, () => check(dynamics.derivatives[key]));
+    for (const [key, value] of Object.entries(dynamics?.algebraic?.residuals ?? {}))
+      at(`dynamics.algebraic.residuals.${key}`, () => check(value));
     for (const [i, row] of (dynamics?.massMatrix ?? []).entries())
       for (const [j, value] of row.entries())
         at(`dynamics.massMatrix[${i}][${j}]`, () => check(value));
@@ -1849,7 +1869,7 @@ export function compileDemonstrationRuntime(input) {
   };
   const definitions = new Map(Object.entries(program.definitions ?? {}));
   const stateNames = Object.keys(program.dynamics?.initial ?? {});
-  const flags = new Map([['x', 1], ['y', 2], ['t', 4], ...stateNames.map((name) => [name, 4])]);
+  const flags = new Map([['x', 1], ['y', 2], ['t', 4], ...stateNames.map((name) => [name, 4]), ...Object.keys(program.dynamics?.algebraic?.guess ?? {}).map(name=>[name,4])]);
   const expressionMasks = new Map();
   const definitionMasks = new Map();
   function dependencies(expression) {
@@ -2121,6 +2141,46 @@ function* prepareRuntime(program, definitions, stateNames, compile, dependencies
   let adaptiveResult;
   const dynamics = program.dynamics;
   let duration = dynamics?.duration ?? program.duration ?? 0;
+  const algebraic = dynamics?.algebraic;
+  const algebraicIds = Object.keys(algebraic?.guess ?? {});
+  const initialGuess = algebraicIds.map(id=>evalRaw(algebraic.guess[id],base));
+  if (!initialGuess.every(finite)) throw located('dynamics.algebraic.guess', Error('Non-finite algebraic initial guess'));
+  function consistentState(s,t,evaluate) {
+    if (!algebraicIds.length) return s;
+    const n = algebraicIds.length;
+    const z = Float64Array.from(initialGuess);
+    const jac = new Float64Array(n*n), delta = new Float64Array(n);
+    const tolerance = algebraic.tolerance ?? 1e-8;
+    const merged = (v)=>({...s,...Object.fromEntries(algebraicIds.map((id,i)=>[id,v[i]]))});
+    const residual = (v)=>{
+      const scope = scopeAt(t,0,0,merged(v),evaluate);
+      return Float64Array.from(algebraicIds,id=>evaluate(algebraic.residuals[id],scope));
+    };
+    const norm = v=>v.every(finite)?Math.max(...v.map(Math.abs)):Infinity;
+    for(let iteration=0;iteration<12;iteration++){
+      const f=residual(z), error=norm(f);
+      if(error<=tolerance)return merged(z);
+      if(!finite(error))break;
+      for(let j=0;j<n;j++){
+        const shifted=z.slice();
+        shifted[j]+=Math.sqrt(Number.EPSILON)*Math.max(1,Math.abs(z[j]));
+        const fp=residual(shifted);
+        for(let i=0;i<n;i++)jac[i*n+j]=(fp[i]-f[i])/(shifted[j]-z[j]);
+      }
+      for(let i=0;i<n;i++)delta[i]=-f[i];
+      if(!solveSmallSystem(jac,delta,n))break;
+      let improved=false;
+      for(let scale=1;scale>=1/64;scale/=2){
+        const next=z.map((v,i)=>v+scale*delta[i]);
+        if(next.every(v=>finite(v)&&Math.abs(v)<=1e12)&&norm(residual(next))<error){
+          z.set(next);improved=true;break;
+        }
+      }
+      if(!improved)break;
+    }
+    if(norm(residual(z))<=tolerance)return merged(z);
+    throw located('dynamics.algebraic',Error('Algebraic Newton solve did not converge; check constraints, scaling and initial guess'));
+  }
   if (dynamics) {
     const names = stateNames,
       count = Math.ceil(dynamics.duration / dynamics.step);
@@ -2147,7 +2207,7 @@ function* prepareRuntime(program, definitions, stateNames, compile, dependencies
     const matrix = dynamics.massMatrix ? new Float64Array(names.length ** 2) : undefined;
     const rhs = matrix ? new Float64Array(names.length) : undefined;
     const derivative = (s, t) => {
-      const scope = scopeAt(t, 0, 0, s, evalDynamics);
+      const scope = scopeAt(t, 0, 0, consistentState(s,t,evalDynamics), evalDynamics);
       if (matrix) {
         const n = names.length;
         dynamicsBudget.remaining -= n ** 3;
@@ -2169,9 +2229,9 @@ function* prepareRuntime(program, definitions, stateNames, compile, dependencies
       Object.fromEntries(names.map((key) => [key, s[key] + factor * k[key]]));
     if (['rk45', 'sdirk2'].includes(dynamics.method)) {
       const eventValue = (event, t, s) =>
-        evalDynamics(event.expression, scopeAt(t, 0, 0, s, evalDynamics));
+        evalDynamics(event.expression, scopeAt(t, 0, 0, consistentState(s,t,evalDynamics), evalDynamics));
       const eventReset = (event, t, s) => {
-        const scope = scopeAt(t, 0, 0, s, evalDynamics);
+        const scope = scopeAt(t, 0, 0, consistentState(s,t,evalDynamics), evalDynamics);
         return { ...s, ...Object.fromEntries(Object.entries(event.reset ?? {}).map(
           ([key, expression]) => [key, evalDynamics(expression, scope)],
         )) };
@@ -2219,7 +2279,7 @@ function* prepareRuntime(program, definitions, stateNames, compile, dependencies
     if (reached < dynamics.duration) duration = reached;
     }
   }
-  const stateAt = (time) => {
+  const differentialStateAt = (time) => {
     if (adaptiveResult) return adaptiveResult.stateAt(time);
     if (!trajectory.length) return {};
     const index = Math.max(
@@ -2232,6 +2292,7 @@ function* prepareRuntime(program, definitions, stateNames, compile, dependencies
       b = trajectory[Math.min(i + 1, trajectory.length - 1)].state;
     return Object.fromEntries(Object.keys(a).map((key) => [key, a[key] + (b[key] - a[key]) * f]));
   };
+  const stateAt = (time) => consistentState(differentialStateAt(time), Math.max(0,Math.min(duration,finite(time)?time:0)), evalRaw);
   let sampleScope, sampleHasState;
   const sampleValues = new Map();
   const emptyState = Object.create(null);
