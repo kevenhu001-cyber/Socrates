@@ -248,8 +248,9 @@ test('sidebar history geometry and drawer paint stay in their canonical owners',
   assert.match(historyGeometry[0], /border-radius: var\(--ui-radius-sidebar-row\)/);
   const drawerPaint = phone.slice(phone.indexOf('/* Phone navigation uses the same semantic'));
   assert.match(drawerPaint, /--sidebar-nav-bg: var\(--ui-bg-hover\)/);
-  assert.match(drawerPaint, /--sidebar-nav-bg: var\(--ui-bg-active\)/);
+  assert.match(drawerPaint, /--sidebar-nav-bg: var\(--ui-bg-selected\)/);
   assert.doesNotMatch(drawerPaint, /--sidebar-nav-bg: rgb\(/);
+  assert.doesNotMatch(desktop + phone, /var\(--ui-bg-active\)/);
 });
 
 test('header and transcript fades keep one paint recipe per surface', async () => {
