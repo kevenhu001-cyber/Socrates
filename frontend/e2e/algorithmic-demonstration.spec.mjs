@@ -538,3 +538,15 @@ test('rotatable scientific surface uses a sampled wireframe and local camera con
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
   await expectNoGlobalError(page);
 });
+
+test('large heat grid renders shaded surface and physical cross section', async ({page}) => {
+  const scientific=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
+  const node={id:'implicit-heat-grid',type:'demonstration',title:'Implicit heat grid',program:scientific.implicitHeat2D};
+  await prepareChatWorkbench(page,{lang:'en',viewport:{width:390,height:844},messages:[{clientId:node.id,role:'assistant',type:'assistant',rawText:'\x60\x60\x60socrates-ui\n'+JSON.stringify(node)+'\n\x60\x60\x60'}]});
+  const demo=page.getByRole('region',{name:node.title,exact:true});
+  await demo.scrollIntoViewIfNeeded();
+  await expect(demo).toHaveAttribute('data-demo-quality','full',{timeout:30000});
+  await expect(demo.locator('[data-surface-style="shaded"] polygon').first()).toBeVisible();
+  await expect(demo.getByRole('img',{name:'Temperature surface'})).toBeVisible();
+  await expectNoGlobalError(page);
+});
