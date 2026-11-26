@@ -25,6 +25,20 @@ for (const [label, viewport] of Object.entries(WORKBENCH_VIEWPORTS)) {
       ],
     });
 
+    const header = page.locator('#topBar');
+    const expectCleanHeader = async () => {
+      await expect(header).toHaveCSS('border-bottom-width', '0px');
+      await expect(header).toHaveCSS('box-shadow', 'none');
+      const pseudo = await header.evaluate((element) =>
+        ['::before', '::after'].map((part) => {
+          const style = getComputedStyle(element, part);
+          return style.content === 'none' || style.content === 'normal' || style.display === 'none';
+        }),
+      );
+      expect(pseudo).toEqual([true, true]);
+    };
+    await expectCleanHeader();
+
     const initial = await page.locator('#msgList').evaluate((list) => {
       const style = getComputedStyle(list);
       return {
@@ -55,6 +69,7 @@ for (const [label, viewport] of Object.entries(WORKBENCH_VIEWPORTS)) {
           .evaluate((list) => list.style.getPropertyValue('--ui-scroll-fade-top')),
       )
       .toBe('36px');
+    await expectCleanHeader();
     await expect
       .poll(() =>
         page
@@ -74,6 +89,7 @@ for (const [label, viewport] of Object.entries(WORKBENCH_VIEWPORTS)) {
           .evaluate((list) => list.style.getPropertyValue('--ui-scroll-fade-bottom')),
       )
       .toBe('24px');
+    await expectCleanHeader();
     await expect
       .poll(() => page.evaluate(() => document.body.dataset.transcriptScrolled))
       .toBe('true');
