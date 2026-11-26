@@ -798,8 +798,10 @@ function normalizeView(raw) {
   }
   if (view.kind === 'field') {
     if (view.expression !== undefined) view.expression = expressionLike(view.expression);
-    for (const key of ['gamma', 'exposure'])
+    for (const key of ['gamma', 'exposure', 'vectorScale'])
       if (view[key] !== undefined) view[key] = expressionLike(view[key]);
+    if (view.colorRange !== undefined) view.colorRange = rangeLike(view.colorRange);
+    if (Array.isArray(view.contours)) view.contours = view.contours.map(expressionLike);
     const vector = asArray(view.vector);
     if (Array.isArray(vector)) view.vector = vector.map(expressionLike);
     const tint = asArray(view.tint);
@@ -1412,8 +1414,21 @@ export function validateDemonstration(input) {
       } else if (view.kind === 'field') {
         fields++;
         at(`${path}.expression`, () => check(view.expression));
-        for (const key of ['gamma', 'exposure'])
+        for (const key of ['gamma', 'exposure', 'vectorScale'])
           if (view[key] !== undefined) at(`${path}.${key}`, () => check(view[key]));
+        if (view.colorRange !== undefined) {
+          if (view.palette !== 'heat' || !range(view.colorRange))
+            throw located(`${path}.colorRange`, Error('Calibrated range requires heat palette and increasing bounds'));
+          view.colorRange.forEach((value) => check(value));
+        }
+        if (!text(view.unit)) throw located(`${path}.unit`, Error('Unit must be text'));
+        if (view.contours !== undefined) {
+          if (!Array.isArray(view.contours) || view.contours.length < 1 || view.contours.length > 6)
+            throw located(`${path}.contours`, Error('Use 1–6 contour levels'));
+          view.contours.forEach((value) => check(value));
+        }
+        if (view.vectorScale !== undefined && (!view.vector || (finite(view.vectorScale) && view.vectorScale <= 0)))
+          throw located(`${path}.vectorScale`, Error('Vector scale requires a vector and positive reference magnitude'));
         if (view.vector !== undefined)
           at(`${path}.vector`, () => {
             if (!Array.isArray(view.vector) || view.vector.length !== 2)
