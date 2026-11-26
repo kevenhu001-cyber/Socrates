@@ -16,13 +16,17 @@
 }
 .visualization-header {
   display: flex;
-  gap: 14px;
+  gap: var(--ui-space-sm);
   align-items: flex-start;
   justify-content: space-between;
-  padding: 14px 16px 10px;
+  flex-wrap: wrap;
+  padding: var(--ui-space-sm) var(--ui-space-md);
   border-bottom: 1px solid var(--ui-border-subtle);
 }
 .visualization-header h3 {
+  flex: 1 1 10rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
   margin: 0;
   font: var(--ui-font-weight-semibold) 14px/1.35 var(--font-sans);
   letter-spacing: -0.01em;
@@ -192,8 +196,7 @@
 
 @media (max-width: 520px) {
   .visualization-card {
-    margin-left: -2px;
-    margin-right: -2px;
+    margin-inline: 0;
     border-radius: var(--ui-radius-md);
   }
   .visualization-header {
@@ -201,7 +204,7 @@
     gap: 8px;
   }
   .visualization-stage {
-    height: 292px;
+    height: clamp(300px, 48dvh, 360px);
     padding: 2px;
   }
   .visualization-data {
