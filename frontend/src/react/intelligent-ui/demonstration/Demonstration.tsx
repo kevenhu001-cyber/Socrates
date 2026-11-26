@@ -4,6 +4,7 @@ import {
   validateDemonstration,
   type DemonstrationProgram,
   type DemonstrationWarning,
+  type DemonstrationDiagnostics,
   type DemonstrationParameter,
 } from '@socrates/core/demonstration';
 import { MathText } from '../../rn/useInlineMath';
@@ -489,6 +490,23 @@ function useDemonstrationState(program: DemonstrationProgram | null, visible: bo
   };
 }
 
+const diagnosticLabels: [keyof Omit<DemonstrationDiagnostics,'method'>,string,string][]=[
+  ['acceptedSteps','acceptedSteps','Accepted steps'],['rejectedSteps','rejectedSteps','Rejected steps'],
+  ['events','events','Events'],['derivativeEvaluations','derivativeEvaluations','Derivative evaluations'],
+  ['maxLocalError','maxLocalError','Maximum accepted normalized local error'],
+  ['minStep','minStep','Minimum step (s)'],['maxStep','maxStep','Maximum step (s)'],
+  ['gridNodes','gridNodes','Grid nodes'],['storedValues','storedValues','Stored scalar values'],
+  ['unknowns','unknowns','Unknowns'],['nonzeros','nonzeros','Matrix nonzero entries'],
+  ['iterations','iterations','Iterations'],['relativeResidual','relativeResidual','Relative residual'],
+];
+function SolverDiagnostics({value}:{value:DemonstrationDiagnostics}){
+  return <details className="demo-advanced"><summary>{i18n('intui.demo.diagnostics','Solver diagnostics')} · {value.method}</summary>
+    <dl className="demo-metrics">{diagnosticLabels.map(([key,label,fallback])=>{
+      const number=value[key];
+      return number===undefined?null:<div key={key}><dt>{i18n('intui.demo.diag.'+label,fallback)}</dt><dd>{Number(number.toPrecision(5)).toString()}</dd></div>;
+    })}</dl>
+  </details>;
+}
 function DemonstrationBody({
   program,
   title,
@@ -546,6 +564,7 @@ function DemonstrationBody({
           view.kind === 'controls' ? controls : renderView(view, index, snapshot?.views[index]),
         )}
       </div>
+      {snapshot?.diagnostics && <SolverDiagnostics value={snapshot.diagnostics}/>}
       {!hasEmbeddedControls ? controls : null}
       <AdvancedParameters program={program} values={values} id={id} onChange={onChange} />
       <PresetButtons program={program} preset={preset} onPreset={onPreset} />
