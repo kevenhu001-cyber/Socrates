@@ -77,10 +77,11 @@ export interface DemonstrationObjectBase {
 }
 export type DemonstrationObject =
   | (DemonstrationObjectBase & {
-      kind: 'body';
+      kind: 'body' | 'cell';
       center: DemonstrationPoint;
       radius: DemonstrationValue;
     })
+  | (DemonstrationObjectBase & {kind:'atom';center:DemonstrationPoint;radius:DemonstrationValue;element:string})
   | (DemonstrationObjectBase & {
       kind: 'block';
       center: DemonstrationPoint;
@@ -95,7 +96,7 @@ export type DemonstrationObject =
       dashed?: boolean;
     })
   | (DemonstrationObjectBase & {
-      kind: 'rod' | 'spring' | 'vector' | 'resistor' | 'capacitor' | 'inductor' | 'voltageSource' | 'currentSource' | 'dimension' | 'pin' | 'roller' | 'ground';
+      kind: 'rod' | 'spring' | 'vector' | 'resistor' | 'capacitor' | 'inductor' | 'voltageSource' | 'currentSource' | 'dimension' | 'pin' | 'roller' | 'ground' | 'bond' | 'doubleBond' | 'tripleBond' | 'reactionArrow' | 'reversibleArrow' | 'inhibition';
       from: DemonstrationPoint;
       to: DemonstrationPoint;
     });
@@ -151,6 +152,7 @@ export interface DemonstrationProgram {
       boundary: DemonstrationValue;
       source?: DemonstrationValue;
     };
+    reactionNetwork?: {species:{id:string;initial:DemonstrationValue;composition?:Record<string,number>}[];reactions:{id:string;reactants:Record<string,number>;products:Record<string,number>;rateConstant?:DemonstrationValue;rate?:DemonstrationValue}[]};
     stateSpace?: {
       states: string[];
       initial: DemonstrationValue[];
