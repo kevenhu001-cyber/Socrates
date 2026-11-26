@@ -222,6 +222,28 @@ function buildComposerControls(opts: {
   };
 }
 
+function useComposerEffortControl(phone: boolean) {
+  const storedEffort = useStoredReasoningEffort();
+  const capabilities = useProviderConfigStore((state) =>
+    state.providers.find((provider) => provider.id === state.activeId)?.capabilities,
+  );
+  const effort = resolveEffectiveEffort(storedEffort, capabilities);
+  const configuration = useChatConfigurationSnapshot();
+  return (
+    phone && capabilities?.supportsEffort !== false
+      ? {
+          visible: true,
+          caption: i18n('chatconfig.effort', 'Reasoning effort'),
+          value: effortLabel(effort),
+          level: effort,
+          accessibilityLabel: `${i18n('chatconfig.effort', 'Reasoning effort')} · ${effortLabel(effort)}`,
+          expanded: configuration.open && configuration.triggerId === 'effortTrigger',
+          onPress: () => openChatConfiguration(anchor('effortTrigger')),
+        }
+      : undefined
+  );
+}
+
 /**
  * React owns the complete composer shell. The stable outer host stays in the
  * document so the landing/chat transition can move it without rebuilding the
@@ -256,24 +278,7 @@ export function ComposerShell({
   const focused = useEditorFocus(phone);
   // The phone reference keeps the editor above its controls even when empty.
   const expanded = phone || focused || hasDraft || attachments.length > 0 || voiceActive;
-  const storedEffort = useStoredReasoningEffort();
-  const capabilities = useProviderConfigStore((state) =>
-    state.providers.find((provider) => provider.id === state.activeId)?.capabilities,
-  );
-  const effort = resolveEffectiveEffort(storedEffort, capabilities);
-  const configuration = useChatConfigurationSnapshot();
-  const effortControl =
-    phone && capabilities?.supportsEffort !== false
-      ? {
-          visible: true,
-          caption: i18n('chatconfig.effort', 'Reasoning effort'),
-          value: effortLabel(effort),
-          level: effort,
-          accessibilityLabel: `${i18n('chatconfig.effort', 'Reasoning effort')} · ${effortLabel(effort)}`,
-          expanded: configuration.open && configuration.triggerId === 'effortTrigger',
-          onPress: () => openChatConfiguration(anchor('effortTrigger')),
-        }
-      : undefined;
+  const effortControl = useComposerEffortControl(phone);
   /* Dictation owns the microphone while it runs; the primary stays a send
      control and cannot submit a half-transcribed turn. */
   const canSend = !voiceActive && (hasDraft || attachments.length > 0);
