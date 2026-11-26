@@ -432,7 +432,7 @@ export function renderStreamMath(
   const rendered = _renderStreamMath(math, displayMode, unclosed);
   if (rendered === null) return null;
   const sourceClass = displayMode ? 'chat-math-source chat-math-source-block' : 'chat-math-source';
-  const html = `${rendered}<code class="${sourceClass}">${esc(math.trim())}</code>`;
+  const html = unclosed ? rendered : `${rendered}<code class="${sourceClass}">${esc(math.trim())}</code>`;
   if (_mathHtmlCache.size >= MATH_HTML_CACHE_MAX) {
     const oldest = _mathHtmlCache.keys().next();
     if (!oldest.done) _mathHtmlCache.delete(oldest.value);
