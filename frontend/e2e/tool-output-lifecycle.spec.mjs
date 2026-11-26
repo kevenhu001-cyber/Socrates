@@ -609,6 +609,10 @@ test('download artifacts use a React-owned link for legacy saved calls', async (
   await expect(link).toHaveAttribute('data-artifact-id', 'summary-file');
   await expect(link).toHaveAttribute('href', '/api/files/summary-file/raw');
   await expect(link).toHaveAttribute('download', '');
+  await expect(link.locator('.exec-artifact-file-icon')).toBeVisible();
+  await expect(link.locator('.exec-artifact-download-icon')).toBeVisible();
+  await expect(link.locator('.exec-artifact-file-name')).toBeVisible();
+  await expectFullWidthOutput(body, link);
   await expect(link).toHaveText('summary.csv');
   expect(await page.evaluate(() => window.__legacyArtifactAppenderPresent)).toBe(false);
 });
