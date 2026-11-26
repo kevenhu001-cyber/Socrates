@@ -1,4 +1,6 @@
 import { useState, useId, useMemo } from 'react';
+import { NativeControl } from '../../ui/NativeControl';
+import { Label } from '../../ui/shadcn/label';
 import type { SurfaceSample } from './sampleField';
 import { i18n } from '../../../ui/legacyI18n.ts';
 
@@ -66,8 +68,8 @@ export function DemoSurface({ sample, label, style = 'wireframe' }: { sample?: S
     {style === 'shaded' && sample && <div className="demo-legend"><svg className="demo-color-scale" viewBox="0 0 120 10" aria-hidden="true">{Array.from({length:60},(_,i)=><rect key={i} x={i*2} width="2" height="10" fill={`hsl(${220*(1-i/59)},70%,50%)`}/>)}</svg><span>z: {sample.z.join(' – ')}</span></div>}
     {sample && <div className="demo-legend"><span>x: {sample.x.join(' – ')}</span><span>y: {sample.y.join(' – ')}</span><span>z: {sample.z.join(' – ')}</span></div>}
     <div className="demo-controls">
-      <div className="demo-control"><label htmlFor={id+'-az'}>{i18n('intui.demo.azimuth','Azimuth')}</label><input id={id+'-az'} type="range" min="-180" max="180" value={azimuth} onChange={(event)=>setAzimuth(Number(event.target.value))}/><output>{azimuth}°</output></div>
-      <div className="demo-control"><label htmlFor={id+'-el'}>{i18n('intui.demo.elevation','Elevation')}</label><input id={id+'-el'} type="range" min="5" max="85" value={elevation} onChange={(event)=>setElevation(Number(event.target.value))}/><output>{elevation}°</output></div>
+      <div className="demo-control"><Label htmlFor={id+'-az'}>{i18n('intui.demo.azimuth','Azimuth')}</Label><NativeControl id={id+'-az'} type="range" min="-180" max="180" value={azimuth} onChange={(event)=>setAzimuth(Number(event.target.value))}/><output>{azimuth}°</output></div>
+      <div className="demo-control"><Label htmlFor={id+'-el'}>{i18n('intui.demo.elevation','Elevation')}</Label><NativeControl id={id+'-el'} type="range" min="5" max="85" value={elevation} onChange={(event)=>setElevation(Number(event.target.value))}/><output>{elevation}°</output></div>
     </div>
   </>;
 }
