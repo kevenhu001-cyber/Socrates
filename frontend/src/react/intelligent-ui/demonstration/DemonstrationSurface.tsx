@@ -1,8 +1,8 @@
-import { useState, useId } from 'react';
+import { useState, useId, useMemo } from 'react';
 import type { SurfaceSample } from './sampleField';
 import { i18n } from '../../../ui/legacyI18n.ts';
 
-export function DemoSurface({ sample, label }: { sample?: SurfaceSample; label?: string }) {
+export function DemoSurface({ sample, label, style = 'wireframe' }: { sample?: SurfaceSample; label?: string; style?: 'wireframe' | 'shaded' }) {
   const [azimuth, setAzimuth] = useState(35);
   const [elevation, setElevation] = useState(30);
   const id = useId();
@@ -11,6 +11,29 @@ export function DemoSurface({ sample, label }: { sample?: SurfaceSample; label?:
     260 + 82 * (x*Math.cos(a)-y*Math.sin(a)),
     135 + 82 * ((x*Math.sin(a)+y*Math.cos(a))*Math.sin(e)-z*Math.cos(e)),
   ];
+  const faces = useMemo(() => {
+    if (!sample || style !== 'shaded') return [];
+    const {size,values,z}=sample;
+    const vertices=values.map((v,k)=>{
+      if(!Number.isFinite(v))return null;
+      const x=2*(k%size)/(size-1)-1,y=2*Math.floor(k/size)/(size-1)-1;
+      const h=2*(v-z[0])/(z[1]-z[0])-1;
+      const horizontal=x*Math.sin(a)+y*Math.cos(a);
+      return {point:[260+82*(x*Math.cos(a)-y*Math.sin(a)),135+82*(horizontal*Math.sin(e)-h*Math.cos(e))],
+        depth:horizontal*Math.cos(e)+h*Math.sin(e),height:(h+1)/2};
+    });
+    const result:{key:number;points:string;depth:number;fill:string}[]=[];
+    for(let j=0;j<size-1;j++)for(let i=0;i<size-1;i++){
+      const k=j*size+i;
+      const corners=[vertices[k],vertices[k+1],vertices[k+1+size],vertices[k+size]];
+      if(corners.some(v=>v===null))continue;
+      const valid=corners.filter(v=>v!==null);
+      const h=valid.reduce((sum,v)=>sum+v.height,0)/4;
+      result.push({key:k,points:valid.map(v=>v.point.map(n=>n.toFixed(2)).join(',')).join(' '),
+        depth:valid.reduce((sum,v)=>sum+v.depth,0)/4,fill:`hsl(${220*(1-h)},70%,50%)`});
+    }
+    return result.sort((a,b)=>b.depth-a.depth);
+  },[sample,style,a,e]);
   const path = (row: boolean, index: number) => {
     if (!sample) return '';
     let d = '', pen = false;
@@ -34,11 +57,13 @@ export function DemoSurface({ sample, label }: { sample?: SurfaceSample; label?:
     <svg viewBox="0 0 520 340" width="100%" role="img" aria-label={label || i18n('intui.demo.surface3d','3D surface')}>
       <g transform="translate(0,30)">
         {axis([1,-1,-1],'x')}{axis([-1,1,-1],'y')}{axis([-1,-1,1],'z')}
-        {sample && Array.from({length:sample.size},(_,i)=><g key={i} stroke="var(--ui-demo-blue)" strokeWidth=".85" fill="none">
+        {style === 'shaded' && <g data-surface-style="shaded">{faces.map(face=><polygon key={face.key} points={face.points} fill={face.fill} stroke={face.fill} strokeWidth=".45"/>)}</g>}
+        {style === 'wireframe' && sample && Array.from({length:sample.size},(_,i)=><g key={i} stroke="var(--ui-demo-blue)" strokeWidth=".85" fill="none">
           <path d={path(true,i)}/><path d={path(false,i)}/>
         </g>)}
       </g>
     </svg>
+    {style === 'shaded' && sample && <div className="demo-legend"><svg className="demo-color-scale" viewBox="0 0 120 10" aria-hidden="true">{Array.from({length:60},(_,i)=><rect key={i} x={i*2} width="2" height="10" fill={`hsl(${220*(1-i/59)},70%,50%)`}/>)}</svg><span>z: {sample.z.join(' – ')}</span></div>}
     {sample && <div className="demo-legend"><span>x: {sample.x.join(' – ')}</span><span>y: {sample.y.join(' – ')}</span><span>z: {sample.z.join(' – ')}</span></div>}
     <div className="demo-controls">
       <div className="demo-control"><label htmlFor={id+'-az'}>{i18n('intui.demo.azimuth','Azimuth')}</label><input id={id+'-az'} type="range" min="-180" max="180" value={azimuth} onChange={(event)=>setAzimuth(Number(event.target.value))}/><output>{azimuth}°</output></div>
