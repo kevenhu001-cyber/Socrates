@@ -1080,6 +1080,11 @@
   width: 22px;
   height: 8px;
 }
+.demo-legend .demo-color-scale {
+  width: 120px;
+  height: 10px;
+  max-width: 100%;
+}
 .demo-controls {
   display: grid;
   gap: var(--ui-gap-2);
