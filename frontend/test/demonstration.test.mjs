@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, resolve, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { compileDemonstrationRuntime } from '@socrates/core/demonstration';
 import { sampleField } from '../src/react/intelligent-ui/demonstration/sampleField.ts';
@@ -996,7 +996,7 @@ test('simulation modules have no circular imports and preserve the public facade
   const available=new Set(files),graph=new Map();
   for(const path of files){
     const source=readFileSync(path,'utf8');
-    const dependencies=[...source.matchAll(/^import\s+.*?from\s+['"]([^'"]+)['"];/gm)].map(m=>resolve(dirname(path),m[1]));
+    const dependencies=[...source.matchAll(/^(?:import|export)\s+[^;]*?\bfrom\s+['"]([^'"]+)['"]/gm)].map(m=>resolve(dirname(path),m[1]));
     for(const dep of dependencies)assert.ok(available.has(dep),`Internal module must not import outside the kernel: ${path} -> ${dep}`);
     graph.set(path,dependencies);
   }
@@ -1008,6 +1008,23 @@ test('simulation modules have no circular imports and preserve the public facade
     visiting.delete(path);visited.add(path);
   }
   for(const path of files)visit(path);
+  // The validation entry must not transitively load a time/grid/analysis
+  // solver or runtime. Small dense algebra is used by expression functions.
+  const validator=join(root,'compiler','validate.js');
+  const reachable=new Set();
+  function collect(path){
+    if(reachable.has(path))return;
+    reachable.add(path);for(const dep of graph.get(path))collect(dep);
+  }
+  collect(validator);
+  for(const path of reachable){
+    assert.ok(relative(root,path).split(sep)[0]!=='runtime',`Validator imports runtime: ${path}`);
+    assert.ok(relative(root,path).split(sep)[0]!=='numerics'||path===join(root,'numerics','dense.js'),`Validator imports execution algorithm: ${path}`);
+  }
+  for(const [path,deps] of graph){
+    if(relative(root,path).split(sep)[0]==='numerics')for(const dep of deps)
+      assert.ok(relative(root,dep).split(sep)[0]!=='models',`Numerical algorithm imports DSL adapter: ${path} -> ${dep}`);
+  }
   const facade=readFileSync(new URL('../../packages/core/src/demonstration.js',import.meta.url),'utf8');
   assert.ok(facade.split('\n').length<20);
 });
