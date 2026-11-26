@@ -1336,6 +1336,16 @@ html[data-mode='dark'] #appShell .msg-body .hljs :is(.hljs-comment, .hljs-quote)
   td {
   background: transparent;
 }
+#appShell
+  #msgList
+  .msg-body
+  .ds-table-wrap:not(.visualization-table-wrap):not(.intui-table-wrap):not(.iui-table-wrap)
+  > table.ds-table
+  tbody
+  tr:last-child
+  td {
+  border-bottom: 0;
+}
 #appShell #msgList .msg-body hr {
   border-top-color: var(--ui-border-subtle);
 }
