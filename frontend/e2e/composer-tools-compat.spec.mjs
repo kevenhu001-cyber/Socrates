@@ -240,16 +240,21 @@ test('mobile plus menu opens without expanding the chat composer', async ({ page
     };
   });
   expect(mobileMenuStyle.background).not.toBe('rgba(0, 0, 0, 0)');
-  expect(mobileMenuStyle.border).toBe('1px');
+  expect(mobileMenuStyle.border).toBe('0px');
   expect(mobileMenuStyle.shadow).not.toBe('none');
-  expect(mobileMenuStyle.radius).toBe('20px');
+  expect(mobileMenuStyle.radius).toBe('28px');
+  expect(mobileMenuStyle.bottomRadius).toBe('28px');
   await menu.evaluate((element) => Promise.all(element.getAnimations().map((a) => a.finished)));
   const sheetBox = await menu.boundingBox();
-  // The phone menu is a bottom sheet matching mobile reference 1000038600.jpg:
-  // spans the full width and pins to the bottom of the viewport.
-  expect(Math.round(sheetBox.x)).toBe(0);
-  expect(Math.round(sheetBox.width)).toBe(390);
-  expect(Math.round(sheetBox.y + sheetBox.height)).toBe(844);
+  // November reference: a floating list 12px from the viewport edges,
+  // ending 8px above the actual composer, not the viewport bottom.
+  expect(Math.round(sheetBox.x)).toBe(12);
+  expect(Math.round(sheetBox.width)).toBe(366);
+  const frame = await wrap.locator('[data-composer-frame]').boundingBox();
+  expect(Math.abs(frame.y - sheetBox.y - sheetBox.height - 8)).toBeLessThanOrEqual(1);
+  await expect(menu.locator('.composer-tools-tiles, .composer-tools-sheet-handle')).toHaveCount(0);
+  const photos = menu.locator('.composer-tools-mobile-items [data-composer-action="photos"]');
+  await expect(photos).toHaveCSS('min-height', '46px');
   await expect(page.locator('body')).toHaveClass(/composer-tools-open/);
   await page.screenshot({
     path: 'test-results/visual-qa/composer-workflows-menu-mobile.png',

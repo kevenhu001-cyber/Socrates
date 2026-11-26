@@ -43,9 +43,7 @@
   letter-spacing: -0.015em;
   overflow-wrap: anywhere;
 }
-.msg.assistant
-  .msg-body.is-declarative
-  :is(.intui-panel-description, .intui-callout-text) {
+.intui :is(.intui-panel-description, .intui-callout-text) {
   color: var(--ui-text-secondary);
   font-size: var(--ui-font-size-sm);
   line-height: var(--ui-line-height-relaxed);
@@ -427,9 +425,8 @@
 }
 .ds-table-wrap > table.ds-table,
 .intui-table {
-  width: max-content;
-  min-width: 0;
-  max-width: 100%;
+  width: 100%;
+  min-width: 100%;
   border-collapse: collapse;
   border-spacing: 0;
   color: var(--ui-text-primary);

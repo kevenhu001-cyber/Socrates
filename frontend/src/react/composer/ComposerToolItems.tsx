@@ -1,6 +1,6 @@
 import { Button } from '../ui/shadcn/button';
 import { Icon } from '../../legacy/Icon';
-import { interfaceIcon } from '../../legacy/icons/interfaceIcons';
+import type { IconProps } from '../../legacy/Icon';
 import { i18n, menuCopy, MOBILE_MENU_ITEMS, type MenuItemSpec } from './composerToolsMenuData';
 import type { ComposerToolsAction } from './types';
 
@@ -80,45 +80,10 @@ export function MobileMenuItem({
   );
 }
 
-export function MobileTileItem({
-  action,
-  labelKey,
-  label,
-  iconName,
-  onPick,
-}: {
-  action: ComposerToolsAction;
-  labelKey: string;
-  label: string;
-  iconName: 'camera' | 'image' | 'paperclip' | 'wechat';
-  onPick: (action: ComposerToolsAction) => void;
-}) {
-  const text = i18n(labelKey, label);
-  return (
-    <Button
-      type="button"
-      variant="surface"
-      size="surface"
-      className="composer-tools-tile"
-      data-composer-action={action}
-      aria-label={text}
-      onClick={(event) => {
-        event.stopPropagation();
-        onPick(action);
-      }}
-    >
-      <span
-        className="composer-tools-tile-icon"
-        dangerouslySetInnerHTML={{ __html: interfaceIcon(iconName, 26) }}
-      />
-      <span className="composer-tools-tile-label">{text}</span>
-    </Button>
-  );
-}
-
 export function MobileToolRow({
   action,
   iconHtml,
+  iconName,
   title,
   subtitle,
   rightText,
@@ -127,7 +92,8 @@ export function MobileToolRow({
   onPick,
 }: {
   action: ComposerToolsAction;
-  iconHtml: string;
+  iconHtml?: string;
+  iconName?: IconProps['name'];
   title: string;
   subtitle?: string;
   rightText?: string;
@@ -150,10 +116,13 @@ export function MobileToolRow({
         onPick(action);
       }}
     >
-      <span
-        className="composer-tools-icon composer-tools-row-icon"
-        dangerouslySetInnerHTML={{ __html: iconHtml }}
-      />
+      <span className="composer-tools-icon composer-tools-row-icon">
+        {iconName ? (
+          <Icon name={iconName} size={22} />
+        ) : (
+          <span dangerouslySetInnerHTML={{ __html: iconHtml ?? '' }} />
+        )}
+      </span>
       <span className="composer-tools-copy composer-tools-row-copy">
         <span className="composer-tools-row-title">{title}</span>
         {subtitle ? <span className="composer-tools-row-subtitle">{subtitle}</span> : null}
@@ -164,9 +133,9 @@ export function MobileToolRow({
         ) : null}
         {active ? (
           <Icon name="check" className="composer-tools-check composer-tools-active-check" />
-        ) : (
+        ) : rightText || action === 'managePlugins' || action === 'skills' ? (
           <Icon name="chevronRight" size={16} className="composer-tools-row-arrow" />
-        )}
+        ) : null}
       </span>
     </Button>
   );

@@ -416,7 +416,7 @@
   margin-block: var(--ui-space-sm) var(--ui-space-md);
   /* The activity list shares the caption's text edge. A rail without nodes
      reads as an accidental border, not as a meaningful timeline. */
-  padding-inline-start: var(--ui-space-sm);
+  padding-inline-start: 0;
   border-inline-start: 0;
 }
 .activity-summary-step,
@@ -648,9 +648,8 @@
 .agent-plan {
   display: block;
   margin: 2px 0 8px;
-  padding: 9px 12px 10px;
-  border-radius: var(--ui-radius-sm);
-  background: var(--ui-bg-code);
+  padding: 0;
+  background: transparent;
 }
 .agent-plan-head {
   display: flex;

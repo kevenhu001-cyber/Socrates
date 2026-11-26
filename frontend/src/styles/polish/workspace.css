@@ -110,9 +110,9 @@
 .workspace-primary,
 .workspace-secondary,
 .workspace-danger {
-  min-height: 30px;
-  padding: 6px 10px;
-  border-radius: var(--ui-radius-row);
+  min-height: 36px;
+  padding: 6px 14px;
+  border-radius: var(--ui-radius-pill);
   font-size: var(--ui-foundation-font-size-sm);
   font-weight: var(--ui-font-weight-semibold);
   transition:
@@ -179,9 +179,9 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--ui-text-secondary);
-  font-size: calc(var(--ui-font-size-base-small) * var(--sidebar-font-scale));
-  font-weight: var(--ui-font-weight-semibold);
+  color: var(--ui-text-primary);
+  font-size: var(--ui-text-ui);
+  font-weight: var(--ui-font-weight-medium);
 }
 .workspace-row-copy span {
   overflow: hidden;
@@ -195,15 +195,21 @@
   border-radius: var(--ui-radius-xs);
   color: var(--ui-text-tertiary);
   font-size: calc(var(--ui-font-size-label) * var(--sidebar-font-scale));
-  opacity: 0;
-  transition:
-    opacity 0.14s,
-    background 0.14s,
-    color 0.14s;
-}
-.workspace-row:hover .workspace-row-action,
-.workspace-row-action:focus-visible {
   opacity: 1;
+  transition:
+    opacity var(--ui-duration-hover),
+    background var(--ui-duration-hover),
+    color var(--ui-duration-hover);
+}
+@media (hover: hover) and (pointer: fine) {
+  .workspace-row-action {
+    opacity: 0;
+  }
+  .workspace-row:hover .workspace-row-action,
+  .workspace-row:focus-within .workspace-row-action,
+  .workspace-row-action:focus-visible {
+    opacity: 1;
+  }
 }
 .workspace-row-action:hover {
   background: var(--ui-bg-raised);

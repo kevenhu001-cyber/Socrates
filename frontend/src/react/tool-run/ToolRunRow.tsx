@@ -1,5 +1,5 @@
 import { memo, useId } from 'react';
-import { Chevron, toolVerbOf } from '@socrates/ui/turn';
+import { toolVerbOf } from '@socrates/ui/turn';
 import { basename, clip, filePathOf, hostOf, queryOf, translate, urlOf } from '../../legacy/toolPresentationModel.ts';
 import { Button } from '../ui/shadcn/button';
 import { Icon } from '../../legacy/Icon';
@@ -88,7 +88,7 @@ export const ToolRunRow = memo(function ToolRunRow({
           data-testid="thinking-step-spinner"
         />
       ) : null}
-      {expandable ? <Chevron open={disclosure.open} size={6} /> : null}
+      {expandable ? <Icon name={disclosure.open ? 'chevronUp' : 'chevronDown'} size={16} /> : null}
     </>
   );
 

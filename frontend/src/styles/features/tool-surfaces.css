@@ -280,37 +280,6 @@
   border-radius: var(--tool-card-radius);
   box-shadow: var(--tool-card-shadow);
 }
-.composer-tools-item {
-  transition: color 0.16s ease;
-}
-.composer-tools-item:hover,
-.composer-tools-item:focus-visible {
-  color: var(--tool-card-text);
-}
-.composer-tools-item:active {
-  color: var(--tool-card-text);
-  transform: none;
-}
-.composer-tools-icon {
-  width: 22px;
-  height: 22px;
-  color: var(--tool-card-icon);
-}
-.composer-tools-item:hover .composer-tools-icon,
-.composer-tools-item:focus-visible .composer-tools-icon {
-  color: var(--tool-card-icon-hover);
-}
-.composer-tools-copy > span {
-  font-size: var(--tool-card-title-size);
-  font-weight: var(--tool-card-title-weight);
-  color: var(--tool-card-text);
-}
-.composer-tools-copy small {
-  font-size: var(--tool-card-desc-size);
-  font-weight: var(--tool-card-desc-weight);
-  color: var(--tool-card-text-subtle);
-}
-
 /* Skills / shortcuts and slash-command entries */
 .prompt-templates-body {
   padding: 18px 20px 20px;
@@ -498,8 +467,8 @@
   margin-block-start: var(--ui-space-xs);
 }
 .rn-tool-row .tool-run-trigger {
-  display: inline-flex;
-  align-self: flex-start;
+  display: flex;
+  width: 100%;
   align-items: center;
   /* Flat activity rows align with public summary and source rows. */
   gap: var(--ui-space-sm);
@@ -522,11 +491,10 @@
   color: var(--foreground);
 }
 .tool-run-trigger .tool-run-label {
-  flex: 0 1 auto;
+  flex: 1 1 auto;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 .rn-tool-row.is-live .tool-run-label {
   color: var(--ui-text-secondary);
@@ -534,11 +502,12 @@
 .activity-source-preview {
   display: grid;
   min-width: 0;
-  gap: var(--ui-space-sm);
+  gap: var(--ui-space-xs);
+  padding-inline-start: calc(18px + var(--ui-space-sm));
 }
 .activity-source-row {
   display: grid;
-  grid-template-columns: 18px minmax(0, 1fr);
+  grid-template-columns: 20px minmax(0, 1fr);
   align-items: center;
   gap: var(--ui-space-sm);
   width: 100%;
@@ -571,12 +540,12 @@
   text-overflow: ellipsis;
 }
 .activity-source-title {
-  font-size: var(--prose-size, var(--ui-text-body));
-  line-height: var(--ui-line-height-relaxed);
+  font-size: var(--ui-text-ui);
+  line-height: var(--ui-text-ui-line);
 }
 .activity-source-host {
   color: var(--ui-text-secondary);
-  font-size: var(--ui-font-size-sm);
+  font-size: var(--ui-font-size-xs);
   line-height: var(--ui-text-ui-line);
 }
 .tool-run-trigger .tool-run-state {
@@ -641,8 +610,8 @@
   min-width: 0;
 }
 .tool-run-group-trigger {
-  display: inline-flex;
-  align-self: flex-start;
+  display: flex;
+  width: 100%;
   align-items: center;
   gap: var(--ui-space-sm);
   min-width: 0;
@@ -685,7 +654,7 @@
   flex: none;
 }
 .tool-run-group-label {
-  flex: 0 1 auto;
+  flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;

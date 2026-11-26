@@ -232,7 +232,8 @@
 }
 
 @media (max-width: 768px) {
-  #appShell#appShell .sidebar-search {
+  #appShell #sidebar .sidebar-search {
+    height: 40px;
     gap: 8px;
     padding: 0 14px;
     border: 1px solid var(--ui-border-subtle);
@@ -245,7 +246,7 @@
 }
 
 @media (max-width: 768px) {
-  #appShell#appShell .sidebar-search:focus-within {
+  #appShell #sidebar .sidebar-search:focus-within {
     background: var(--ui-bg-surface);
   }
 }
@@ -929,9 +930,6 @@
     stroke-linecap: round;
     stroke-linejoin: round;
   }
-  #appShell#appShell .sidebar-search {
-    height: 40px;
-  }
 }
 
 @media (max-width: 768px) {
@@ -952,7 +950,7 @@
 @media (max-width: 768px) {
   /* Prevent iOS Safari auto-zoom on the drawer search. */
   #appShell #sidebarSearch {
-    font-size: var(--ui-font-size-md);
+    font-size: max(16px, var(--ui-font-size-md));
     border-radius: var(--ui-radius-control);
   }
 }

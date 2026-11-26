@@ -1,7 +1,5 @@
 import { restingRect } from '../../legacy/pressFeedback.ts';
 
-/* Phone bottom sheet, matching the mobile drawer reference (screenshot 1000038600.jpg):
-   it slides up from the bottom of the viewport, spans full width, with rounded top corners. */
 /* 2026-11-26 phone reference: the "+" menu is a floating card that rests just
  * above the question box with 12px side margins, not a full-width bottom
  * sheet. `composerTop` is the box's top edge in the layout viewport; the card
@@ -20,15 +18,15 @@ function positionMobileMenu(
     composerTop !== null && composerTop > 0
       ? Math.max(bottomInset, layoutHeight - composerTop + MOBILE_MENU_GAP)
       : bottomInset;
-  const room = Math.max(160, viewportHeight - (bottom - bottomInset) - MOBILE_MENU_MARGIN * 2);
-  menu.style.setProperty('position', 'fixed', 'important');
-  menu.style.setProperty('left', `${MOBILE_MENU_MARGIN}px`, 'important');
-  menu.style.setProperty('right', `${MOBILE_MENU_MARGIN}px`, 'important');
-  menu.style.setProperty('width', 'auto', 'important');
-  menu.style.setProperty('max-width', 'none', 'important');
-  menu.style.setProperty('top', 'auto', 'important');
-  menu.style.setProperty('bottom', `${bottom}px`, 'important');
-  menu.style.setProperty('max-height', `${Math.min(room, viewportHeight * 0.75)}px`, 'important');
+  const room = Math.max(0, viewportHeight - (bottom - bottomInset) - MOBILE_MENU_MARGIN * 2);
+  menu.style.position = 'fixed';
+  menu.style.setProperty('left', `${MOBILE_MENU_MARGIN}px`);
+  menu.style.setProperty('right', `${MOBILE_MENU_MARGIN}px`);
+  menu.style.setProperty('width', 'auto');
+  menu.style.setProperty('max-width', 'none');
+  menu.style.setProperty('top', 'auto');
+  menu.style.setProperty('bottom', `${bottom}px`);
+  menu.style.setProperty('max-height', `${Math.min(room, viewportHeight * 0.75)}px`);
   menu.style.removeProperty('border-radius');
   menu.dataset.menuSide = 'sheet';
 }
