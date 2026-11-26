@@ -143,6 +143,45 @@ programs validated and executed without warnings. Added core and browser
 regression tests; latest full CI and real-browser visual/performance
 verification remain pending. No claim of measured mobile speedup.
 
+## Stage five: general SPD sparse systems, spatial plots and diagnostics
+
+- Standalone stationary sparse linear systems: zero-based upper-triangle
+  triplets, explicit diagonal and parameter-only expressions, CSR storage
+  and Jacobi-preconditioned CG. Up to 1024 unknowns, 8192 input entries,
+  1024 iterations, 8M estimated sparse-entry operations, subject to the
+  existing 40KB program cap. Recomputed relative residual on convergence;
+  detected nonpositive curvature and nonconvergence fail explicitly.
+  SPD is a model precondition, not certified by the solver. sparseAt(i)
+  reads a component, sparseValue interpolates by x, and sparseResidual /
+  sparseIterations expose numerical results. No nonsymmetric solver or
+  sparse time-varying DAE is implied.
+- Parametric 3D curves (481 full points, 121 preview), simulation-history
+  trajectories, and spatial vector fields (7^3 full or 4^3 preview samples).
+  The third spatial coordinate spaceZ is reserved only for programs with
+  a 3D vector view. Cache dependency mask 8 and coordinate invalidation
+  keep samples distinct. Reuse the existing camera renderer; out-of-range
+  curve samples are gaps, arrows have normalized display length and
+  magnitude reference, not physical scale. This is sampled visualization,
+  not a 3D PDE/volume solver.
+- Opt-in collapsed solver diagnostics carried through Worker frames:
+  accepted/rejected steps, derivative evaluations, event counts, normalized
+  accepted local error, min/max step; implicit-grid node/history counts;
+  CG iterations, nonzeros, relative residual. No inferred global error or
+  fabricated benchmark. Fixed roundoff-only terminal integration steps.
+- Camera controls use existing Label and NativeControl primitives, resolving
+  the preceding shadcn-adoption lint failure without loosening rules.
+
+Direct core verification: 128-unknown SPD chain maximum component error
+2.695e-10, relative residual 6.407e-11 in 17 iterations. 1024-diagonal
+system solved in one iteration with zero residual. An indefinite example
+with negative curvature was rejected. Six-second integrated helix radial
+invariant error 1.039e-9, exactly 120 accepted steps at .05 s. Spatial
+sampler executed after removing TypeScript annotations: 342 nonzero
+vectors on the 343-point grid; 481 helix samples with endpoint error near
+machine precision. All 19 scientific examples and 15 historical examples
+validated and executed without runtime warnings. Added unit and E2E cases;
+full CI, browser visual testing and real device performance remain pending.
+
 ## Deliberate limits / next steps
 
 This is a bounded educational engine, not an industrial multiphysics solver.
@@ -150,7 +189,7 @@ No BDF/Radau solver, general high-index DAE reduction, contact/friction
 solver, arbitrary PDE or unstructured 2D/3D mesh, nonlinear SPICE-compatible netlist,
 automatic dimensional analysis, or general vector/matrix expression values are claimed. Add these only
 with explicit bounded protocols and analytic/conservation regression tests.
-Prioritize generalized sparse systems, adaptive spatial/time error control, richer
-3D geometry (parametric curves, vector fields and volume slices), high-index
-constraint projection, nonlinear circuit devices and scientific diagnostics. Benchmark on mobile with the same
+Prioritize nonsymmetric sparse systems, adaptive spatial/time error control,
+volume slices, high-index constraint projection, nonlinear circuit devices,
+and real-device benchmarks. Do not merge before CI/browser verification. Benchmark on mobile with the same
 error tolerance before introducing any WASM dependency.
