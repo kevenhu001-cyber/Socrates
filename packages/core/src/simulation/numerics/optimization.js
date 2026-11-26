@@ -69,4 +69,3 @@ function* solveOptimization(s,params,compile){
 }
 
 export { solveOptimization };
-export { optimizationSpec, lowerOptimization } from '../models/optimization.js';
