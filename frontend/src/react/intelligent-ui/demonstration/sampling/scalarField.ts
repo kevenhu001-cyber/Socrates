@@ -1,4 +1,4 @@
-import { isDemonstrationBudgetError } from '@socrates/core/demonstration';
+import { isDemonstrationBudgetError } from '@socrates/core/demonstrationLight';
 import type { DemonstrationField, DemonstrationRuntime } from '@socrates/core/demonstration';
 import { FIELD_WIDTH, fieldHeight, setting, errorMessage, type Domain } from '../fieldCommon';
 
