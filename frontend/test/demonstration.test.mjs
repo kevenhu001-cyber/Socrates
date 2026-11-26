@@ -659,7 +659,8 @@ test('surface sampling provides real bounded mesh values without raster allocati
   assert.equal(sample.surface.size,33);
   assert.equal(sample.surface.values[16*33+16],0);
   assert.equal(sample.surface.values[0],2);
-  assert.equal(validateDemonstration({version:1,views:[{...view,zRange:[2,0]}]}).ok,false);
+  assert.equal(validateDemonstration({version:1,views:[{...view,zRange:[2,0]}]}).ok,true); // Numeric bounds are normalized to increasing order.
+  assert.equal(validateDemonstration({version:1,views:[{...view,zRange:[0]}]}).ok,false);
 });
 
 test('matrix-free implicit grid resolves a 65 by 65 heat mode within bounded history', () => {
@@ -756,4 +757,43 @@ test('adaptive diagnostics count rejected and accepted steps, not global errors'
   assert.ok(runtime.diagnostics.rejectedSteps>0);
   assert.ok(runtime.diagnostics.maxLocalError<=1);
   assert.equal(runtime.diagnostics.derivativeEvaluations,7*(runtime.diagnostics.acceptedSteps+runtime.diagnostics.rejectedSteps));
+});
+
+test('reaction network compiles balanced stoichiometry and conserves element pools',()=>{
+  const scientific=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
+  const runtime=createDemonstrationRuntime(scientific.reversibleReaction);
+  assert.deepEqual(runtime.warnings,[]);
+  assert.ok(Math.abs(runtime.evaluate('A',2)-(1/3+2/3*Math.exp(-6)))<1e-7);
+  assert.ok(Math.abs(runtime.evaluate('total_C',5)-1)<1e-9);
+  const invalid=JSON.parse(JSON.stringify(scientific.reversibleReaction));
+  invalid.dynamics.reactionNetwork.species[1].composition.C=2;
+  assert.equal(validateDemonstration(invalid).ok,false);
+  const enzyme=createDemonstrationRuntime(scientific.enzymeKinetics);
+  for(let i=0;i<=100;i++){
+    assert.ok(Math.abs(enzyme.evaluate('enzymeTotal',i/10)-.2)<1e-7);
+    assert.ok(Math.abs(enzyme.evaluate('substrateTotal',i/10)-1)<1e-7);
+    assert.ok(Object.values(enzyme.stateAt(i/10)).every(v=>v>=0));
+  }
+});
+test('seeded SSA count process is reproducible and stays integer and nonnegative',()=>{
+  const scientific=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
+  const a=createDemonstrationRuntime(scientific.stochasticExpression),b=createDemonstrationRuntime(scientific.stochasticExpression);
+  assert.deepEqual(a.warnings,[]);
+  assert.equal(a.diagnostics.method,'ssa');
+  assert.ok(a.diagnostics.events>0);
+  for(let i=0;i<=200;i++){
+    const n=a.evaluate('protein',i/10);
+    assert.equal(n,b.evaluate('protein',i/10));
+    assert.ok(Number.isInteger(n)&&n>=0);
+  }
+  const invalid=JSON.parse(JSON.stringify(scientific.stochasticExpression));
+  invalid.dynamics.reactionNetwork.species[0].initial=.5;
+  assert.equal(validateDemonstration(invalid).ok,false);
+});
+test('molecular symbols validate and sample their authored geometry',()=>{
+  const scientific=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
+  assert.equal(validateDemonstration(scientific.molecularStructures).ok,true);
+  const bad=JSON.parse(JSON.stringify(scientific.molecularStructures));
+  bad.views[0].objects[2].element='invalid';
+  assert.equal(validateDemonstration(bad).ok,false);
 });
