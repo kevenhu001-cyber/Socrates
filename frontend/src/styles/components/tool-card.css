@@ -87,25 +87,44 @@
 .exec-artifact-meta-name {
   flex: 1;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 .exec-artifact-open {
   flex: 0 0 auto;
 }
 .exec-artifact-link {
-  display: inline-flex;
+  box-sizing: border-box;
+  display: flex;
   align-items: center;
+  gap: var(--ui-space-sm);
+  width: 100%;
   max-width: 100%;
-  min-height: var(--ui-control-md);
-  padding: var(--ui-space-xs) var(--ui-space-sm);
+  min-height: 56px;
+  padding: var(--ui-space-sm);
   border: 1px solid var(--ui-border-subtle);
   border-radius: var(--ui-radius-row);
   background: transparent;
   color: var(--ui-text-primary);
   font-size: var(--ui-font-size-sm);
   overflow-wrap: anywhere;
+}
+.exec-artifact-file-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 36px;
+  height: 36px;
+  border-radius: var(--ui-radius-row);
+  background: var(--ui-bg-control);
+  color: var(--ui-text-primary);
+}
+.exec-artifact-file-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.exec-artifact-download-icon {
+  flex: 0 0 auto;
+  color: var(--ui-text-secondary);
 }
 .exec-artifact-link:is(:hover, :focus-visible) {
   background: var(--ui-bg-hover);
