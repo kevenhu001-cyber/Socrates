@@ -50,6 +50,17 @@ export function DemoSurface({ sample, label, style = 'wireframe' }: { sample?: S
     }
     return d;
   };
+  const curvePath=sample?.curve?.reduce((state,point)=>{
+    if(!point)return {d:state.d,pen:false};
+    const xy=project(...point);
+    return {d:state.d+`${state.pen?'L':'M'}${xy.join(',')}`,pen:true};
+  },{d:'',pen:false}).d;
+  const arrow=(from:[number,number,number],to:[number,number,number])=>{
+    const p=project(...from),q=project(...to),dx=q[0]-p[0],dy=q[1]-p[1],length=Math.hypot(dx,dy);
+    if(length<.1)return '';
+    const h=Math.min(5,length*.4),ux=dx/length,uy=dy/length;
+    return `M${p.join(',')}L${q.join(',')}l${-h*ux-h*.5*uy},${-h*uy+h*.5*ux}M${q.join(',')}l${-h*ux+h*.5*uy},${-h*uy-h*.5*ux}`;
+  };
   const axis = (end: number[], name: string) => {
     const from = project(-1,-1,-1), to = project(end[0],end[1],end[2]);
     return <g key={name}><path d={`M${from.join(',')}L${to.join(',')}`} stroke="currentColor" fill="none" opacity=".7"/>
@@ -59,6 +70,8 @@ export function DemoSurface({ sample, label, style = 'wireframe' }: { sample?: S
     <svg viewBox="0 0 520 340" width="100%" role="img" aria-label={label || i18n('intui.demo.surface3d','3D surface')}>
       <g transform="translate(0,30)">
         {axis([1,-1,-1],'x')}{axis([-1,1,-1],'y')}{axis([-1,-1,1],'z')}
+        {curvePath && <path data-space-curve="1" d={curvePath} stroke="var(--ui-demo-blue)" strokeWidth="1.8" fill="none"/>}
+        {sample?.arrows3d && <g data-space-vectors="1">{sample.arrows3d.map((v,i)=><path key={i} d={arrow(v.from,v.to)} stroke={`hsl(${220*(1-Math.min(1,v.magnitude/(sample.reference||1)))},70%,50%)`} strokeWidth="1.1" fill="none"/>)}</g>}
         {style === 'shaded' && <g data-surface-style="shaded">{faces.map(face=><polygon key={face.key} points={face.points} fill={face.fill} stroke={face.fill} strokeWidth=".45"/>)}</g>}
         {style === 'wireframe' && sample && Array.from({length:sample.size},(_,i)=><g key={i} stroke="var(--ui-demo-blue)" strokeWidth=".85" fill="none">
           <path d={path(true,i)}/><path d={path(false,i)}/>
@@ -66,6 +79,7 @@ export function DemoSurface({ sample, label, style = 'wireframe' }: { sample?: S
       </g>
     </svg>
     {style === 'shaded' && sample && <div className="demo-legend"><svg className="demo-color-scale" viewBox="0 0 120 10" aria-hidden="true">{Array.from({length:60},(_,i)=><rect key={i} x={i*2} width="2" height="10" fill={`hsl(${220*(1-i/59)},70%,50%)`}/>)}</svg><span>z: {sample.z.join(' – ')}</span></div>}
+    {sample?.reference !== undefined && <div className="demo-legend"><span>|F|: 0 – {sample.reference}</span></div>}
     {sample && <div className="demo-legend"><span>x: {sample.x.join(' – ')}</span><span>y: {sample.y.join(' – ')}</span><span>z: {sample.z.join(' – ')}</span></div>}
     <div className="demo-controls">
       <div className="demo-control"><Label htmlFor={id+'-az'}>{i18n('intui.demo.azimuth','Azimuth')}</Label><NativeControl id={id+'-az'} type="range" min="-180" max="180" value={azimuth} onChange={(event)=>setAzimuth(Number(event.target.value))}/><output>{azimuth}°</output></div>
