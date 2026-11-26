@@ -35,6 +35,8 @@ export interface DemonstrationPlot extends DemonstrationViewBase {
   kind: 'plot';
   /** Evaluate curves along simulation time rather than a spatial axis. */
   history?: boolean;
+  xScale?: 'linear' | 'log';
+  yScale?: 'linear' | 'log';
   curves: DemonstrationCurve[];
   markers?: DemonstrationMarker[];
 }
@@ -113,6 +115,7 @@ export interface DemonstrationProgram {
     initial?: Record<string, DemonstrationValue>;
     derivatives?: Record<string, DemonstrationValue>;
     spatial?: {
+      dimension?: 1;
       nodes: number;
       domain: [number, number];
       equation?: 'diffusion' | 'wave';
@@ -123,6 +126,17 @@ export interface DemonstrationProgram {
       initial: DemonstrationValue;
       left: DemonstrationValue;
       right: DemonstrationValue;
+      source?: DemonstrationValue;
+    } | {
+      dimension: 2;
+      equation?: 'diffusion';
+      nx: number;
+      ny: number;
+      xDomain: [number, number];
+      yDomain: [number, number];
+      diffusivity: DemonstrationValue;
+      initial: DemonstrationValue;
+      boundary: DemonstrationValue;
       source?: DemonstrationValue;
     };
     duration: number;
