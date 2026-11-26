@@ -149,7 +149,7 @@
 .sidebar-more-popover,
 .display-prefs-popover,
 .tag-editor-popover {
-  border: 1px solid var(--ui-border-subtle);
+  border: 1px solid var(--ui-border-default);
   background: var(--ui-bg-surface);
   color: var(--ui-text-primary);
 }
@@ -340,12 +340,14 @@ body #composerToolsMenu.composer-tools-menu {
   display: flex;
   flex-direction: column;
   overflow-y: auto;
-  width: min(254px, calc(100vw - 32px));
+  width: min(264px, calc(100vw - 32px));
   max-height: min(60dvh, 420px);
   padding: var(--ui-menu-gutter);
   transform-origin: top left;
-  background: var(--popover);
+  border: 1px solid var(--ui-border-default);
+  background: var(--ui-bg-surface);
   border-radius: var(--ui-radius-popover);
+  box-shadow: var(--ui-shadow-menu);
 }
 .chat-config-pop button {
   border-radius: var(--ui-radius-row);

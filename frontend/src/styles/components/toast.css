@@ -14,7 +14,11 @@
   z-index: calc(var(--ui-z-sheet) - 1);
   max-width: 400px;
   padding: 11px 14px;
-  border: 1px solid color-mix(in srgb, var(--ui-border-default) 35%, transparent);
+  border: 1px solid var(--ui-border-default);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-bg-surface);
+  color: var(--ui-text-primary);
+  box-shadow: var(--ui-shadow-toast);
   font-size: calc(var(--ui-font-size-base-small) * var(--app-font-scale, 1));
   line-height: 1.45;
   opacity: 0;
@@ -30,12 +34,12 @@
   transform: translateY(0);
 }
 .msg-toast-error {
-  background: hsl(0 75% 50%/0.12);
-  border-color: hsl(0 75% 50%/0.45);
-  color: hsl(0 70% 40%);
+  background: color-mix(in srgb, var(--ui-danger) 10%, var(--ui-bg-surface));
+  border-color: color-mix(in srgb, var(--ui-danger) 40%, transparent);
+  color: var(--ui-danger);
 }
 [data-mode='dark'] .msg-toast-error {
-  background: hsl(0 60% 28%/0.55);
-  border-color: hsl(0 60% 50%/0.45);
-  color: hsl(0 70% 75%);
+  background: color-mix(in srgb, var(--ui-danger) 16%, var(--ui-bg-surface));
+  border-color: color-mix(in srgb, var(--ui-danger) 45%, transparent);
+  color: var(--ui-danger);
 }

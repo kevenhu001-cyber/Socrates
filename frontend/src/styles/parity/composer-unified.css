@@ -67,10 +67,23 @@
 [data-mode='light'] #appShell .composer-shell [data-composer-frame][data-focused='true']::before {
   border-color: var(--ui-border-strong);
 }
-/* Both themes use a quiet, flat composer surface. Keep functional gradients
- * for transcript edge fades, not decoration on the typing surface. */
+[data-mode='light'] #appShell .composer-shell [data-composer-frame],
 [data-mode='dark'] #appShell .composer-shell [data-composer-frame] {
-  background-image: none;
+  position: relative;
+}
+[data-mode='dark'] #appShell .composer-shell [data-composer-frame][data-layout='stacked']::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--ui-composer-border);
+  border-radius: inherit;
+  pointer-events: none;
+}
+[data-mode='dark']
+  #appShell
+  .composer-shell
+  [data-composer-frame][data-layout='stacked'][data-focused='true']::before {
+  border-color: var(--ui-border-strong);
 }
 /* ── Inline composition: one flat capsule ────────────────────────────────
    The desktop field is a single 52px row on the composer surface. Its edge

@@ -1,9 +1,10 @@
+import { Icon } from '../../../legacy/Icon';
 import { Button } from '../../ui/shadcn/button';
 import { useMemo, useState } from 'react';
 import { getCurrentLang } from '../../../ui/legacyI18n.ts';
 import type { useWorkspaceDispatch } from './workspace.hooks';
 import type { PluginItem } from './types';
-import { i18n, installedRank, PlusIcon } from './workspaceUi';
+import { i18n, installedRank } from './workspaceUi';
 import { PluginDirectoryCard } from './PluginDirectoryCard';
 import { InstalledPluginStrip } from './InstalledPluginStrip';
 import { dedupePlugins } from './pluginDirectory.data';
@@ -51,7 +52,7 @@ function PluginDirectoryAddAction({
         document.querySelector<HTMLInputElement>('.plugin-directory-search input')?.focus();
       }}
     >
-      <PlusIcon />
+      <Icon name="search" size={18} />
     </Button>
   );
 }

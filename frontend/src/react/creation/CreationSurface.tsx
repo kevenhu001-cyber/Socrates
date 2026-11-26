@@ -159,16 +159,18 @@ function CreationImageGallery({
           >
             <img src={imageUrl(item.id)} loading="lazy" alt={item.name || ''} />
           </Button>
-          <span>{item.name}</span>
-          <Button
-            variant="secondary"
-            size="sm"
-            className="creation-image-edit"
-            data-action="edit-image"
-            onClick={() => onAction('edit-image', item.id)}
-          >
-            {text.edit}
-          </Button>
+          <div className="creation-image-card-footer">
+            <span>{item.name}</span>
+            <Button
+              variant="secondary"
+              size="sm"
+              className="creation-image-edit"
+              data-action="edit-image"
+              onClick={() => onAction('edit-image', item.id)}
+            >
+              {text.edit}
+            </Button>
+          </div>
         </div>
       ))}
     </div>

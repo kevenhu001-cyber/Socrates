@@ -53,9 +53,9 @@
   margin: 14px 18px;
   padding: 12px 14px;
   border-radius: var(--ui-radius-row);
-  background: hsl(0 60% 30%/0.18);
-  border: 0.5px solid hsl(0 60% 40%/0.4);
-  color: hsl(0 70% 78%);
+  background: color-mix(in srgb, var(--ui-danger) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ui-danger) 36%, transparent);
+  color: var(--ui-danger);
   font-size: var(--ui-font-size-base-small);
   line-height: 1.5;
 }
@@ -75,12 +75,19 @@
    workspace panels, styled with the same form controls as the modal
    variant so the two surfaces stay visually consistent. */
 .admin-panel {
-  padding: 32px 24px 48px;
+  padding: var(--ui-space-xl) var(--ui-space-lg) 48px;
   overflow-y: auto;
 }
 .admin-panel > * {
-  max-width: 680px;
+  max-width: var(--ui-page-reading-width);
   margin: 0 auto;
+}
+.admin-panel > .admin-body {
+  padding: var(--ui-space-lg);
+  border: 1px solid var(--ui-border-default);
+  border-radius: var(--ui-radius-xl);
+  background: var(--ui-bg-raised);
+  box-shadow: var(--ui-elevation-raised);
 }
 .admin-console {
   display: flex;

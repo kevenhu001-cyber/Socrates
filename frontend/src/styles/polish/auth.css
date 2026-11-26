@@ -417,10 +417,10 @@ html[data-boot-state='auth'] .boot-loading {
   max-height: calc(100dvh - var(--ui-space-xxl));
   overflow-y: auto;
   padding: var(--ui-space-xl);
-  border: 1px solid var(--border);
+  border: 1px solid var(--ui-border-default);
   border-radius: var(--ui-radius-xl);
-  background: var(--popover);
-  color: var(--foreground);
+  background: var(--ui-bg-surface);
+  color: var(--ui-text-primary);
   box-shadow: var(--ui-shadow-dialog);
   font-family: inherit;
 }

@@ -142,7 +142,7 @@ export interface UiSurfaceHex {
 
 const darkSurfaces: UiSurfaceHex = {
   sidebar: '#1a1a1a',
-  bubble: '#183e76',
+  bubble: '#292929',
   bubbleStrong: '#454545',
   composer: '#292929',
   composerBorder: '#2e2e2e',
@@ -158,7 +158,7 @@ const darkSurfaces: UiSurfaceHex = {
 
 const lightSurfaces: UiSurfaceHex = {
   sidebar: '#fafafa',
-  bubble: '#e3edff',
+  bubble: '#f2f2f2',
   bubbleStrong: '#e6e6e6',
   composer: '#ffffff',
   composerBorder: '#c9c9c9',

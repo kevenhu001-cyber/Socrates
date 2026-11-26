@@ -14,7 +14,7 @@
  * Motion: the suggestions rise in once when the host swaps their content.
  * Reduced-motion users get them in place.
  */
-import type { CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { uiRadius, uiSpace } from '@socrates/theme';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';
@@ -174,10 +174,14 @@ function HomeShortcutItem({
   onDismiss: (id: string) => void;
   dismissLabel: string;
 }) {
+  const [chipHovered, setChipHovered] = useState(false);
   const { pressed, hovered, focused, handlers } = usePressFeedback();
+  const showDismiss = chipHovered || focused || pressed;
   return (
     <div
       data-testid={`home-shortcut-${item.id}`}
+      onPointerEnter={() => setChipHovered(true)}
+      onPointerLeave={() => setChipHovered(false)}
       style={{
         display: 'flex',
         flexDirection: 'row',
@@ -222,6 +226,8 @@ function HomeShortcutItem({
             borderRadius: uiRadius.pill,
             alignItems: 'center',
             justifyContent: 'center',
+            opacity: showDismiss ? 1 : 0,
+            transition: 'opacity 150ms ease, background-color 150ms ease',
             backgroundColor: pressed
               ? colors.fillPressed
               : hovered
@@ -320,7 +326,6 @@ function StarterCard({
   const reduced = useReducedMotion();
   const { subtle } = sheets(colors);
   const { scale, hovered, focused, handlers } = usePressFeedback();
-  const lift = hovered && !reduced;
   return (
     <button
       type="button"
@@ -337,12 +342,13 @@ function StarterCard({
           flexGrow: 1,
           gap: compact ? S[200] : S[400],
           padding: compact ? S[200] : S[300],
-          borderRadius: R.stage,
+          borderRadius: R.sheet,
           backgroundColor: hovered ? colors.card : subtle,
-          boxShadow: hovered ? shadow(colors, 'overlay') : insetRing(colors.hairline),
+          border: `1px solid ${hovered ? colors.hairlineStrong : colors.hairline}`,
+          boxShadow: hovered ? shadow(colors, 'overlay') : shadow(colors, 'raised'),
           ...focusRing(colors, focused),
-          ...transition('background-color, box-shadow, transform', reduced, 300),
-          transform: `translateY(${lift ? -2 : 0}px) scale(${scale})`,
+          ...transition('background-color, border-color, box-shadow, transform', reduced, 240),
+          transform: `scale(${scale})`,
         }}
       >
         <span

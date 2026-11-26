@@ -132,10 +132,11 @@
 .docx-body {
   box-sizing: border-box;
   padding: var(--ui-space-xl) var(--ui-space-lg);
-  border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-lg);
-  background: var(--card);
-  color: var(--foreground);
+  border: 1px solid var(--ui-border-default);
+  border-radius: var(--ui-radius-xl);
+  background: var(--ui-bg-raised);
+  color: var(--ui-text-primary);
+  box-shadow: var(--ui-elevation-raised);
   font-size: var(--ui-font-size-sm);
   line-height: 1.7;
   overflow-wrap: break-word;

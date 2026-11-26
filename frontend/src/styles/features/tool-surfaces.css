@@ -275,10 +275,10 @@
 /* Menus and card surfaces */
 .slash-command-palette,
 .prompt-templates-modal {
-  background: var(--tool-card-surface);
-  border: 1px solid var(--tool-card-border);
-  border-radius: var(--tool-card-radius);
-  box-shadow: var(--tool-card-shadow);
+  background: var(--ui-bg-surface);
+  border: 1px solid var(--ui-border-default);
+  border-radius: var(--ui-radius-dialog);
+  box-shadow: var(--ui-shadow-dialog);
 }
 .composer-tools-item {
   transition: color 0.16s ease;
@@ -319,13 +319,13 @@
 .prompt-row {
   gap: 12px;
   padding: 12px 14px;
-  border: 1px solid var(--tool-card-border);
-  border-radius: var(--tool-card-radius);
-  background: var(--tool-card-bg);
+  border: 1px solid var(--ui-border-default);
+  border-radius: var(--ui-radius-xl);
+  background: var(--ui-bg-raised);
 }
 .prompt-row:hover {
-  background: var(--tool-card-bg-hover);
-  border-color: var(--tool-card-border-strong);
+  background: var(--ui-bg-hover);
+  border-color: var(--ui-border-strong);
 }
 .prompt-row-icon {
   display: grid;

@@ -22,9 +22,10 @@
   flex-direction: column;
   width: min(var(--ui-detail-width), 100vw);
   min-width: 0;
-  background: var(--background);
-  color: var(--foreground);
-  border-inline-start: 1px solid var(--border);
+  background: var(--ui-bg-rail);
+  color: var(--ui-text-primary);
+  border-inline-start: 1px solid var(--ui-border-default);
+  box-shadow: var(--ui-shadow-dialog);
   /* The drawer is the one framed surface that carried no
      corner at all and read as a hard rectangle against the page. It is
      docked to the right edge, so only the two leading corners round. */
@@ -37,7 +38,8 @@
   align-items: center;
   gap: var(--ui-space-md);
   padding: var(--ui-space-lg);
-  border-bottom: 1px solid var(--ui-border-subtle);
+  border-bottom: 1px solid var(--ui-border-default);
+  background: var(--ui-bg-page);
   flex: 0 0 auto;
 }
 .detail-heading {

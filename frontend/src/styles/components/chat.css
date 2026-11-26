@@ -70,6 +70,27 @@
 .msg-list.scrollbar-visible::-webkit-scrollbar-thumb {
   background: color-mix(in srgb, var(--ui-text-tertiary) 25%, transparent);
 }
+@media (min-width: 769px) and (hover: hover) {
+  @supports (scrollbar-color: auto) {
+    .msg-list {
+      scrollbar-color: color-mix(in srgb, var(--ui-text-tertiary) 18%, transparent) transparent;
+    }
+    .msg-list:hover,
+    .msg-list.scrollbar-visible {
+      scrollbar-color: color-mix(in srgb, var(--ui-text-tertiary) 32%, transparent) transparent;
+    }
+  }
+  .msg-list::-webkit-scrollbar {
+    width: 6px;
+  }
+  .msg-list::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--ui-text-tertiary) 18%, transparent);
+  }
+  .msg-list:hover::-webkit-scrollbar-thumb,
+  .msg-list.scrollbar-visible::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--ui-text-tertiary) 34%, transparent);
+  }
+}
 
 .msg-list {
   display: flex;
@@ -670,9 +691,9 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
   gap: 6px;
   padding: 6px 12px;
   border-radius: var(--ui-radius-pill);
-  border: 1px solid var(--ui-border-subtle);
-  background: color-mix(in srgb, var(--ui-bg-subtle) 40%, transparent);
-  color: var(--muted-foreground);
+  border: 1px solid var(--ui-border-default);
+  background: var(--ui-bg-raised);
+  color: var(--ui-text-secondary);
   font-family: var(--font-sans);
   font-size: var(--ui-font-size-xs);
   font-weight: var(--ui-font-weight-medium);
@@ -681,19 +702,17 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
   transition:
     background-color var(--ui-duration-hover) ease,
     border-color var(--ui-duration-hover) ease,
-    color var(--ui-duration-hover) ease,
-    transform var(--ui-duration-hover) ease;
+    color var(--ui-duration-hover) ease;
 }
 
 .msg-follow-up-chip:hover {
-  background: var(--ui-bg-hover-ghost);
-  border-color: var(--border);
-  color: var(--foreground);
-  transform: translateY(-1px);
+  background: var(--ui-bg-hover);
+  border-color: var(--ui-border-strong);
+  color: var(--ui-text-primary);
 }
 
 .msg-follow-up-chip:active {
-  transform: translateY(0);
+  background: var(--ui-bg-selected);
 }
 
 .msg-follow-up-chip svg {

@@ -78,23 +78,24 @@
   margin: 0 0 4px;
 }
 #appShell .scheduled-task-list .task-row {
-  border: 1px solid var(--ui-border-subtle);
+  border: 1px solid var(--ui-border-default);
   border-radius: var(--ui-radius-xl);
   background: var(--ui-bg-raised);
+  box-shadow: var(--ui-elevation-raised);
 }
 #appShell .scheduled-task-list .task-row:hover {
-  border-color: var(--border);
-  background: var(--accent);
+  border-color: var(--ui-border-strong);
+  background: var(--ui-bg-hover);
 }
 
 #appShell .workspace-search-field,
 #appShell .workspace-field input,
 #appShell .workspace-field textarea,
 #appShell .workspace-field select {
-  border: 1px solid var(--input);
+  border: 1px solid var(--ui-border-default);
   border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--foreground);
+  background: var(--ui-bg-field);
+  color: var(--ui-text-primary);
 }
 
 #appShell .workspace-field :is(input, textarea, select) {
@@ -123,9 +124,9 @@
 /* Shared dialog chrome: one border, radius, fill and shadow recipe. */
 #appShell .modal,
 #appShell .modal-card {
-  border: 1px solid var(--ui-border-subtle);
+  border: 1px solid var(--ui-border-default);
   border-radius: var(--ui-radius-2xl);
-  background: var(--popover);
+  background: var(--ui-bg-surface);
   box-shadow: var(--ui-shadow-dialog);
 }
 /* The command palette is not a dialog card: it is a Geist command surface
@@ -134,17 +135,17 @@
    chrome stays here; the palette's internals (input row, result rows, kbd
    chips) are skinned in polish/overlays.css. */
 .cmd-k-modal {
-  border: 1px solid var(--border);
-  border-radius: var(--ui-radius-md);
-  background: var(--popover);
+  border: 1px solid var(--ui-border-default);
+  border-radius: var(--ui-radius-xl);
+  background: var(--ui-bg-surface);
   box-shadow: var(--ui-shadow-dialog);
 }
 
 #appShell .visualization-card {
-  border: 1px solid var(--ui-border-subtle);
+  border: 1px solid var(--ui-border-default);
   border-radius: var(--ui-radius-xl);
   background: var(--ui-bg-page);
-  box-shadow: none;
+  box-shadow: var(--ui-elevation-raised);
   overflow: hidden;
 }
 
@@ -159,8 +160,8 @@
   gap: 6px 12px;
   min-height: 48px;
   padding: 6px 14px;
-  border-bottom: 1px solid var(--ui-border-subtle);
-  background: var(--ui-bg-field);
+  border-bottom: 1px solid var(--ui-border-default);
+  background: var(--ui-bg-panel);
 }
 
 #appShell .visualization-header h3 {

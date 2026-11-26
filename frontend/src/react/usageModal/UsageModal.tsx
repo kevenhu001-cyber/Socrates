@@ -73,7 +73,7 @@ function UsageLoading({ errorKey }: { errorKey: string | null }) {
         ? 'Failed to load usage data.'
         : 'Failed to load usage data. Make sure you are signed in.';
     return (
-      <div className="usage-loading" style={{ color: 'hsl(0 60% 55%)' }}>
+      <div className="usage-loading" style={{ color: 'var(--ui-danger)' }}>
         {i18n(errorKey, fallback)}
       </div>
     );

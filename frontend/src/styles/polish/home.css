@@ -69,7 +69,7 @@
 @media (min-width: 769px) {
   #appShell #topicSetup .home-hero {
     width: min(100%, var(--ui-content-chat));
-    margin: 0 auto 40px;
+    margin: 0 auto 28px;
   }
 }
 
@@ -124,7 +124,7 @@
       max(12px, env(safe-area-inset-right, 0px));
     scroll-padding-block: 16px 24px;
     overscroll-behavior-y: contain;
-    padding-bottom: calc(112px + var(--ui-safe-bottom));
+    padding-bottom: calc(clamp(96px, 14vh, 176px) + var(--ui-safe-bottom));
     background: var(--ui-bg-page);
   }
   #appShell #topicSetup .topic-title.greeting {

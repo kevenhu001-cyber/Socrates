@@ -55,15 +55,15 @@
   padding: 2px 7px;
   border-radius: var(--ui-radius-xs);
   font-size: var(--ui-font-size-caption);
-  background: hsl(0 65% 62%/0.15);
-  color: hsl(0 65% 62%);
+  background: color-mix(in srgb, var(--ui-danger) 14%, transparent);
+  color: var(--ui-danger);
 }
 .library-bulk-delete:disabled {
   opacity: 0.35;
   cursor: default;
 }
 .library-bulk-delete:not(:disabled):hover {
-  background: hsl(0 65% 62%/0.25);
+  background: color-mix(in srgb, var(--ui-danger) 22%, transparent);
 }
 .library-row-selected {
   background: color-mix(in srgb, var(--ui-bg-control) 72%, transparent);
@@ -127,7 +127,7 @@
   background: var(--ui-text-primary);
 }
 .workspace-secondary {
-  border: 0.5px solid color-mix(in srgb, var(--ui-border-default) 45%, transparent);
+  border: 1px solid var(--ui-border-default);
   background: var(--ui-bg-raised);
   color: var(--ui-text-secondary);
 }
@@ -137,10 +137,10 @@
 }
 .workspace-danger {
   background: transparent;
-  color: hsl(0 65% 62%);
+  color: var(--ui-danger);
 }
 .workspace-danger:hover {
-  background: hsl(0 60% 35%/0.35);
+  background: color-mix(in srgb, var(--ui-danger) 14%, transparent);
 }
 .workspace-row {
   display: flex;

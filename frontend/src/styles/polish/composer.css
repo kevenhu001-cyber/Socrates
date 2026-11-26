@@ -226,13 +226,11 @@
   right: 4px;
   width: 18px;
   height: 18px;
-  background: rgba(0, 0, 0, 0.56);
+  background: rgba(0, 0, 0, 0.62);
   color: white;
-  -webkit-backdrop-filter: blur(4px);
-  backdrop-filter: blur(4px);
 }
 #appShell #composerAttachmentChips .attachment-chip.is-image .attachment-chip-remove:hover {
-  background: rgba(0, 0, 0, 0.76);
+  background: rgba(0, 0, 0, 0.8);
   color: white;
 }
 
@@ -269,10 +267,8 @@
   gap: 2px;
   padding: 0 3px;
   border-radius: 0;
-  background: rgba(0, 0, 0, 0.48);
+  background: rgba(0, 0, 0, 0.56);
   color: white;
-  -webkit-backdrop-filter: blur(1px);
-  backdrop-filter: blur(1px);
 }
 #appShell #composerAttachmentChips .attachment-chip.is-image .attachment-chip-retry:hover {
   background: rgba(0, 0, 0, 0.62);

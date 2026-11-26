@@ -5,7 +5,7 @@
 #appShell .creation-panel {
   width: 100%;
   min-height: 100%;
-  color: var(--foreground);
+  color: var(--ui-text-primary);
   background: var(--ui-bg-page);
 }
 #appShell #sitesPanel {
@@ -18,10 +18,11 @@
   min-height: 96px;
   box-sizing: border-box;
   padding: 20px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
-  background: var(--card);
-  color: var(--card-foreground);
+  border: 1px solid var(--ui-border-default);
+  border-radius: var(--ui-radius-xl);
+  background: var(--ui-bg-raised);
+  box-shadow: var(--ui-elevation-raised);
+  color: var(--ui-text-primary);
 }
 #appShell .creation-site-banner-icon {
   display: grid;
@@ -29,9 +30,9 @@
   flex: none;
   width: 38px;
   height: 38px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--muted);
+  border: 1px solid var(--ui-border-default);
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-bg-surface);
   font-size: 22px;
 }
 #appShell .creation-site-banner strong,
@@ -44,7 +45,7 @@
 }
 #appShell .creation-site-banner small {
   margin-top: 3px;
-  color: var(--muted-foreground);
+  color: var(--ui-text-secondary);
   font-size: var(--ui-font-size-sm);
 }
 #appShell .creation-site-banner button {
@@ -93,12 +94,12 @@
   flex: none;
   width: 80px;
   height: 50px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--muted);
+  border: 1px solid var(--ui-border-default);
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-bg-surface);
 }
 #appShell .creation-site-visibility {
-  color: var(--muted-foreground);
+  color: var(--ui-text-secondary);
   font-size: var(--ui-font-size-sm);
 }
 #appShell .creation-sites-table .creation-row-actions {
@@ -134,12 +135,12 @@
 #appShell :is(.creation-image-actions, .creation-editor) :is(input, textarea, select) {
   box-sizing: border-box;
   min-height: var(--ui-control-desktop);
-  border: 1px solid var(--input);
-  border-radius: var(--radius-md);
+  border: 1px solid var(--ui-border-default);
+  border-radius: var(--ui-radius-md);
   padding: 0 12px;
   outline: none;
-  color: var(--foreground);
-  background: transparent;
+  color: var(--ui-text-primary);
+  background: var(--ui-bg-field);
   font: inherit;
   font-size: var(--ui-font-size-sm);
 }
@@ -147,7 +148,7 @@
   padding: 8px 12px;
 }
 #appShell :is(.creation-image-actions, .creation-editor) :is(input, textarea, select):focus {
-  border-color: var(--ring);
+  border-color: var(--ui-border-strong);
   box-shadow: var(--ui-focus-shadow);
 }
 /* The header search reuses the shared .workspace-search-field pill
@@ -159,12 +160,13 @@
   grid-template-columns: 1fr auto;
   align-items: center;
   gap: 18px;
-  padding: 14px 12px;
-  border-bottom: 1px solid var(--border);
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--ui-border-default);
 }
 #appShell .creation-table-head {
-  color: var(--muted-foreground);
-  font-size: var(--ui-font-size-sm);
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-font-weight-medium);
 }
 #appShell .creation-row strong {
   display: block;
@@ -174,12 +176,12 @@
 #appShell .creation-row small {
   display: block;
   margin-top: 5px;
-  color: var(--muted-foreground);
+  color: var(--ui-text-secondary);
   font-size: var(--ui-font-size-xs);
 }
 #appShell .creation-row-actions {
   display: flex;
-  gap: 2px;
+  gap: 4px;
 }
 #appShell .creation-row-actions button,
 #appShell .creation-publish-controls button {
@@ -188,7 +190,7 @@
   border-radius: var(--ui-radius-pill);
   padding: 0 10px;
   background: transparent;
-  color: var(--foreground);
+  color: var(--ui-text-primary);
   font: inherit;
   font-size: var(--ui-font-size-sm);
   cursor: pointer;
@@ -198,8 +200,8 @@
 }
 #appShell .creation-row-actions button:hover,
 #appShell .creation-publish-controls button:hover {
-  color: var(--foreground);
-  background: var(--muted);
+  color: var(--ui-text-primary);
+  background: var(--ui-bg-hover);
 }
 #appShell .creation-image-form {
   max-width: 680px;
@@ -208,7 +210,8 @@
   border: 1px solid var(--ui-border-default);
   border-radius: var(--ui-radius-composer-desktop);
   background: var(--ui-bg-composer);
-  color: var(--foreground);
+  box-shadow: var(--ui-elevation-field);
+  color: var(--ui-text-primary);
 }
 #appShell .creation-image-form textarea {
   display: block;
@@ -219,7 +222,7 @@
   border: 0;
   outline: 0;
   resize: vertical;
-  color: var(--foreground);
+  color: var(--ui-text-primary);
   background: transparent;
   font: inherit;
   font-size: var(--ui-font-size-md);
@@ -235,11 +238,12 @@
   background: transparent;
 }
 #appShell .creation-image-card {
-  display: block;
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   padding: 0;
   text-align: left;
-  color: var(--foreground);
+  color: var(--ui-text-primary);
   cursor: pointer;
 }
 #appShell .creation-image-card img {
@@ -256,26 +260,38 @@
   background: transparent;
   cursor: pointer;
 }
-#appShell .creation-image-card .creation-image-edit {
-  float: right;
-  margin: -34px 7px 7px;
-  position: relative;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 0 8px;
-  min-height: var(--ui-control-sm);
-  color: var(--secondary-foreground);
-  background: var(--secondary);
-  font-size: var(--ui-font-size-xs);
-  cursor: pointer;
+#appShell .creation-image-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-xs);
+  padding: var(--ui-space-xs) var(--ui-space-sm) var(--ui-space-sm);
 }
-#appShell .creation-image-card span {
+#appShell .creation-image-card-footer span {
   display: block;
-  padding: 11px 12px;
+  min-width: 0;
+  flex: 1 1 auto;
+  padding: 0 2px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-medium);
+}
+#appShell .creation-image-card .creation-image-edit {
+  flex: 0 0 auto;
+  border: 1px solid var(--ui-border-default);
+  border-radius: var(--ui-radius-pill);
+  padding: 0 10px;
+  min-height: var(--ui-control-sm);
+  color: var(--ui-text-primary);
+  background: var(--ui-bg-surface);
+  font-size: var(--ui-font-size-xs);
+  cursor: pointer;
+}
+#appShell .creation-image-card .creation-image-edit:hover {
+  border-color: var(--ui-border-strong);
+  background: var(--ui-bg-hover);
 }
 #appShell .creation-image-reference {
   display: flex;
@@ -287,7 +303,7 @@
 #appShell .creation-image-reference img {
   width: 38px;
   height: 38px;
-  border-radius: var(--radius-md);
+  border-radius: var(--ui-radius-md);
   object-fit: cover;
 }
 #appShell .creation-image-reference button {
@@ -295,15 +311,30 @@
   width: var(--ui-control-sm);
   height: var(--ui-control-sm);
   border: 0;
-  border-radius: var(--radius-md);
-  color: var(--foreground);
+  border-radius: var(--ui-radius-md);
+  color: var(--ui-text-primary);
   background: transparent;
   font-size: 20px;
   cursor: pointer;
 }
 #appShell .creation-image-reference button:hover {
-  color: var(--foreground);
-  background: var(--muted);
+  color: var(--ui-text-primary);
+  background: var(--ui-bg-hover);
+}
+.creation-editor-page {
+  max-width: var(--ui-page-reading-width);
+  margin: 0 auto;
+  padding: var(--ui-space-xl) var(--ui-space-lg) 48px;
+}
+.creation-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-md);
+  padding: var(--ui-space-xl);
+  border: 1px solid var(--ui-border-default);
+  border-radius: var(--ui-radius-xl);
+  background: var(--ui-bg-raised);
+  box-shadow: var(--ui-elevation-raised);
 }
 .creation-editor header,
 .creation-editor footer,
@@ -324,21 +355,21 @@
   width: var(--ui-control-sm);
   height: var(--ui-control-sm);
   border: 0;
-  border-radius: var(--radius-md);
-  color: var(--foreground);
+  border-radius: var(--ui-radius-md);
+  color: var(--ui-text-primary);
   background: transparent;
   font-size: 22px;
   cursor: pointer;
 }
 .creation-editor header button:hover {
-  color: var(--foreground);
-  background: var(--muted);
+  color: var(--ui-text-primary);
+  background: var(--ui-bg-hover);
 }
 .creation-editor label {
   display: flex;
   flex-direction: column;
   gap: 7px;
-  color: var(--foreground);
+  color: var(--ui-text-primary);
   font-size: var(--ui-font-size-sm);
   font-weight: var(--ui-font-weight-medium);
 }
@@ -358,18 +389,19 @@
 .creation-editor .creation-generation button {
   align-self: flex-end;
   min-height: var(--ui-control-desktop);
-  padding: 0 10px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  color: var(--foreground);
-  background: var(--background);
+  padding: 0 12px;
+  border: 1px solid var(--ui-border-default);
+  border-radius: var(--ui-radius-pill);
+  color: var(--ui-text-primary);
+  background: var(--ui-bg-surface);
   font-size: var(--ui-font-size-sm);
   font-weight: var(--ui-font-weight-medium);
   cursor: pointer;
   white-space: nowrap;
 }
 .creation-editor .creation-generation button:hover {
-  background: var(--muted);
+  border-color: var(--ui-border-strong);
+  background: var(--ui-bg-hover);
 }
 .creation-editor footer {
   justify-content: flex-end;
@@ -472,7 +504,7 @@
     grid-template-columns: minmax(0, 1fr) 34px;
     min-height: 70px;
     gap: 9px;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--ui-border-default);
   }
   #appShell #sitesPanel .creation-sites-table .creation-row-actions {
     display: flex;

@@ -155,10 +155,9 @@ export function TopBarModelSwitcher({
 }: TopBarModelSwitcherProps) {
   const { colors, fontFamily, typeScale } = useUiTheme();
   const { pressed, hovered, handlers } = usePressFeedback();
-  /* One 14px label: brand and model share size, weight and ink, so the
-     control reads as a single model name with a caret rather than two
-     typographic tiers. */
-  const brandSize = Math.round(14 * typeScale * 10) / 10;
+  /* Desktop header hierarchy: 15px semibold brand paired with 14px muted model label,
+     mirroring ChatGPT's quiet primary+secondary lockup inside the 32px pill. */
+  const brandSize = Math.round(15 * typeScale * 10) / 10;
   const brandLine = Math.round(22 * typeScale * 10) / 10;
   const modelSize = Math.round(14 * typeScale * 10) / 10;
   const showSettings = compact && !model;
@@ -220,7 +219,8 @@ export function TopBarModelSwitcher({
               fontFamily,
               fontSize: brandSize,
               lineHeight: `${brandLine}px`,
-              fontWeight: '500',
+              fontWeight: '600',
+              letterSpacing: -0.18,
               color: colors.ink,
             },
             clamp(1),
@@ -240,8 +240,8 @@ export function TopBarModelSwitcher({
             fontFamily,
             fontSize: modelSize,
             lineHeight: `${brandLine}px`,
-            fontWeight: '500',
-            color: colors.ink,
+            fontWeight: '400',
+            color: compact ? colors.ink : colors.inkSecondary,
           },
           clamp(1),
         ])}

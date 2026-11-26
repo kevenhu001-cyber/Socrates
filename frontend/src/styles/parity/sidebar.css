@@ -64,6 +64,14 @@ body.sidebar-resizing .sidebar {
   width: 1px;
   background: transparent;
   pointer-events: none;
+  transition:
+    background-color var(--ui-duration-fast) ease,
+    width var(--ui-duration-fast) ease;
+}
+.sidebar-resize-handle:hover::after,
+body.sidebar-resizing .sidebar-resize-handle::after {
+  width: 2px;
+  background: var(--ui-border-strong);
 }
 /* Keyboard users need to see the resize handle when
    it has focus. The default global focus ring (added for WCAG 2.4.7) is
@@ -1421,7 +1429,7 @@ html[data-detail-open='true'][data-detail-layout='docked'] #appShell .main {
     background: var(--ui-canvas);
     background-image: none;
     opacity: 1;
-    box-shadow: none;
+    box-shadow: inset 1px 0 0 var(--ui-hairline-faint);
   }
   body #appShell .main-content {
     background: transparent;

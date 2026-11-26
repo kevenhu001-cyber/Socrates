@@ -44,9 +44,10 @@
   min-width: 0;
   width: 100%;
   padding: var(--ui-space-md);
-  border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-md);
-  background: var(--ui-bg-surface);
+  border: 1px solid var(--ui-border-default);
+  border-radius: var(--ui-radius-xl);
+  background: var(--ui-bg-raised);
+  box-shadow: var(--ui-elevation-raised);
   overflow-wrap: anywhere;
 }
 .tool-approval-heading {
@@ -121,9 +122,10 @@
   margin: var(--ui-space-sm) 0;
   padding: 0;
   overflow: hidden;
-  border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-md);
-  background: var(--ui-bg-surface);
+  border: 1px solid var(--ui-border-default);
+  border-radius: var(--ui-radius-xl);
+  background: var(--ui-bg-raised);
+  box-shadow: var(--ui-elevation-raised);
 }
 .exec-artifact-html-frame {
   display: block;

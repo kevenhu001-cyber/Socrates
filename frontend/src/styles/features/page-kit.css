@@ -105,10 +105,14 @@
   max-width: none;
   height: var(--ui-control-search);
   padding: 0 var(--ui-space-md);
-  border: 1px solid var(--ui-border-subtle);
+  border: 1px solid var(--ui-border-default);
   border-radius: var(--ui-radius-pill);
   background: var(--ui-bg-field);
   color: var(--ui-text-primary);
+  box-shadow: var(--ui-shadow-control);
+  transition:
+    border-color var(--ui-duration-hover) ease,
+    box-shadow var(--ui-duration-hover) ease;
 }
 
 .ui-page-search > svg {
@@ -158,8 +162,9 @@
   box-sizing: border-box;
   height: var(--ui-control-desktop);
   padding: var(--ui-space-xxs);
+  border: 1px solid var(--ui-border-subtle);
   border-radius: var(--ui-radius-pill);
-  background: var(--ui-bg-raised);
+  background: var(--ui-bg-panel);
 }
 
 .ui-page-tab[data-slot='toggle-group-item'],
@@ -184,8 +189,9 @@
 
 .ui-page-tab[data-slot='toggle-group-item']:is([aria-pressed='true'], [data-state='on'], .active),
 .ui-page-tab[data-slot='tabs-trigger']:is([aria-selected='true'], [data-state='on'], .active) {
-  background: var(--ui-bg-pill-selected);
+  background: var(--ui-bg-segment-active);
   color: var(--ui-text-primary);
+  box-shadow: var(--ui-elevation-raised);
 }
 
 /* Compact icon-only range tabs share the same selected and hover paint.
@@ -287,9 +293,9 @@
   width: 100%;
   min-width: 0;
   overflow: hidden;
-  border: 1px solid var(--ui-border-subtle);
+  border: 1px solid var(--ui-border-default);
   border-radius: var(--ui-radius-lg);
-  background: transparent;
+  background: var(--ui-bg-raised);
 }
 
 #appShell .ui-collection-head {
@@ -299,8 +305,8 @@
   gap: var(--ui-space-md);
   min-height: var(--ui-control-md);
   padding: 0 var(--ui-space-lg);
-  border-bottom: 1px solid var(--ui-border-subtle);
-  background: transparent;
+  border-bottom: 1px solid var(--ui-border-default);
+  background: color-mix(in srgb, var(--ui-bg-panel) 55%, transparent);
   color: var(--ui-text-tertiary);
   font-size: var(--ui-font-size-xs);
   font-weight: var(--ui-font-weight-medium);
@@ -317,7 +323,7 @@
 }
 
 #appShell .ui-collection-body > * + * {
-  border-top: 1px solid var(--ui-border-subtle);
+  border-top: 1px solid var(--ui-border-default);
 }
 
 /* ── Card grid (projects, plugins, scheduled templates) ─────────────── */
@@ -337,16 +343,18 @@
   min-width: 0;
   min-height: 78px;
   padding: var(--ui-space-lg);
-  border: 1px solid var(--ui-border-subtle);
+  border: 1px solid var(--ui-border-default);
   border-radius: var(--ui-radius-xl);
   background: var(--ui-bg-raised);
+  box-shadow: var(--ui-elevation-raised);
   transition:
     background-color var(--ui-duration-hover) ease,
-    border-color var(--ui-duration-hover) ease;
+    border-color var(--ui-duration-hover) ease,
+    box-shadow var(--ui-duration-hover) ease;
 }
 
 #appShell .ui-page-card:hover {
-  border-color: var(--ui-border-default);
+  border-color: var(--ui-border-strong);
   background: color-mix(in srgb, var(--ui-bg-raised), var(--ui-text-primary) 4%);
 }
 
@@ -375,9 +383,10 @@
   box-sizing: border-box;
   width: 100%;
   padding: var(--ui-space-lg);
-  border: 1px solid var(--ui-border-subtle);
+  border: 1px solid var(--ui-border-default);
   border-radius: var(--ui-radius-lg);
   background: var(--ui-bg-raised);
+  box-shadow: var(--ui-elevation-raised);
 }
 
 .ui-section-card-header {

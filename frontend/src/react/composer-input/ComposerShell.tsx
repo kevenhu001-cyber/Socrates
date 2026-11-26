@@ -342,8 +342,17 @@ export function ComposerShell({
           focused={focused}
           expanded={expanded}
           compact={phone}
-          layout="inline"
-          surface="var(--ui-bg-ask)"
+          layout={phone ? 'inline' : 'stacked'}
+          surface={phone ? 'var(--ui-bg-ask)' : 'var(--ui-bg-composer)'}
+          shadows={
+            phone
+              ? undefined
+              : {
+                  field: 'var(--ui-elevation-field)',
+                  fieldHover: 'var(--ui-elevation-field-hover)',
+                  fieldFocus: 'var(--ui-elevation-field-focus)',
+                }
+          }
           topVisible={attachments.length > 0}
           top={
             <div className="attachment-chips hidden" id="composerAttachmentChips">

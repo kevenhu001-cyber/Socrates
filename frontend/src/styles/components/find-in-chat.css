@@ -13,11 +13,17 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 8px;
-  background: var(--ui-bg-sidebar);
-  border: 0.5px solid color-mix(in srgb, var(--ui-border-default) 35%, transparent);
-  border-radius: var(--ui-radius-sm);
-  box-shadow: 0 8px 24px hsl(var(--always-black) / 0.28);
+  padding: 4px 8px 4px 12px;
+  background: var(--ui-bg-surface);
+  border: 1px solid var(--ui-border-default);
+  border-radius: var(--ui-radius-xl);
+  box-shadow: var(--ui-shadow-popover);
+}
+@media (min-width: 769px) {
+  .find-bar {
+    top: 56px;
+    right: 16px;
+  }
 }
 .find-bar.hidden {
   display: none;
@@ -54,11 +60,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: var(--ui-control-xs);
+  width: var(--ui-control-sm);
+  height: var(--ui-control-sm);
   padding: 0;
   border: 0;
-  border-radius: var(--ui-radius-xs);
+  border-radius: var(--ui-radius-md);
   background: transparent;
   color: var(--ui-text-secondary);
   cursor: pointer;

@@ -45,8 +45,8 @@ html:not([data-main-view='settingsPage']) #appShell .main-page .ui-page-frame.pl
 /* Projects keeps a compact search field beside its filter rail instead of
  * stretching the field across the whole page column. */
 #appShell .projects-directory .ui-page-search {
-  flex: 0 1 360px;
-  max-width: 420px;
+  flex: 1 1 320px;
+  max-width: 480px;
 }
 
 #appShell .ui-page-toolbar .library-toolbar-controls {
@@ -95,10 +95,11 @@ html:not([data-main-view='settingsPage']) #appShell .main-page .ui-page-frame.pl
   gap: var(--ui-space-md);
   min-height: var(--ui-control-md);
   padding: 0 var(--ui-space-lg);
-  border-bottom: 1px solid var(--ui-border-subtle);
-  background: transparent;
-  color: var(--ui-text-tertiary);
+  border-bottom: 1px solid var(--ui-border-default);
+  background: var(--ui-bg-panel);
+  color: var(--ui-text-secondary);
   font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-font-weight-medium);
 }
 
 /* The head omits the checkbox and icon columns; start its first label above
@@ -108,6 +109,14 @@ html:not([data-main-view='settingsPage']) #appShell .main-page .ui-page-frame.pl
 }
 
 @media (min-width: 769px) {
+  body.workspace-active #appShell .ui-collection.library-list:not(.view-grid) {
+    border: 1px solid var(--ui-border-default);
+    border-radius: var(--ui-radius-xl);
+    background: var(--ui-bg-raised);
+    box-shadow: var(--ui-elevation-raised);
+    overflow: hidden;
+  }
+
   /* The collection body draws the divider between rows, so the row's own
      bottom border would double the hairline. The body-scoped selector is
      needed to out-rank the compatibility row geometry; grid mode keeps its
@@ -127,11 +136,11 @@ html:not([data-main-view='settingsPage']) #appShell .main-page .ui-page-frame.pl
     .ui-collection.library-list:not(.view-grid)
     .library-row
     + .library-row {
-    border-top: 1px solid var(--ui-border-subtle);
+    border-top: 1px solid var(--ui-border-default);
   }
 
   body.workspace-active #appShell .ui-collection.library-list:not(.view-grid) .library-row:hover {
-    background: color-mix(in srgb, var(--ui-bg-raised), var(--ui-text-primary) 4%);
+    background: var(--ui-bg-hover);
   }
 }
 
@@ -189,14 +198,15 @@ html:not([data-main-view='settingsPage']) #appShell .main-page .ui-page-frame.pl
     gap: var(--ui-space-xs) var(--ui-space-sm);
     min-height: 92px;
     padding: var(--ui-space-md);
-    border: 1px solid var(--ui-border-subtle);
+    border: 1px solid var(--ui-border-default);
     border-radius: var(--ui-radius-xl);
     background: var(--ui-bg-raised);
+    box-shadow: var(--ui-elevation-raised);
   }
 
   #appShell .library-list.view-grid .library-row:hover {
-    border-color: var(--ui-border-default);
-    background: color-mix(in srgb, var(--ui-bg-raised), var(--ui-text-primary) 4%);
+    border-color: var(--ui-border-strong);
+    background: var(--ui-bg-hover);
   }
 
   #appShell .library-list.view-grid .library-checkbox-label {
@@ -262,9 +272,10 @@ html:not([data-main-view='settingsPage']) #appShell .main-page .ui-page-frame.pl
 body.workspace-active #appShell .ui-page-card.project-card {
   min-height: 96px;
   padding: var(--ui-space-lg);
-  border: 1px solid var(--ui-border-subtle);
+  border: 1px solid var(--ui-border-default);
   border-radius: var(--ui-radius-xl);
-  background: transparent;
+  background: var(--ui-bg-raised);
+  box-shadow: var(--ui-elevation-raised);
 }
 
 #appShell .project-card .project-icon {
@@ -273,8 +284,9 @@ body.workspace-active #appShell .ui-page-card.project-card {
   flex: 0 0 40px;
   width: 40px;
   height: 40px;
+  border: 1px solid var(--ui-border-default);
   border-radius: var(--ui-radius-md);
-  background: transparent;
+  background: var(--ui-bg-surface);
 }
 
 #appShell .project-card .project-icon svg {
@@ -333,6 +345,21 @@ body.workspace-active #appShell .ui-page-card.project-card {
 #appShell .plugin-directory-row:hover {
   border-color: transparent;
   background: var(--ui-bg-hover);
+}
+
+@media (min-width: 769px) {
+  #appShell .plugin-directory-row {
+    padding: var(--ui-space-md);
+    border: 1px solid var(--ui-border-default);
+    border-radius: var(--ui-radius-xl);
+    background: var(--ui-bg-raised);
+    box-shadow: var(--ui-elevation-raised);
+  }
+
+  #appShell .plugin-directory-row:hover {
+    border-color: var(--ui-border-strong);
+    background: var(--ui-bg-hover);
+  }
 }
 
 #appShell .plugin-directory-card-main {
@@ -538,16 +565,17 @@ body.workspace-active #appShell .ui-page-card.project-card {
   min-width: 0;
   min-height: 96px;
   padding: var(--ui-space-lg);
-  border: 1px solid var(--ui-border-subtle);
+  border: 1px solid var(--ui-border-default);
   border-radius: var(--ui-radius-xl);
-  background: transparent;
+  background: var(--ui-bg-raised);
+  box-shadow: var(--ui-elevation-raised);
   color: var(--ui-text-primary);
   text-align: left;
   cursor: pointer;
 }
 
 #appShell .scheduled-recommendation:hover {
-  border-color: var(--ui-border-default);
+  border-color: var(--ui-border-strong);
   background: var(--ui-bg-hover);
 }
 
@@ -704,13 +732,14 @@ body.workspace-active #appShell .ui-page-card.project-card {
 
 #appShell .creation-table {
   overflow: hidden;
-  border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-lg);
-  background: transparent;
+  border: 1px solid var(--ui-border-default);
+  border-radius: var(--ui-radius-xl);
+  background: var(--ui-bg-raised);
+  box-shadow: var(--ui-elevation-raised);
 }
 
 #appShell .creation-table .creation-table-head {
-  background: transparent;
+  background: var(--ui-bg-panel);
 }
 
 #appShell .creation-table .creation-row:last-child {
@@ -719,13 +748,14 @@ body.workspace-active #appShell .ui-page-card.project-card {
 
 #appShell .creation-image-card {
   overflow: hidden;
-  border: 1px solid var(--ui-border-subtle);
+  border: 1px solid var(--ui-border-default);
   border-radius: var(--ui-radius-xl);
   background: var(--ui-bg-raised);
+  box-shadow: var(--ui-elevation-raised);
 }
 
 #appShell .creation-image-card:hover {
-  border-color: var(--ui-border-default);
+  border-color: var(--ui-border-strong);
 }
 
 /* ── Account pages (Profile / Settings) ─────────────────────────────── */
@@ -751,6 +781,16 @@ body.workspace-active #appShell .ui-page-card.project-card {
   border: 0;
   border-radius: 0;
   background: transparent;
+}
+
+@media (min-width: 769px) {
+  #appShell .profile-page :is(.profile-header, .profile-section) {
+    padding: var(--ui-space-lg);
+    border: 1px solid var(--ui-border-default);
+    border-radius: var(--ui-radius-xl);
+    background: var(--ui-bg-raised);
+    box-shadow: var(--ui-elevation-raised);
+  }
 }
 
 #appShell .profile-header {
