@@ -764,7 +764,7 @@
   display: flex;
   align-items: flex-start;
   gap: var(--ui-space-sm);
-  padding: var(--ui-space-lg) var(--ui-space-lg) 0;
+  padding: var(--ui-space-md) var(--ui-space-md) 0;
 }
 /* Reserve space for an action-only header: an absolute button used to
    cover the first generated control on narrow screens. */
@@ -896,7 +896,7 @@
   align-content: start;
   gap: var(--ui-space-md);
   min-width: 0;
-  padding: var(--ui-space-lg);
+  padding: var(--ui-space-sm);
   container-type: inline-size;
 }
 .intui-surface-header + .intui-surface-document {
@@ -945,16 +945,16 @@
     border-radius: var(--ui-radius-md);
   }
   .intui-surface-header {
-    padding: var(--ui-space-md) var(--ui-space-md) 0;
+    padding: var(--ui-space-sm) var(--ui-space-sm) 0;
   }
   .intui-surface-header.is-actions-only {
     padding: var(--ui-space-xs) var(--ui-space-xs) 0;
   }
   .intui-surface-document {
-    padding: var(--ui-space-md);
+    padding: var(--ui-space-sm);
   }
   .intui-surface-header + .intui-surface-document {
-    padding-top: var(--ui-space-md);
+    padding-top: var(--ui-space-sm);
   }
   .intui-surface-menu :is([role='menuitemradio'], [role='menuitem']) {
     min-height: var(--ui-control-touch);
