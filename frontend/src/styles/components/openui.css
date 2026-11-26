@@ -399,11 +399,12 @@
   scroll-snap-type: x mandatory;
 }
 .intui-openui .iui-carousel > * {
-  flex: 0 0 min(85%, 16rem);
+  flex: 0 0 min(88%, 20rem);
   scroll-snap-align: start;
 }
 .intui-openui .iui-image {
   margin: 0;
+  min-width: 0;
 }
 .intui-openui .iui-image img {
   display: block;
@@ -417,6 +418,7 @@
   text-align: start;
 }
 .intui-openui .iui-table-wrap {
+  width: 100%;
   min-width: 0;
   max-width: 100%;
   overflow-x: auto;
@@ -432,6 +434,8 @@
 }
 .intui-openui .iui-chart-plot {
   position: relative;
+  width: 100%;
+  min-width: 0;
 }
 .intui-openui :is(.iui-chart-plot svg, .iui-pie svg) {
   max-width: 100%;
