@@ -39,7 +39,7 @@ export const INTELLIGENT_UI_TOOL = {
   function: {
     name: 'render_intelligent_ui',
     description:
-      'Render charts, diagrams, learning cards, physics simulations and interactive UI. Smallest valid call: {"nodes":[{"type":"visualization","template":"bar","payload":{"categories":["A"],"series":[{"data":[1]}]}}]}. The server supplies version=1 and stable node IDs when omitted. Use explicit IDs for parent references or state bindings. For uncommon visualization payloads and advanced physics, demonstrations or OpenUI, call get_ui_contract for the exact existing contract when that tool is available. Keep the mathematical and physical data precise; only omit redundant envelope metadata. Accepts native visualization, learning, physics, demonstration, openui, layout, controls and media nodes. Strict JSON only, no XML, JS or HTML; keep essential conclusions in prose.',
+      'Render charts, diagrams, learning cards, physics simulations and interactive UI. Smallest valid call: {"nodes":[{"type":"visualization","template":"bar","payload":{"categories":["A"],"series":[{"data":[1]}]}}]}. The server supplies version=1 and stable node IDs when omitted. Use explicit IDs for parent references or state bindings. For uncommon visualizations and advanced physics or OpenUI, query get_ui_contract. For simulations query kind demonstration with a focused section; do not retrieve the whole guide. Keep the mathematical and physical data precise; only omit redundant envelope metadata. Accepts native visualization, learning, physics, demonstration, openui, layout, controls and media nodes. Strict JSON only, no XML, JS or HTML; keep essential conclusions in prose.',
 
     parameters: {
       type: 'object',
@@ -123,7 +123,7 @@ export const INTELLIGENT_UI_TOOL = {
               program: {
                 ...DEMONSTRATION_PROGRAM_SCHEMA,
                 description:
-                  'Demonstration DSL: version is the number 1, views is a JSON array (never {"item":[...]}). For algorithms, derivatives, sum(i,first,last,expression) and dynamics call get_ui_contract({kind:"demonstration"}).',
+                  'Demonstration DSL: version is the number 1, views is a JSON array (never {"item":[...]}). For algorithms, derivatives, sum(i,first,last,expression) and dynamics query get_ui_contract({kind:"demonstration",section:"index"}); fetch only needed sections, e.g. expressions, ode, electrical, pde, chemistry, algebra, analysis, plots, geometry3d.',
               },
               scene: {
                 type: 'string',
