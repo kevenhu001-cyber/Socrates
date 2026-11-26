@@ -254,19 +254,19 @@ test('sidebar history geometry and drawer paint stay in their canonical owners',
 });
 
 test('header and transcript fades keep one paint recipe per surface', async () => {
-  const [topbar, transcript, details, chat] = await Promise.all([
+  const [topbar, transcript, chat] = await Promise.all([
     read('src/styles/parity/topbar.css'),
     read('src/styles/parity/transcript.css'),
-    read('src/styles/polish/transcript.css'),
     read('src/styles/components/chat.css'),
   ]);
   assert.equal((topbar.match(/background: linear-gradient\(/g) || []).length, 1);
   assert.doesNotMatch(topbar, /#pluginWorkspaceTabs\s*\{/);
   assert.match(topbar, /\.top-bar \.toggle-sidebar:hover\s*\{/);
-  assert.doesNotMatch(await read('src/styles/polish/index.css'), /\.\/topbar\.css/);
+  assert.doesNotMatch(await read('src/styles/polish/index.css'), /\.\/(?:topbar|transcript)\.css/);
+  await assert.rejects(access(new URL('src/styles/polish/transcript.css', root)));
   for (const [css, token] of [
     [transcript, '--transcript-edge-mask'],
-    [details, '--stream-tail-mask'],
+    [transcript, '--stream-tail-mask'],
     [chat, '--phone-transcript-mask'],
   ]) {
     assert.ok(css.includes(`${token}: linear-gradient(`));

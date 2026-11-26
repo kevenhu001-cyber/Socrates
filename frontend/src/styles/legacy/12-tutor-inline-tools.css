@@ -308,4 +308,4 @@ body[data-app-mode='chat'] .tutor-only {
    (`:first-child`, `:last-child`, `+`) still see the wrapper, though: a live
    turn splits its prose into one wrapper per settled block, which is why the
    paragraph seam rule sits next to `p:last-child` in
-   polish/transcript.css — it has to outrank that `#appShell` rule. */
+   parity/transcript.css — it has to outrank that `#appShell` rule. */

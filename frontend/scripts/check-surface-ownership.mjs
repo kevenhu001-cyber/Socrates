@@ -23,7 +23,7 @@ const surfaces = {
       /mobile-|incognito|plugin-workspace|exam-|chat-stats|sidebarOpenBtn|toggle-sidebar|glyph-/,
   },
   transcript: {
-    owners: ['parity/transcript.css', 'components/chat.css', 'polish/transcript.css'],
+    owners: ['parity/transcript.css', 'components/chat.css'],
     context:
       /#msgList|\.msg(?![-\w])|\.msg-(?:body|toolbar|toolbar-btn)(?![-\w])|\.code-block-(?:header|header-lang|copy|copy-label|expand)(?![-\w])/,
     exclude:

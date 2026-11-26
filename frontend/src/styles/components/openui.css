@@ -4,29 +4,29 @@
      width it collapses to min-content and its skeleton draws at 0px. */
   width: 100%;
   min-width: 0;
-  --iui-ink: var(--foreground);
-  --iui-muted: var(--muted-foreground);
+  --iui-ink: var(--ui-text-primary);
+  --iui-muted: var(--ui-text-secondary);
   --iui-faint: var(--ui-text-tertiary);
   --iui-canvas: var(--ui-bg-surface);
   --iui-surface: var(--ui-bg-raised);
-  --iui-surface-strong: var(--secondary);
+  --iui-surface-strong: var(--ui-bg-control);
   --iui-border: var(--border);
   --iui-info: var(--ui-info);
   --iui-success: var(--ui-success);
   --iui-warning: var(--ui-warning);
-  --iui-danger: var(--destructive);
+  --iui-danger: var(--ui-danger);
   --iui-purple: var(--ui-link);
   --iui-pink: var(--ui-thinking-accent);
   --iui-chart-1: var(--ui-info);
   --iui-chart-2: var(--ui-success);
   --iui-chart-3: var(--ui-warning);
-  --iui-chart-4: var(--destructive);
-  --iui-chart-5: var(--muted-foreground);
+  --iui-chart-4: var(--ui-danger);
+  --iui-chart-5: var(--ui-text-secondary);
   --iui-chart-6: var(--ui-thinking-accent);
   --iui-info-soft: color-mix(in srgb, var(--ui-info) 12%, transparent);
   --iui-success-soft: color-mix(in srgb, var(--ui-success) 12%, transparent);
   --iui-warning-soft: color-mix(in srgb, var(--ui-warning) 12%, transparent);
-  --iui-danger-soft: color-mix(in srgb, var(--destructive) 12%, transparent);
+  --iui-danger-soft: color-mix(in srgb, var(--ui-danger) 12%, transparent);
   --iui-purple-soft: var(--iui-info-soft);
   --iui-pink-soft: var(--iui-warning-soft);
   --iui-radius-sm: var(--ui-radius-sm);
@@ -285,7 +285,7 @@
   cursor: pointer;
 }
 .intui-openui .iui-check input {
-  accent-color: var(--foreground);
+  accent-color: var(--ui-text-primary);
 }
 .intui-openui .iui-check.is-done span {
   text-decoration: line-through;
@@ -519,7 +519,7 @@
   color: var(--ui-text-placeholder);
 }
 .intui-openui .iui-label {
-  color: var(--muted-foreground);
+  color: var(--ui-text-secondary);
   font-size: var(--ui-font-size-xs);
 }
 .intui-openui .iui-notice {
@@ -531,13 +531,13 @@
   padding: var(--ui-space-md);
   border: 0;
   border-radius: var(--ui-radius-lg);
-  background: var(--secondary);
+  background: var(--ui-bg-control);
 }
 .intui-openui .iui-notice p {
   flex: 1 1 18rem;
 }
 .intui-openui .iui-table th {
-  color: var(--muted-foreground);
+  color: var(--ui-text-secondary);
   font-size: var(--ui-font-size-xs);
   font-weight: var(--ui-font-weight-medium);
 }
@@ -574,7 +574,7 @@
 }
 .intui-openui .iui-segmented button.is-selected {
   background: var(--ui-bg-segment-active);
-  color: var(--foreground);
+  color: var(--ui-text-primary);
 }
 .intui-openui .iui-segmented.iui-block {
   align-self: stretch;
@@ -600,14 +600,14 @@
   height: var(--ui-space-xs);
   transform: translateY(-50%);
   border-radius: var(--ui-radius-pill);
-  background: var(--secondary);
+  background: var(--ui-bg-control);
 }
 .intui-openui .iui-slider-fill {
   position: absolute;
   inset: 0 auto 0 0;
   width: calc(var(--iui-range-progress, 0) * 100%);
   border-radius: var(--ui-radius-pill);
-  background: var(--muted-foreground);
+  background: var(--ui-text-secondary);
 }
 .intui-openui .iui-slider-thumb {
   position: absolute;
@@ -616,9 +616,9 @@
   width: var(--ui-space-lg);
   height: var(--ui-space-lg);
   transform: translate(-50%, -50%);
-  border: 2px solid var(--muted-foreground);
+  border: 2px solid var(--ui-text-secondary);
   border-radius: var(--ui-radius-pill);
-  background: var(--background);
+  background: var(--ui-bg-page);
 }
 .intui-openui .iui-range {
   position: absolute;
@@ -661,8 +661,8 @@
   min-height: var(--ui-space-xxl);
   padding: var(--ui-space-md) var(--ui-space-lg);
   border-radius: var(--ui-radius-md);
-  background: var(--secondary);
-  color: var(--foreground);
+  background: var(--ui-bg-control);
+  color: var(--ui-text-primary);
   font-size: var(--ui-font-size-xxl);
   line-height: 1.2;
   text-align: end;
@@ -670,14 +670,14 @@
   font-variant-numeric: tabular-nums;
 }
 .intui-openui .iui-calculator button {
-  background: var(--secondary);
+  background: var(--ui-bg-control);
   border-color: transparent;
 }
 .intui-openui .iui-calculator .iui-calculator-fn {
   color: var(--ui-text-tertiary);
 }
 .intui-openui .iui-calculator .iui-calculator-op {
-  color: var(--muted-foreground);
+  color: var(--ui-text-secondary);
   font-weight: var(--ui-font-weight-medium);
 }
 .intui-openui .iui-calculator .iui-calculator-equals {
@@ -770,29 +770,29 @@
 .intui-openui .iui-simulation input[type='range']::-webkit-slider-runnable-track {
   height: var(--ui-space-xs);
   border-radius: var(--ui-radius-pill);
-  background: var(--secondary);
+  background: var(--ui-bg-control);
 }
 .intui-openui .iui-simulation input[type='range']::-moz-range-track {
   height: var(--ui-space-xs);
   border-radius: var(--ui-radius-pill);
-  background: var(--secondary);
+  background: var(--ui-bg-control);
 }
 .intui-openui .iui-simulation input[type='range']::-webkit-slider-thumb {
   appearance: none;
   width: var(--ui-space-lg);
   height: var(--ui-space-lg);
   margin-top: calc((var(--ui-space-xs) - var(--ui-space-lg)) / 2);
-  border: 2px solid var(--muted-foreground);
+  border: 2px solid var(--ui-text-secondary);
   border-radius: var(--ui-radius-pill);
-  background: var(--background);
+  background: var(--ui-bg-page);
 }
 .intui-openui .iui-simulation input[type='range']::-moz-range-thumb {
   box-sizing: border-box;
   width: var(--ui-space-lg);
   height: var(--ui-space-lg);
-  border: 2px solid var(--muted-foreground);
+  border: 2px solid var(--ui-text-secondary);
   border-radius: var(--ui-radius-pill);
-  background: var(--background);
+  background: var(--ui-bg-page);
 }
 @container (max-width: 280px) {
   .intui-openui :is(.iui-slider, .iui-simulation-parameter) {

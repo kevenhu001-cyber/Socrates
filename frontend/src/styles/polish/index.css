@@ -14,7 +14,6 @@
  * Component map:
  *   sidebar.css     — shared sidebar affordances; desktop geometry in parity/sidebar.css
  *   composer.css    — landing typography and the sole composer attachment owner
- *   transcript.css  — user bubble, msg toolbar, code blocks, cursor, toasts
  *   overlays.css    — cmdk / profile / share / usage / shared overlays
  *   workspace.css   — projects/directory page fixes
  *   auth.css        — auth gate card
@@ -32,7 +31,6 @@
 
 @import './sidebar.css';
 @import './composer.css';
-@import './transcript.css';
 @import './overlays.css';
 @import './workspace.css';
 @import './auth.css';

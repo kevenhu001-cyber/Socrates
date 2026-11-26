@@ -438,7 +438,7 @@ test('Create image waits for a user prompt before submitting the image-generatio
 for (const theme of ['light', 'dark']) {
   for (const width of [360, 768, 1024, 1440]) {
     test(`non-chat surface audit: ${theme} ${width}px`, async ({ page }) => {
-      const lang = width === 360 ? 'zh' : 'en';
+      const lang = (width === 360 || width === 1024) === (theme === 'light') ? 'zh' : 'en';
       await page.addInitScript((value) => localStorage.setItem('socrates-theme', value), theme);
       await page.setViewportSize({ width, height: 900 });
       await mockAuthedApp(page, { lang });
@@ -451,10 +451,11 @@ for (const theme of ['light', 'dark']) {
           () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
         );
         expect(overflow).toBeLessThanOrEqual(1);
-        await page.screenshot({
+        const screenshot = await page.screenshot({
           path: `test-results/page-audit-${encodeURIComponent(name)}-${encodeURIComponent(theme)}-${encodeURIComponent(width)}-${encodeURIComponent(lang)}.png`,
           animations: 'disabled',
         });
+        await test.info().attach(name, { body: screenshot, contentType: 'image/png' });
       };
       await openSidebar(page);
       await capture('sidebar', '#sidebar');
@@ -533,6 +534,12 @@ for (const theme of ['light', 'dark']) {
         'color',
         theme === 'dark' ? 'rgb(255, 255, 255)' : 'rgb(0, 0, 0)',
       );
+      await page.evaluate(() => {
+        window.__socratesTestState.actions.showGate();
+        window.__socratesTestState.actions.showAuthSignin();
+      });
+      await capture('login', '#authGate');
+      await expect(page.locator('#authSigninEmail')).toBeVisible();
     });
   }
 }
