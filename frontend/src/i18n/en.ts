@@ -434,6 +434,8 @@ export const en = {
   'auth.loggingIn': 'Logging in…',
   'auth.signInTitle': 'Sign in to Socrates',
   'chat.placeholder': 'Type your thinking...',
+  'chat.time.today': 'Today',
+  'chat.time.yesterday': 'Yesterday',
   'chat.inputPlaceholder': 'Ask Socrates',
   'chat.hint': 'Shift+Enter for new line',
   'chat.history.loadingEarlier': 'Loading earlier messages',

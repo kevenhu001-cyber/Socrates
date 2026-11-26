@@ -33,7 +33,7 @@ test('zh UI localizes live with system-first fonts and bundled fallbacks', async
      without a reload and without losing the draft. */
   await page.evaluate(() => window.__socratesLegacy.profile.setLang('zh'));
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh');
-  await expect(editor).toHaveAttribute('aria-label', '有问题，随便问');
+  await expect(editor).toHaveAttribute('aria-label', '询问 Socrates');
 
   const zhState = await editor.evaluate((el) => {
     const p = el.querySelector('p.is-editor-empty:first-child');
@@ -42,7 +42,7 @@ test('zh UI localizes live with system-first fonts and bundled fallbacks', async
     return { content: before.content, fontFamily: before.fontFamily };
   });
   expect(zhState).not.toBeNull();
-  expect(zhState.content).toContain('有问题，随便问');
+  expect(zhState.content).toContain('询问 Socrates');
   expect(zhState.fontFamily.split(',')[0].replace(/["']/g, '').trim()).toBe('system-ui');
   expect(zhState.fontFamily).toContain(CJK_FACE);
   expect(zhState.fontFamily).toContain('Geist Sans');
