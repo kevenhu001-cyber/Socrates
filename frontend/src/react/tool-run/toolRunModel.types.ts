@@ -12,6 +12,7 @@ export interface SourceItem {
   host: string;
   date?: string;
   source?: string;
+  snippet?: string;
 }
 
 /** A block shown when the row is expanded. `fullText` is present only
