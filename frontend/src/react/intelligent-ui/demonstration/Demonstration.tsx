@@ -2,6 +2,8 @@ import { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from '
 import {
   normalizeDemonstrationProgram,
   validateDemonstration,
+} from '@socrates/core/demonstrationLight';
+import {
   type DemonstrationProgram,
   type DemonstrationWarning,
   type DemonstrationDiagnostics,
