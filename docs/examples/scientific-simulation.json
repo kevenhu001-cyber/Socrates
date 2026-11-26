@@ -1,0 +1,574 @@
+{
+  "rlc": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "resistance",
+        "label": "Resistance",
+        "value": 4,
+        "min": 1,
+        "max": 12,
+        "unit": "Ω"
+      },
+      {
+        "id": "inductance",
+        "label": "Inductance",
+        "value": 0.5,
+        "min": 0.1,
+        "max": 1,
+        "unit": "H"
+      },
+      {
+        "id": "capacitance",
+        "label": "Capacitance",
+        "value": 0.1,
+        "min": 0.02,
+        "max": 0.2,
+        "unit": "F"
+      },
+      {
+        "id": "supply",
+        "label": "DC supply",
+        "value": 12,
+        "min": 1,
+        "max": 24,
+        "unit": "V"
+      }
+    ],
+    "definitions": {
+      "stored": "inductance*cur^2/2+capacitance*voltage^2/2",
+      "balance": "inputEnergy-lossEnergy-stored"
+    },
+    "dynamics": {
+      "method": "rk45",
+      "duration": 5,
+      "step": 0.025,
+      "initial": {
+        "cur": 0,
+        "voltage": 0,
+        "inputEnergy": 0,
+        "lossEnergy": 0
+      },
+      "derivatives": {
+        "cur": "(supply-resistance*cur-voltage)/inductance",
+        "voltage": "cur/capacitance",
+        "inputEnergy": "supply*cur",
+        "lossEnergy": "resistance*cur^2"
+      }
+    },
+    "views": [
+      {
+        "kind": "plot",
+        "history": true,
+        "label": "Capacitor step response",
+        "x": [
+          0,
+          5
+        ],
+        "y": [
+          0,
+          "supply*2"
+        ],
+        "xLabel": "Time (s)",
+        "yLabel": "Voltage (V)",
+        "curves": [
+          {
+            "expression": "voltage",
+            "label": "Capacitor",
+            "color": "blue"
+          },
+          {
+            "expression": "supply",
+            "label": "Input",
+            "color": "muted",
+            "dashed": true
+          }
+        ]
+      },
+      {
+        "kind": "plot",
+        "history": true,
+        "x": [
+          0,
+          5
+        ],
+        "y": [
+          0,
+          "supply^2*capacitance*3"
+        ],
+        "xLabel": "Time (s)",
+        "yLabel": "Energy (J)",
+        "curves": [
+          {
+            "expression": "inputEnergy",
+            "label": "Input",
+            "color": "ink"
+          },
+          {
+            "expression": "stored",
+            "label": "Stored",
+            "color": "blue"
+          },
+          {
+            "expression": "lossEnergy",
+            "label": "Dissipated",
+            "color": "orange"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "Energy balance residual",
+            "expression": "balance",
+            "unit": "J",
+            "digits": 5
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "batteryThermal": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "loadCurrent",
+        "label": "Discharge current",
+        "value": 10,
+        "min": 2,
+        "max": 20,
+        "unit": "A"
+      },
+      {
+        "id": "resistance",
+        "label": "Cell resistance",
+        "value": 0.05,
+        "min": 0.01,
+        "max": 0.1,
+        "unit": "Ω"
+      },
+      {
+        "id": "ambient",
+        "label": "Ambient temperature",
+        "value": 25,
+        "min": 10,
+        "max": 40,
+        "unit": "°C"
+      }
+    ],
+    "definitions": {
+      "capacityAh": 20,
+      "thermalMass": 200,
+      "conductance": 0.8,
+      "ocv": "3+1.2*soc",
+      "terminalVoltage": "ocv-loadCurrent*resistance",
+      "lossPower": "loadCurrent^2*resistance",
+      "outputPower": "loadCurrent*terminalVoltage"
+    },
+    "dynamics": {
+      "method": "rk45",
+      "duration": 300,
+      "step": 1,
+      "initial": {
+        "soc": 0.8,
+        "temp": "ambient",
+        "outputEnergy": 0
+      },
+      "derivatives": {
+        "soc": "-loadCurrent/(3600*capacityAh)",
+        "temp": "(lossPower-conductance*(temp-ambient))/thermalMass",
+        "outputEnergy": "outputPower"
+      },
+      "events": [
+        {
+          "expression": "soc",
+          "direction": -1,
+          "terminal": true
+        }
+      ]
+    },
+    "views": [
+      {
+        "kind": "plot",
+        "history": true,
+        "x": [
+          0,
+          300
+        ],
+        "y": [
+          "ambient-1",
+          "ambient+lossPower/conductance+1"
+        ],
+        "xLabel": "Time (s)",
+        "yLabel": "Temperature (°C)",
+        "curves": [
+          {
+            "expression": "temp",
+            "label": "Cell",
+            "color": "orange"
+          },
+          {
+            "expression": "ambient",
+            "label": "Ambient",
+            "color": "muted",
+            "dashed": true
+          }
+        ]
+      },
+      {
+        "kind": "plot",
+        "history": true,
+        "x": [
+          0,
+          300
+        ],
+        "y": [
+          0.6,
+          0.85
+        ],
+        "xLabel": "Time (s)",
+        "yLabel": "SOC",
+        "curves": [
+          {
+            "expression": "soc",
+            "label": "State of charge",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "Terminal voltage",
+            "expression": "terminalVoltage",
+            "unit": "V"
+          },
+          {
+            "label": "Heat generation",
+            "expression": "lossPower",
+            "unit": "W"
+          },
+          {
+            "label": "Delivered energy",
+            "expression": "outputEnergy/3600",
+            "unit": "Wh"
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "constrainedPendulum": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "length",
+        "label": "Length",
+        "value": 1,
+        "min": 0.5,
+        "max": 1.5,
+        "unit": "m"
+      },
+      {
+        "id": "mass",
+        "label": "Mass",
+        "value": 1,
+        "min": 0.5,
+        "max": 2,
+        "unit": "kg"
+      },
+      {
+        "id": "angle",
+        "label": "Initial angle",
+        "value": 0.5,
+        "min": 0.1,
+        "max": 1.2,
+        "unit": "rad"
+      }
+    ],
+    "definitions": {
+      "constraint": "qx^2+qy^2-length^2",
+      "stab": "-(vx^2+vy^2)-8*(qx*vx+qy*vy)-8*constraint",
+      "ax": "solve3(1,mass,0,qx,0,mass,qy,qx,qy,0,0,-mass*9.81,stab)",
+      "ay": "solve3(2,mass,0,qx,0,mass,qy,qx,qy,0,0,-mass*9.81,stab)",
+      "energy": "mass*(vx^2+vy^2)/2+mass*9.81*(qy+length)"
+    },
+    "dynamics": {
+      "method": "rk45",
+      "duration": 5,
+      "step": 0.025,
+      "rtol": 1e-7,
+      "atol": 1e-9,
+      "initial": {
+        "qx": "length*sin(angle)",
+        "qy": "-length*cos(angle)",
+        "vx": 0,
+        "vy": 0
+      },
+      "derivatives": {
+        "qx": "vx",
+        "qy": "vy",
+        "vx": "ax",
+        "vy": "ay"
+      }
+    },
+    "views": [
+      {
+        "kind": "scene",
+        "x": [
+          "-length*1.2",
+          "length*1.2"
+        ],
+        "y": [
+          "-length*1.2",
+          "length*.25"
+        ],
+        "objects": [
+          {
+            "kind": "rod",
+            "from": [
+              0,
+              0
+            ],
+            "to": [
+              "qx",
+              "qy"
+            ],
+            "color": "muted"
+          },
+          {
+            "kind": "body",
+            "center": [
+              "qx",
+              "qy"
+            ],
+            "radius": 0.08,
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "kind": "plot",
+        "history": true,
+        "x": [
+          0,
+          5
+        ],
+        "y": [
+          -0.00001,
+          0.00001
+        ],
+        "xLabel": "Time (s)",
+        "yLabel": "Constraint residual (m²)",
+        "curves": [
+          {
+            "expression": "constraint",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "Constraint residual",
+            "expression": "constraint",
+            "unit": "m²",
+            "digits": 5
+          },
+          {
+            "label": "Mechanical energy",
+            "expression": "energy",
+            "unit": "J"
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "heat": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "alpha",
+        "label": "Thermal diffusivity",
+        "value": 0.1,
+        "min": 0.02,
+        "max": 0.2,
+        "unit": "m²/s"
+      }
+    ],
+    "dynamics": {
+      "method": "rk45",
+      "duration": 1,
+      "step": 0.01,
+      "spatial": {
+        "nodes": 11,
+        "domain": [
+          0,
+          1
+        ],
+        "diffusivity": "alpha",
+        "initial": "20+80*sin(pi*x)",
+        "left": 20,
+        "right": 20
+      }
+    },
+    "views": [
+      {
+        "kind": "field",
+        "x": [
+          0,
+          1
+        ],
+        "y": [
+          0,
+          0.2
+        ],
+        "expression": "gridValue",
+        "palette": "heat",
+        "colorRange": [
+          20,
+          100
+        ],
+        "unit": "°C",
+        "height": 64,
+        "contours": [
+          30,
+          50,
+          70,
+          90
+        ]
+      },
+      {
+        "kind": "plot",
+        "x": [
+          0,
+          1
+        ],
+        "y": [
+          20,
+          100
+        ],
+        "xLabel": "Position (m)",
+        "yLabel": "Temperature (°C)",
+        "curves": [
+          {
+            "expression": "gridValue",
+            "label": "Current",
+            "color": "orange"
+          },
+          {
+            "expression": "20+80*sin(pi*x)",
+            "label": "Initial",
+            "color": "muted",
+            "dashed": true
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "wave": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "waveSpeed",
+        "label": "Wave speed",
+        "value": 1,
+        "min": 0.5,
+        "max": 2,
+        "unit": "m/s"
+      }
+    ],
+    "dynamics": {
+      "method": "rk45",
+      "duration": 2,
+      "step": 0.01,
+      "spatial": {
+        "equation": "wave",
+        "nodes": 15,
+        "domain": [
+          0,
+          1
+        ],
+        "speed": "waveSpeed",
+        "initial": "sin(pi*x)",
+        "initialVelocity": 0,
+        "left": 0,
+        "right": 0
+      }
+    },
+    "views": [
+      {
+        "kind": "plot",
+        "x": [
+          0,
+          1
+        ],
+        "y": [
+          -1.1,
+          1.1
+        ],
+        "xLabel": "Position (m)",
+        "yLabel": "Displacement",
+        "curves": [
+          {
+            "expression": "gridValue",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "field": {
+    "version": 1,
+    "views": [
+      {
+        "kind": "field",
+        "label": "Calibrated scalar field and gradient",
+        "x": [
+          -1,
+          1
+        ],
+        "y": [
+          -1,
+          1
+        ],
+        "expression": "x^2+y^2",
+        "palette": "heat",
+        "colorRange": [
+          0,
+          2
+        ],
+        "unit": "arbitrary units",
+        "contours": [
+          0.25,
+          0.5,
+          1,
+          1.5
+        ],
+        "vector": [
+          "2*x",
+          "2*y"
+        ],
+        "vectorScale": 2,
+        "height": 320
+      }
+    ]
+  }
+}
