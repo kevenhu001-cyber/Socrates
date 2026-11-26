@@ -581,10 +581,10 @@
 
 #appShell .plugin-detail-card {
   margin-top: var(--ui-space-sm);
-  padding: clamp(var(--ui-space-lg), 4vw, var(--ui-space-xxl));
-  background: var(--ui-account-panel);
-  border: 1px solid var(--ui-account-border);
-  border-radius: var(--ui-radius-dialog);
+  padding: var(--ui-space-lg) 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
 }
 
 #appShell .plugin-detail-page-header {
@@ -594,16 +594,6 @@
   margin: 0;
   padding: 0 0 var(--ui-space-xl);
   border-bottom: 1px solid var(--ui-account-border);
-}
-
-#appShell .plugin-detail-connect {
-  background: var(--ui-bg-page);
-  color: var(--ui-text-primary);
-  border: 1px solid var(--ui-border-default);
-}
-
-#appShell .plugin-detail-connect:hover:not(:disabled) {
-  background: var(--ui-bg-hover);
 }
 
 #appShell .plugin-detail-page-header .account-page-title {

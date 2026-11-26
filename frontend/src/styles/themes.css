@@ -26,13 +26,12 @@ html[data-mode] {
 
 html[data-theme='socrates'][data-mode],
 html[data-theme='socrates'][data-mode]:lang(zh) {
+  /* Web UI follows the platform face; bundled Latin/CJK fonts are retained as fallbacks. */
+  --ui-font-ui: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Noto Sans SC', 'Microsoft YaHei', 'Geist Sans', sans-serif;
   --font-sans: var(--ui-font-ui);
-  /* RN-9 — the interface stays Geist; the display face is the bundled
-     Newsreader serif, which the landing hero, learning-mode headings and any
-     `.greeting` surface opt into. It is a local, same-origin face (packaged
-     with @fontsource/newsreader), so nothing new is fetched. The serif is what
-     gives the empty state a voice: at 32–40px it reads as written language
-     rather than as a UI label. Chinese falls through to Noto Sans SC. */
+  /* Optional display typography stays separate from system UI typography.
+     The bundled display face remains available to learning surfaces. */
   --font-display: 'Newsreader', 'Charis SIL', 'Noto Sans SC', 'Georgia', serif;
   --font-serif: var(--font-display);
   --font-mono: var(--ui-font-ui-mono);
@@ -49,8 +48,7 @@ html[data-theme='socrates'][data-mode]:lang(zh) {
 
   /* shadcn semantic roles. Product and retained HTML controls share these
      values; there is no second palette in the component stylesheet.
-     The canvas is the reference's pure black (Geist background-200); the
-     ladder guard allows it through the baseline's blackCanvas policy. */
+     The dark canvas follows the supplied November reference (#0e0e0e). */
   --background: var(--geist-background-200);
   --foreground: var(--geist-gray-1000);
   --card: var(--geist-gray-200);
@@ -58,7 +56,7 @@ html[data-theme='socrates'][data-mode]:lang(zh) {
   --popover: var(--geist-gray-300);
   --popover-foreground: var(--foreground);
   --primary: var(--geist-gray-1000);
-  --primary-foreground: var(--background);
+  --primary-foreground: rgb(0 0 0);
   --secondary: var(--geist-gray-400);
   --secondary-foreground: var(--foreground);
   --muted: var(--geist-gray-100);
@@ -93,7 +91,7 @@ html[data-theme='socrates'][data-mode]:lang(zh) {
    * a surface whose colour is not known in advance.
    * ------------------------------------------------------------------- */
   --geist-background-100: #0a0a0a;
-  --geist-background-200: #000000;
+  --geist-background-200: #0e0e0e;
   --geist-gray-100: #1a1a1a;
   --geist-gray-200: #1f1f1f;
   --geist-gray-300: #292929;
@@ -124,8 +122,7 @@ html[data-theme='socrates'][data-mode]:lang(zh) {
    * steps is what keeps the ladder honest — a ladder whose rungs belong to
    * no scale step is four unrelated colours that happen to be close.
    *
-   * The dark canvas is Geist's background-200 (pure #000), matching the
-   * ChatGPT phone reference; rail / panel / elevated stay on the
+   * The dark canvas is the November reference near-black; rail / panel / elevated stay on the
    * gray-100 → gray-300 slice so raised surfaces still read as depth.
    *
    * Interactive tints (control, bubble, selected pill) are named scale
@@ -143,14 +140,14 @@ html[data-theme='socrates'][data-mode]:lang(zh) {
   --ui-bg-surface: var(--ui-bg-elevated);
   --ui-bg-overlay: var(--popover);
   --ui-bg-composer: var(--ui-bg-elevated);
-  /* The question box is a field tone, not a ladder rung: #303030 in dark
+  /* The question box is a field tone, not a ladder rung: #212121 in dark
      sits just above the rail and below a menu, exactly as the reference
      measures, so the field reads as an object without a shadow. */
-  --ui-bg-ask: rgb(48 48 48);
+  --ui-bg-ask: rgb(33 33 33);
   --ui-bg-control: var(--secondary);
   --ui-bg-hover: var(--accent);
   --ui-bg-selected: var(--ui-bg-control);
-  --ui-bg-bubble: var(--geist-gray-400);
+  --ui-bg-bubble: rgb(24 62 118);
   --ui-bg-pill-selected: var(--geist-gray-500);
   --ui-bg-hover-ghost: var(--ui-bg-hover);
   /* Geist hairline: the rail's edge is the default border (gray-400), the
@@ -343,7 +340,7 @@ html[data-theme='socrates'][data-mode]:lang(zh) {
   --ui-bg-control: var(--secondary);
   --ui-bg-hover: var(--accent);
   --ui-bg-selected: var(--ui-bg-control);
-  --ui-bg-bubble: var(--geist-gray-100);
+  --ui-bg-bubble: rgb(227 237 255);
   --ui-bg-pill-selected: var(--geist-gray-300);
   --ui-bg-hover-ghost: var(--ui-bg-hover);
   /* Geist hairline — see the dark-mode note above. */
@@ -407,7 +404,7 @@ html[data-theme='socrates'][data-mode]:lang(zh) {
 
   --ui-avatar-bg: var(--ui-brand-accent);
   --ui-bg-composer: var(--ui-bg-elevated);
-  /* One flat field tone in both modes: #f4f4f4 on paper, #303030 on black. */
+  /* One flat field tone in both modes: #f4f4f4 on paper, #212121 on near-black. */
   --ui-bg-ask: rgb(244 244 244);
   --ui-bg-chip: var(--ui-bg-hover);
   --ui-bg-chip-hover: var(--geist-gray-alpha-200);
@@ -519,7 +516,7 @@ html[data-theme='socrates'][data-mode]:lang(zh) {
 }
 
 html[data-theme='socrates'][data-mode='dark'] {
-  /* Modern monochrome bubble: neutral surface aligned with Geist gray scale, matching ChatGPT / Grok style. */
+  /* The selected blue message accent is independent of the neutral surface ramp. */
   --muted-foreground: rgb(175 175 175);
   /* Phone reference fields: the question box and the selected mode segment
      are one tone (#1b1b1b) between the canvas and the panel rung; the mode
@@ -534,8 +531,7 @@ html[data-theme='socrates'][data-mode='dark'] {
 }
 
 html[data-theme='socrates'][data-mode='light'] {
-  /* The user's turn is a neutral grey sheet (#f2f2f2), one step under the
-     paper. Colour is reserved for links and status, never for identity. */
+  /* Light-mode counterpart of the reference blue message accent. */
   /* Phone reference fields (light): white question box / selected segment
      on a #f4f4f4 mode track. */
   --ui-bg-field: var(--ui-bg-elevated);

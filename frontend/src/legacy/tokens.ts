@@ -211,13 +211,13 @@ export const darkPalette: ThemePalette = {
   },
   bg: {
     /* Four-step ladder, projected from four consecutive steps of the Geist
-     * surface ramp: L1 0% (pure black, the reference canvas) → L2 10.2% →
+     * surface ramp: L1 5.49% (reference canvas) → L2 10.2% →
      * L3 12.16% → L4 16.08%. */
-    page: '0 0% 0%', // #000000  L1 — pure black (reference canvas)
+    page: '0 0% 5.49%', // #0e0e0e  L1 — reference canvas
     raised: '0 0% 12.16%', // #1f1f1f  L3 — cards on the canvas
     overlay: '0 0% 16.08%', // #292929  L4 — floating bars, menus
     hover: '0 0% 21.18%', // #363636  selected/hover tint
-    sunken: '0 0% 0%', // #000000  L1 — inset wells
+    sunken: '0 0% 5.49%', // #0e0e0e  L1 — inset wells
   },
   text: {
     primary: '0 0% 92.94%', // #ededed
@@ -283,7 +283,7 @@ export function getThemePalette(mode: ThemeMode): ThemePalette {
 }
 
 /** Dark mode page background — ladder L1, a near-black rather than pure #000. */
-export const DARK_PAGE_BACKGROUND = '#000000';
+export const DARK_PAGE_BACKGROUND = '#0e0e0e';
 
 /** Light mode page background — ladder L2, one step below the paper. */
 export const LIGHT_PAGE_BACKGROUND = '#fafafa';

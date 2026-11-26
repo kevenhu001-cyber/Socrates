@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { monogramOf } from '@socrates/ui/turn';
+import { SourceAvatar } from '../sources/SourceAvatar';
 import { faviconProxyUrl } from '../../legacy/faviconProxy';
 import { isInlineSearchTool, toolCategory } from '../../render/toolCategory';
 import { toolIcon } from '../../legacy/icons/toolIcons.ts';
@@ -45,33 +45,18 @@ export function turnActivitySites(calls: ReadonlyArray<ToolCallRecord>): string[
   return [...urls.values()];
 }
 
-function SiteMark({ url }: { url: string }) {
-  const [loaded, setLoaded] = useState(false);
-  const [failed, setFailed] = useState(false);
-  const src = faviconProxyUrl(url);
-  return (
-    <span className="tool-site-mark" data-testid="tool-site-mark" title={hostOf(url)}>
-      {!loaded ? <span>{monogramOf(hostOf(url))}</span> : null}
-      {src && !failed ? (
-        <img
-          src={src}
-          alt=""
-          loading="lazy"
-          decoding="async"
-          referrerPolicy="no-referrer"
-          onLoad={() => setLoaded(true)}
-          onError={() => setFailed(true)}
-        />
-      ) : null}
-    </span>
-  );
-}
-
 export function ToolSiteMarks({ sites }: { sites: readonly string[] }) {
   return (
     <span className="tool-site-marks" aria-hidden="true">
       {sites.map((url) => (
-        <SiteMark key={faviconProxyUrl(url)} url={url} />
+        <SourceAvatar
+          key={faviconProxyUrl(url)}
+          url={url}
+          host={hostOf(url)}
+          className="tool-site-mark"
+          testId="tool-site-mark"
+          loadingFallback
+        />
       ))}
     </span>
   );

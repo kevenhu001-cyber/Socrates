@@ -50,13 +50,13 @@ const darkHex: ThemePaletteHex = {
   },
   bg: {
     /* Four-step ladder, projected from four consecutive steps of the Geist
-     * surface ramp: L1 #000000 → L2 #1a1a1a → L3 #1f1f1f → L4 #292929.
+     * surface ramp: L1 #0e0e0e → L2 #1a1a1a → L3 #1f1f1f → L4 #292929.
      * The canvas is a near-black, never pure #000. */
-    page: '#000000',
+    page: '#0e0e0e',
     raised: '#1f1f1f',
     overlay: '#292929',
     hover: '#363636',
-    sunken: '#000000',
+    sunken: '#0e0e0e',
   },
   text: {
     primary: '#ededed',
@@ -142,7 +142,7 @@ export interface UiSurfaceHex {
 
 const darkSurfaces: UiSurfaceHex = {
   sidebar: '#1a1a1a',
-  bubble: '#2e2e2e',
+  bubble: '#183e76',
   bubbleStrong: '#454545',
   composer: '#292929',
   composerBorder: '#2e2e2e',
@@ -158,7 +158,7 @@ const darkSurfaces: UiSurfaceHex = {
 
 const lightSurfaces: UiSurfaceHex = {
   sidebar: '#fafafa',
-  bubble: '#ebebeb',
+  bubble: '#e3edff',
   bubbleStrong: '#e6e6e6',
   composer: '#ffffff',
   composerBorder: '#c9c9c9',

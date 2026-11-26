@@ -40,6 +40,9 @@ export interface ThinkingSurfaceProps {
   /** A tool mark remains visible before the activity caption. */
   icon?: ReactNode;
   iconWidth?: number;
+  /** Web reference: stretch the header so elapsed time and disclosure stay right. */
+  fullWidth?: boolean;
+  disclosureIcon?: ReactNode;
   /** Optional site marks or other quiet metadata after the caption. */
   trailing?: ReactNode;
   expandable: boolean;
@@ -63,6 +66,8 @@ export function ThinkingSurface({
   indicator,
   icon,
   iconWidth = 18,
+  fullWidth = false,
+  disclosureIcon,
   trailing,
   expandable,
   open,
@@ -91,14 +96,15 @@ export function ThinkingSurface({
         {...handlers}
         style={{
           ...BUTTON_RESET,
-          alignSelf: 'flex-start',
+          alignSelf: fullWidth ? 'stretch' : 'flex-start',
+          width: fullWidth ? '100%' : undefined,
           maxWidth: '100%',
           minWidth: 0,
           flexWrap: 'nowrap',
           alignItems: 'center',
           gap: S[75],
-          paddingInline: S[75],
-          marginLeft: -S[75],
+          paddingInline: fullWidth ? 0 : S[75],
+          marginLeft: fullWidth ? 0 : -S[75],
           borderRadius: R.row,
           backgroundColor: expandable && hovered ? colors.fill : 'transparent',
           ...focusRing(colors, focused),
@@ -119,12 +125,17 @@ export function ThinkingSurface({
         <UiText
           testID="turn-activity-label"
           className={labelClassName}
-          variant="bodySm"
+          variant={fullWidth ? 'body' : 'bodySm'}
           tone="secondary"
           role={live ? 'status' : undefined}
           numberOfLines={1}
           ellipsizeMode="tail"
-          style={{ flexShrink: 1, minWidth: 0, fontVariant: ['tabular-nums'] }}
+          style={{
+            flex: fullWidth ? '1 1 0' : undefined,
+            flexShrink: 1,
+            minWidth: 0,
+            fontVariant: ['tabular-nums'],
+          }}
         >
           {label}
         </UiText>
@@ -141,7 +152,7 @@ export function ThinkingSurface({
             <UiText
               testID="turn-activity-duration"
               className={durationClassName}
-              variant="labelSm"
+              variant={fullWidth ? 'bodySm' : 'labelSm'}
               tone="secondary"
               aria-live="off"
               numberOfLines={1}
@@ -152,7 +163,7 @@ export function ThinkingSurface({
           </span>
         ) : null}
         {trailing}
-        {expandable ? <Chevron open={open} tone="tertiary" /> : null}
+        {expandable ? (disclosureIcon ?? <Chevron open={open} tone="tertiary" />) : null}
       </button>
       <div
         data-testid="turn-activity-body"

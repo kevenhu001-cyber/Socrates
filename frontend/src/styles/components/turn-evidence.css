@@ -69,13 +69,19 @@
 .turn-source-preview-favicon {
   width: 14px;
   height: 14px;
+  display: inline-grid;
+  place-items: center;
+  overflow: hidden;
   border-radius: var(--ui-radius-xs);
-  object-fit: contain;
   flex-shrink: 0;
-}
-.turn-source-preview-icon {
+  background: var(--ui-bg-chip);
   font-size: var(--ui-font-size-xxs);
   line-height: 1;
+}
+.turn-source-preview-favicon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 .turn-source-preview-host {
   color: var(--ui-text-tertiary);

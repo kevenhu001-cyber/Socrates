@@ -169,7 +169,6 @@ export function CommandPaletteResults({
             data-kind={view.kind}
             data-id={view.id}
             onClick={() => onActivate(idx)}
-            onMouseEnter={() => onActivate(idx)}
           >
             <div className="cmd-k-row-title">{view.title}</div>
             <div className="cmd-k-row-snippet">{view.snippet}</div>

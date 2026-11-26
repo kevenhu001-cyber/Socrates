@@ -148,10 +148,10 @@ test('switcher exposes the React model label and composer effort stays in sync',
   await expect(pop).toHaveCount(0);
 
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(page.locator('#composerInputWrap [data-composer-control=effort]')).toHaveCount(0);
+  await expect(page.locator('#composerInputWrap [data-composer-control=effort]')).toBeVisible();
+  await expect(page.locator('#effortTrigger')).toContainText(/高|High/);
   expect(await page.evaluate(() => typeof window.syncEffortUI)).toBe('undefined');
-  await page.locator('#composerToolsBtn').click();
-  await page.locator('#composerToolsMenu [data-composer-action=reasoningEffort]').click();
+  await page.locator('#effortTrigger').click();
   await expect(pop.getByRole('slider')).toHaveAttribute('aria-valuetext', /高|High/);
 });
 

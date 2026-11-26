@@ -398,7 +398,7 @@ test('rows share one icon column and the prose column', async ({ page }) => {
   );
   expect((await row.boundingBox()).x).toBeGreaterThan((await prose.boundingBox()).x);
   const icons = await body
-    .locator('.rn-tool-row :is(.tool-inline-tool-icon, .tool-site-marks)')
+    .locator('.rn-tool-row .tool-run-trigger > :is(.tool-inline-tool-icon, .tool-site-marks, .activity-step-glyph):first-child')
     .evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().left));
   expect(icons.length).toBe(6);
   await expect(

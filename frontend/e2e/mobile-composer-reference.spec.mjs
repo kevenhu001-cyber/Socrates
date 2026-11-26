@@ -2,7 +2,7 @@ import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
-test('mobile composer morphs in place on landing and in a conversation', async ({ page }) => {
+test('mobile composer stays two-row on landing and in a conversation', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.emulateMedia({ colorScheme: 'dark' });
   await mockAuthedApp(page, { lang: 'zh' });
@@ -17,10 +17,10 @@ test('mobile composer morphs in place on landing and in a conversation', async (
   const primary = host.locator('#composerPrimaryBtn');
   const originalEditor = await editor.elementHandle();
 
-  const checkCompact = async () => {
-    await expect(frame).toHaveAttribute('data-expanded', 'false');
-    await expect(frame).toHaveCSS('height', '52px');
-    await expect(frame).toHaveCSS('border-radius', '26px');
+  const checkStacked = async () => {
+    await expect(frame).toHaveAttribute('data-expanded', 'true');
+    await expect(frame).toHaveCSS('height', '86px');
+    await expect(frame).toHaveCSS('border-radius', '28px');
     const compact = await frame.boundingBox();
     const hostBox = await host.boundingBox();
     expect(compact.width).toBeLessThanOrEqual(hostBox.width + 1);
@@ -31,14 +31,14 @@ test('mobile composer morphs in place on landing and in a conversation', async (
       mic.boundingBox(),
       primary.boundingBox(),
     ]);
-    expect(plus.x + plus.width).toBeLessThan(editorBox.x);
-    expect(editorBox.x + editorBox.width).toBeLessThan(microphone.x);
-    expect(editorBox.y + editorBox.height / 2).toBeCloseTo(send.y + send.height / 2, 0);
+    expect(editorBox.y + editorBox.height).toBeLessThan(plus.y);
+    expect(plus.y).toBeCloseTo(microphone.y, 0);
+    expect(microphone.y).toBeCloseTo(send.y, 0);
     return compact;
   };
 
-  const compact = await checkCompact();
-  await page.screenshot({ path: 'test-results/mobile-composer-compact.png' });
+  const compact = await checkStacked();
+  await page.screenshot({ path: 'test-results/mobile-composer-idle.png' });
   const mid = await frame.evaluate(async (node) => {
     node.querySelector('.rich-composer-editor').focus();
     await new Promise(requestAnimationFrame);
@@ -53,19 +53,19 @@ test('mobile composer morphs in place on landing and in a conversation', async (
     return { width, height };
   });
   await expect(editor).toBeFocused();
-  await expect(host.locator('[data-composer-control=effort]')).toHaveCount(0);
-  await expect(frame).toHaveCSS('height', '92px');
-  await expect(frame).toHaveCSS('border-radius', '24px');
+  await expect(host.locator('[data-composer-control=effort]')).toBeVisible();
+  await expect(frame).toHaveCSS('height', '86px');
+  await expect(frame).toHaveCSS('border-radius', '28px');
   const expanded = await frame.boundingBox();
   expect(mid.width).toBeCloseTo(compact.width, 0);
   expect(expanded.width).toBeCloseTo(compact.width, 0);
-  expect(mid.height).toBeGreaterThan(compact.height);
-  expect(mid.height).toBeLessThan(expanded.height);
+  expect(mid.height).toBeCloseTo(compact.height, 0);
+  expect(expanded.height).toBeCloseTo(compact.height, 0);
   const editorBox = await editor.boundingBox();
   const controls = await Promise.all([tools, mic, primary].map((control) => control.boundingBox()));
   expect(editorBox.y + editorBox.height).toBeLessThan(controls[0].y);
   for (const control of controls) expect(control.y).toBeCloseTo(controls[0].y, 0);
-  await page.screenshot({ path: 'test-results/mobile-composer-expanded.png' });
+  await page.screenshot({ path: 'test-results/mobile-composer-focused.png' });
 
   await editor.fill('草稿');
   await expect(primary).toBeEnabled();
@@ -78,17 +78,17 @@ test('mobile composer morphs in place on landing and in a conversation', async (
   await expect(editor).toBeEmpty();
   await expect(primary).toBeDisabled();
   await editor.evaluate((node) => node.blur());
-  await checkCompact();
+  await checkStacked();
 
   await page.evaluate(() => {
     window.__testActivateMainView('chatView');
     document.body.dataset.conversationActive = 'true';
   });
   await expect(page.locator('#chatComposerSlot').locator(frame)).toBeVisible();
-  const chatCompact = await checkCompact();
+  const chatCompact = await checkStacked();
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await editor.click();
-  await expect(frame).toHaveCSS('height', '92px');
+  await expect(frame).toHaveCSS('height', '86px');
   const geometryTransitions = await frame.evaluate(
     (node) =>
       node.getAnimations().filter(({ transitionProperty }) => transitionProperty === 'max-width')
@@ -102,7 +102,7 @@ test('mobile composer morphs in place on landing and in a conversation', async (
     true,
   );
   await editor.evaluate((node) => node.blur());
-  await checkCompact();
+  await checkStacked();
 });
 
 /* This visual regression deliberately uses mockAuthedApp: browser coverage
@@ -144,8 +144,7 @@ test('mobile composer keeps model selector and reference controls discoverable',
 
   const composer = page.locator('#composerInputWrap');
   const editor = page.locator('#composerRoot .rich-composer-editor');
-  const tools = composer.locator('#composerToolsBtn');
-  const effort = page.locator('#composerToolsMenu [data-composer-action=reasoningEffort]');
+  const effort = composer.locator('#effortTrigger');
   await expect(page.locator('#mobileMode')).toHaveCount(0);
   await expect(page.locator('#topModeSwitch')).toBeHidden();
   await expect(composer.locator('#composerMicBtn')).toBeVisible();
@@ -153,9 +152,8 @@ test('mobile composer keeps model selector and reference controls discoverable',
   await expect(composer.locator('#composerPrimaryBtn [data-ui-icon=arrow-up]')).toHaveCount(1);
   await editor.click();
   await expect(composer).toHaveClass(/composer-focused/);
-  await expect(composer.locator('[data-composer-control=effort]')).toHaveCount(0);
+  await expect(composer.locator('[data-composer-control=effort]')).toBeVisible();
 
-  await tools.click();
   await expect(effort).toContainText('中');
   await effort.click();
   const pop = page.locator('.chat-config-pop');
@@ -166,7 +164,7 @@ test('mobile composer keeps model selector and reference controls discoverable',
   await expect(slider).toHaveAttribute('aria-valuetext', '中');
 
   const popBox = await pop.boundingBox();
-  const triggerBox = await tools.boundingBox();
+  const triggerBox = await effort.boundingBox();
   expect(popBox.y + popBox.height).toBeLessThan(triggerBox.y);
   await page.screenshot({ path: 'test-results/socrates-mobile-composer-reference.png' });
   await pop.getByRole('button', { name: /返回模型列表/ }).click();
@@ -218,3 +216,26 @@ test('desktop configuration reuses the same content in an anchored popover', asy
   await page.keyboard.press('Escape');
   await expect(pop).toBeHidden();
 });
+
+for (const width of [320, 360, 430]) {
+  test(`phone composer keeps a stable two-row layout at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await mockAuthedApp(page, { lang: 'en' });
+    await gotoAndSettle(page, '/');
+    await waitForAppShell(page);
+    const host = page.locator('#composerInputWrap');
+    const frame = host.locator('[data-composer-frame]');
+    const editor = host.locator('.rich-composer-editor');
+    await expect(frame).toHaveCSS('height', '86px');
+    await expect(frame).toHaveCSS('border-radius', '28px');
+    const idle = await frame.boundingBox();
+    await editor.click();
+    await expect(frame).toHaveCSS('height', '86px');
+    const focused = await frame.boundingBox();
+    expect(focused.width).toBeCloseTo(idle.width, 0);
+    expect(focused.height).toBeCloseTo(idle.height, 0);
+    expect(focused.x).toBeGreaterThanOrEqual(0);
+    expect(focused.x + focused.width).toBeLessThanOrEqual(width + 1);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width + 1);
+  });
+}

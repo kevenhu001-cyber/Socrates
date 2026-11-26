@@ -19,9 +19,9 @@ test('sign-in centers the form with consent above it on desktop and phones', asy
   await expect(card.getByRole('heading', { name: 'Sign in to Socrates' })).toBeVisible();
   await expect(card.locator('#authSigninEmail')).toHaveCSS(
     'font-family',
-    /^"Geist Sans", "Noto Sans SC",/,
+    /^system-ui,.*"Noto Sans SC"/,
   );
-  await expect(gate).toHaveCSS('background-color', 'rgb(0, 0, 0)');
+  await expect(gate).toHaveCSS('background-color', 'rgb(14, 14, 14)');
   await expect(gate).toHaveCSS('background-image', 'none');
   await expect(card).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
   await expect(card).toHaveCSS('border-width', '0px');

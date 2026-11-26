@@ -172,6 +172,15 @@ const GEIST_SURFACES = {
   ],
 };
 
+/* The November reference changes only the dark canvas of the neutral ramp.
+ * Preserve the same consecutive-step and exact-palette checks. */
+const REFERENCE_SURFACES = {
+  light: GEIST_SURFACES.light,
+  dark: GEIST_SURFACES.dark.map((entry) =>
+    entry.step === 'background-200' ? { ...entry, value: '#0e0e0e' } : entry,
+  ),
+};
+
 /* Roles in the shared package that carry a ladder rung. The mapping is
  * mode-dependent: in dark mode the ladder runs upwards, so "panel" is the
  * raised-card rung and "elevated" is the overlay rung; in light mode the
@@ -527,21 +536,21 @@ function main() {
        * scale. A theme with its own palette has no scale to be a slice of,
        * so the baseline records `scale: null` for it and only the
        * structural properties above apply. */
-      if (policy.scale === 'geist') {
-        const scale = GEIST_SURFACES[mode];
+      if (policy.scale === 'geist' || policy.scale === 'chatgpt-reference') {
+        const scale = (policy.scale === 'chatgpt-reference' ? REFERENCE_SURFACES : GEIST_SURFACES)[mode];
         const sliceRungs = blackRungs;
         const indices = sliceRungs.map((rung) => scale.findIndex((entry) => entry.value === rung));
         if (indices.includes(-1)) {
           const unknown = sliceRungs.filter((rung) => !scale.some((entry) => entry.value === rung));
           failures.push(
-            `themes.css: theme "${theme}" ${mode} ladder rung ${unknown.join(', ')} is not a step of the Geist scale`,
+            `themes.css: theme "${theme}" ${mode} ladder rung ${unknown.join(', ')} is not a step of the declared scale`,
           );
         } else {
           const sorted = [...indices].sort((a, b) => a - b);
           const consecutive = sorted.every((index, i) => i === 0 || index === sorted[i - 1] + 1);
           if (!consecutive) {
             failures.push(
-              `themes.css: theme "${theme}" ${mode} ladder is not a consecutive slice of the Geist scale — it uses ${sorted.map((index) => scale[index].step).join(', ')}`,
+              `themes.css: theme "${theme}" ${mode} ladder is not a consecutive slice of the declared scale — it uses ${sorted.map((index) => scale[index].step).join(', ')}`,
             );
           }
         }
@@ -697,7 +706,7 @@ function main() {
         shared: previous?.shared ?? false,
       };
       for (const mode of ['dark', 'light']) {
-        const scale = GEIST_SURFACES[mode];
+        const scale = (previous?.scale === 'chatgpt-reference' ? REFERENCE_SURFACES : GEIST_SURFACES)[mode];
         next.themes[theme][mode] = {};
         for (const rung of RUNGS) {
           const value = ladders[theme]?.[mode]?.rungHex[rung];

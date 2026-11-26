@@ -2,7 +2,7 @@
   word-break: break-word;
 }
 .msg-body p {
-  margin-bottom: 8px;
+  margin-bottom: var(--ui-foundation-space-md);
 }
 .msg-body p:last-child {
   margin-bottom: 0;
@@ -91,7 +91,7 @@
   padding: 4px 0 4px 14px;
   margin: 8px 0;
   color: var(--ui-text-tertiary);
-  font-style: italic;
+  font-style: normal;
 }
 .msg-body table {
   border-collapse: collapse;
@@ -101,18 +101,19 @@
 }
 .msg-body th,
 .msg-body td {
-  border: 0.5px solid
-    color-mix(in srgb, var(--ui-border-default) calc(var(--ui-border-alpha) * 100%), transparent);
-  padding: 8px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--ui-border-subtle);
+  padding: 8px 12px 8px 0;
   text-align: left;
+  vertical-align: top;
 }
 .msg-body th {
-  background: var(--ui-bg-raised);
+  background: transparent;
   font-weight: var(--ui-font-weight-semibold);
   color: var(--ui-text-primary);
 }
 .msg-body td {
-  color: var(--ui-text-secondary);
+  color: var(--ui-text-primary);
 }
 .msg-body hr {
   border: none;
@@ -735,8 +736,8 @@ html[data-mode='dark'] #appShell .msg-body .hljs :is(.hljs-comment, .hljs-quote)
 /* User bubble: slightly narrower + tighter pad; the radius comes from
    parity/transcript.css's --ui-radius-bubble role. */
 @media (max-width: 768px) {
-  #appShell#appShell .msg.user .msg-body {
-    max-width: min(72%, 560px);
+  #appShell #msgList .msg.user .msg-body {
+    max-width: min(85%, 560px);
     padding: 10px 16px;
   }
 }

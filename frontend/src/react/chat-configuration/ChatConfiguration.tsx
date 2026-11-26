@@ -41,7 +41,7 @@ function popoverStyle(
   const width = Math.max(0, Math.min(264, w - 2 * gap));
   const above = Math.max(0, anchor.top - y - 2 * gap);
   const below = Math.max(0, y + h - anchor.bottom - 2 * gap);
-  const composer = triggerId === 'composerToolsBtn';
+  const composer = triggerId === 'composerToolsBtn' || triggerId === 'effortTrigger';
   const naturalHeight = menu.scrollHeight + menu.offsetHeight - menu.clientHeight;
   const opensAbove = composer
     ? above >= Math.min(naturalHeight, 120) || above >= below
@@ -126,7 +126,11 @@ export function ChatConfiguration() {
 
   useEffect(() => {
     if (!snapshot.open) return;
-    setView(snapshot.triggerId === 'composerToolsBtn' ? 'effort' : 'main');
+    setView(
+      snapshot.triggerId === 'composerToolsBtn' || snapshot.triggerId === 'effortTrigger'
+        ? 'effort'
+        : 'main',
+    );
     setEffort(effectiveEffort);
     setSpeed(snapshot.speed);
   }, [snapshot.open, snapshot.revision, snapshot.triggerId, effectiveEffort, snapshot.speed]);

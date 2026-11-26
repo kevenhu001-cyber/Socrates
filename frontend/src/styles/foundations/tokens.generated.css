@@ -176,7 +176,7 @@
 }
 
 [data-mode="dark"] {
-  --ui-canvas: #000000;
+  --ui-canvas: #0e0e0e;
   --ui-card: #1f1f1f;
   --ui-fill: rgba(255, 255, 255, 0.06);
   --ui-fill-hover: rgba(255, 255, 255, 0.10);

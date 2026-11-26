@@ -61,19 +61,16 @@ for (const mode of ['dark', 'light']) {
       const css = getComputedStyle(el);
       return { background: css.backgroundColor, radius: css.borderTopLeftRadius };
     });
-    /* Dark: the question box is the #303030 field tone above the pure-black
-       canvas. Light: the #f4f4f4 field on the white page. Both are fills,
-       not paper cards (docs/design/chatgpt-alignment.md §3.8). Corner: 26px
-       on the landing capsule (28px applies inside a conversation). */
+    /* Sampled field tone and a stable 28px corner on the two-row composer. */
     expect(rgbChannels(frameStyle.background)).toEqual(
-      mode === 'dark' ? [48, 48, 48] : [244, 244, 244],
+      mode === 'dark' ? [33, 33, 33] : [244, 244, 244],
     );
-    expect(frameStyle.radius).toBe('26px');
+    expect(frameStyle.radius).toBe('28px');
     const composerBox = await page.locator('#composerInputWrap').boundingBox();
     expect(composerBox.x).toBe(16);
     expect(composerBox.width).toBe(358);
-    /* The landing composer is the collapsed one-row capsule. */
-    expect(composerBox.height).toBe(52);
+    /* The two-row composer remains the same height before and after focus. */
+    expect(composerBox.height).toBe(86);
     expect(Math.round(769 - composerBox.y - composerBox.height)).toBe(24);
     /* The landing shortcut rail and the phone suggestion line were removed
        on 2026-11-16; the composer is the last thing on the landing now. */
@@ -148,14 +145,14 @@ for (const mode of ['dark', 'light']) {
     const actualOrder = [...geometry].sort((a, b) => a.y - b.y).map((row) => row.id);
     expect(actualOrder.indexOf('navLibrary')).toBeLessThan(actualOrder.indexOf('navScheduled'));
     expect(actualOrder.indexOf('navScheduled')).toBeLessThan(actualOrder.indexOf('navPlugins'));
-    expect(actualOrder.slice(0, 4)).toEqual([
+    expect(actualOrder.filter((id) => id !== 'navSearch').slice(0, 4)).toEqual([
       'navProjects',
       'navLibrary',
       'navScheduled',
       'navPlugins',
     ]);
     expect(actualOrder).not.toContain('navNew');
-    expect(actualOrder).not.toContain('navSearch');
+    expect(actualOrder).toContain('navSearch');
     expect(actualOrder).not.toContain('navImages');
     expect(actualOrder).toEqual(geometry.map(({ id }) => id));
     const recent = page.locator('.recent-item').filter({ hasText: SESSION.title });

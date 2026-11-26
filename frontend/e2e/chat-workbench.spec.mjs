@@ -75,7 +75,7 @@ test('desktop chat workbench keeps shell, transcript and composer in one viewpor
      transparent, so the surface shows through; separation is the card's
      8px inset, not a hairline. */
   expect(contract.pageBackground).toBe('rgb(26, 26, 26)');
-  expect(contract.mainBackground).toBe('rgb(0, 0, 0)');
+  expect(contract.mainBackground).toBe('rgb(14, 14, 14)');
   expect(contract.sidebarBackground).toBe('rgba(0, 0, 0, 0)');
   expect(contract.sidebarBorder).toBe('0px');
   /* The 2026-11-24 alignment pass settled the desktop bar at 48px

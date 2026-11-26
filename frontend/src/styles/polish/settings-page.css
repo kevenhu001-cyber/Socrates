@@ -156,10 +156,11 @@
   flex-direction: column;
   gap: 14px;
   margin: 0;
-  padding: 18px;
-  border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-lg);
-  background: var(--ui-bg-raised);
+  padding: var(--ui-space-lg) 0;
+  border: 0;
+  border-top: 1px solid var(--ui-border-subtle);
+  border-radius: 0;
+  background: transparent;
 }
 .settings-page .settings-choice {
   display: flex;
@@ -380,20 +381,20 @@
     min-height: var(--ui-control-touch);
     padding: 9px 10px;
     gap: 11px;
-    border: 1px solid var(--ui-border-subtle);
-    border-radius: var(--ui-radius-lg);
-    background: var(--ui-bg-surface);
+    border: 1px solid transparent;
+    border-radius: var(--ui-radius-row);
+    background: transparent;
     white-space: normal;
   }
   .settings-page .settings-nav-item.active {
-    border-color: var(--ring);
-    background: var(--ui-bg-control);
+    border-color: transparent;
+    background: var(--ui-bg-selected);
   }
   .settings-page .settings-category-icon {
     width: 36px;
     height: 36px;
     border-radius: var(--ui-radius-sm);
-    background: var(--ui-bg-raised);
+    background: transparent;
   }
   .settings-page .settings-category-icon svg {
     width: 18px;
@@ -464,8 +465,7 @@
   }
   .settings-page .settings-section {
     gap: 14px;
-    padding: 16px;
-    border-radius: var(--ui-radius-lg);
+    padding: var(--ui-space-lg) 0;
   }
   .settings-page .settings-section-head--actions {
     align-items: flex-start;
@@ -526,13 +526,10 @@
 }
 
 .settings-page .settings-nav-item.active {
-  background: var(--ui-fill-hover);
-  box-shadow: inset 2px 0 var(--ui-ink);
+  background: var(--ui-bg-selected);
 }
 .settings-page .settings-nav-item.active:focus-visible {
-  box-shadow:
-    var(--ui-focus-shadow),
-    inset 2px 0 var(--ui-ink);
+  box-shadow: var(--ui-focus-shadow);
 }
 
 /* ── Settings · Account pane ── */

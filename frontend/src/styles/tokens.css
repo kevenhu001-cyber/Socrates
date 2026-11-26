@@ -69,7 +69,7 @@
   /* chatgpt.com row radius: sidebar rows, menu items. */
   --ui-radius-row: 8px;
   --ui-radius-sidebar-row: 10px;
-  --ui-radius-bubble: 20px;
+  --ui-radius-bubble: 24px;
   --ui-radius-pill: 999px;
   /* Menus take the reference's 12px corner; dialogs keep the 24px sheet. */
   --ui-radius-popover: var(--ui-radius-md);
@@ -118,7 +118,7 @@
   --ui-mobile-font-meta: calc(var(--ui-font-size-base-small) * var(--app-type-scale));
   /* Drawer account name (reference: 15px, between the nav and body steps). */
   --ui-mobile-font-account: calc(15px * var(--app-type-scale));
-  --ui-mobile-font-greeting: calc(21px * var(--app-type-scale));
+  --ui-mobile-font-greeting: calc(24px * var(--app-type-scale));
   --ui-mobile-bottom: max(24px, env(safe-area-inset-bottom, 0px));
   --ui-sidebar-desktop: 260px;
   --ui-detail-width: 420px;
@@ -242,7 +242,5 @@
   :root {
     /* Leave a tappable strip of the covered page outside the phone drawer. */
     --ui-sidebar-mobile: min(420px, 90vw);
-    /* Phone reference bubble: a pill on one line (44px tall, 22px radius). */
-    --ui-radius-bubble: 22px;
   }
 }

@@ -61,6 +61,7 @@ const GLYPHS = {
   arrowUp: [path('M12 19V5M5 12l7-7 7 7')],
   arrowDown: [path('M12 5v14M5 12l7 7 7-7')],
   check: [path('m5 12 5 5L20 7')],
+  activitySpinner: [path('M12 2v4m0 12v4M2 12h4m12 0h4M4.93 4.93l2.83 2.83m8.48 8.48 2.83 2.83M4.93 19.07l2.83-2.83m8.48-8.48 2.83-2.83')],
   regenerate: [
     path(
       'M4 10a8 8 0 0 1 13.7-3.7L20 8.5M20 4v4.5h-4.5M20 14A8 8 0 0 1 6.3 17.7L4 15.5M4 20v-4.5h4.5',

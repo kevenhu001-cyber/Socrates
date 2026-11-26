@@ -12,7 +12,9 @@ import { i18n } from '../../ui/legacyI18n.ts';
 import { tf } from '../../legacy/toolPresentationModel.ts';
 import { useLocaleRefresh, WebUiTheme } from '../rn/WebUiTheme';
 import { MathText } from '../rn/useInlineMath';
-import { ToolActivityIcon, toolActivitySites } from './ToolActivityIcon';
+import { Icon } from '../../legacy/Icon';
+import { ToolActivityIcon, ToolSiteMarks, toolActivitySites, turnActivitySites } from './ToolActivityIcon';
+import { isInlineSearchTool } from '../../render/toolCategory';
 import { ToolRunRow } from './ToolRunRow';
 import { ToolRunGroupRow } from './ToolRunGroupRow';
 import { useElapsed } from './useElapsed';
@@ -38,16 +40,19 @@ export interface TurnActivitySurfaceProps {
 function SummaryStep({ step }: { step: ThinkingStep }) {
   return (
     <div className="activity-summary-step" data-testid="thinking-step">
-      {step.title ? (
-        <div data-testid="thinking-step-title" className="activity-summary-title">
-          <MathText text={step.title} />
-        </div>
-      ) : null}
-      {step.summary ? (
-        <p className="thinking-step-summary">
-          <MathText text={step.summary} />
-        </p>
-      ) : null}
+      <Icon name={step.phase === 'done' ? 'check' : 'thinking'} size={18} className="activity-step-glyph" />
+      <div className="activity-summary-copy">
+        {step.title ? (
+          <div data-testid="thinking-step-title" className="activity-summary-title">
+            <MathText text={step.title} />
+          </div>
+        ) : null}
+        {step.summary ? (
+          <p className="thinking-step-summary">
+            <MathText text={step.summary} />
+          </p>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -147,19 +152,14 @@ function toolActivityRows(
   return rows;
 }
 
-/** One stable disclosure per assistant turn. Tool artifacts and pending
- * approvals deliberately remain in the transcript, outside the activity log. */
-export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
-  const { activities, calls, activeTool, status, messageId, readOnly } = props;
-  const [open, setOpen] = useState(false);
-  const id = useId();
-  const intentRef = useRef('');
-  useLocaleRefresh();
-  if (props.intentSummary?.trim()) intentRef.current = props.intentSummary.trim();
-  const intent = intentRef.current;
+function useActivityTimeline(
+  activities: TurnActivitySurfaceProps['activities'],
+  calls: TurnActivitySurfaceProps['calls'],
+  publicSummary: TurnActivitySurfaceProps['publicSummary'],
+) {
   const steps = useMemo(
-    () => stepsWithFallback(publicSummariesOf(activities), props.publicSummary),
-    [activities, props.publicSummary],
+    () => stepsWithFallback(publicSummariesOf(activities), publicSummary),
+    [activities, publicSummary],
   );
   const reasoningLabel = i18n('think.observedReasoning', 'Model reasoning');
   const reasoningDone = i18n('think.observedReasoningDone', 'Reasoning finished');
@@ -178,6 +178,7 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
             id: entry.id,
             title: entry.phase === 'done' ? reasoningDone : reasoningLabel,
             summary: '',
+            phase: entry.phase,
             startedAt: entry.startedAt,
           }));
     return activityTimeline(
@@ -191,6 +192,20 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
         })),
     );
   }, [steps, calls, activities, reasoningLabel, reasoningDone]);
+  return { steps, timeline };
+}
+
+/** One stable disclosure per assistant turn. Tool artifacts and pending
+ * approvals deliberately remain in the transcript, outside the activity log. */
+export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
+  const { activities, calls, activeTool, status, messageId, readOnly } = props;
+  const [open, setOpen] = useState(false);
+  const id = useId();
+  const intentRef = useRef('');
+  useLocaleRefresh();
+  if (props.intentSummary?.trim()) intentRef.current = props.intentSummary.trim();
+  const intent = intentRef.current;
+  const { steps, timeline } = useActivityTimeline(activities, calls, props.publicSummary);
   const hasSummary = steps.length > 0 || Boolean(intent);
   const expandable = timeline.length > 0 || Boolean(intent);
   const latestEntry = timeline[timeline.length - 1];
@@ -207,8 +222,13 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
   const elapsedSec = elapsedMs > 0 ? elapsedMs / 1000 : status?.elapsedSec;
   const label = activityLabel(props, hasSummary, latestStep, latestTool);
   const toolName = headerTool?.name || (liveToolPhase ? status?.toolName : undefined);
-  const headerIcon = toolName ? (
-    <ToolActivityIcon name={toolName} sites={headerTool ? toolActivitySites(headerTool) : []} />
+  const sites = !toolName || isInlineSearchTool(toolName)
+    ? turnActivitySites(calls)
+    : toolActivitySites(headerTool, 3);
+  const headerIcon = sites.length ? (
+    <ToolSiteMarks sites={sites} />
+  ) : toolName ? (
+    <ToolActivityIcon name={toolName} />
   ) : undefined;
   const currentActivity = live
     ? status?.phase || 'working'
@@ -266,7 +286,9 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
           durationClassName="activity-duration"
           live={working}
           icon={headerIcon}
-          iconWidth={18}
+          iconWidth={sites.length ? 22 * sites.length : 18}
+          fullWidth
+          disclosureIcon={<Icon name={open ? 'chevronUp' : 'chevronDown'} size={16} className="activity-chevron" />}
           expandable={expandable}
           open={open}
           onToggle={() => setOpen((value) => !value)}
@@ -281,6 +303,12 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
               data-testid="thinking-timeline"
             >
               {history}
+              {working && !liveToolPhase ? (
+                <div className="activity-current-step" data-testid="activity-current-step">
+                  <Icon name="activitySpinner" size={18} className="activity-step-glyph socrates-step-spinner" />
+                  <span>{label}</span>
+                </div>
+              ) : null}
             </div>
           </div>
         </ThinkingSurface>

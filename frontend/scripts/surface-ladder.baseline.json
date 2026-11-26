@@ -42,13 +42,12 @@
     },
     "socrates": {
       "paperCanvas": true,
-      "blackCanvas": true,
-      "scale": "geist",
+      "scale": "chatgpt-reference",
       "shared": true,
       "dark": {
         "page": {
           "step": "background-200",
-          "value": "#000000"
+          "value": "#0e0e0e"
         },
         "rail": {
           "step": "gray-100",

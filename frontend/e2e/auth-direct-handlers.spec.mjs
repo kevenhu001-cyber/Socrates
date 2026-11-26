@@ -99,7 +99,7 @@ for (const mode of ['light', 'dark']) {
     });
     const gate = page.locator('#authGate');
     const card = gate.locator('.auth-card');
-    const canvas = mode === 'dark' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
+    const canvas = mode === 'dark' ? 'rgb(14, 14, 14)' : 'rgb(255, 255, 255)';
     const ink = mode === 'dark' ? 'rgb(255, 255, 255)' : 'rgb(0, 0, 0)';
     await expect(gate).toBeVisible();
     await expect(gate).toHaveCSS('background-color', canvas);

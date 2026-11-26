@@ -62,8 +62,8 @@ for (const theme of ['light', 'dark']) {
       await expect(glyph).toHaveAttribute('data-icon-source', 'openai-apps-sdk');
       const bounds = await glyph.boundingBox();
       if (bounds) {
-        expect(bounds.width).toBe(24);
-        expect(bounds.height).toBe(24);
+        expect(bounds.width).toBe(20);
+        expect(bounds.height).toBe(20);
       }
     }
     const icons = await page

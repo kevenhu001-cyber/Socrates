@@ -61,7 +61,7 @@ export function SidebarHeader() {
           i18nKey="sidebar.filterRecents"
           controls="sidebarSearch"
           expanded={searchOpen}
-          iconSize={24}
+          iconSize={iconSize}
           controlSize={44}
           backgroundVar="--sidebar-search-button-bg"
           hostStyle={webClass(isMobile && 'btn-icon', 'sidebar-search-btn')}

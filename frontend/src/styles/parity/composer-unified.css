@@ -55,25 +55,6 @@
   background: transparent;
   box-shadow: none;
   color: var(--foreground);
-  --ui-elevation-field:
-    inset 0 1px 0 0 rgb(255 255 255 / 12%), 0 0 0 1px rgb(255 255 255 / 10%),
-    0 12px 40px -12px rgb(0 0 0 / 50%);
-  --ui-elevation-field-hover:
-    inset 0 1px 0 0 rgb(255 255 255 / 18%), 0 0 0 1px rgb(255 255 255 / 16%),
-    0 16px 48px -14px rgb(0 0 0 / 55%);
-  --ui-elevation-field-focus:
-    inset 0 1px 0 0 rgb(255 255 255 / 24%), 0 0 0 1px rgb(255 255 255 / 32%),
-    0 0 0 3px rgb(255 255 255 / 5%), 0 16px 48px -14px rgb(0 0 0 / 55%);
-}
-[data-mode='light'] #appShell .composer-shell [data-composer-frame] {
-  --ui-elevation-field: none;
-  --ui-elevation-field-hover: none;
-  --ui-elevation-field-focus: none;
-  /* RN-9 reads the lit recipes; light mode keeps its hairline-only edge
-     (the paper sheet is separated by the ::before ring, never by a shadow). */
-  --ui-elevation-lit-field: none;
-  --ui-elevation-lit-field-hover: none;
-  --ui-elevation-lit-field-focus: none;
 }
 [data-mode='light'] #appShell .composer-shell [data-composer-frame]::before {
   content: '';
@@ -319,34 +300,28 @@
   opacity: 0.65;
 }
 
-/* ── Phone: compact at rest, with room for a separate input row ────────── */
+/* ── Phone: stable two-row composer, including the empty state ────────── */
 @media (max-width: 768px) {
   #appShell .composer-shell {
-    --ui-card: var(--ui-bg-field, var(--ui-bg-composer));
+    width: 100%;
+    max-width: none;
+    --ui-card: var(--ui-bg-ask);
     --composer-disabled-send-opacity: 0.86;
     --ui-ink-secondary: var(--ui-text-primary);
     --ui-ink-tertiary: var(--ui-text-placeholder);
   }
-  #appShell .composer-shell {
-    width: 100%;
-    max-width: none;
-  }
   #appShell .composer-shell [data-composer-frame][data-layout='inline'] {
-    --composer-frame-radius: calc(var(--ui-radius-composer-desktop) - 2px);
+    --composer-frame-radius: var(--ui-radius-composer-desktop);
     --composer-control-size: 36px;
     --composer-motion: var(--ui-duration-normal) var(--ui-ease-content);
-    --composer-editor-inset-start: calc(var(--composer-control-size) + var(--ui-step-75));
-    --composer-editor-inset-end: calc(2 * var(--composer-control-size) + var(--ui-step-200));
-    --composer-toolbar-space: 0px;
+    --composer-editor-inset-start: var(--ui-step-75);
+    --composer-editor-inset-end: var(--ui-step-75);
+    --composer-toolbar-space: calc(var(--composer-control-size) + var(--ui-step-50));
     position: relative;
     max-width: 100%;
     margin-inline: auto;
-    transition:
-      border-radius var(--composer-motion),
-      box-shadow var(--ui-duration-fast) var(--ui-ease-out);
-  }
-  #appShell .composer-shell [data-composer-frame][data-layout='inline'] {
-    background: var(--ui-bg-field, var(--ui-bg-composer));
+    transition: box-shadow var(--ui-duration-fast) var(--ui-ease-out);
+    background: var(--ui-bg-ask);
     box-shadow: none;
   }
   #appShell .composer-shell [data-composer-frame][data-layout='inline']::before {
@@ -369,22 +344,15 @@
   #appShell .composer-shell [data-composer-control='send']:disabled:not([data-stop='1']) {
     border: 0;
   }
-  #appShell .composer-shell [data-composer-frame][data-layout='inline'][data-expanded='true'],
-  #appShell .composer-shell:is(.has-plugin-chips, .has-queue) [data-layout='inline'] {
-    --composer-frame-radius: var(--ui-radius-composer);
-    --composer-editor-inset-start: var(--ui-step-75);
-    --composer-editor-inset-end: var(--ui-step-75);
-    --composer-toolbar-space: calc(var(--composer-control-size) + var(--ui-step-50));
-    max-width: 100%;
-  }
   #appShell .composer-shell [data-composer-slot='inline'] {
     position: relative;
   }
   /* Both groups stay pinned to the lower edge while the editor gains room
      above them. The contenteditable and its controls keep their DOM nodes. */
   #appShell .composer-shell [data-composer-slot='inline'] > [data-composer-slot='body'] {
-    --composer-body-padding: 5px var(--composer-editor-inset-end)
-      calc(5px + var(--composer-toolbar-space)) var(--composer-editor-inset-start);
+    /* 26px editor + 4px vertical inset + 40px rail reserve + 16px frame = 86px. */
+    --composer-body-padding: 2px var(--composer-editor-inset-end)
+      calc(2px + var(--composer-toolbar-space)) var(--composer-editor-inset-start);
     flex-basis: 100%;
     transition: padding var(--composer-motion);
   }

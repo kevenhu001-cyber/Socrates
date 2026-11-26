@@ -45,10 +45,9 @@ test('download-first UI fonts preload one variable face without duplicate transf
   expect(result.count).toBe(1);
   expect(result.initiator).toBe('link');
   expect(result.preload).toBe(1);
-  /* The bundled UI stack keeps Geist Sans and the self-hosted Noto CJK face
-     first; the platform faces are the fallback behind them. */
+  /* The platform UI face takes precedence; bundled faces remain local fallbacks. */
   expect(result.family).toMatch(
-    /^"Geist Sans", "Noto Sans SC", .*"PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", system-ui, sans-serif$/,
+    /^system-ui,.*['"]Noto Sans SC['"].*['"]Geist Sans['"], sans-serif$/,
   );
   /* Platform CJK faces may satisfy the glyphs entirely; what must never
      happen is a third-party font origin. */

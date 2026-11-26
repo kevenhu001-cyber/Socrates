@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '../ui/shadcn/button';
 import { Input } from '../ui/shadcn/input';
+import { Icon } from '../../legacy/Icon';
 import { i18n } from '../../ui/legacyI18n.ts';
 import { useAllSessionMistakes } from '../tutor/useAllSessionMistakes';
 import { renderRecents, setRecentsSearch } from '../../legacy/recentsView.ts';
@@ -49,22 +50,7 @@ export function SidebarSearchRow() {
   return (
     <div className="sidebar-search-row-inner" data-sidebar-view={activePanel}>
       <div className="sidebar-search">
-        <svg
-          className="sidebar-search-icon"
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.75"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-          focusable="false"
-        >
-          <circle cx="11" cy="11" r="7" />
-          <path d="m21 21-4.35-4.35" />
-        </svg>
+        <Icon name="search" size={16} className="sidebar-search-icon" />
         <Input
           type="text"
           id="sidebarSearch"
@@ -98,24 +84,7 @@ export function SidebarSearchRow() {
         data-i18n-aria="sidebar.knowledge"
         onClick={() => toggleView('knowledge')}
       >
-        <svg
-          viewBox="0 0 24 24"
-          width="18"
-          height="18"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.75"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-          focusable="false"
-          data-icon="inline-start"
-        >
-          <circle cx="6" cy="6" r="2.5" />
-          <circle cx="18" cy="8" r="2.5" />
-          <circle cx="10.5" cy="18" r="2.5" />
-          <path d="m8.5 6.4 7 1.2M6.9 8.4l2.7 7.2m6.9-5.7-4.4 6.2" />
-        </svg>
+        <Icon name="knowledge" size={18} data-icon="inline-start" />
       </Button>
       <Button
         id="tabMistakes"
@@ -130,21 +99,7 @@ export function SidebarSearchRow() {
         data-i18n-aria="sidebar.mistakes"
         onClick={() => toggleView('mistakes')}
       >
-        <svg
-          viewBox="0 0 24 24"
-          width="18"
-          height="18"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.75"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-          focusable="false"
-          data-icon="inline-start"
-        >
-          <path d="M8 3.5h8A2.5 2.5 0 0 1 18.5 6v13.5a.75.75 0 0 1-1.2.6L12 16l-5.3 4.1a.75.75 0 0 1-1.2-.6V6A2.5 2.5 0 0 1 8 3.5Z" />
-        </svg>
+        <Icon name="bookmark" size={18} data-icon="inline-start" />
         <span className="tab-badge" id="mistakesTabBadge">
           {mistakeCount > 0 ? mistakeCount : ''}
         </span>

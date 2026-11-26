@@ -115,7 +115,7 @@
      --ui-* utilities (src/react/message-list/ToolButton.tsx); only the
      invisible tap extension and the phone glyph rung live here. */
   /* Reference action row (copy · share · edit): 32px buttons set edge to
-     edge (a 32px pitch) with 20px glyphs. The tap extension grows only
+     edge (a 32px pitch) with 18px glyphs. The tap extension grows only
      vertically so neighbours never overlap. */
   #appShell .msg-toolbar {
     gap: 0;
@@ -128,8 +128,8 @@
     pointer-events: auto;
   }
   #appShell .msg-toolbar-btn svg {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
   }
 
   /* ── Composer controls hit area ─────────────────────────────────────────
@@ -161,8 +161,8 @@
   #appShell #sidebarNav .sidebar-nav-btn > [data-part='nav-glyph'] {
     display: grid;
     place-items: center;
-    width: 24px;
-    height: 24px;
+    width: var(--sidebar-glyph-size, 20px);
+    height: var(--sidebar-glyph-size, 20px);
     line-height: 0;
   }
 }
@@ -170,9 +170,9 @@
   #appShell #sidebarNav .sidebar-nav-btn > svg,
   #appShell #sidebarNav .sidebar-nav-btn > [data-part='nav-glyph'] svg {
     display: block;
-    width: 24px;
-    height: 24px;
-    min-width: 24px;
+    width: var(--sidebar-glyph-size, 20px);
+    height: var(--sidebar-glyph-size, 20px);
+    min-width: var(--sidebar-glyph-size, 20px);
     flex: none;
   }
 }

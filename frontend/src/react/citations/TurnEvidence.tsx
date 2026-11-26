@@ -10,7 +10,7 @@ import {
 } from 'react';
 import type { TurnRuntime } from '@socrates/contracts';
 import { i18n } from '../../ui/legacyI18n.ts';
-import { faviconProxyUrl } from '../../legacy/faviconProxy';
+import { SourceAvatar } from '../sources/SourceAvatar';
 import { MathText } from '../rn/useInlineMath';
 import { TurnSources } from './TurnSources';
 
@@ -131,23 +131,10 @@ function useSourcePreviewPosition(
 
 function SourcePreviewItem({ source }: { source: TurnSourceItem }) {
   const host = safeHostname(source.url);
-  const favicon = source.url ? faviconProxyUrl(source.url) : null;
   return (
     <div className="turn-source-preview-item">
       <div className="turn-source-preview-header">
-        {favicon ? (
-          <img
-            className="turn-source-preview-favicon"
-            src={favicon}
-            alt=""
-            loading="lazy"
-            referrerPolicy="no-referrer"
-          />
-        ) : (
-          <span className="turn-source-preview-icon" aria-hidden="true">
-            🌐
-          </span>
-        )}
+        <SourceAvatar url={source.url} host={host} className="turn-source-preview-favicon" />
         <small className="turn-source-preview-host">{host}</small>
       </div>
       <a

@@ -360,5 +360,12 @@ test('collapsed search activity preserves three unique site favicons', async ({ 
   await expect(toggle.getByTestId('tool-site-mark').first()).toHaveAttribute('title', 'openai.com');
   await expect(toolRow(page, 'search-favicons-call')).toBeHidden();
   await toggle.click();
-  await expect(toolRow(page, 'search-favicons-call')).toBeVisible();
+  const row = toolRow(page, 'search-favicons-call');
+  await expect(row).toBeVisible();
+  await expect(row.locator('.activity-source-row')).toHaveCount(2);
+  await expect(row.locator('.activity-source-title')).toHaveText(['A', 'B']);
+  await expect(row.locator('.activity-source-host')).toHaveText(['openai.com', 'github.com']);
+  await expect(row.locator('.tool-run-trigger')).toHaveAttribute('aria-expanded', 'false');
+  await toggle.click();
+  await expect(row).toBeHidden();
 });

@@ -36,6 +36,7 @@ const OFFICIAL_WEB_GLYPHS: Partial<Record<UiIconRendererProps['name'], IconProps
   mic: 'microphone',
   'chevron-down': 'chevronDown',
   'chevron-right': 'chevronRight',
+  'arrow-up': 'arrowUp',
   'drawer-images': 'image',
   'drawer-library': 'library',
   'drawer-folder': 'folder',

@@ -1,7 +1,6 @@
 import { t as translate } from '../../ui/legacyI18n.ts';
 import { SidebarNavRow } from '@socrates/ui/shell';
 import type { UiGlyphName, TextStyle } from '@socrates/ui/primitives';
-import { useMobileViewport } from '../sidebar-chrome/useMobileViewport';
 import { webClass } from '../rn/webHost';
 import { navButtonId, type NavButtonSpec } from './sidebarNav.items';
 
@@ -51,17 +50,16 @@ export function SidebarNavButton({
   expanded?: boolean;
   onClick: () => void;
 }) {
-  const mobile = useMobileViewport();
   const label = i18n(item.i18nKey, item.label);
   // The web renderer selects the verified OpenAI geometry for these keys.
-  // Viewport size changes the footprint, never the icon's shape.
+  // The glyph stays 20px; the row owns the larger touch target.
   const glyph = GLYPHS[item.key] ?? 'compose';
   return (
     <SidebarNavRow
       id={navButtonId(item.key)}
       navKey={item.key}
       icon={glyph}
-      iconSize={mobile ? 24 : 20}
+      iconSize={20}
       iconStrokeWidth={1.5}
       label={label}
       i18nKey={item.i18nKey}

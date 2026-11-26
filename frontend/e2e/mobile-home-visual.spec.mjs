@@ -96,11 +96,7 @@ test('mobile conversation home matches the compact dark reference layout', async
   expect(geometry.left?.width).toBe(44);
   expect(geometry.left?.height).toBe(44);
   expect(geometry.composer?.width).toBeGreaterThanOrEqual(320);
-  /* Empty-home mobile composer uses the reference's two-row 86px stack
-     (editor on row 1, add/dictation/send controls on row 2). The height
-     follows the owner's padding/row-gap/editor metrics — see
-     docs/ref/mobile-reference-2026-10-04.md and the arithmetic in
-     e2e/mobile-composer-reference.spec.mjs. */
+  /* The current phone target is a stable two-row frame, including idle. */
   expect(geometry.composer?.height).toBe(86);
   expect(geometry.composer?.bottom).toBeLessThanOrEqual((geometry.viewportHeight ?? 844) - 16);
   /* The empty-state capsule pins to the bottom action band: its foot rests
@@ -110,9 +106,9 @@ test('mobile conversation home matches the compact dark reference layout', async
   expect(geometry.topicFontSize).toBeGreaterThanOrEqual(16);
   expect(geometry.topicFontSize).toBeLessThanOrEqual(18);
   expect(geometry.composer?.y).toBeGreaterThan(550);
-  /* The mobile canvas shares the pure-black reference page token with desktop. */
-  expect(geometry.background).toBe('rgb(0, 0, 0)');
-  expect(geometry.pageToken).toBe('#000');
+  /* The mobile canvas shares the sampled November page token with desktop. */
+  expect(geometry.background).toBe('rgb(14, 14, 14)');
+  expect(geometry.pageToken).toBe('#0e0e0e');
 
   /* Center the greeting in the live space above the bottom composer. */
   const centering = await page.evaluate(() => {
@@ -186,6 +182,7 @@ test('mobile conversation home matches the compact dark reference layout', async
       find: measure('#findBtn'),
       share: measure('#shareBtn'),
       sidebarStatus: measure('.mobile-sidebar-status'),
+      actionGroup: measure('.top-bar-right'),
       findIcon: measure('#findBtn svg'),
       shareIcon: measure('#shareBtn svg'),
       shareLabelVisible: Boolean(
@@ -224,6 +221,8 @@ test('mobile conversation home matches the compact dark reference layout', async
   }
   expect(headerVisual.find?.borderWidth).toBe('0px');
   expect(headerVisual.share?.borderWidth).toBe('0px');
+  expect(headerVisual.actionGroup?.borderWidth).toBe('0px');
+  expect(headerVisual.actionGroup?.background).toBe('rgba(0, 0, 0, 0)');
   /* The reference header shows no always-on status dot next to the
      sidebar toggle, so it stays display:none on mobile. */
   expect(headerVisual.sidebarStatus?.width).toBe(0);
@@ -246,10 +245,7 @@ test('mobile conversation home matches the compact dark reference layout', async
   await page.setViewportSize({ width: 390, height: 844 });
   await page.waitForTimeout(180);
 
-  /* The phone rail hides the effort chip only for the default level, so
-     pick a non-default one here — otherwise there is no chip to track
-     through focus and multiline growth, which is what this block checks.
-     Set before the height baseline so any layout effect is absorbed. */
+  /* Set a non-default effort to exercise reactive preference updates. */
   await page.evaluate(() => {
     localStorage.setItem('socrates-reasoning-effort', 'high');
     window.dispatchEvent(
@@ -260,14 +256,12 @@ test('mobile conversation home matches the compact dark reference layout', async
   });
   await expect(composer.locator('[data-composer-control=effort]')).toBeVisible();
 
-  /* Focus opens the second row (the composer reference pins the 92px frame);
-     the host may grow with it, but never past the measured action band. */
+  /* Focus leaves both rows in place. */
   const beforeFocus = (await composer.boundingBox())?.height ?? 0;
   await editor.click();
   await expect(composer).toHaveClass(/composer-focused/);
   const afterFocus = (await composer.boundingBox())?.height ?? 0;
-  expect(afterFocus).toBeGreaterThanOrEqual(beforeFocus);
-  expect(afterFocus - beforeFocus).toBeLessThanOrEqual(40);
+  expect(Math.abs(afterFocus - beforeFocus)).toBeLessThanOrEqual(1);
   /* The pill stays visible inside the idle capsule, like the reference. */
   await expect(composer.locator('[data-composer-control=effort]')).toBeVisible();
 
@@ -276,7 +270,7 @@ test('mobile conversation home matches the compact dark reference layout', async
   );
   await expect
     .poll(async () => (await composer.boundingBox())?.height ?? 0)
-    .toBeGreaterThan(beforeFocus + 36);
+    .toBeGreaterThan(beforeFocus + 12);
   await expect(composer.locator('[data-composer-control=effort]')).toBeVisible();
   /* The landing composer mirrors the reference controls row: a dedicated
      dictation mic sits beside the voice/send primary. */

@@ -23,6 +23,11 @@ import { getAppMode, subscribeAppMode } from '../../config/providers.ts';
 import { useStore } from 'zustand';
 import { useIsChatStreaming } from '../useChatRuntime';
 import { VoiceSpectrum } from './VoiceSpectrum';
+import { useStoredReasoningEffort } from '../chat-configuration/useChatConfigurationLabels';
+import { openChatConfiguration, useChatConfigurationSnapshot } from '../chat-configuration/chatConfiguration.bridge';
+import { effortLabel } from '../chat-configuration/ChatConfigurationPanels';
+import { useProviderConfigStore } from '../../config/providerConfig.store';
+import { resolveEffectiveEffort } from '../../config/effectiveEffort';
 import { useVoiceInputStore } from '../../legacy/voiceInput.store.ts';
 import { voiceInputUnavailableReason } from '../../legacy/voiceInputAvailability.ts';
 
@@ -53,15 +58,6 @@ function readPhone(): boolean {
 function useComposerPhone(): boolean {
   return useSyncExternalStore(subscribePhone, readPhone, () => false);
 }
-
-const FIELD_SHADOWS = {
-  /* RN-9: the lit recipes put a 1px top-edge highlight over the same
-     outward shadow, so the sheet reads as a surface catching light from
-     above instead of a flat cut-out. */
-  field: 'var(--ui-elevation-lit-field)',
-  fieldHover: 'var(--ui-elevation-lit-field-hover)',
-  fieldFocus: 'var(--ui-elevation-lit-field-focus)',
-};
 
 /* On phones, moving from the editor to a control keeps the control in place. */
 function useEditorFocus(keepControlsInPlace: boolean): boolean {
@@ -226,6 +222,28 @@ function buildComposerControls(opts: {
   };
 }
 
+function useComposerEffortControl(phone: boolean) {
+  const storedEffort = useStoredReasoningEffort();
+  const capabilities = useProviderConfigStore((state) =>
+    state.providers.find((provider) => provider.id === state.activeId)?.capabilities,
+  );
+  const effort = resolveEffectiveEffort(storedEffort, capabilities);
+  const configuration = useChatConfigurationSnapshot();
+  return (
+    phone && capabilities?.supportsEffort !== false
+      ? {
+          visible: true,
+          caption: i18n('chatconfig.effort', 'Reasoning effort'),
+          value: effortLabel(effort),
+          level: effort,
+          accessibilityLabel: `${i18n('chatconfig.effort', 'Reasoning effort')} · ${effortLabel(effort)}`,
+          expanded: configuration.open && configuration.triggerId === 'effortTrigger',
+          onPress: () => openChatConfiguration(anchor('effortTrigger')),
+        }
+      : undefined
+  );
+}
+
 /**
  * React owns the complete composer shell. The stable outer host stays in the
  * document so the landing/chat transition can move it without rebuilding the
@@ -258,7 +276,9 @@ export function ComposerShell({
   } = useComposerVoiceState();
   const phone = useComposerPhone();
   const focused = useEditorFocus(phone);
-  const expanded = focused || hasDraft || attachments.length > 0 || voiceActive;
+  // The phone reference keeps the editor above its controls even when empty.
+  const expanded = phone || focused || hasDraft || attachments.length > 0 || voiceActive;
+  const effortControl = useComposerEffortControl(phone);
   /* Dictation owns the microphone while it runs; the primary stays a send
      control and cannot submit a half-transcribed turn. */
   const canSend = !voiceActive && (hasDraft || attachments.length > 0);
@@ -323,8 +343,7 @@ export function ComposerShell({
           expanded={expanded}
           compact={phone}
           layout="inline"
-          surface={phone ? 'var(--ui-bg-field, var(--ui-bg-composer))' : 'var(--ui-bg-ask)'}
-          shadows={FIELD_SHADOWS}
+          surface="var(--ui-bg-ask)"
           topVisible={attachments.length > 0}
           top={
             <div className="attachment-chips hidden" id="composerAttachmentChips">
@@ -346,20 +365,23 @@ export function ComposerShell({
               hidden
             />
           }
-          controls={buildComposerControls({
-            toolsLabel,
-            composerTools,
-            phone,
-            voiceLabel,
-            voicePhase,
-            voiceTimerLabel,
-            voiceUnavailable,
-            streaming,
-            primaryLabel,
-            canSend,
-            sending,
-            handlePrimaryClick,
-          })}
+          controls={{
+            ...buildComposerControls({
+              toolsLabel,
+              composerTools,
+              phone,
+              voiceLabel,
+              voicePhase,
+              voiceTimerLabel,
+              voiceUnavailable,
+              streaming,
+              primaryLabel,
+              canSend,
+              sending,
+              handlePrimaryClick,
+            }),
+            effort: effortControl,
+          }}
         />
       </WebUiTheme>
     </>
