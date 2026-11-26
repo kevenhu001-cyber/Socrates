@@ -105,6 +105,8 @@ export const zh = {
   'intui.demo.diag.eigenResidual': '特征方程归一化残差',
   'intui.demo.diag.eigenOrthogonality': '正交性误差',
   'intui.demo.diag.eigenIterations': '特征分解旋转次数',
+  'intui.demo.isoLevel': '等值面值',
+  'intui.demo.diag.transportCFL': '对流扩散组合 CFL 数',
   'intui.demo.diagnostics': '求解器诊断',
   'intui.demo.diag.acceptedSteps': '接受步数',
   'intui.demo.diag.rejectedSteps': '拒绝步数',
