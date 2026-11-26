@@ -871,6 +871,7 @@ function normalizeView(raw) {
       if (view[key] !== undefined) view[key] = expressionLike(view[key]);
     if (view.colorRange !== undefined) view.colorRange = rangeLike(view.colorRange);
     if (view.zRange !== undefined) view.zRange = rangeLike(view.zRange);
+    if(record(view.slicePlane))view.slicePlane={...view.slicePlane,at:expressionLike(view.slicePlane.at)};
     if (view.parameterRange !== undefined) view.parameterRange = rangeLike(view.parameterRange);
     for(const key of ['curve3d','vector3d']) if(Array.isArray(view[key])) view[key]=view[key].map(expressionLike);
     if (['curve3d','vectors3d'].includes(view.presentation) && view.expression === undefined) view.expression=0;
@@ -2101,7 +2102,7 @@ export function validateDemonstration(input) {
     if (!record(definitions) || Object.keys(definitions).length > 24)
       throw located('definitions', Error('Use a map of at most 24 definitions'));
     const allowed = new Set(['x', 'y', 't', 'pi', 'e']);
-    if (program.views?.some(view=>view?.presentation==='vectors3d')) allowed.add('spaceZ');
+    if (program.views?.some(view=>(view?.presentation==='vectors3d'||view?.slicePlane!==undefined))) allowed.add('spaceZ');
     params.forEach((p, i) =>
       at(`parameters.${record(p) && typeof p.id === 'string' ? p.id : `[${i}]`}`, () => {
         if (!record(p)) throw Error('Parameter must be an object');
@@ -2378,6 +2379,12 @@ export function validateDemonstration(input) {
         });
       } else if (view.kind === 'field') {
         fields++;
+        if(view.slicePlane!==undefined){
+          if(!record(view.slicePlane)||!['x','y','z'].includes(view.slicePlane.axis)||
+            ![undefined,'map'].includes(view.presentation)||view.vector!==undefined)
+            throw located(path,Error('Scalar map slice needs axis x/y/z and at; no planar vector overlay'));
+          check(view.slicePlane.at);
+        }
         if (view.presentation !== undefined && !['map', 'surface', 'curve3d', 'vectors3d'].includes(view.presentation))
           throw located(`${path}.presentation`, Error('Use map, surface, curve3d or vectors3d'));
         if (view.surfaceStyle !== undefined && (view.presentation !== 'surface' || !['wireframe','shaded'].includes(view.surfaceStyle)))
@@ -2544,7 +2551,7 @@ export function compileDemonstrationRuntime(input) {
   const definitions = new Map(Object.entries(program.definitions ?? {}));
   const stateNames = Object.keys(program.dynamics?.initial ?? {});
   const flags = new Map([['x', 1], ['y', 2], ['t', 4], ...stateNames.map((name) => [name, 4]), ...Object.keys(program.dynamics?.algebraic?.guess ?? {}).map(name=>[name,4])]);
-  if(program.views.some(view=>view.presentation==='vectors3d')) flags.set('spaceZ',8);
+  if(program.views.some(view=>(view.presentation==='vectors3d'||view.slicePlane!==undefined))) flags.set('spaceZ',8);
   const expressionMasks = new Map();
   const definitionMasks = new Map();
   function dependencies(expression) {
@@ -2810,7 +2817,7 @@ function* prepareRuntime(program, definitions, stateNames, compile, dependencies
       return [p.id, finite(value) ? Math.max(p.min, Math.min(p.max, value)) : p.value];
     }),
   );
-  const hasSpaceZ=program.views.some(view=>view.presentation==='vectors3d');
+  const hasSpaceZ=program.views.some(view=>(view.presentation==='vectors3d'||view.slicePlane!==undefined));
   const base = Object.assign(Object.create(null), params,hasSpaceZ?{spaceZ:0}:{});
   const constants = new Map();
   let grid,coupled;
