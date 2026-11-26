@@ -721,9 +721,9 @@
   align-items: center;
   gap: var(--ui-space-xs);
   min-height: var(--ui-control-sm);
-  padding: 0 var(--ui-space-xs);
+  padding: 0 var(--ui-space-xs) 0 0;
   border: 0;
-  border-radius: var(--ui-radius-pill);
+  border-radius: var(--ui-radius-row);
   background: transparent;
   color: var(--ui-text-secondary);
   font-family: inherit;
