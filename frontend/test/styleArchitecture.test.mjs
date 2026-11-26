@@ -345,6 +345,21 @@ test('external link favicons have one chat style owner and retired chat tokens s
   );
 });
 
+test('retired imperative tool cards retain history cleanup but no visual skin', async () => {
+  const paths = [
+    'src/styles/legacy/11-agent-tools.css',
+    'src/styles/legacy/14-tool-surfaces.css',
+    'src/styles/legacy/15-thinking-activity.css',
+    'src/styles/legacy/16-final-contract.css',
+    'src/styles/features/tool-surfaces.css',
+  ];
+  for (const path of paths) {
+    const css = (await read(path)).replace(/\/\*[\s\S]*?\*\//g, '');
+    assert.doesNotMatch(css, /\.agent-tool-(?:card|stream)\b/);
+  }
+  assert.match(await read('src/react/tool-run/toolRunLegacyHtml.ts'), /\.agent-tool-card/);
+});
+
 test('artifact preview, download and retry use one stylesheet owner', async () => {
   const [owner, ...legacy] = await Promise.all([
     read('src/styles/components/tool-card.css'),
