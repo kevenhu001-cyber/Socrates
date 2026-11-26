@@ -683,3 +683,20 @@ test('implicit diffusion uses stationary nonzero boundaries and sources', () => 
   assert.ok(Math.abs(runtime.evaluate('gridValue',1,.37)-23.7)<1e-8);
   assert.equal(validateDemonstration({...program,dynamics:{...program.dynamics,spatial:{...program.dynamics.spatial,diffusivity:'1+t'}}}).ok,false);
 });
+
+test('structured linear algebra supports shape-checked matrix-vector products', () => {
+  const program={version:1,linearAlgebra:[
+    {id:'force',op:'vector',values:[3,4]},
+    {id:'rot',op:'matrix',values:[[0,-1],[1,0]]},
+    {id:'result',op:'matmul',a:'rot',b:'force'},
+    {id:'mag',op:'norm',a:'result'},
+    {id:'orthogonal',op:'dot',a:'force',b:'result'}],
+    views:[{kind:'metrics',values:[{expression:'result_1'},{expression:'mag'}]}]};
+  const runtime=createDemonstrationRuntime(program);
+  assert.equal(runtime.evaluate('result_1'),-4);
+  assert.equal(runtime.evaluate('result_2'),3);
+  assert.equal(runtime.evaluate('mag'),5);
+  assert.equal(runtime.evaluate('orthogonal'),0);
+  const invalid={...program,linearAlgebra:program.linearAlgebra.map((e,i)=>i===0?{...e,values:[1,2,3]}:e)};
+  assert.equal(validateDemonstration(invalid).ok,false);
+});
