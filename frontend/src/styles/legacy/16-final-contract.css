@@ -159,50 +159,6 @@
   background: var(--chat-code-bg);
   border-radius: 0 0 var(--chat-code-radius) var(--chat-code-radius);
 }
-/* shadcn ghost rung: 24px, rounded-sm, accent hover, ring focus. */
-/* Tool card — collapsible chrome, running shimmer, terminal states.
-   Collapse is driven by the `.open` class (the card head is a toggle button
-   with `aria-expanded`); the body/code/out only show while open. Phase comes
-   from `data-tool-state` set by the run-state wiring. */
-
-/* Elapsed / duration readout lives in `.agent-tool-status`; keep it tabular
-   so a live-updating running timer doesn't jitter the header width. */
-
-/* Running: shimmer the tool name so an in-flight run reads as active. Pairs
-   with the pulsing dot already drawn on `.agent-tool-status::before`. */
-
-/* Terminal: settle the header colour by phase. `done` reads on the accent,
-   `error` on the danger hue, `cancelled` stays muted. */
-
-/* ── Quiet conversation activity + Artifacts preview ───────────────
-   Final cascade layer: one calm, Codex-like language for transient work.
-   Assistant prose remains unboxed; actions are readable status lines rather
-   than nested cards. */
-.msg.assistant .msg-body:has(.agent-tool-card) {
-  max-width: 100%;
-  padding: 0 !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-}
-/* Running tool name: same stable light sweep as the canonical shimmer
-   (features/thinking-activity.css), expressed in the legacy hsl() tokens.
-   No !important here — this sits after the earlier running-name rule in
-   this file so it wins by order, and no Tier 3 rule targets
-   .agent-tool-name (it has no .shimmer-text class). Opacity stays at 1:
-   the text never fades, only the highlight travels. Tool-inline labels
-   are intentionally not overridden here; the canonical #appShell
-   shimmer (Tier 3, loaded after this file) owns them. */
-
-.msg.assistant .agent-tool-card {
-  margin: 10px 0 !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .shimmer-text {
     animation: none !important;
