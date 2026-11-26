@@ -16,8 +16,9 @@ Android renderer are introduced.
   maximum step up to one second, bounded attempts and event budget.
 - Up to eight directed zero-crossing events, terminal events and simultaneous
   reset expressions. The renderer reads the post-event value at an event and does
-  not interpolate the state through a reset. Events are detected by endpoint sign
-  changes; tangencies and multiple crossings inside one step may be missed.
+  not interpolate the state through a reset. Events are detected using endpoint and midpoint sign changes. Simultaneous
+  disjoint resets use the same prior state; conflicting resets fail explicitly.
+  Tangencies and multiple crossings inside a half-step may still be missed.
 - Small linear algebra (dot products and two-/three-variable linear solves),
   nonsingular mass-matrix ODEs (up to eight state variables, rows/columns in
   initial state order), and regular coupled acceleration/multiplier equations.
@@ -53,14 +54,40 @@ The full repository build, browser suite, provider generation and bundle/CPU
 benchmarks are not verified locally (the environment could not resolve the
 GitHub clone host). CI and actual visual inspection are required before merge.
 
+## Follow-up: stiff integration, 2D diffusion, electrical networks and plots
+
+- L-stable SDIRK2 (order 2, step doubling, numerical Jacobian and bounded Newton
+  iterations) for up to eight stiff ODE states. No BDF/Radau or singular DAE.
+- Rectangular 2D diffusion on 3–7 nodes per axis with common prescribed
+  Dirichlet boundary, central differences and bilinear field reconstruction.
+  A coarse educational grid, not arbitrary 2D meshing.
+- Linear circuit compiler: R/L/C and independent ideal voltage/current sources
+  become MNA equations, capacitor-voltage and inductor-current states, nodal
+  voltages and branch currents. At most six MNA unknowns; no nonlinear devices,
+  arbitrary topologies with singular constraints, or time-varying C/L. The
+  existing expression, definition and operation limits also apply.
+- Bounded general scalar-component linear solves up to 6x6, cross products,
+  physical logarithmic axes (not mislabeled log-frequency coordinates), and
+  spatial cross-section plots with declared y coordinate.
+- Fixed a pre-existing 22px icon sizing lint blocker by using the existing
+  approved 20px size. No relaxation of the CI rule.
+
+Direct numerical checks on the updated core: forced stiff scalar endpoint
+absolute error 9.98e-7, mixed 10,000:1 decay slow-mode endpoint error 2.95e-5
+and fast-mode magnitude below 1e-60; 7x7 2D heat mode amplitude error 0.00605;
+RC netlist error 1.28e-10 V at 2 s, series RLC error 7.56e-13 V at 2 s;
+sampled KCL residual 0 in both circuits. Ten current scientific examples
+validated and ran without warnings; fifteen historical examples validated
+and executed. Added frontend unit and browser tests. Latest full CI and
+visual checks still require verification.
+
 ## Deliberate limits / next steps
 
 This is a bounded educational engine, not an industrial multiphysics solver.
-No stiff BDF/Radau solver, singular DAE index reduction, general contact/friction
-solver, arbitrary PDE or 2D/3D mesh, automatic SPICE netlist, automatic dimensional
-analysis, or general vector/matrix expression values are claimed. Add these only
+No BDF/Radau solver, general singular DAE index reduction, contact/friction
+solver, arbitrary PDE or unstructured 2D/3D mesh, nonlinear SPICE-compatible netlist,
+automatic dimensional analysis, or general vector/matrix expression values are claimed. Add these only
 with explicit bounded protocols and analytic/conservation regression tests.
-Prioritize a stiff solver, robust event rearming and simultaneous-event semantics,
-matrix/vector state lowering, implicit finite-difference diffusion, engineering
-diagram primitives and richer scientific plots. Benchmark on mobile with the same
+Prioritize robust event rearming, matrix/vector state lowering, implicit sparse
+finite-difference diffusion, engineering diagram primitives and richer scientific plots. Benchmark on mobile with the same
 error tolerance before introducing any WASM dependency.
