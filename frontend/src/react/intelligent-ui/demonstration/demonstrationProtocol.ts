@@ -1,4 +1,4 @@
-import type { DemonstrationProgram, DemonstrationWarning } from '@socrates/core/demonstration';
+import type { DemonstrationProgram, DemonstrationWarning, DemonstrationDiagnostics } from '@socrates/core/demonstration';
 import type { FieldSample } from './sampleField';
 import type { PlotSample } from './samplePlot';
 import type { SceneSample } from './sampleScene';
@@ -21,6 +21,7 @@ export type FrameInput = {
 export type FrameOutput = {
   duration: number;
   warnings: DemonstrationWarning[];
+  diagnostics?: DemonstrationDiagnostics;
   animated: boolean;
   patches: ViewPatch[];
 };

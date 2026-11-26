@@ -1,0 +1,5522 @@
+{
+  "rlc": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "resistance",
+        "label": "Resistance",
+        "value": 4,
+        "min": 1,
+        "max": 12,
+        "unit": "Ω"
+      },
+      {
+        "id": "inductance",
+        "label": "Inductance",
+        "value": 0.5,
+        "min": 0.1,
+        "max": 1,
+        "unit": "H"
+      },
+      {
+        "id": "capacitance",
+        "label": "Capacitance",
+        "value": 0.1,
+        "min": 0.02,
+        "max": 0.2,
+        "unit": "F"
+      },
+      {
+        "id": "supply",
+        "label": "DC supply",
+        "value": 12,
+        "min": 1,
+        "max": 24,
+        "unit": "V"
+      }
+    ],
+    "definitions": {
+      "stored": "inductance*cur^2/2+capacitance*voltage^2/2",
+      "balance": "inputEnergy-lossEnergy-stored"
+    },
+    "dynamics": {
+      "method": "rk45",
+      "duration": 5,
+      "step": 0.025,
+      "initial": {
+        "cur": 0,
+        "voltage": 0,
+        "inputEnergy": 0,
+        "lossEnergy": 0
+      },
+      "derivatives": {
+        "cur": "(supply-resistance*cur-voltage)/inductance",
+        "voltage": "cur/capacitance",
+        "inputEnergy": "supply*cur",
+        "lossEnergy": "resistance*cur^2"
+      }
+    },
+    "views": [
+      {
+        "kind": "plot",
+        "history": true,
+        "label": "Capacitor step response",
+        "x": [
+          0,
+          5
+        ],
+        "y": [
+          0,
+          "supply*2"
+        ],
+        "xLabel": "Time (s)",
+        "yLabel": "Voltage (V)",
+        "curves": [
+          {
+            "expression": "voltage",
+            "label": "Capacitor",
+            "color": "blue"
+          },
+          {
+            "expression": "supply",
+            "label": "Input",
+            "color": "muted",
+            "dashed": true
+          }
+        ]
+      },
+      {
+        "kind": "plot",
+        "history": true,
+        "x": [
+          0,
+          5
+        ],
+        "y": [
+          0,
+          "supply^2*capacitance*3"
+        ],
+        "xLabel": "Time (s)",
+        "yLabel": "Energy (J)",
+        "curves": [
+          {
+            "expression": "inputEnergy",
+            "label": "Input",
+            "color": "ink"
+          },
+          {
+            "expression": "stored",
+            "label": "Stored",
+            "color": "blue"
+          },
+          {
+            "expression": "lossEnergy",
+            "label": "Dissipated",
+            "color": "orange"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "Energy balance residual",
+            "expression": "balance",
+            "unit": "J",
+            "digits": 5
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "batteryThermal": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "loadCurrent",
+        "label": "Discharge current",
+        "value": 10,
+        "min": 2,
+        "max": 20,
+        "unit": "A"
+      },
+      {
+        "id": "resistance",
+        "label": "Cell resistance",
+        "value": 0.05,
+        "min": 0.01,
+        "max": 0.1,
+        "unit": "Ω"
+      },
+      {
+        "id": "ambient",
+        "label": "Ambient temperature",
+        "value": 25,
+        "min": 10,
+        "max": 40,
+        "unit": "°C"
+      }
+    ],
+    "definitions": {
+      "capacityAh": 20,
+      "thermalMass": 200,
+      "conductance": 0.8,
+      "ocv": "3+1.2*soc",
+      "terminalVoltage": "ocv-loadCurrent*resistance",
+      "lossPower": "loadCurrent^2*resistance",
+      "outputPower": "loadCurrent*terminalVoltage"
+    },
+    "dynamics": {
+      "method": "rk45",
+      "duration": 300,
+      "step": 1,
+      "initial": {
+        "soc": 0.8,
+        "temp": "ambient",
+        "outputEnergy": 0
+      },
+      "derivatives": {
+        "soc": "-loadCurrent/(3600*capacityAh)",
+        "temp": "(lossPower-conductance*(temp-ambient))/thermalMass",
+        "outputEnergy": "outputPower"
+      },
+      "events": [
+        {
+          "expression": "soc",
+          "direction": -1,
+          "terminal": true
+        }
+      ]
+    },
+    "views": [
+      {
+        "kind": "plot",
+        "history": true,
+        "x": [
+          0,
+          300
+        ],
+        "y": [
+          "ambient-1",
+          "ambient+lossPower/conductance+1"
+        ],
+        "xLabel": "Time (s)",
+        "yLabel": "Temperature (°C)",
+        "curves": [
+          {
+            "expression": "temp",
+            "label": "Cell",
+            "color": "orange"
+          },
+          {
+            "expression": "ambient",
+            "label": "Ambient",
+            "color": "muted",
+            "dashed": true
+          }
+        ]
+      },
+      {
+        "kind": "plot",
+        "history": true,
+        "x": [
+          0,
+          300
+        ],
+        "y": [
+          0.6,
+          0.85
+        ],
+        "xLabel": "Time (s)",
+        "yLabel": "SOC",
+        "curves": [
+          {
+            "expression": "soc",
+            "label": "State of charge",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "Terminal voltage",
+            "expression": "terminalVoltage",
+            "unit": "V"
+          },
+          {
+            "label": "Heat generation",
+            "expression": "lossPower",
+            "unit": "W"
+          },
+          {
+            "label": "Delivered energy",
+            "expression": "outputEnergy/3600",
+            "unit": "Wh"
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "constrainedPendulum": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "length",
+        "label": "Length",
+        "value": 1,
+        "min": 0.5,
+        "max": 1.5,
+        "unit": "m"
+      },
+      {
+        "id": "mass",
+        "label": "Mass",
+        "value": 1,
+        "min": 0.5,
+        "max": 2,
+        "unit": "kg"
+      },
+      {
+        "id": "angle",
+        "label": "Initial angle",
+        "value": 0.5,
+        "min": 0.1,
+        "max": 1.2,
+        "unit": "rad"
+      }
+    ],
+    "definitions": {
+      "constraint": "qx^2+qy^2-length^2",
+      "stab": "-(vx^2+vy^2)-8*(qx*vx+qy*vy)-8*constraint",
+      "ax": "solve3(1,mass,0,qx,0,mass,qy,qx,qy,0,0,-mass*9.81,stab)",
+      "ay": "solve3(2,mass,0,qx,0,mass,qy,qx,qy,0,0,-mass*9.81,stab)",
+      "energy": "mass*(vx^2+vy^2)/2+mass*9.81*(qy+length)"
+    },
+    "dynamics": {
+      "method": "rk45",
+      "duration": 5,
+      "step": 0.025,
+      "rtol": 1e-7,
+      "atol": 1e-9,
+      "initial": {
+        "qx": "length*sin(angle)",
+        "qy": "-length*cos(angle)",
+        "vx": 0,
+        "vy": 0
+      },
+      "derivatives": {
+        "qx": "vx",
+        "qy": "vy",
+        "vx": "ax",
+        "vy": "ay"
+      }
+    },
+    "views": [
+      {
+        "kind": "scene",
+        "x": [
+          "-length*1.2",
+          "length*1.2"
+        ],
+        "y": [
+          "-length*1.2",
+          "length*.25"
+        ],
+        "objects": [
+          {
+            "kind": "rod",
+            "from": [
+              0,
+              0
+            ],
+            "to": [
+              "qx",
+              "qy"
+            ],
+            "color": "muted"
+          },
+          {
+            "kind": "body",
+            "center": [
+              "qx",
+              "qy"
+            ],
+            "radius": 0.08,
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "kind": "plot",
+        "history": true,
+        "x": [
+          0,
+          5
+        ],
+        "y": [
+          -0.00001,
+          0.00001
+        ],
+        "xLabel": "Time (s)",
+        "yLabel": "Constraint residual (m²)",
+        "curves": [
+          {
+            "expression": "constraint",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "Constraint residual",
+            "expression": "constraint",
+            "unit": "m²",
+            "digits": 5
+          },
+          {
+            "label": "Mechanical energy",
+            "expression": "energy",
+            "unit": "J"
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "heat": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "alpha",
+        "label": "Thermal diffusivity",
+        "value": 0.1,
+        "min": 0.02,
+        "max": 0.2,
+        "unit": "m²/s"
+      }
+    ],
+    "dynamics": {
+      "method": "rk45",
+      "duration": 1,
+      "step": 0.01,
+      "spatial": {
+        "nodes": 11,
+        "domain": [
+          0,
+          1
+        ],
+        "diffusivity": "alpha",
+        "initial": "20+80*sin(pi*x)",
+        "left": 20,
+        "right": 20
+      }
+    },
+    "views": [
+      {
+        "kind": "field",
+        "x": [
+          0,
+          1
+        ],
+        "y": [
+          0,
+          0.2
+        ],
+        "expression": "gridValue",
+        "palette": "heat",
+        "colorRange": [
+          20,
+          100
+        ],
+        "unit": "°C",
+        "height": 64,
+        "contours": [
+          30,
+          50,
+          70,
+          90
+        ]
+      },
+      {
+        "kind": "plot",
+        "x": [
+          0,
+          1
+        ],
+        "y": [
+          20,
+          100
+        ],
+        "xLabel": "Position (m)",
+        "yLabel": "Temperature (°C)",
+        "curves": [
+          {
+            "expression": "gridValue",
+            "label": "Current",
+            "color": "orange"
+          },
+          {
+            "expression": "20+80*sin(pi*x)",
+            "label": "Initial",
+            "color": "muted",
+            "dashed": true
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "wave": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "waveSpeed",
+        "label": "Wave speed",
+        "value": 1,
+        "min": 0.5,
+        "max": 2,
+        "unit": "m/s"
+      }
+    ],
+    "dynamics": {
+      "method": "rk45",
+      "duration": 2,
+      "step": 0.01,
+      "spatial": {
+        "equation": "wave",
+        "nodes": 15,
+        "domain": [
+          0,
+          1
+        ],
+        "speed": "waveSpeed",
+        "initial": "sin(pi*x)",
+        "initialVelocity": 0,
+        "left": 0,
+        "right": 0
+      }
+    },
+    "views": [
+      {
+        "kind": "plot",
+        "x": [
+          0,
+          1
+        ],
+        "y": [
+          -1.1,
+          1.1
+        ],
+        "xLabel": "Position (m)",
+        "yLabel": "Displacement",
+        "curves": [
+          {
+            "expression": "gridValue",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "field": {
+    "version": 1,
+    "views": [
+      {
+        "kind": "field",
+        "label": "Calibrated scalar field and gradient",
+        "x": [
+          -1,
+          1
+        ],
+        "y": [
+          -1,
+          1
+        ],
+        "expression": "x^2+y^2",
+        "palette": "heat",
+        "colorRange": [
+          0,
+          2
+        ],
+        "unit": "arbitrary units",
+        "contours": [
+          0.25,
+          0.5,
+          1,
+          1.5
+        ],
+        "vector": [
+          "2*x",
+          "2*y"
+        ],
+        "vectorScale": 2,
+        "height": 320
+      }
+    ]
+  },
+  "stiffForced": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "decay",
+        "label": "Fast decay rate",
+        "value": 10000,
+        "min": 100,
+        "max": 20000,
+        "unit": "1/s"
+      }
+    ],
+    "dynamics": {
+      "method": "sdirk2",
+      "duration": 1,
+      "step": 0.1,
+      "rtol": 0.00001,
+      "atol": 1e-8,
+      "initial": {
+        "q": 1
+      },
+      "derivatives": {
+        "q": "-decay*(q-cos(t))-sin(t)"
+      }
+    },
+    "views": [
+      {
+        "kind": "plot",
+        "history": true,
+        "x": [
+          0,
+          1
+        ],
+        "y": [
+          0.4,
+          1.05
+        ],
+        "xLabel": "Time (s)",
+        "curves": [
+          {
+            "expression": "q",
+            "label": "Implicit solution",
+            "color": "blue"
+          },
+          {
+            "expression": "cos(t)",
+            "label": "Exact",
+            "color": "muted",
+            "dashed": true
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "Absolute error",
+            "expression": "abs(q-cos(t))",
+            "digits": 5
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ],
+    "diagnostics": true
+  },
+  "heat2D": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "alpha",
+        "label": "Thermal diffusivity",
+        "value": 0.1,
+        "min": 0.02,
+        "max": 0.2,
+        "unit": "m²/s"
+      }
+    ],
+    "dynamics": {
+      "method": "rk45",
+      "duration": 1,
+      "step": 0.01,
+      "spatial": {
+        "dimension": 2,
+        "nx": 7,
+        "ny": 7,
+        "xDomain": [
+          0,
+          1
+        ],
+        "yDomain": [
+          0,
+          1
+        ],
+        "diffusivity": "alpha",
+        "initial": "20+80*sin(pi*x)*sin(pi*y)",
+        "boundary": 20
+      }
+    },
+    "views": [
+      {
+        "kind": "field",
+        "label": "Temperature distribution",
+        "x": [
+          0,
+          1
+        ],
+        "y": [
+          0,
+          1
+        ],
+        "expression": "gridValue",
+        "palette": "heat",
+        "colorRange": [
+          20,
+          100
+        ],
+        "unit": "°C",
+        "contours": [
+          30,
+          50,
+          70,
+          90
+        ],
+        "height": 320
+      },
+      {
+        "kind": "plot",
+        "label": "Horizontal cross section",
+        "x": [
+          0,
+          1
+        ],
+        "y": [
+          20,
+          100
+        ],
+        "curves": [
+          {
+            "expression": "gridValue",
+            "label": "Mid-plane temperature",
+            "color": "orange"
+          }
+        ],
+        "sliceY": 0.5
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "Center temperature",
+            "expression": "gridR3C3",
+            "unit": "°C"
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "bode": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "wn",
+        "label": "Natural frequency",
+        "value": 10,
+        "min": 1,
+        "max": 100,
+        "unit": "rad/s"
+      },
+      {
+        "id": "zeta",
+        "label": "Damping ratio",
+        "value": 0.3,
+        "min": 0.1,
+        "max": 2
+      }
+    ],
+    "definitions": {
+      "realDen": "1-(x/wn)^2",
+      "imagDen": "2*zeta*x/wn",
+      "magnitude": "-20*log10(hypot(realDen,imagDen))",
+      "phase": "-atan2(imagDen,realDen)*180/pi"
+    },
+    "views": [
+      {
+        "kind": "plot",
+        "label": "Magnitude",
+        "x": [
+          0.1,
+          1000
+        ],
+        "y": [
+          -90,
+          20
+        ],
+        "xScale": "log",
+        "xLabel": "Frequency (rad/s)",
+        "yLabel": "Gain (dB)",
+        "curves": [
+          {
+            "expression": "magnitude",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "kind": "plot",
+        "label": "Phase",
+        "x": [
+          0.1,
+          1000
+        ],
+        "y": [
+          -180,
+          0
+        ],
+        "xScale": "log",
+        "xLabel": "Frequency (rad/s)",
+        "yLabel": "Phase (°)",
+        "curves": [
+          {
+            "expression": "phase",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "netlistRC": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "resistance",
+        "label": "Resistance",
+        "value": 2,
+        "min": 1,
+        "max": 5,
+        "unit": "Ω"
+      },
+      {
+        "id": "capacitance",
+        "label": "Capacitance",
+        "value": 0.5,
+        "min": 0.1,
+        "max": 1,
+        "unit": "F"
+      }
+    ],
+    "dynamics": {
+      "method": "rk45",
+      "duration": 5,
+      "step": 0.05,
+      "circuit": {
+        "nodes": [
+          "input",
+          "out"
+        ],
+        "elements": [
+          {
+            "kind": "V",
+            "id": "source",
+            "p": "input",
+            "n": "0",
+            "value": 5
+          },
+          {
+            "kind": "R",
+            "id": "resistor",
+            "p": "input",
+            "n": "out",
+            "value": "resistance"
+          },
+          {
+            "kind": "C",
+            "id": "cap",
+            "p": "out",
+            "n": "0",
+            "value": "capacitance",
+            "initial": 0
+          }
+        ]
+      }
+    },
+    "views": [
+      {
+        "kind": "scene",
+        "label": "RC network",
+        "x": [
+          -1,
+          5
+        ],
+        "y": [
+          -1.2,
+          3
+        ],
+        "objects": [
+          {
+            "kind": "voltageSource",
+            "from": [
+              0,
+              2
+            ],
+            "to": [
+              0,
+              0
+            ],
+            "label": "5 V"
+          },
+          {
+            "kind": "resistor",
+            "from": [
+              0,
+              2
+            ],
+            "to": [
+              4,
+              2
+            ],
+            "label": "R"
+          },
+          {
+            "kind": "capacitor",
+            "from": [
+              4,
+              2
+            ],
+            "to": [
+              4,
+              0
+            ],
+            "label": "C"
+          },
+          {
+            "kind": "path",
+            "points": [
+              [
+                0,
+                0
+              ],
+              [
+                4,
+                0
+              ]
+            ]
+          },
+          {
+            "kind": "ground",
+            "from": [
+              2,
+              0
+            ],
+            "to": [
+              2,
+              -0.7
+            ]
+          },
+          {
+            "kind": "vector",
+            "from": [
+              0.7,
+              2.6
+            ],
+            "to": [
+              ".7+current_resistor",
+              2.6
+            ],
+            "color": "blue",
+            "label": "i"
+          }
+        ]
+      },
+      {
+        "kind": "plot",
+        "history": true,
+        "x": [
+          0,
+          5
+        ],
+        "y": [
+          0,
+          5.2
+        ],
+        "xLabel": "Time (s)",
+        "yLabel": "Voltage (V)",
+        "curves": [
+          {
+            "expression": "voltage_out",
+            "color": "blue",
+            "label": "Capacitor voltage"
+          },
+          {
+            "expression": "5*(1-exp(-t/(resistance*capacitance)))",
+            "color": "muted",
+            "dashed": true,
+            "label": "Analytical"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "Resistor current",
+            "expression": "current_resistor",
+            "unit": "A"
+          },
+          {
+            "label": "KCL residual",
+            "expression": "current_resistor-current_cap",
+            "unit": "A",
+            "digits": 5
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "surface3D": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "decay",
+        "label": "Decay",
+        "value": 1,
+        "min": 0.2,
+        "max": 2
+      }
+    ],
+    "views": [
+      {
+        "kind": "field",
+        "label": "Radially damped surface",
+        "presentation": "surface",
+        "x": [
+          -2,
+          2
+        ],
+        "y": [
+          -2,
+          2
+        ],
+        "zRange": [
+          -1,
+          1
+        ],
+        "expression": "cos(4*hypot(x,y))*exp(-decay*(x^2+y^2))"
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "stateSpace": {
+    "version": 1,
+    "dynamics": {
+      "method": "rk45",
+      "duration": 2,
+      "step": 0.02,
+      "stateSpace": {
+        "states": [
+          "q",
+          "v"
+        ],
+        "initial": [
+          0,
+          0
+        ],
+        "A": [
+          [
+            0,
+            1
+          ],
+          [
+            -1,
+            -2
+          ]
+        ],
+        "B": [
+          [
+            0
+          ],
+          [
+            1
+          ]
+        ],
+        "inputs": [
+          1
+        ],
+        "C": [
+          [
+            1,
+            0
+          ]
+        ],
+        "D": [
+          [
+            0
+          ]
+        ],
+        "outputs": [
+          "response"
+        ]
+      }
+    },
+    "views": [
+      {
+        "kind": "plot",
+        "history": true,
+        "x": [
+          0,
+          2
+        ],
+        "y": [
+          0,
+          1
+        ],
+        "curves": [
+          {
+            "expression": "response",
+            "label": "State-space response",
+            "color": "blue"
+          },
+          {
+            "expression": "1-(1+t)*exp(-t)",
+            "label": "Exact",
+            "color": "muted",
+            "dashed": true
+          }
+        ]
+      }
+    ]
+  },
+  "indexOneDAE": {
+    "version": 1,
+    "dynamics": {
+      "method": "rk45",
+      "duration": 1,
+      "step": 0.05,
+      "initial": {
+        "q": 1
+      },
+      "derivatives": {
+        "q": "-aux"
+      },
+      "algebraic": {
+        "guess": {
+          "aux": 1
+        },
+        "residuals": {
+          "aux": "aux^2-q"
+        },
+        "tolerance": 1e-10
+      }
+    },
+    "views": [
+      {
+        "kind": "plot",
+        "history": true,
+        "x": [
+          0,
+          1
+        ],
+        "y": [
+          0,
+          1.1
+        ],
+        "curves": [
+          {
+            "expression": "q",
+            "label": "Differential state",
+            "color": "blue"
+          },
+          {
+            "expression": "aux",
+            "label": "Algebraic state",
+            "color": "orange"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "Algebraic residual",
+            "expression": "aux^2-q",
+            "digits": 5
+          }
+        ]
+      }
+    ]
+  },
+  "implicitHeat2D": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "alpha",
+        "label": "Thermal diffusivity",
+        "value": 0.1,
+        "min": 0.02,
+        "max": 0.2,
+        "unit": "m²/s"
+      }
+    ],
+    "dynamics": {
+      "method": "grid-implicit",
+      "duration": 1,
+      "step": 0.005,
+      "spatial": {
+        "dimension": 2,
+        "nx": 65,
+        "ny": 65,
+        "xDomain": [
+          0,
+          1
+        ],
+        "yDomain": [
+          0,
+          1
+        ],
+        "diffusivity": "alpha",
+        "initial": "20+80*sin(pi*x)*sin(pi*y)",
+        "boundary": 20
+      }
+    },
+    "views": [
+      {
+        "kind": "field",
+        "label": "Temperature field",
+        "x": [
+          0,
+          1
+        ],
+        "y": [
+          0,
+          1
+        ],
+        "expression": "gridValue",
+        "palette": "heat",
+        "colorRange": [
+          20,
+          100
+        ],
+        "unit": "°C",
+        "contours": [
+          30,
+          50,
+          70,
+          90
+        ],
+        "height": 320
+      },
+      {
+        "kind": "field",
+        "label": "Temperature surface",
+        "x": [
+          0,
+          1
+        ],
+        "y": [
+          0,
+          1
+        ],
+        "expression": "gridValue",
+        "presentation": "surface",
+        "zRange": [
+          20,
+          100
+        ],
+        "surfaceStyle": "shaded"
+      },
+      {
+        "kind": "plot",
+        "label": "Mid-plane temperature",
+        "x": [
+          0,
+          1
+        ],
+        "y": [
+          20,
+          100
+        ],
+        "sliceY": 0.5,
+        "curves": [
+          {
+            "expression": "gridValue",
+            "color": "orange"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "Mean nodal temperature",
+            "expression": "gridMean",
+            "unit": "°C"
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ],
+    "diagnostics": true
+  },
+  "vectorRotation": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "angle",
+        "label": "Rotation angle",
+        "value": 0.8,
+        "min": 0,
+        "max": 6.28,
+        "unit": "rad"
+      }
+    ],
+    "linearAlgebra": [
+      {
+        "id": "force",
+        "op": "vector",
+        "values": [
+          3,
+          4
+        ]
+      },
+      {
+        "id": "rotation",
+        "op": "matrix",
+        "values": [
+          [
+            "cos(angle)",
+            "-sin(angle)"
+          ],
+          [
+            "sin(angle)",
+            "cos(angle)"
+          ]
+        ]
+      },
+      {
+        "id": "rotated",
+        "op": "matmul",
+        "a": "rotation",
+        "b": "force"
+      },
+      {
+        "id": "magnitude",
+        "op": "norm",
+        "a": "rotated"
+      }
+    ],
+    "views": [
+      {
+        "kind": "scene",
+        "label": "Vector rotation",
+        "x": [
+          -6,
+          6
+        ],
+        "y": [
+          -6,
+          6
+        ],
+        "objects": [
+          {
+            "kind": "vector",
+            "from": [
+              0,
+              0
+            ],
+            "to": [
+              "force_1",
+              "force_2"
+            ],
+            "label": "F",
+            "color": "muted"
+          },
+          {
+            "kind": "vector",
+            "from": [
+              0,
+              0
+            ],
+            "to": [
+              "rotated_1",
+              "rotated_2"
+            ],
+            "label": "RF",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "Magnitude",
+            "expression": "magnitude",
+            "unit": "N"
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "sparseChain": {
+    "version": 1,
+    "diagnostics": true,
+    "sparseSystem": {
+      "size": 48,
+      "entries": [
+        [
+          0,
+          0,
+          4
+        ],
+        [
+          0,
+          1,
+          -1
+        ],
+        [
+          1,
+          1,
+          4
+        ],
+        [
+          1,
+          2,
+          -1
+        ],
+        [
+          2,
+          2,
+          4
+        ],
+        [
+          2,
+          3,
+          -1
+        ],
+        [
+          3,
+          3,
+          4
+        ],
+        [
+          3,
+          4,
+          -1
+        ],
+        [
+          4,
+          4,
+          4
+        ],
+        [
+          4,
+          5,
+          -1
+        ],
+        [
+          5,
+          5,
+          4
+        ],
+        [
+          5,
+          6,
+          -1
+        ],
+        [
+          6,
+          6,
+          4
+        ],
+        [
+          6,
+          7,
+          -1
+        ],
+        [
+          7,
+          7,
+          4
+        ],
+        [
+          7,
+          8,
+          -1
+        ],
+        [
+          8,
+          8,
+          4
+        ],
+        [
+          8,
+          9,
+          -1
+        ],
+        [
+          9,
+          9,
+          4
+        ],
+        [
+          9,
+          10,
+          -1
+        ],
+        [
+          10,
+          10,
+          4
+        ],
+        [
+          10,
+          11,
+          -1
+        ],
+        [
+          11,
+          11,
+          4
+        ],
+        [
+          11,
+          12,
+          -1
+        ],
+        [
+          12,
+          12,
+          4
+        ],
+        [
+          12,
+          13,
+          -1
+        ],
+        [
+          13,
+          13,
+          4
+        ],
+        [
+          13,
+          14,
+          -1
+        ],
+        [
+          14,
+          14,
+          4
+        ],
+        [
+          14,
+          15,
+          -1
+        ],
+        [
+          15,
+          15,
+          4
+        ],
+        [
+          15,
+          16,
+          -1
+        ],
+        [
+          16,
+          16,
+          4
+        ],
+        [
+          16,
+          17,
+          -1
+        ],
+        [
+          17,
+          17,
+          4
+        ],
+        [
+          17,
+          18,
+          -1
+        ],
+        [
+          18,
+          18,
+          4
+        ],
+        [
+          18,
+          19,
+          -1
+        ],
+        [
+          19,
+          19,
+          4
+        ],
+        [
+          19,
+          20,
+          -1
+        ],
+        [
+          20,
+          20,
+          4
+        ],
+        [
+          20,
+          21,
+          -1
+        ],
+        [
+          21,
+          21,
+          4
+        ],
+        [
+          21,
+          22,
+          -1
+        ],
+        [
+          22,
+          22,
+          4
+        ],
+        [
+          22,
+          23,
+          -1
+        ],
+        [
+          23,
+          23,
+          4
+        ],
+        [
+          23,
+          24,
+          -1
+        ],
+        [
+          24,
+          24,
+          4
+        ],
+        [
+          24,
+          25,
+          -1
+        ],
+        [
+          25,
+          25,
+          4
+        ],
+        [
+          25,
+          26,
+          -1
+        ],
+        [
+          26,
+          26,
+          4
+        ],
+        [
+          26,
+          27,
+          -1
+        ],
+        [
+          27,
+          27,
+          4
+        ],
+        [
+          27,
+          28,
+          -1
+        ],
+        [
+          28,
+          28,
+          4
+        ],
+        [
+          28,
+          29,
+          -1
+        ],
+        [
+          29,
+          29,
+          4
+        ],
+        [
+          29,
+          30,
+          -1
+        ],
+        [
+          30,
+          30,
+          4
+        ],
+        [
+          30,
+          31,
+          -1
+        ],
+        [
+          31,
+          31,
+          4
+        ],
+        [
+          31,
+          32,
+          -1
+        ],
+        [
+          32,
+          32,
+          4
+        ],
+        [
+          32,
+          33,
+          -1
+        ],
+        [
+          33,
+          33,
+          4
+        ],
+        [
+          33,
+          34,
+          -1
+        ],
+        [
+          34,
+          34,
+          4
+        ],
+        [
+          34,
+          35,
+          -1
+        ],
+        [
+          35,
+          35,
+          4
+        ],
+        [
+          35,
+          36,
+          -1
+        ],
+        [
+          36,
+          36,
+          4
+        ],
+        [
+          36,
+          37,
+          -1
+        ],
+        [
+          37,
+          37,
+          4
+        ],
+        [
+          37,
+          38,
+          -1
+        ],
+        [
+          38,
+          38,
+          4
+        ],
+        [
+          38,
+          39,
+          -1
+        ],
+        [
+          39,
+          39,
+          4
+        ],
+        [
+          39,
+          40,
+          -1
+        ],
+        [
+          40,
+          40,
+          4
+        ],
+        [
+          40,
+          41,
+          -1
+        ],
+        [
+          41,
+          41,
+          4
+        ],
+        [
+          41,
+          42,
+          -1
+        ],
+        [
+          42,
+          42,
+          4
+        ],
+        [
+          42,
+          43,
+          -1
+        ],
+        [
+          43,
+          43,
+          4
+        ],
+        [
+          43,
+          44,
+          -1
+        ],
+        [
+          44,
+          44,
+          4
+        ],
+        [
+          44,
+          45,
+          -1
+        ],
+        [
+          45,
+          45,
+          4
+        ],
+        [
+          45,
+          46,
+          -1
+        ],
+        [
+          46,
+          46,
+          4
+        ],
+        [
+          46,
+          47,
+          -1
+        ],
+        [
+          47,
+          47,
+          4
+        ]
+      ],
+      "rhs": [
+        3,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3
+      ],
+      "tolerance": 1e-10
+    },
+    "views": [
+      {
+        "kind": "plot",
+        "label": "Sparse system solution",
+        "x": [
+          0,
+          47
+        ],
+        "y": [
+          0,
+          1.2
+        ],
+        "curves": [
+          {
+            "expression": "sparseValue",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "Relative residual",
+            "expression": "sparseResidual",
+            "digits": 10
+          },
+          {
+            "label": "Iterations",
+            "expression": "sparseIterations",
+            "digits": 0
+          },
+          {
+            "label": "Middle component",
+            "expression": "sparseAt(24)",
+            "digits": 6
+          }
+        ]
+      }
+    ]
+  },
+  "helix3D": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "pitch",
+        "label": "Pitch",
+        "value": 0.3,
+        "min": 0.1,
+        "max": 0.5
+      }
+    ],
+    "views": [
+      {
+        "kind": "field",
+        "label": "Parametric helix",
+        "presentation": "curve3d",
+        "x": [
+          -1.2,
+          1.2
+        ],
+        "y": [
+          -1.2,
+          1.2
+        ],
+        "zRange": [
+          0,
+          7
+        ],
+        "parameterRange": [
+          0,
+          12.566370614359172
+        ],
+        "curve3d": [
+          "cos(x)",
+          "sin(x)",
+          "pitch*x"
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "vectorField3D": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "strength",
+        "label": "Axial strength",
+        "value": 0.4,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "views": [
+      {
+        "kind": "field",
+        "label": "Three-dimensional helical vector field",
+        "presentation": "vectors3d",
+        "x": [
+          -1,
+          1
+        ],
+        "y": [
+          -1,
+          1
+        ],
+        "zRange": [
+          -1,
+          1
+        ],
+        "vector3d": [
+          "-y",
+          "x",
+          "strength*spaceZ"
+        ],
+        "vectorScale": 1.5
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "trajectory3D": {
+    "version": 1,
+    "diagnostics": true,
+    "dynamics": {
+      "method": "rk45",
+      "duration": 6,
+      "step": 0.05,
+      "initial": {
+        "qx": 1,
+        "qy": 0,
+        "qz": 0
+      },
+      "derivatives": {
+        "qx": "-qy",
+        "qy": "qx",
+        "qz": 0.4
+      }
+    },
+    "views": [
+      {
+        "kind": "field",
+        "label": "Integrated spatial trajectory",
+        "presentation": "curve3d",
+        "x": [
+          -1.2,
+          1.2
+        ],
+        "y": [
+          -1.2,
+          1.2
+        ],
+        "zRange": [
+          0,
+          2.5
+        ],
+        "curveHistory": true,
+        "curve3d": [
+          "qx",
+          "qy",
+          "qz"
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "Radial invariant",
+            "expression": "qx^2+qy^2",
+            "digits": 6
+          }
+        ]
+      }
+    ]
+  },
+  "reversibleReaction": {
+    "version": 1,
+    "diagnostics": true,
+    "parameters": [
+      {
+        "id": "kf",
+        "label": "Forward rate",
+        "value": 2,
+        "min": 0.1,
+        "max": 4,
+        "unit": "1/s"
+      },
+      {
+        "id": "kr",
+        "label": "Reverse rate",
+        "value": 1,
+        "min": 0.1,
+        "max": 4,
+        "unit": "1/s"
+      }
+    ],
+    "dynamics": {
+      "method": "rk45",
+      "duration": 5,
+      "step": 0.05,
+      "reactionNetwork": {
+        "species": [
+          {
+            "id": "A",
+            "initial": 1,
+            "composition": {
+              "C": 1
+            }
+          },
+          {
+            "id": "B",
+            "initial": 0,
+            "composition": {
+              "C": 1
+            }
+          }
+        ],
+        "reactions": [
+          {
+            "id": "forward",
+            "reactants": {
+              "A": 1
+            },
+            "products": {
+              "B": 1
+            },
+            "rateConstant": "kf"
+          },
+          {
+            "id": "reverse",
+            "reactants": {
+              "B": 1
+            },
+            "products": {
+              "A": 1
+            },
+            "rateConstant": "kr"
+          }
+        ]
+      }
+    },
+    "views": [
+      {
+        "kind": "scene",
+        "label": "Reversible isomerization (schematic)",
+        "x": [
+          -1,
+          5
+        ],
+        "y": [
+          -1,
+          2
+        ],
+        "objects": [
+          {
+            "kind": "body",
+            "center": [
+              0,
+              0
+            ],
+            "radius": "0.15+0.45*sqrt(A)",
+            "label": "A",
+            "color": "blue"
+          },
+          {
+            "kind": "reversibleArrow",
+            "from": [
+              0.8,
+              0
+            ],
+            "to": [
+              3.2,
+              0
+            ],
+            "label": "A ⇌ B"
+          },
+          {
+            "kind": "body",
+            "center": [
+              4,
+              0
+            ],
+            "radius": "0.15+0.45*sqrt(B)",
+            "label": "B",
+            "color": "orange"
+          }
+        ]
+      },
+      {
+        "kind": "plot",
+        "label": "Concentrations",
+        "history": true,
+        "x": [
+          0,
+          5
+        ],
+        "y": [
+          0,
+          1.05
+        ],
+        "curves": [
+          {
+            "expression": "A",
+            "label": "A",
+            "color": "blue"
+          },
+          {
+            "expression": "B",
+            "label": "B",
+            "color": "orange"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "expression": "total_C",
+            "label": "Conserved carbon equivalents",
+            "unit": "mol/L",
+            "digits": 6
+          },
+          {
+            "expression": "rate_forward-rate_reverse",
+            "label": "Net reaction flux",
+            "unit": "mol/(L·s)",
+            "digits": 6
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "enzymeKinetics": {
+    "version": 1,
+    "diagnostics": true,
+    "parameters": [
+      {
+        "id": "kon",
+        "label": "Binding rate",
+        "value": 2,
+        "min": 0.2,
+        "max": 4
+      },
+      {
+        "id": "koff",
+        "label": "Dissociation rate",
+        "value": 1,
+        "min": 0.1,
+        "max": 3
+      },
+      {
+        "id": "kcat",
+        "label": "Catalytic rate",
+        "value": 0.8,
+        "min": 0.1,
+        "max": 2
+      }
+    ],
+    "definitions": {
+      "enzymeTotal": "Enz+Complex",
+      "substrateTotal": "Sub+Complex+Prod"
+    },
+    "dynamics": {
+      "method": "rk45",
+      "duration": 10,
+      "step": 0.05,
+      "reactionNetwork": {
+        "species": [
+          {
+            "id": "Enz",
+            "initial": 0.2
+          },
+          {
+            "id": "Sub",
+            "initial": 1
+          },
+          {
+            "id": "Complex",
+            "initial": 0
+          },
+          {
+            "id": "Prod",
+            "initial": 0
+          }
+        ],
+        "reactions": [
+          {
+            "id": "bind",
+            "reactants": {
+              "Enz": 1,
+              "Sub": 1
+            },
+            "products": {
+              "Complex": 1
+            },
+            "rateConstant": "kon"
+          },
+          {
+            "id": "unbind",
+            "reactants": {
+              "Complex": 1
+            },
+            "products": {
+              "Enz": 1,
+              "Sub": 1
+            },
+            "rateConstant": "koff"
+          },
+          {
+            "id": "catalyze",
+            "reactants": {
+              "Complex": 1
+            },
+            "products": {
+              "Enz": 1,
+              "Prod": 1
+            },
+            "rateConstant": "kcat"
+          }
+        ]
+      }
+    },
+    "views": [
+      {
+        "kind": "scene",
+        "label": "Enzyme pathway (schematic)",
+        "x": [
+          -1,
+          8
+        ],
+        "y": [
+          -1,
+          2
+        ],
+        "objects": [
+          {
+            "kind": "body",
+            "center": [
+              0,
+              0
+            ],
+            "radius": 0.45,
+            "label": "E+S",
+            "color": "blue"
+          },
+          {
+            "kind": "reversibleArrow",
+            "from": [
+              0.7,
+              0
+            ],
+            "to": [
+              3,
+              0
+            ],
+            "label": "binding"
+          },
+          {
+            "kind": "body",
+            "center": [
+              3.7,
+              0
+            ],
+            "radius": 0.45,
+            "label": "ES",
+            "color": "violet"
+          },
+          {
+            "kind": "reactionArrow",
+            "from": [
+              4.4,
+              0
+            ],
+            "to": [
+              6.5,
+              0
+            ],
+            "label": "catalysis"
+          },
+          {
+            "kind": "body",
+            "center": [
+              7.2,
+              0
+            ],
+            "radius": 0.45,
+            "label": "E+P",
+            "color": "green"
+          }
+        ]
+      },
+      {
+        "kind": "plot",
+        "label": "Enzyme and substrate kinetics",
+        "history": true,
+        "x": [
+          0,
+          10
+        ],
+        "y": [
+          0,
+          1.05
+        ],
+        "curves": [
+          {
+            "expression": "Sub",
+            "label": "Substrate",
+            "color": "blue"
+          },
+          {
+            "expression": "Complex",
+            "label": "Complex",
+            "color": "violet"
+          },
+          {
+            "expression": "Prod",
+            "label": "Product",
+            "color": "green"
+          },
+          {
+            "expression": "Enz",
+            "label": "Free enzyme",
+            "color": "orange"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "expression": "enzymeTotal",
+            "label": "Enzyme pool",
+            "unit": "",
+            "digits": 6
+          },
+          {
+            "expression": "substrateTotal",
+            "label": "Substrate equivalents",
+            "unit": "",
+            "digits": 6
+          },
+          {
+            "expression": "rate_catalyze",
+            "label": "Product formation flux",
+            "unit": "",
+            "digits": 6
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "stochasticExpression": {
+    "version": 1,
+    "diagnostics": true,
+    "parameters": [
+      {
+        "id": "birthRate",
+        "label": "Synthesis propensity",
+        "value": 4,
+        "min": 0.5,
+        "max": 8
+      },
+      {
+        "id": "decayRate",
+        "label": "Degradation rate",
+        "value": 0.4,
+        "min": 0.1,
+        "max": 1
+      }
+    ],
+    "definitions": {
+      "expected": "birthRate/decayRate*(1-exp(-decayRate*t))"
+    },
+    "dynamics": {
+      "method": "ssa",
+      "duration": 20,
+      "step": 0.1,
+      "reactionNetwork": {
+        "seed": 42,
+        "species": [
+          {
+            "id": "protein",
+            "initial": 0
+          }
+        ],
+        "reactions": [
+          {
+            "id": "birth",
+            "reactants": {},
+            "products": {
+              "protein": 1
+            },
+            "rateConstant": "birthRate"
+          },
+          {
+            "id": "decay",
+            "reactants": {
+              "protein": 1
+            },
+            "products": {},
+            "rateConstant": "decayRate"
+          }
+        ]
+      }
+    },
+    "views": [
+      {
+        "kind": "plot",
+        "label": "One stochastic trajectory and theoretical mean",
+        "history": true,
+        "x": [
+          0,
+          20
+        ],
+        "y": [
+          0,
+          40
+        ],
+        "curves": [
+          {
+            "expression": "protein",
+            "label": "One realization",
+            "color": "blue",
+            "interpolation": "step"
+          },
+          {
+            "expression": "expected",
+            "label": "Ensemble mean (analytic)",
+            "color": "muted"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "expression": "protein",
+            "label": "Molecule count",
+            "unit": "",
+            "digits": 6
+          },
+          {
+            "expression": "expected",
+            "label": "Theoretical mean",
+            "unit": "",
+            "digits": 6
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "logisticPopulation": {
+    "version": 1,
+    "diagnostics": true,
+    "parameters": [
+      {
+        "id": "growth",
+        "label": "Growth rate",
+        "value": 0.6,
+        "min": 0.1,
+        "max": 1
+      },
+      {
+        "id": "capacity",
+        "label": "Carrying capacity",
+        "value": 100,
+        "min": 40,
+        "max": 150
+      }
+    ],
+    "dynamics": {
+      "method": "rk45",
+      "duration": 15,
+      "step": 0.1,
+      "initial": {
+        "population": 10
+      },
+      "derivatives": {
+        "population": "growth*population*(1-population/capacity)"
+      }
+    },
+    "views": [
+      {
+        "kind": "plot",
+        "label": "Logistic population growth",
+        "history": true,
+        "x": [
+          0,
+          15
+        ],
+        "y": [
+          0,
+          160
+        ],
+        "curves": [
+          {
+            "expression": "population",
+            "label": "Population",
+            "color": "green"
+          },
+          {
+            "expression": "capacity",
+            "label": "Carrying capacity",
+            "color": "muted"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "expression": "population",
+            "label": "Population",
+            "unit": "",
+            "digits": 6
+          },
+          {
+            "expression": "growth*population*(1-population/capacity)",
+            "label": "Net growth",
+            "unit": "",
+            "digits": 6
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "predatorPrey": {
+    "version": 1,
+    "diagnostics": true,
+    "parameters": [
+      {
+        "id": "alpha",
+        "label": "Prey growth",
+        "value": 1,
+        "min": 0.5,
+        "max": 1.5
+      },
+      {
+        "id": "beta",
+        "label": "Interaction",
+        "value": 0.05,
+        "min": 0.02,
+        "max": 0.08
+      }
+    ],
+    "definitions": {
+      "gamma": 0.6,
+      "delta": 0.025
+    },
+    "dynamics": {
+      "method": "rk45",
+      "duration": 25,
+      "step": 0.05,
+      "initial": {
+        "prey": 30,
+        "predator": 8
+      },
+      "derivatives": {
+        "prey": "alpha*prey-beta*prey*predator",
+        "predator": "delta*prey*predator-gamma*predator"
+      }
+    },
+    "views": [
+      {
+        "kind": "plot",
+        "label": "Predator–prey populations",
+        "history": true,
+        "x": [
+          0,
+          25
+        ],
+        "y": [
+          0,
+          100
+        ],
+        "curves": [
+          {
+            "expression": "prey",
+            "label": "Prey",
+            "color": "green"
+          },
+          {
+            "expression": "predator",
+            "label": "Predator",
+            "color": "orange"
+          }
+        ]
+      },
+      {
+        "kind": "trajectory",
+        "label": "Population phase plane",
+        "x": [
+          0,
+          100
+        ],
+        "y": [
+          0,
+          100
+        ],
+        "horizontal": "prey",
+        "vertical": "predator",
+        "color": "blue"
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "compartmentExchange": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "transfer",
+        "label": "Exchange coefficient",
+        "value": 0.5,
+        "min": 0.1,
+        "max": 1
+      }
+    ],
+    "dynamics": {
+      "method": "rk45",
+      "duration": 8,
+      "step": 0.05,
+      "reactionNetwork": {
+        "species": [
+          {
+            "id": "inside",
+            "initial": 1
+          },
+          {
+            "id": "outside",
+            "initial": 0
+          }
+        ],
+        "reactions": [
+          {
+            "id": "outward",
+            "reactants": {
+              "inside": 1
+            },
+            "products": {
+              "outside": 1
+            },
+            "rateConstant": "transfer"
+          },
+          {
+            "id": "inward",
+            "reactants": {
+              "outside": 1
+            },
+            "products": {
+              "inside": 1
+            },
+            "rateConstant": "transfer"
+          }
+        ]
+      }
+    },
+    "views": [
+      {
+        "kind": "scene",
+        "label": "Two equal-volume compartments (schematic)",
+        "x": [
+          -2,
+          5
+        ],
+        "y": [
+          -2,
+          2
+        ],
+        "objects": [
+          {
+            "kind": "cell",
+            "center": [
+              0,
+              0
+            ],
+            "radius": 1,
+            "label": "Compartment 1",
+            "color": "blue"
+          },
+          {
+            "kind": "cell",
+            "center": [
+              3,
+              0
+            ],
+            "radius": 1,
+            "label": "Compartment 2",
+            "color": "green"
+          },
+          {
+            "kind": "reversibleArrow",
+            "from": [
+              1.1,
+              0
+            ],
+            "to": [
+              1.9,
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "plot",
+        "label": "Exchange dynamics",
+        "history": true,
+        "x": [
+          0,
+          8
+        ],
+        "y": [
+          0,
+          1.05
+        ],
+        "curves": [
+          {
+            "expression": "inside",
+            "label": "Compartment 1",
+            "color": "blue"
+          },
+          {
+            "expression": "outside",
+            "label": "Compartment 2",
+            "color": "green"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "expression": "inside+outside",
+            "label": "Conserved total",
+            "unit": "",
+            "digits": 6
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "molecularStructures": {
+    "version": 1,
+    "views": [
+      {
+        "kind": "scene",
+        "label": "Water and carbon dioxide (schematic, not to scale)",
+        "x": [
+          -3,
+          7
+        ],
+        "y": [
+          -2,
+          2
+        ],
+        "objects": [
+          {
+            "kind": "bond",
+            "from": [
+              0,
+              0
+            ],
+            "to": [
+              -0.95,
+              -0.72
+            ]
+          },
+          {
+            "kind": "bond",
+            "from": [
+              0,
+              0
+            ],
+            "to": [
+              0.95,
+              -0.72
+            ]
+          },
+          {
+            "kind": "atom",
+            "center": [
+              0,
+              0
+            ],
+            "radius": 0.45,
+            "element": "O",
+            "label": "Water"
+          },
+          {
+            "kind": "atom",
+            "center": [
+              -0.95,
+              -0.72
+            ],
+            "radius": 0.29,
+            "element": "H"
+          },
+          {
+            "kind": "atom",
+            "center": [
+              0.95,
+              -0.72
+            ],
+            "radius": 0.29,
+            "element": "H"
+          },
+          {
+            "kind": "doubleBond",
+            "from": [
+              3,
+              0
+            ],
+            "to": [
+              4,
+              0
+            ]
+          },
+          {
+            "kind": "doubleBond",
+            "from": [
+              4,
+              0
+            ],
+            "to": [
+              5,
+              0
+            ]
+          },
+          {
+            "kind": "atom",
+            "center": [
+              3,
+              0
+            ],
+            "radius": 0.4,
+            "element": "O"
+          },
+          {
+            "kind": "atom",
+            "center": [
+              4,
+              0
+            ],
+            "radius": 0.4,
+            "element": "C",
+            "label": "Carbon dioxide"
+          },
+          {
+            "kind": "atom",
+            "center": [
+              5,
+              0
+            ],
+            "radius": 0.4,
+            "element": "O"
+          }
+        ]
+      }
+    ]
+  },
+  "bufferCurve": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "pKa",
+        "label": "pKa",
+        "value": 4.76,
+        "min": 3,
+        "max": 8
+      }
+    ],
+    "views": [
+      {
+        "kind": "plot",
+        "label": "Ideal buffer: Henderson–Hasselbalch relation",
+        "x": [
+          0.01,
+          100
+        ],
+        "xScale": "log",
+        "y": [
+          0,
+          14
+        ],
+        "xLabel": "Base / acid concentration ratio",
+        "yLabel": "pH",
+        "curves": [
+          {
+            "expression": "pKa+log10(x)",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "nonlinearEquilibrium": {
+    "version": 1,
+    "diagnostics": true,
+    "parameters": [
+      {
+        "id": "target",
+        "label": "Squared radius",
+        "value": 5,
+        "min": 3,
+        "max": 9
+      }
+    ],
+    "nonlinearSystem": {
+      "guess": {
+        "q": 1,
+        "v": 1
+      },
+      "residuals": {
+        "q": "q^2+v^2-target",
+        "v": "q-v-1"
+      }
+    },
+    "views": [
+      {
+        "kind": "plot",
+        "label": "Intersection of nonlinear residual curves",
+        "x": [
+          -3,
+          3
+        ],
+        "y": [
+          -3,
+          3
+        ],
+        "curves": [
+          {
+            "expression": "sqrt(target-x^2)",
+            "color": "blue"
+          },
+          {
+            "expression": "-sqrt(target-x^2)",
+            "color": "blue"
+          },
+          {
+            "expression": "x-1",
+            "color": "orange"
+          }
+        ],
+        "markers": [
+          {
+            "x": "q",
+            "y": "v",
+            "label": "Computed local root",
+            "color": "green"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "expression": "q",
+            "label": "Root q",
+            "digits": 8
+          },
+          {
+            "expression": "v",
+            "label": "Root v",
+            "digits": 8
+          },
+          {
+            "expression": "rootResidual",
+            "label": "Absolute residual",
+            "digits": 8
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "nonsymmetricSparse": {
+    "version": 1,
+    "diagnostics": true,
+    "sparseSystem": {
+      "method": "bicgstab",
+      "size": 64,
+      "entries": [
+        [
+          0,
+          0,
+          4
+        ],
+        [
+          0,
+          1,
+          1
+        ],
+        [
+          1,
+          1,
+          4
+        ],
+        [
+          1,
+          0,
+          -2
+        ],
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          2,
+          2,
+          4
+        ],
+        [
+          2,
+          1,
+          -2
+        ],
+        [
+          2,
+          3,
+          1
+        ],
+        [
+          3,
+          3,
+          4
+        ],
+        [
+          3,
+          2,
+          -2
+        ],
+        [
+          3,
+          4,
+          1
+        ],
+        [
+          4,
+          4,
+          4
+        ],
+        [
+          4,
+          3,
+          -2
+        ],
+        [
+          4,
+          5,
+          1
+        ],
+        [
+          5,
+          5,
+          4
+        ],
+        [
+          5,
+          4,
+          -2
+        ],
+        [
+          5,
+          6,
+          1
+        ],
+        [
+          6,
+          6,
+          4
+        ],
+        [
+          6,
+          5,
+          -2
+        ],
+        [
+          6,
+          7,
+          1
+        ],
+        [
+          7,
+          7,
+          4
+        ],
+        [
+          7,
+          6,
+          -2
+        ],
+        [
+          7,
+          8,
+          1
+        ],
+        [
+          8,
+          8,
+          4
+        ],
+        [
+          8,
+          7,
+          -2
+        ],
+        [
+          8,
+          9,
+          1
+        ],
+        [
+          9,
+          9,
+          4
+        ],
+        [
+          9,
+          8,
+          -2
+        ],
+        [
+          9,
+          10,
+          1
+        ],
+        [
+          10,
+          10,
+          4
+        ],
+        [
+          10,
+          9,
+          -2
+        ],
+        [
+          10,
+          11,
+          1
+        ],
+        [
+          11,
+          11,
+          4
+        ],
+        [
+          11,
+          10,
+          -2
+        ],
+        [
+          11,
+          12,
+          1
+        ],
+        [
+          12,
+          12,
+          4
+        ],
+        [
+          12,
+          11,
+          -2
+        ],
+        [
+          12,
+          13,
+          1
+        ],
+        [
+          13,
+          13,
+          4
+        ],
+        [
+          13,
+          12,
+          -2
+        ],
+        [
+          13,
+          14,
+          1
+        ],
+        [
+          14,
+          14,
+          4
+        ],
+        [
+          14,
+          13,
+          -2
+        ],
+        [
+          14,
+          15,
+          1
+        ],
+        [
+          15,
+          15,
+          4
+        ],
+        [
+          15,
+          14,
+          -2
+        ],
+        [
+          15,
+          16,
+          1
+        ],
+        [
+          16,
+          16,
+          4
+        ],
+        [
+          16,
+          15,
+          -2
+        ],
+        [
+          16,
+          17,
+          1
+        ],
+        [
+          17,
+          17,
+          4
+        ],
+        [
+          17,
+          16,
+          -2
+        ],
+        [
+          17,
+          18,
+          1
+        ],
+        [
+          18,
+          18,
+          4
+        ],
+        [
+          18,
+          17,
+          -2
+        ],
+        [
+          18,
+          19,
+          1
+        ],
+        [
+          19,
+          19,
+          4
+        ],
+        [
+          19,
+          18,
+          -2
+        ],
+        [
+          19,
+          20,
+          1
+        ],
+        [
+          20,
+          20,
+          4
+        ],
+        [
+          20,
+          19,
+          -2
+        ],
+        [
+          20,
+          21,
+          1
+        ],
+        [
+          21,
+          21,
+          4
+        ],
+        [
+          21,
+          20,
+          -2
+        ],
+        [
+          21,
+          22,
+          1
+        ],
+        [
+          22,
+          22,
+          4
+        ],
+        [
+          22,
+          21,
+          -2
+        ],
+        [
+          22,
+          23,
+          1
+        ],
+        [
+          23,
+          23,
+          4
+        ],
+        [
+          23,
+          22,
+          -2
+        ],
+        [
+          23,
+          24,
+          1
+        ],
+        [
+          24,
+          24,
+          4
+        ],
+        [
+          24,
+          23,
+          -2
+        ],
+        [
+          24,
+          25,
+          1
+        ],
+        [
+          25,
+          25,
+          4
+        ],
+        [
+          25,
+          24,
+          -2
+        ],
+        [
+          25,
+          26,
+          1
+        ],
+        [
+          26,
+          26,
+          4
+        ],
+        [
+          26,
+          25,
+          -2
+        ],
+        [
+          26,
+          27,
+          1
+        ],
+        [
+          27,
+          27,
+          4
+        ],
+        [
+          27,
+          26,
+          -2
+        ],
+        [
+          27,
+          28,
+          1
+        ],
+        [
+          28,
+          28,
+          4
+        ],
+        [
+          28,
+          27,
+          -2
+        ],
+        [
+          28,
+          29,
+          1
+        ],
+        [
+          29,
+          29,
+          4
+        ],
+        [
+          29,
+          28,
+          -2
+        ],
+        [
+          29,
+          30,
+          1
+        ],
+        [
+          30,
+          30,
+          4
+        ],
+        [
+          30,
+          29,
+          -2
+        ],
+        [
+          30,
+          31,
+          1
+        ],
+        [
+          31,
+          31,
+          4
+        ],
+        [
+          31,
+          30,
+          -2
+        ],
+        [
+          31,
+          32,
+          1
+        ],
+        [
+          32,
+          32,
+          4
+        ],
+        [
+          32,
+          31,
+          -2
+        ],
+        [
+          32,
+          33,
+          1
+        ],
+        [
+          33,
+          33,
+          4
+        ],
+        [
+          33,
+          32,
+          -2
+        ],
+        [
+          33,
+          34,
+          1
+        ],
+        [
+          34,
+          34,
+          4
+        ],
+        [
+          34,
+          33,
+          -2
+        ],
+        [
+          34,
+          35,
+          1
+        ],
+        [
+          35,
+          35,
+          4
+        ],
+        [
+          35,
+          34,
+          -2
+        ],
+        [
+          35,
+          36,
+          1
+        ],
+        [
+          36,
+          36,
+          4
+        ],
+        [
+          36,
+          35,
+          -2
+        ],
+        [
+          36,
+          37,
+          1
+        ],
+        [
+          37,
+          37,
+          4
+        ],
+        [
+          37,
+          36,
+          -2
+        ],
+        [
+          37,
+          38,
+          1
+        ],
+        [
+          38,
+          38,
+          4
+        ],
+        [
+          38,
+          37,
+          -2
+        ],
+        [
+          38,
+          39,
+          1
+        ],
+        [
+          39,
+          39,
+          4
+        ],
+        [
+          39,
+          38,
+          -2
+        ],
+        [
+          39,
+          40,
+          1
+        ],
+        [
+          40,
+          40,
+          4
+        ],
+        [
+          40,
+          39,
+          -2
+        ],
+        [
+          40,
+          41,
+          1
+        ],
+        [
+          41,
+          41,
+          4
+        ],
+        [
+          41,
+          40,
+          -2
+        ],
+        [
+          41,
+          42,
+          1
+        ],
+        [
+          42,
+          42,
+          4
+        ],
+        [
+          42,
+          41,
+          -2
+        ],
+        [
+          42,
+          43,
+          1
+        ],
+        [
+          43,
+          43,
+          4
+        ],
+        [
+          43,
+          42,
+          -2
+        ],
+        [
+          43,
+          44,
+          1
+        ],
+        [
+          44,
+          44,
+          4
+        ],
+        [
+          44,
+          43,
+          -2
+        ],
+        [
+          44,
+          45,
+          1
+        ],
+        [
+          45,
+          45,
+          4
+        ],
+        [
+          45,
+          44,
+          -2
+        ],
+        [
+          45,
+          46,
+          1
+        ],
+        [
+          46,
+          46,
+          4
+        ],
+        [
+          46,
+          45,
+          -2
+        ],
+        [
+          46,
+          47,
+          1
+        ],
+        [
+          47,
+          47,
+          4
+        ],
+        [
+          47,
+          46,
+          -2
+        ],
+        [
+          47,
+          48,
+          1
+        ],
+        [
+          48,
+          48,
+          4
+        ],
+        [
+          48,
+          47,
+          -2
+        ],
+        [
+          48,
+          49,
+          1
+        ],
+        [
+          49,
+          49,
+          4
+        ],
+        [
+          49,
+          48,
+          -2
+        ],
+        [
+          49,
+          50,
+          1
+        ],
+        [
+          50,
+          50,
+          4
+        ],
+        [
+          50,
+          49,
+          -2
+        ],
+        [
+          50,
+          51,
+          1
+        ],
+        [
+          51,
+          51,
+          4
+        ],
+        [
+          51,
+          50,
+          -2
+        ],
+        [
+          51,
+          52,
+          1
+        ],
+        [
+          52,
+          52,
+          4
+        ],
+        [
+          52,
+          51,
+          -2
+        ],
+        [
+          52,
+          53,
+          1
+        ],
+        [
+          53,
+          53,
+          4
+        ],
+        [
+          53,
+          52,
+          -2
+        ],
+        [
+          53,
+          54,
+          1
+        ],
+        [
+          54,
+          54,
+          4
+        ],
+        [
+          54,
+          53,
+          -2
+        ],
+        [
+          54,
+          55,
+          1
+        ],
+        [
+          55,
+          55,
+          4
+        ],
+        [
+          55,
+          54,
+          -2
+        ],
+        [
+          55,
+          56,
+          1
+        ],
+        [
+          56,
+          56,
+          4
+        ],
+        [
+          56,
+          55,
+          -2
+        ],
+        [
+          56,
+          57,
+          1
+        ],
+        [
+          57,
+          57,
+          4
+        ],
+        [
+          57,
+          56,
+          -2
+        ],
+        [
+          57,
+          58,
+          1
+        ],
+        [
+          58,
+          58,
+          4
+        ],
+        [
+          58,
+          57,
+          -2
+        ],
+        [
+          58,
+          59,
+          1
+        ],
+        [
+          59,
+          59,
+          4
+        ],
+        [
+          59,
+          58,
+          -2
+        ],
+        [
+          59,
+          60,
+          1
+        ],
+        [
+          60,
+          60,
+          4
+        ],
+        [
+          60,
+          59,
+          -2
+        ],
+        [
+          60,
+          61,
+          1
+        ],
+        [
+          61,
+          61,
+          4
+        ],
+        [
+          61,
+          60,
+          -2
+        ],
+        [
+          61,
+          62,
+          1
+        ],
+        [
+          62,
+          62,
+          4
+        ],
+        [
+          62,
+          61,
+          -2
+        ],
+        [
+          62,
+          63,
+          1
+        ],
+        [
+          63,
+          63,
+          4
+        ],
+        [
+          63,
+          62,
+          -2
+        ]
+      ],
+      "rhs": [
+        5,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        2
+      ],
+      "tolerance": 1e-10
+    },
+    "views": [
+      {
+        "kind": "plot",
+        "label": "Nonsymmetric sparse system",
+        "x": [
+          0,
+          63
+        ],
+        "y": [
+          0,
+          1.2
+        ],
+        "curves": [
+          {
+            "expression": "sparseValue",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "expression": "sparseResidual",
+            "label": "Relative residual",
+            "digits": 8
+          },
+          {
+            "expression": "sparseIterations",
+            "label": "Iterations",
+            "digits": 8
+          },
+          {
+            "expression": "sparseAt(32)",
+            "label": "Middle component",
+            "digits": 8
+          }
+        ]
+      }
+    ]
+  },
+  "coupledFields1D": {
+    "version": 1,
+    "diagnostics": true,
+    "dynamics": {
+      "method": "grid-heun",
+      "duration": 1,
+      "step": 0.005,
+      "coupledFields": {
+        "dimension": 1,
+        "nx": 32,
+        "xDomain": [
+          0,
+          1
+        ],
+        "boundary": "periodic",
+        "fields": [
+          {
+            "id": "U",
+            "initial": "1+.2*cos(2*pi*x)",
+            "diffusivity": 0.01,
+            "reaction": "-U+V"
+          },
+          {
+            "id": "V",
+            "initial": 0,
+            "diffusivity": 0.01,
+            "reaction": "U-V"
+          }
+        ]
+      }
+    },
+    "views": [
+      {
+        "kind": "plot",
+        "label": "Coupled field cross section",
+        "x": [
+          0,
+          1
+        ],
+        "y": [
+          0,
+          1.25
+        ],
+        "curves": [
+          {
+            "expression": "U",
+            "color": "blue"
+          },
+          {
+            "expression": "V",
+            "color": "orange"
+          }
+        ]
+      },
+      {
+        "kind": "plot",
+        "label": "Spatial averages",
+        "history": true,
+        "x": [
+          0,
+          1
+        ],
+        "y": [
+          0,
+          1.05
+        ],
+        "curves": [
+          {
+            "expression": "mean_U",
+            "color": "blue"
+          },
+          {
+            "expression": "mean_V",
+            "color": "orange"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "expression": "mean_U+mean_V",
+            "label": "Conserved total",
+            "digits": 8
+          }
+        ]
+      }
+    ]
+  },
+  "coupledFields2D": {
+    "version": 1,
+    "diagnostics": true,
+    "parameters": [
+      {
+        "id": "exchange",
+        "label": "Exchange coefficient",
+        "value": 1,
+        "min": 0.2,
+        "max": 2
+      }
+    ],
+    "dynamics": {
+      "method": "grid-heun",
+      "duration": 1,
+      "step": 0.005,
+      "coupledFields": {
+        "dimension": 2,
+        "nx": 25,
+        "ny": 25,
+        "xDomain": [
+          0,
+          1
+        ],
+        "yDomain": [
+          0,
+          1
+        ],
+        "boundary": "noFlux",
+        "fields": [
+          {
+            "id": "U",
+            "initial": "exp(-40*((x-.5)^2+(y-.5)^2))",
+            "diffusivity": 0.004,
+            "reaction": "-exchange*U+exchange*V"
+          },
+          {
+            "id": "V",
+            "initial": 0,
+            "diffusivity": 0.008,
+            "reaction": "exchange*U-exchange*V"
+          }
+        ]
+      }
+    },
+    "views": [
+      {
+        "kind": "field",
+        "label": "Field U",
+        "x": [
+          0,
+          1
+        ],
+        "y": [
+          0,
+          1
+        ],
+        "expression": "U",
+        "palette": "heat",
+        "colorRange": [
+          0,
+          1
+        ],
+        "contours": [
+          0.1,
+          0.3,
+          0.5
+        ],
+        "height": 260
+      },
+      {
+        "kind": "field",
+        "label": "Field V",
+        "x": [
+          0,
+          1
+        ],
+        "y": [
+          0,
+          1
+        ],
+        "expression": "V",
+        "palette": "heat",
+        "colorRange": [
+          0,
+          1
+        ],
+        "contours": [
+          0.1,
+          0.3,
+          0.5
+        ],
+        "height": 260
+      },
+      {
+        "kind": "plot",
+        "label": "Spatial averages",
+        "history": true,
+        "x": [
+          0,
+          1
+        ],
+        "y": [
+          0,
+          0.1
+        ],
+        "curves": [
+          {
+            "expression": "mean_U",
+            "color": "blue"
+          },
+          {
+            "expression": "mean_V",
+            "color": "orange"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "expression": "mean_U+mean_V",
+            "label": "Conserved total",
+            "digits": 8
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "volumeSlice": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "plane",
+        "label": "Slice position",
+        "value": 0.3,
+        "min": -1,
+        "max": 1,
+        "step": 0.02
+      }
+    ],
+    "definitions": {
+      "density": "exp(-3*(x^2+y^2+spaceZ^2))"
+    },
+    "views": [
+      {
+        "kind": "field",
+        "label": "Analytic scalar volume: XY slice",
+        "x": [
+          -1,
+          1
+        ],
+        "y": [
+          -1,
+          1
+        ],
+        "expression": "density",
+        "slicePlane": {
+          "axis": "z",
+          "at": "plane"
+        },
+        "palette": "heat",
+        "colorRange": [
+          0,
+          1
+        ],
+        "contours": [
+          0.1,
+          0.3,
+          0.6
+        ],
+        "height": 260
+      },
+      {
+        "kind": "field",
+        "label": "Analytic scalar volume: YZ slice",
+        "x": [
+          -1,
+          1
+        ],
+        "y": [
+          -1,
+          1
+        ],
+        "expression": "density",
+        "slicePlane": {
+          "axis": "x",
+          "at": "plane"
+        },
+        "palette": "heat",
+        "colorRange": [
+          0,
+          1
+        ],
+        "contours": [
+          0.1,
+          0.3,
+          0.6
+        ],
+        "height": 260
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "streamlines": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "swirl",
+        "label": "Rotation",
+        "value": 1,
+        "min": 0.1,
+        "max": 2
+      }
+    ],
+    "views": [
+      {
+        "kind": "field",
+        "label": "Instantaneous planar flow",
+        "x": [
+          -1,
+          1
+        ],
+        "y": [
+          -1,
+          1
+        ],
+        "expression": "hypot(-swirl*y,swirl*x)",
+        "vector": [
+          "-swirl*y",
+          "swirl*x"
+        ],
+        "streamlines": true,
+        "vectorScale": 2,
+        "palette": "heat",
+        "colorRange": [
+          0,
+          3
+        ],
+        "height": 280
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "calculus": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "freq",
+        "label": "Frequency",
+        "value": 2,
+        "min": 0.5,
+        "max": 4
+      }
+    ],
+    "definitions": {
+      "fn": "sin(freq*x)",
+      "slope": "diff(s,x,sin(freq*s))",
+      "area": "integral(s,0,x,sin(freq*s))"
+    },
+    "views": [
+      {
+        "kind": "plot",
+        "label": "Function, derivative and integral",
+        "x": [
+          0,
+          6.28
+        ],
+        "y": [
+          -4,
+          4
+        ],
+        "curves": [
+          {
+            "expression": "fn",
+            "label": "Function",
+            "color": "blue"
+          },
+          {
+            "expression": "slope",
+            "label": "Derivative",
+            "color": "orange"
+          },
+          {
+            "expression": "area",
+            "label": "Integral",
+            "color": "green"
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "optimizationRosenbrock": {
+    "version": 1,
+    "diagnostics": true,
+    "parameters": [
+      {
+        "id": "startQ",
+        "label": "Initial q",
+        "value": -1.2,
+        "min": -1.8,
+        "max": 1.8
+      },
+      {
+        "id": "startV",
+        "label": "Initial v",
+        "value": 1,
+        "min": -0.8,
+        "max": 2.8
+      }
+    ],
+    "optimization": {
+      "variables": [
+        {
+          "id": "q",
+          "min": -2,
+          "max": 2,
+          "initial": "startQ"
+        },
+        {
+          "id": "v",
+          "min": -1,
+          "max": 3,
+          "initial": "startV"
+        }
+      ],
+      "objective": "(1-q)^2+100*(v-q^2)^2",
+      "tolerance": 0.000001,
+      "maxIterations": 300
+    },
+    "views": [
+      {
+        "kind": "field",
+        "label": "Rosenbrock objective landscape (log scale)",
+        "x": [
+          -2,
+          2
+        ],
+        "y": [
+          -1,
+          3
+        ],
+        "expression": "log10(1+(1-x)^2+100*(y-x^2)^2)",
+        "palette": "heat",
+        "colorRange": [
+          0,
+          4
+        ],
+        "contours": [
+          0.3,
+          1,
+          2,
+          3
+        ],
+        "markers": [
+          {
+            "x": "q",
+            "y": "v",
+            "label": "Computed local optimum"
+          }
+        ],
+        "height": 280
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "expression": "q",
+            "label": "Optimal q",
+            "digits": 8
+          },
+          {
+            "expression": "v",
+            "label": "Optimal v",
+            "digits": 8
+          },
+          {
+            "expression": "optObjective",
+            "label": "Objective value",
+            "digits": 10
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "parametricTorus": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "minor",
+        "label": "Minor radius",
+        "value": 0.45,
+        "min": 0.2,
+        "max": 0.7
+      }
+    ],
+    "views": [
+      {
+        "kind": "field",
+        "label": "Parametric torus",
+        "presentation": "parametricSurface",
+        "x": [
+          -2,
+          2
+        ],
+        "y": [
+          -2,
+          2
+        ],
+        "zRange": [
+          -1,
+          1
+        ],
+        "uRange": [
+          0,
+          6.283185307179586
+        ],
+        "vRange": [
+          0,
+          6.283185307179586
+        ],
+        "surface3d": [
+          "(1+minor*cos(y))*cos(x)",
+          "(1+minor*cos(y))*sin(x)",
+          "minor*sin(y)"
+        ],
+        "surfaceStyle": "shaded"
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "fftSignal": {
+    "version": 1,
+    "diagnostics": true,
+    "parameters": [
+      {
+        "id": "cutoff",
+        "label": "Low-pass cutoff",
+        "value": 10,
+        "min": 0,
+        "max": 30,
+        "step": 1,
+        "unit": "Hz"
+      }
+    ],
+    "analysis": {
+      "kind": "fft",
+      "expression": "2*sin(2*pi*5*t)+.5*cos(2*pi*19*t)",
+      "timeRange": [
+        0,
+        1
+      ],
+      "samples": 256,
+      "lowpass": "cutoff"
+    },
+    "views": [
+      {
+        "kind": "plot",
+        "label": "One-sided amplitude spectrum",
+        "x": [
+          0,
+          "fftNyquist"
+        ],
+        "y": [
+          0,
+          2.2
+        ],
+        "xLabel": "Frequency (Hz)",
+        "curves": [
+          {
+            "expression": "fftAmplitude",
+            "interpolation": "stem",
+            "samples": 129,
+            "color": "blue"
+          }
+        ],
+        "markers": [
+          {
+            "x": "fftPeakFrequency",
+            "y": "fftPeakAmplitude",
+            "label": "Peak"
+          }
+        ]
+      },
+      {
+        "kind": "plot",
+        "label": "Original and ideal low-pass signal",
+        "x": [
+          0,
+          0.99609375
+        ],
+        "y": [
+          -3,
+          3
+        ],
+        "xLabel": "Time (s)",
+        "curves": [
+          {
+            "expression": "fftOriginal",
+            "samples": 256,
+            "color": "muted",
+            "label": "Original"
+          },
+          {
+            "expression": "fftFiltered",
+            "samples": 256,
+            "color": "green",
+            "label": "Filtered"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "Peak frequency",
+            "expression": "fftPeakFrequency",
+            "unit": "Hz",
+            "digits": 6
+          },
+          {
+            "label": "Peak amplitude",
+            "expression": "fftPeakAmplitude",
+            "unit": "",
+            "digits": 6
+          },
+          {
+            "label": "Bin spacing",
+            "expression": "fftFrequencyStep",
+            "unit": "Hz",
+            "digits": 6
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "fftOscillator": {
+    "version": 1,
+    "diagnostics": true,
+    "dynamics": {
+      "method": "rk45",
+      "duration": 2,
+      "step": 0.005,
+      "initial": {
+        "q": 1,
+        "v": 0
+      },
+      "derivatives": {
+        "q": "v",
+        "v": "-(2*pi*3)^2*q"
+      }
+    },
+    "analysis": {
+      "kind": "fft",
+      "expression": "q",
+      "timeRange": [
+        0,
+        2
+      ],
+      "samples": 512
+    },
+    "views": [
+      {
+        "kind": "plot",
+        "label": "Oscillator displacement",
+        "history": true,
+        "x": [
+          0,
+          2
+        ],
+        "y": [
+          -1.1,
+          1.1
+        ],
+        "curves": [
+          {
+            "expression": "q",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "kind": "plot",
+        "label": "Spectrum of computed trajectory",
+        "x": [
+          0,
+          "fftNyquist"
+        ],
+        "y": [
+          0,
+          1.1
+        ],
+        "curves": [
+          {
+            "expression": "fftAmplitude",
+            "interpolation": "stem",
+            "samples": 257,
+            "color": "orange"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "Peak frequency",
+            "expression": "fftPeakFrequency",
+            "unit": "Hz",
+            "digits": 6
+          },
+          {
+            "label": "Peak amplitude",
+            "expression": "fftPeakAmplitude",
+            "unit": "",
+            "digits": 6
+          }
+        ]
+      }
+    ]
+  },
+  "symmetricEigen": {
+    "version": 1,
+    "diagnostics": true,
+    "parameters": [
+      {
+        "id": "coupling",
+        "label": "Off-diagonal coupling",
+        "value": 1,
+        "min": 0,
+        "max": 2,
+        "step": 0.1
+      }
+    ],
+    "analysis": {
+      "kind": "eigen",
+      "matrix": [
+        [
+          2,
+          "coupling",
+          0
+        ],
+        [
+          "coupling",
+          2,
+          "coupling"
+        ],
+        [
+          0,
+          "coupling",
+          2
+        ]
+      ]
+    },
+    "views": [
+      {
+        "kind": "plot",
+        "label": "Sorted eigenvalues",
+        "x": [
+          0,
+          2
+        ],
+        "y": [
+          -1,
+          5
+        ],
+        "xLabel": "Mode index",
+        "curves": [
+          {
+            "expression": "eigenValue",
+            "interpolation": "stem",
+            "samples": 3,
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "kind": "plot",
+        "label": "Eigenvector components by mode",
+        "x": [
+          0,
+          2
+        ],
+        "y": [
+          -1.1,
+          1.1
+        ],
+        "curves": [
+          {
+            "expression": "eigenVector1",
+            "interpolation": "points",
+            "samples": 3,
+            "color": "blue",
+            "label": "Component 1"
+          },
+          {
+            "expression": "eigenVector2",
+            "interpolation": "points",
+            "samples": 3,
+            "color": "orange",
+            "label": "Component 2"
+          },
+          {
+            "expression": "eigenVector3",
+            "interpolation": "points",
+            "samples": 3,
+            "color": "green",
+            "label": "Component 3"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "Scaled residual",
+            "expression": "eigenResidual",
+            "unit": "",
+            "digits": 6
+          },
+          {
+            "label": "Orthogonality error",
+            "expression": "eigenOrthogonality",
+            "unit": "",
+            "digits": 6
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "odeParameterSweep": {
+    "version": 1,
+    "diagnostics": true,
+    "parameters": [
+      {
+        "id": "k",
+        "label": "Decay coefficient",
+        "value": 2,
+        "min": 1,
+        "max": 3,
+        "step": 0.1
+      }
+    ],
+    "dynamics": {
+      "method": "rk45",
+      "duration": 1,
+      "step": 0.05,
+      "initial": {
+        "q": 1
+      },
+      "derivatives": {
+        "q": "-k*q"
+      }
+    },
+    "analysis": {
+      "kind": "sweep",
+      "parameter": "k",
+      "range": [
+        1,
+        3
+      ],
+      "samples": 9,
+      "expression": "q",
+      "time": 1
+    },
+    "views": [
+      {
+        "kind": "plot",
+        "label": "Final value vs decay coefficient",
+        "x": [
+          1,
+          3
+        ],
+        "y": [
+          0,
+          0.4
+        ],
+        "curves": [
+          {
+            "expression": "sweepValue",
+            "interpolation": "points",
+            "samples": 9,
+            "label": "Simulated",
+            "color": "blue"
+          },
+          {
+            "expression": "exp(-x)",
+            "label": "Analytic",
+            "color": "muted",
+            "dashed": true
+          }
+        ]
+      },
+      {
+        "kind": "plot",
+        "label": "Finite-difference parameter sensitivity",
+        "x": [
+          1,
+          3
+        ],
+        "y": [
+          -0.4,
+          0
+        ],
+        "curves": [
+          {
+            "expression": "sweepSensitivity",
+            "samples": 9,
+            "interpolation": "points",
+            "color": "orange"
+          },
+          {
+            "expression": "-exp(-x)",
+            "dashed": true,
+            "color": "muted"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "Sampled minimum",
+            "expression": "sweepMin",
+            "unit": "",
+            "digits": 6
+          },
+          {
+            "label": "Parameter at minimum",
+            "expression": "sweepMinAt",
+            "unit": "",
+            "digits": 6
+          },
+          {
+            "label": "Sample count",
+            "expression": "sweepCount",
+            "unit": "",
+            "digits": 6
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "verletOscillator": {
+    "version": 1,
+    "diagnostics": true,
+    "parameters": [
+      {
+        "id": "omega",
+        "label": "Angular frequency",
+        "value": 1,
+        "min": 0.5,
+        "max": 2,
+        "step": 0.1
+      }
+    ],
+    "dynamics": {
+      "method": "verlet",
+      "duration": 100,
+      "step": 0.02,
+      "mechanics": {
+        "coordinates": [
+          {
+            "position": "q",
+            "velocity": "v",
+            "initialPosition": 1,
+            "initialVelocity": 0,
+            "acceleration": "-omega^2*q"
+          }
+        ]
+      }
+    },
+    "definitions": {
+      "energy": ".5*(v^2+omega^2*q^2)",
+      "error": "energy-.5*omega^2"
+    },
+    "views": [
+      {
+        "kind": "plot",
+        "label": "Displacement",
+        "history": true,
+        "x": [
+          0,
+          100
+        ],
+        "y": [
+          -1.1,
+          1.1
+        ],
+        "curves": [
+          {
+            "expression": "q",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "kind": "trajectory",
+        "label": "Phase space",
+        "x": [
+          -1.2,
+          1.2
+        ],
+        "y": [
+          -2.2,
+          2.2
+        ],
+        "horizontal": "q",
+        "vertical": "v",
+        "color": "blue"
+      },
+      {
+        "kind": "plot",
+        "label": "Energy error",
+        "history": true,
+        "x": [
+          0,
+          100
+        ],
+        "y": [
+          -0.001,
+          0.001
+        ],
+        "curves": [
+          {
+            "expression": "error",
+            "color": "green"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "Energy",
+            "expression": "energy",
+            "digits": 8
+          },
+          {
+            "label": "Energy error",
+            "expression": "error",
+            "digits": 8
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "finiteElementPoisson": {
+    "version": 1,
+    "diagnostics": true,
+    "parameters": [
+      {
+        "id": "load",
+        "label": "Source strength",
+        "value": 2,
+        "min": 0.5,
+        "max": 4,
+        "step": 0.1
+      }
+    ],
+    "finiteElement": {
+      "nodes": [
+        0,
+        0.015625,
+        0.03125,
+        0.046875,
+        0.0625,
+        0.078125,
+        0.09375,
+        0.109375,
+        0.125,
+        0.140625,
+        0.15625,
+        0.171875,
+        0.1875,
+        0.203125,
+        0.21875,
+        0.234375,
+        0.25,
+        0.265625,
+        0.28125,
+        0.296875,
+        0.3125,
+        0.328125,
+        0.34375,
+        0.359375,
+        0.375,
+        0.390625,
+        0.40625,
+        0.421875,
+        0.4375,
+        0.453125,
+        0.46875,
+        0.484375,
+        0.5,
+        0.515625,
+        0.53125,
+        0.546875,
+        0.5625,
+        0.578125,
+        0.59375,
+        0.609375,
+        0.625,
+        0.640625,
+        0.65625,
+        0.671875,
+        0.6875,
+        0.703125,
+        0.71875,
+        0.734375,
+        0.75,
+        0.765625,
+        0.78125,
+        0.796875,
+        0.8125,
+        0.828125,
+        0.84375,
+        0.859375,
+        0.875,
+        0.890625,
+        0.90625,
+        0.921875,
+        0.9375,
+        0.953125,
+        0.96875,
+        0.984375,
+        1
+      ],
+      "diffusion": 1,
+      "reaction": 0,
+      "source": "load",
+      "left": 0,
+      "right": 0
+    },
+    "views": [
+      {
+        "kind": "plot",
+        "label": "P1 finite element solution",
+        "x": [
+          0,
+          1
+        ],
+        "y": [
+          0,
+          0.55
+        ],
+        "curves": [
+          {
+            "expression": "femValue",
+            "color": "blue",
+            "label": "FEM"
+          },
+          {
+            "expression": "load*x*(1-x)/2",
+            "dashed": true,
+            "color": "muted",
+            "label": "Analytic"
+          }
+        ]
+      },
+      {
+        "kind": "plot",
+        "label": "Element gradient",
+        "x": [
+          0,
+          1
+        ],
+        "y": [
+          -2.1,
+          2.1
+        ],
+        "curves": [
+          {
+            "expression": "femGradient",
+            "interpolation": "step",
+            "color": "orange"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "Discrete residual",
+            "expression": "femResidual",
+            "digits": 8
+          },
+          {
+            "label": "Mesh nodes",
+            "expression": "femNodes",
+            "digits": 8
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "periodicTransport": {
+    "version": 1,
+    "diagnostics": true,
+    "parameters": [
+      {
+        "id": "speed",
+        "label": "Advection speed",
+        "value": 1,
+        "min": -1,
+        "max": 1,
+        "step": 0.1
+      }
+    ],
+    "dynamics": {
+      "method": "grid-heun",
+      "duration": 0.25,
+      "step": 0.0025,
+      "coupledFields": {
+        "dimension": 1,
+        "nx": 64,
+        "xDomain": [
+          0,
+          1
+        ],
+        "boundary": "periodic",
+        "fields": [
+          {
+            "id": "U",
+            "initial": "1+.5*cos(2*pi*x)",
+            "diffusivity": 0,
+            "advection": [
+              "speed"
+            ]
+          }
+        ]
+      }
+    },
+    "views": [
+      {
+        "kind": "plot",
+        "label": "Conservative upwind transport",
+        "x": [
+          0,
+          1
+        ],
+        "y": [
+          0.4,
+          1.6
+        ],
+        "curves": [
+          {
+            "expression": "U",
+            "color": "blue",
+            "label": "Numerical"
+          },
+          {
+            "expression": "1+.5*cos(2*pi*(x-speed*t))",
+            "color": "muted",
+            "dashed": true,
+            "label": "Exact translation"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "Spatial mean",
+            "expression": "mean_U",
+            "digits": 8
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "scalarIsosurface": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "level",
+        "label": "Isosurface level",
+        "value": 1,
+        "min": 0.25,
+        "max": 1,
+        "step": 0.05
+      }
+    ],
+    "views": [
+      {
+        "kind": "field",
+        "label": "Scalar field isosurface",
+        "presentation": "isosurface",
+        "x": [
+          -1.2,
+          1.2
+        ],
+        "y": [
+          -1.2,
+          1.2
+        ],
+        "zRange": [
+          -1.2,
+          1.2
+        ],
+        "expression": "x^2+y^2+spaceZ^2",
+        "isoLevel": "level",
+        "surfaceStyle": "shaded"
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  }
+}

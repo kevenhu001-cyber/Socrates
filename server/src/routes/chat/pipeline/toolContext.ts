@@ -12,6 +12,7 @@ import { eq, and } from 'drizzle-orm';
 import { getDb } from '../../../db/index.js';
 import { connectorConnections, projectConnectorConnections } from '../../../db/schema/index.js';
 import { codeInterpreter } from '../../../services/codeInterpreter/index.js';
+import { INTELLIGENT_UI_PROVIDER_TOOL } from '../../../services/intelligentUi.js';
 import { createToolRegistry } from '../../../services/tools/toolCapabilityCatalog.js';
 import { canonicalToolExampleJson } from '../../../services/tools/toolCorrectionMessage.js';
 import { createToolTurnPolicy } from '../../../services/tools/toolTurnPolicy.js';
@@ -182,7 +183,10 @@ export async function createStreamToolContext(
     projectConnectorConnectionsByProvider,
     connectorDiscoveryEnabled: connectorCatalog.entries.length > 0 || deferredCore.size > 0,
   });
-  const toolDefs = toolRegistry.definitions as RuntimeToolDefinition[];
+  const validationDefs = toolRegistry.definitions as RuntimeToolDefinition[];
+  const toolDefs: RuntimeToolDefinition[] = validationDefs.map((definition) =>
+    definition.function?.name === 'render_intelligent_ui' ? INTELLIGENT_UI_PROVIDER_TOOL : definition,
+  );
   connectorCatalog = addDeferredCoreTools(connectorCatalog, toolDefs, deferredCore);
 
   /* derive the prompt appendix from the same
@@ -193,7 +197,7 @@ export async function createStreamToolContext(
 
   /** The `parameters` schema for a tool, used for repair and feedback. */
   const schemaForTool = (name: string): JsonSchemaNode | null => {
-    const definition = toolDefs.find((tool) => tool.function?.name === name);
+    const definition = validationDefs.find((tool) => tool.function?.name === name);
     return definition?.function?.parameters || null;
   };
 

@@ -190,6 +190,8 @@ jobs:
       - name: Bundle size ceiling
         working-directory: .
         run: node scripts/check-bundle-size.mjs
+      - name: Scientific kernel cold and warm benchmark
+        run: npm run benchmark:simulation -- 5
       - name: Unit tests
         run: npm run test:unit
       - name: Shared package tests

@@ -286,7 +286,7 @@ export interface JsonSchemaNode {
   properties?: Record<string, JsonSchemaNode>;
   items?: JsonSchemaNode;
   required?: string[];
-  enum?: unknown[];
+  enum?: readonly unknown[];
   additionalProperties?: boolean | JsonSchemaNode;
   [key: string]: unknown;
 }

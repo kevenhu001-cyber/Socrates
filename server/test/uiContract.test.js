@@ -9,7 +9,7 @@ after(async () => {
 });
 
 import { GET_UI_CONTRACT_TOOL, uiContractContent } from '../src/services/uiContract.js';
-import { validateIntelligentUi, INTELLIGENT_UI_TOOL } from '../src/services/intelligentUi.js';
+import { validateIntelligentUi, INTELLIGENT_UI_TOOL, INTELLIGENT_UI_PROVIDER_TOOL } from '../src/services/intelligentUi.js';
 import { normalizeIntelligentUiArgs } from '../src/services/intelligentUiNormalize.js';
 import { createToolExecutorRegistry } from '../src/routes/chat/pipeline/executors/executorLookup.js';
 import { createToolRegistry } from '../src/services/tools/toolCapabilityCatalog.js';
@@ -18,6 +18,8 @@ import {
   validateToolArguments,
 } from '../src/services/tools/toolCallSafety.js';
 import { DEMONSTRATION_GUIDANCE } from '../src/services/demonstrationGuide.js';
+import { DEMONSTRATION_SECTIONS, demonstrationSectionContent } from '../src/services/demonstrationSections.js';
+import { readFileSync } from 'node:fs';
 import { OPENUI_TOOL_GUIDANCE } from '../src/services/openUiPrompt.generated.js';
 import { LEARNING_UI_GUIDANCE } from '@socrates/core/learningUi';
 import { INTELLIGENT_UI_CONTROL_GUIDANCE } from '@socrates/core/intelligentUiControls';
@@ -134,4 +136,60 @@ test('unknown and inherited-property visualization template names fail closed', 
     assert.equal(uiContractContent({ kind: 'visualization', template }).ok, false, template);
   }
   assert.equal(uiContractContent({ kind: 'visualization', template: 'bar' }).ok, true);
+});
+
+test('simulation section discovery is focused, bounded and exhaustive',()=>{
+  const schema=GET_UI_CONTRACT_TOOL.function.parameters;
+  assert.equal(validateToolArguments({kind:'demonstration',section:'pde'},schema).ok,true);
+  const index=uiContractContent({kind:'demonstration',section:'index'});
+  assert.equal(index.ok,true);
+  assert.equal(index.pages,1);
+  for(const name of Object.keys(DEMONSTRATION_SECTIONS)){
+    assert.ok(index.output.includes(name+':'));
+    const first=uiContractContent({kind:'demonstration',section:name});
+    assert.equal(first.ok,true,name);
+    assert.equal(first.pages,1,name);
+    assert.equal(first.output.slice(first.output.indexOf('\n')+1),demonstrationSectionContent(name));
+  }
+  assert.match(uiContractContent({kind:'demonstration',section:'pde'}).output,/finiteElement/);
+  assert.doesNotMatch(uiContractContent({kind:'demonstration',section:'pde'}).output,/Gillespie|fftAmplitude/);
+  assert.match(uiContractContent({kind:'demonstration',section:'geometry3d'}).output,/isosurface/);
+  assert.match(uiContractContent({kind:'demonstration',section:'analysis'}).output,/fftAmplitude/);
+  for(const section of ['__proto__','constructor','toString','unknown'])
+    assert.equal(uiContractContent({kind:'demonstration',section}).ok,false);
+  assert.equal(uiContractContent({kind:'physics',section:'ode'}).ok,false);
+  assert.equal(uiContractContent({kind:'demonstration',section:'ode',page:2}).ok,false);
+});
+test('compact provider schema preserves valid fixtures; full local schema still rejects bad inputs',()=>{
+  const compact=INTELLIGENT_UI_PROVIDER_TOOL.function.parameters,full=INTELLIGENT_UI_TOOL.function.parameters;
+  const fullProgram=full.properties.nodes.items.properties.program;
+  const compactProgram=compact.properties.nodes.items.properties.program;
+  assert.ok(JSON.stringify(compactProgram).length<.85*JSON.stringify(fullProgram).length);
+  function sameShape(original, projected){
+    assert.deepEqual(projected.type,original.type);
+    assert.deepEqual(projected.enum,original.enum);
+    assert.deepEqual(projected.required,original.required);
+    if(original.properties){
+      assert.deepEqual(Object.keys(projected.properties).sort(),Object.keys(original.properties).sort());
+      for(const key of Object.keys(original.properties))sameShape(original.properties[key],projected.properties[key]);
+    }
+    if(original.items)sameShape(original.items,projected.items);
+    if(original.anyOf)original.anyOf.forEach((part,i)=>sameShape(part,projected.anyOf[i]));
+    if(original.additionalProperties&&typeof original.additionalProperties==='object')
+      sameShape(original.additionalProperties,projected.additionalProperties);
+  }
+  sameShape(fullProgram,compactProgram);
+  for(const filename of ['algorithmic-demonstrations.json','intelligent-ui-physics.json','scientific-simulation.json']){
+    const programs=JSON.parse(readFileSync(new URL('../../docs/examples/'+filename,import.meta.url),'utf8'));
+    for(const [id,program] of Object.entries(programs)){
+      const args={nodes:[{type:'demonstration',program}]};
+      assert.equal(validateToolArguments(args,compact).ok,true,id+' compact');
+      assert.equal(validateToolArguments(args,full).ok,true,id+' full');
+      assert.equal(validateIntelligentUi(args).ok,true,id+' semantic');
+    }
+  }
+  const malformed={nodes:[{type:'demonstration',program:{version:1,finiteElement:{nodes:[0,1],diffusion:1,source:2,left:0,right:0},views:[{kind:'plot',x:[0,1],y:[0,1],curves:[{expression:'femValue'}]}]}}]};
+  // Generic argument validation is depth-bounded; check the program schema directly.
+  assert.equal(validateToolArguments(malformed.nodes[0].program,fullProgram).ok,false);
+  assert.equal(validateIntelligentUi(malformed).ok,false);
 });

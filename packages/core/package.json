@@ -81,6 +81,14 @@
     "./intelligentUiPatch": {
       "types": "./src/intelligentUiPatch.d.ts",
       "import": "./src/intelligentUiPatch.js"
+    },
+    "./demonstrationLight": {
+      "types": "./src/demonstrationLight.d.ts",
+      "import": "./src/demonstrationLight.js"
+    },
+    "./demonstrationAsync": {
+      "types": "./src/demonstrationAsync.d.ts",
+      "import": "./src/demonstrationAsync.js"
     }
   }
 }

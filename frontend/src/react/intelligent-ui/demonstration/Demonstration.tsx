@@ -2,8 +2,11 @@ import { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from '
 import {
   normalizeDemonstrationProgram,
   validateDemonstration,
+} from '@socrates/core/demonstrationLight';
+import {
   type DemonstrationProgram,
   type DemonstrationWarning,
+  type DemonstrationDiagnostics,
   type DemonstrationParameter,
 } from '@socrates/core/demonstration';
 import { MathText } from '../../rn/useInlineMath';
@@ -18,6 +21,7 @@ import { DemoField } from './DemonstrationField';
 import { demoUnit } from './mathLabels';
 import { DemoIssue } from './DemonstrationIssue';
 import { useDemonstrationFrames, useDemonstrationVisibility } from './useDemonstrationFrames';
+import { usePlayback, usePreview } from './interaction/playback';
 import type { ViewSample } from './demonstrationProtocol';
 
 type Preset = ReturnType<typeof useDemonstrationFrames>['preset'];
@@ -64,60 +68,6 @@ function nextParameterValues(
       ];
     }),
   );
-}
-
-function usePlayback(program: DemonstrationProgram | null, visible: boolean) {
-  const [time, setTime] = useState(0);
-  const [playing, setPlaying] = useState(false);
-  const [reduced, setReduced] = useState(
-    () => matchMedia('(prefers-reduced-motion: reduce)').matches,
-  );
-  useEffect(() => {
-    const media = matchMedia('(prefers-reduced-motion: reduce)');
-    const update = () => {
-      setReduced(media.matches);
-      if (media.matches) setPlaying(false);
-    };
-    update();
-    setTime(0);
-    setPlaying(!media.matches && Boolean(program?.dynamics?.duration || program?.duration));
-    media.addEventListener('change', update);
-    return () => media.removeEventListener('change', update);
-  }, [program]);
-  const play = useCallback(
-    (duration: number) => {
-      if (!playing || !visible || reduced || duration <= 0) return;
-      let frame = 0;
-      let previous = performance.now();
-      const tick = (now: number) => {
-        if (now - previous >= 50) {
-          const delta = Math.min(0.1, (now - previous) / 1000);
-          previous = now;
-          setTime((value) => Math.min(duration, value + delta));
-        }
-        frame = requestAnimationFrame(tick);
-      };
-      frame = requestAnimationFrame(tick);
-      return () => cancelAnimationFrame(frame);
-    },
-    [playing, visible, reduced],
-  );
-  return { time, setTime, playing, setPlaying, reduced, play };
-}
-
-function usePreview(visible: boolean) {
-  const [preview, setPreview] = useState(true);
-  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const requestPreview = useCallback(() => {
-    clearTimeout(timer.current);
-    setPreview(true);
-    timer.current = setTimeout(() => setPreview(false), 120);
-  }, []);
-  useEffect(() => {
-    if (visible) requestPreview();
-    return () => clearTimeout(timer.current);
-  }, [visible, requestPreview]);
-  return { preview, requestPreview };
 }
 
 function ParameterControl({
@@ -489,6 +439,26 @@ function useDemonstrationState(program: DemonstrationProgram | null, visible: bo
   };
 }
 
+const diagnosticLabels: [keyof Omit<DemonstrationDiagnostics,'method'>,string,string][]=[
+  ['acceptedSteps','acceptedSteps','Accepted steps'],['rejectedSteps','rejectedSteps','Rejected steps'],
+  ['events','events','Events'],['derivativeEvaluations','derivativeEvaluations','Derivative evaluations'],
+  ['maxLocalError','maxLocalError','Maximum accepted normalized local error'],
+  ['minStep','minStep','Minimum step (s)'],['maxStep','maxStep','Maximum step (s)'],
+  ['gridNodes','gridNodes','Grid nodes'],['storedValues','storedValues','Stored scalar values'],
+  ['unknowns','unknowns','Unknowns'],['nonzeros','nonzeros','Matrix nonzero entries'],
+  ['iterations','iterations','Iterations'],['relativeResidual','relativeResidual','Relative residual'],
+  ['absoluteResidual','absoluteResidual','Absolute residual'],['diffusionCFL','diffusionCFL','Diffusion CFL'],['transportCFL','transportCFL','Combined transport CFL'],
+  ['adColumns','adColumns','Automatic differentiation columns'],['finiteDifferenceColumns','finiteDifferenceColumns','Finite-difference columns'],['projectedGradient','projectedGradient','Projected gradient norm'],['objectiveEvaluations','objectiveEvaluations','Objective evaluations'],
+  ['analysisSamples','analysisSamples','Analysis samples'],['eigenResidual','eigenResidual','Scaled eigen residual'],['eigenOrthogonality','eigenOrthogonality','Orthogonality error'],['eigenIterations','eigenIterations','Eigen rotations'],
+];
+function SolverDiagnostics({value}:{value:DemonstrationDiagnostics}){
+  return <details className="demo-advanced"><summary>{i18n('intui.demo.diagnostics','Solver diagnostics')} · {value.method}</summary>
+    <dl className="demo-metrics">{diagnosticLabels.map(([key,label,fallback])=>{
+      const number=value[key];
+      return number===undefined?null:<div key={key}><dt>{i18n('intui.demo.diag.'+label,fallback)}</dt><dd>{Number(number.toPrecision(5)).toString()}</dd></div>;
+    })}</dl>
+  </details>;
+}
 function DemonstrationBody({
   program,
   title,
@@ -546,6 +516,7 @@ function DemonstrationBody({
           view.kind === 'controls' ? controls : renderView(view, index, snapshot?.views[index]),
         )}
       </div>
+      {snapshot?.diagnostics && <SolverDiagnostics value={snapshot.diagnostics}/>}
       {!hasEmbeddedControls ? controls : null}
       <AdvancedParameters program={program} values={values} id={id} onChange={onChange} />
       <PresetButtons program={program} preset={preset} onPreset={onPreset} />

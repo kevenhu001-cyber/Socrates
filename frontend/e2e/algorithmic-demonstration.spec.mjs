@@ -485,3 +485,157 @@ test('visible demonstrations share a worker and release it when they leave the t
   await closed;
   await expectNoGlobalError(page);
 });
+
+test('scientific field renders a physical color scale and contours without horizontal overflow', async ({ page }) => {
+  const scientific = JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json', import.meta.url), 'utf8'));
+  const node = { id: 'scientific-field', type: 'demonstration', title: 'Scientific field', program: scientific.field };
+  await prepareChatWorkbench(page, {
+    lang: 'en',
+    viewport: { width: 390, height: 844 },
+    messages: [{ clientId: 'scientific-field', role: 'assistant', type: 'assistant',
+      rawText: '\x60\x60\x60socrates-ui\n' + JSON.stringify(node) + '\n\x60\x60\x60' }],
+  });
+  const demo = page.getByRole('region', { name: node.title, exact: true });
+  await demo.scrollIntoViewIfNeeded();
+  await expect(demo).toHaveAttribute('data-demo-quality', 'full');
+  await expect(demo.locator('canvas')).toBeVisible();
+  await expect(demo.locator('.demo-color-scale')).toBeVisible();
+  await expect(demo.getByText(/Contour levels/)).toBeVisible();
+  expect(await demo.locator('.demo-color-scale').evaluate((el) => el.getBoundingClientRect().width)).toBeGreaterThan(60);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+  await expectNoGlobalError(page);
+});
+
+test('Bode plots render physical decade tick labels on a narrow viewport', async ({ page }) => {
+  const scientific = JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json', import.meta.url), 'utf8'));
+  const node = { id: 'scientific-bode', type: 'demonstration', title: 'Bode response', program: scientific.bode };
+  await prepareChatWorkbench(page, {
+    lang: 'en', viewport: { width: 390, height: 844 },
+    messages: [{ clientId: 'scientific-bode', role: 'assistant', type: 'assistant',
+      rawText: '\x60\x60\x60socrates-ui\n' + JSON.stringify(node) + '\n\x60\x60\x60' }],
+  });
+  const demo = page.getByRole('region', { name: node.title, exact: true });
+  await demo.scrollIntoViewIfNeeded();
+  await expect(demo).toHaveAttribute('data-demo-quality', 'full');
+  await expect(demo.locator('.demo-plot').first().getByText('1000',{exact:true})).toBeVisible();
+  await expect(demo.locator('.demo-plot').first().getByText('0.1',{exact:true})).toBeVisible();
+  await expectNoGlobalError(page);
+});
+
+test('rotatable scientific surface uses a sampled wireframe and local camera control', async ({ page }) => {
+  const scientific = JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json', import.meta.url), 'utf8'));
+  const node={id:'surface-3d',type:'demonstration',title:'Scientific surface',program:scientific.surface3D};
+  await prepareChatWorkbench(page,{lang:'en',viewport:{width:390,height:844},messages:[{clientId:'surface-3d',role:'assistant',type:'assistant',rawText:'\x60\x60\x60socrates-ui\n'+JSON.stringify(node)+'\n\x60\x60\x60'}]});
+  const demo=page.getByRole('region',{name:node.title,exact:true});
+  await demo.scrollIntoViewIfNeeded();
+  await expect(demo).toHaveAttribute('data-demo-quality','full');
+  const surface=demo.getByRole('img',{name:'Radially damped surface'});
+  await expect(surface).toBeVisible();
+  const mesh=surface.locator('g[stroke] path').first();
+  const before=await mesh.getAttribute('d');
+  await demo.getByRole('slider',{name:'Azimuth'}).fill('75');
+  await expect(mesh).not.toHaveAttribute('d',before);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
+  await expectNoGlobalError(page);
+});
+
+test('large heat grid renders shaded surface and physical cross section', async ({page}) => {
+  const scientific=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
+  const node={id:'implicit-heat-grid',type:'demonstration',title:'Implicit heat grid',program:scientific.implicitHeat2D};
+  await prepareChatWorkbench(page,{lang:'en',viewport:{width:390,height:844},messages:[{clientId:node.id,role:'assistant',type:'assistant',rawText:'\x60\x60\x60socrates-ui\n'+JSON.stringify(node)+'\n\x60\x60\x60'}]});
+  const demo=page.getByRole('region',{name:node.title,exact:true});
+  await demo.scrollIntoViewIfNeeded();
+  await expect(demo).toHaveAttribute('data-demo-quality','full',{timeout:30000});
+  await expect(demo.locator('[data-surface-style="shaded"] polygon').first()).toBeVisible();
+  await expect(demo.getByRole('img',{name:'Temperature surface'})).toBeVisible();
+  await expectNoGlobalError(page);
+});
+
+test('spatial vector field and sparse diagnostics use native scientific views',async({page})=>{
+  const scientific=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
+  const nodes=[{id:'space-vector',type:'demonstration',title:'Spatial vector field',program:scientific.vectorField3D},{id:'sparse-chain',type:'demonstration',title:'Sparse chain',program:scientific.sparseChain}];
+  await prepareChatWorkbench(page,{lang:'en',viewport:{width:390,height:844},messages:nodes.map(node=>({clientId:node.id,role:'assistant',type:'assistant',rawText:'\x60\x60\x60socrates-ui\n'+JSON.stringify(node)+'\n\x60\x60\x60'}))});
+  const vector=page.getByRole('region',{name:'Spatial vector field',exact:true});
+  await vector.scrollIntoViewIfNeeded();
+  await expect(vector).toHaveAttribute('data-demo-quality','full');
+  await expect(vector.locator('[data-space-vectors="1"] path').first()).toBeVisible();
+  const sparse=page.getByRole('region',{name:'Sparse chain',exact:true});
+  await sparse.scrollIntoViewIfNeeded();
+  await expect(sparse).toHaveAttribute('data-demo-quality','full');
+  await sparse.getByText('Solver diagnostics · PCG',{exact:true}).click();
+  await expect(sparse.getByText('Matrix nonzero entries',{exact:true})).toBeVisible();
+  await expectNoGlobalError(page);
+});
+
+test('chemistry and biological models render molecular symbols and linked reaction curves',async({page})=>{
+  const scientific=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
+  const nodes=[{id:'molecules',type:'demonstration',title:'Molecular structures',program:scientific.molecularStructures},{id:'enzyme',type:'demonstration',title:'Enzyme kinetics',program:scientific.enzymeKinetics}];
+  await prepareChatWorkbench(page,{lang:'en',viewport:{width:390,height:844},messages:nodes.map(node=>({clientId:node.id,role:'assistant',type:'assistant',rawText:'\x60\x60\x60socrates-ui\n'+JSON.stringify(node)+'\n\x60\x60\x60'}))});
+  const molecules=page.getByRole('region',{name:'Molecular structures',exact:true});
+  await molecules.scrollIntoViewIfNeeded();
+  await expect(molecules).toHaveAttribute('data-demo-quality','full');
+  await expect(molecules.locator('[data-scene-object="atom"]')).toHaveCount(6);
+  await expect(molecules.locator('[data-scene-object="doubleBond"]')).toHaveCount(2);
+  const enzyme=page.getByRole('region',{name:'Enzyme kinetics',exact:true});
+  await enzyme.scrollIntoViewIfNeeded();
+  await expect(enzyme).toHaveAttribute('data-demo-quality','full');
+  await expect(enzyme.locator('[data-scene-object="reversibleArrow"]')).toBeVisible();
+  await expect(enzyme.getByRole('slider',{name:'Binding rate'})).toBeVisible();
+  await expectNoGlobalError(page);
+});
+
+test('general numerical views expose local roots, field slices and linked controls',async({page})=>{
+  const scientific=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
+  const nodes=[{id:'root',type:'demonstration',title:'Nonlinear root',program:scientific.nonlinearEquilibrium},{id:'slice',type:'demonstration',title:'Volume slice',program:scientific.volumeSlice}];
+  await prepareChatWorkbench(page,{lang:'en',viewport:{width:390,height:844},messages:nodes.map(node=>({clientId:node.id,role:'assistant',type:'assistant',rawText:'\x60\x60\x60socrates-ui\n'+JSON.stringify(node)+'\n\x60\x60\x60'}))});
+  const root=page.getByRole('region',{name:'Nonlinear root',exact:true});
+  await root.scrollIntoViewIfNeeded();
+  await expect(root).toHaveAttribute('data-demo-quality','full');
+  await expect(root.getByText('Root q',{exact:true})).toBeVisible();
+  const slice=page.getByRole('region',{name:'Volume slice',exact:true});
+  await slice.scrollIntoViewIfNeeded();
+  await expect(slice).toHaveAttribute('data-demo-quality','full');
+  await expect(slice.getByText('Slice plane: z = 0.3',{exact:true})).toBeVisible();
+  await slice.getByRole('slider',{name:'Slice position'}).fill('0.8');
+  await expect(slice.getByText('Slice plane: z = 0.8',{exact:true})).toBeVisible();
+  await expectNoGlobalError(page);
+});
+
+test('parametric mesh and optimization marker are linked scientific views',async({page})=>{
+  const scientific=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
+  const nodes=[{id:'torus',type:'demonstration',title:'Torus mesh',program:scientific.parametricTorus},{id:'optimum',type:'demonstration',title:'Optimization landscape',program:scientific.optimizationRosenbrock}];
+  await prepareChatWorkbench(page,{lang:'en',viewport:{width:390,height:844},messages:nodes.map(node=>({clientId:node.id,role:'assistant',type:'assistant',rawText:'\x60\x60\x60socrates-ui\n'+JSON.stringify(node)+'\n\x60\x60\x60'}))});
+  const torus=page.getByRole('region',{name:'Torus mesh',exact:true});
+  await torus.scrollIntoViewIfNeeded();
+  await expect(torus).toHaveAttribute('data-demo-quality','full');
+  await expect(torus.locator('[data-surface-style="shaded"] polygon').first()).toBeVisible();
+  const opt=page.getByRole('region',{name:'Optimization landscape',exact:true});
+  await opt.scrollIntoViewIfNeeded();
+  await expect(opt).toHaveAttribute('data-demo-quality','full');
+  await expect(opt.getByText('Computed local optimum: (1, 1)',{exact:true})).toBeVisible();
+  await expectNoGlobalError(page);
+});
+
+test('spectral analysis renders exact-bin stem paths and low-pass slider',async({page})=>{
+  const scientific=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
+  const node={id:'spectrum',type:'demonstration',title:'FFT spectrum',program:scientific.fftSignal};
+  await prepareChatWorkbench(page,{lang:'en',viewport:{width:390,height:844},messages:[{clientId:node.id,role:'assistant',type:'assistant',rawText:'\x60\x60\x60socrates-ui\n'+JSON.stringify(node)+'\n\x60\x60\x60'}]});
+  const region=page.getByRole('region',{name:'FFT spectrum',exact:true});
+  await region.scrollIntoViewIfNeeded();
+  await expect(region).toHaveAttribute('data-demo-quality','full');
+  await expect(region.getByText('Peak frequency',{exact:true})).toBeVisible();
+  await expect(region.getByRole('slider',{name:'Low-pass cutoff'})).toBeVisible();
+  await expectNoGlobalError(page);
+});
+
+test('scalar isosurface uses a camera-controlled sampled triangle mesh',async({page})=>{
+  const ex=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
+  const node={id:'iso',type:'demonstration',title:'Scalar isosurface',program:ex.scalarIsosurface};
+  await prepareChatWorkbench(page,{lang:'en',viewport:{width:390,height:844},messages:[{clientId:node.id,role:'assistant',type:'assistant',rawText:'\x60\x60\x60socrates-ui\n'+JSON.stringify(node)+'\n\x60\x60\x60'}]});
+  const region=page.getByRole('region',{name:'Scalar isosurface',exact:true});
+  await region.scrollIntoViewIfNeeded();
+  await expect(region).toHaveAttribute('data-demo-quality','full');
+  await expect(region.locator('[data-isosurface="1"] polygon').first()).toBeVisible();
+  await expect(region.getByRole('slider',{name:'Isosurface level'})).toBeVisible();
+  await expectNoGlobalError(page);
+});

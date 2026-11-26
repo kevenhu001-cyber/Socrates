@@ -4,12 +4,14 @@ import type {
   DemonstrationScene,
   DemonstrationValue,
 } from '@socrates/core/demonstration';
-import { errorMessage } from './sampleField';
+import { errorMessage } from './fieldCommon';
 
 function objectExpressions(object: DemonstrationObject): DemonstrationValue[] {
   switch (object.kind) {
     case 'path':
       return object.points.flat();
+    case 'atom':
+    case 'cell':
     case 'body':
       return [...object.center, object.radius];
     case 'block':

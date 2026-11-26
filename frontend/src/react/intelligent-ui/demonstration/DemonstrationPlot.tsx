@@ -6,14 +6,8 @@ import {
   type PlotView as View,
   type PlotSample as Sampled,
   type Issue,
-  WIDTH,
-  HEIGHT,
-  LEFT,
-  RIGHT,
-  TOP,
-  BOTTOM,
-  plotProjection,
 } from './samplePlot';
+import { WIDTH, HEIGHT, LEFT, RIGHT, TOP, BOTTOM, plotProjection, type AxisScale } from './geometry/plotProjection';
 import { demoAxisLabel } from './mathLabels';
 import { DemoIssue } from './DemonstrationIssue';
 export const demoColors: Record<string, string> = {
@@ -102,7 +96,16 @@ function formatTick(value: number): string {
   return String(Number(value.toFixed(4)));
 }
 
-function ticks(min: number, max: number, target: number): number[] {
+function ticks(min: number, max: number, target: number, scale: AxisScale = 'linear'): number[] {
+  if (scale === 'log') {
+    const lo = Math.log10(min), hi = Math.log10(max);
+    if (!Number.isFinite(lo) || !Number.isFinite(hi) || hi <= lo) return [];
+    const step = Math.max(1, Math.ceil((hi - lo) / target));
+    const first = Math.ceil(lo / step) * step;
+    const major = Array.from({ length: Math.min(20, Math.max(0, Math.floor((hi - first) / step) + 1)) },
+      (_, index) => 10 ** (first + index * step));
+    return major.length >= 2 ? major : Array.from({length: 3}, (_, i) => 10 ** (lo + (hi - lo) * i / 2));
+  }
   const raw = (max - min) / target;
   if (!(raw > 0) || !Number.isFinite(raw)) return [];
   const base = 10 ** Math.floor(Math.log10(raw));
@@ -121,10 +124,10 @@ function projectPoint(sx: (value: number) => number, sy: (value: number) => numb
       : null;
 }
 
-function YAxis({ domain, sy }: { domain: Domain; sy: (value: number) => number }) {
+function YAxis({ domain, sy, scale }: { domain: Domain; sy: (value: number) => number; scale?: AxisScale }) {
   return (
     <>
-      {ticks(domain[0], domain[1], 3).map((value) => (
+      {ticks(domain[0], domain[1], 3, scale).map((value) => (
         <g key={`y${value}`} className="demo-axis">
           <line x1={LEFT} x2={WIDTH - RIGHT} y1={sy(value)} y2={sy(value)} strokeDasharray="2 5" />
           <text x={LEFT - 8} y={sy(value) + 3} textAnchor="end">
@@ -141,8 +144,10 @@ function XAxis({
   yDomain,
   sy,
   sx,
+  scale,
 }: {
   xDomain: Domain;
+  scale?: AxisScale;
   yDomain: Domain;
   sy: (value: number) => number;
   sx: (value: number) => number;
@@ -151,7 +156,7 @@ function XAxis({
   return (
     <g className="demo-axis">
       <line x1={LEFT} x2={WIDTH - RIGHT} y1={axis} y2={axis} />
-      {ticks(xDomain[0], xDomain[1], 6).map((value) => (
+      {ticks(xDomain[0], xDomain[1], 6, scale).map((value) => (
         <g key={value}>
           <line x1={sx(value)} x2={sx(value)} y1={HEIGHT - BOTTOM} y2={HEIGHT - BOTTOM + 4} />
           <text x={sx(value)} y={HEIGHT - BOTTOM + 17} textAnchor="middle">
@@ -272,7 +277,7 @@ function PlotIssues({ issues }: { issues: Issue[] }) {
 
 function renderPlot(view: View, result: Sampled, id: string) {
   const { xDomain, yDomain } = result;
-  const { sx, sy } = plotProjection(xDomain, yDomain);
+  const { sx, sy } = plotProjection(xDomain, yDomain, result.xScale, result.yScale);
   const curves = curveSpecs(view);
   const project = projectPoint(sx, sy);
   const label =
@@ -286,9 +291,17 @@ function renderPlot(view: View, result: Sampled, id: string) {
             <rect x={LEFT} y={TOP} width={WIDTH - LEFT - RIGHT} height={HEIGHT - TOP - BOTTOM} />
           </clipPath>
         </defs>
-        <YAxis domain={yDomain} sy={sy} />
-        <XAxis xDomain={xDomain} yDomain={yDomain} sy={sy} sx={sx} />
+        <YAxis domain={yDomain} sy={sy} scale={result.yScale} />
+        <XAxis xDomain={xDomain} yDomain={yDomain} sy={sy} sx={sx} scale={result.xScale} />
         <g clipPath={`url(#${id})`}>
+          {result.eventTimes?.map((time, index) => (
+            <line key={index} x1={sx(time)} x2={sx(time)} y1={TOP} y2={HEIGHT - BOTTOM}
+              stroke={demoColors.orange} strokeWidth="1" strokeDasharray="3 4" opacity=".65" />
+          ))}
+          {result.playhead !== undefined && Number.isFinite(sx(result.playhead)) && (
+            <line x1={sx(result.playhead)} x2={sx(result.playhead)} y1={TOP} y2={HEIGHT - BOTTOM}
+              stroke={demoColors.muted} strokeWidth="1" strokeDasharray="4 3" />
+          )}
           <CurvePaths curves={curves} paths={result.paths} />
           <PlotMarkers view={view} result={result} project={project} />
         </g>
