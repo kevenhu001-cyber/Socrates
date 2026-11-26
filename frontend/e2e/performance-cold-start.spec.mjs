@@ -7,6 +7,7 @@ const profiles = [
   { name: 'desktop', options: { viewport: { width: 1280, height: 800 } }, cpu: 1 },
   { name: 'mobile-chromium-4x', options: devices['Pixel 5'], cpu: 4 },
 ];
+test.skip(process.env.SOCRATES_COLD_BENCH !== '1', 'Explicit cold-start benchmark lane');
 for (const profile of profiles) {
   test('cold startup: ' + profile.name, async ({ browser, baseURL }, testInfo) => {
     test.setTimeout(120_000);
@@ -33,7 +34,9 @@ for (const profile of profiles) {
           return {
             composerReadyMs: Math.round(performance.now()),
             domContentLoadedMs: Math.round(navigation.domContentLoadedEventEnd),
-            firstContentfulPaintMs: Math.round(paints.find(p => p.name === 'first-contentful-paint')?.startTime ?? 0),
+            firstContentfulPaintMs: paints.some(p => p.name === 'first-contentful-paint')
+              ? Math.round(paints.find(p => p.name === 'first-contentful-paint').startTime)
+              : null,
             resourceTransferBytes: resources.reduce((sum, r) => sum + r.transferSize, 0),
             scriptRequests: resources.filter(r => new URL(r.name).pathname.endsWith('.js')).length,
           };
@@ -43,9 +46,10 @@ for (const profile of profiles) {
         await context.close();
       }
     }
-    const median = Object.fromEntries(Object.keys(samples[0]).map(key => [
-      key, samples.map(sample => sample[key]).sort((a, b) => a - b)[1],
-    ]));
+    const median = Object.fromEntries(Object.keys(samples[0]).map(key => {
+      const values = samples.map(sample => sample[key]).filter(value => value !== null).sort((a, b) => a - b);
+      return [key, values.length ? (values[Math.floor((values.length - 1) / 2)] + values[Math.floor(values.length / 2)]) / 2 : null];
+    }));
     const result = { profile: profile.name, cpuThrottle: profile.cpu, samples, median };
     console.log('Cold-start benchmark: ' + JSON.stringify(result));
     await testInfo.attach('cold-start.json', { body: JSON.stringify(result, null, 2), contentType: 'application/json' });
