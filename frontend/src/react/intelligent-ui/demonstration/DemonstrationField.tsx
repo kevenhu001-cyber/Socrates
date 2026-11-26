@@ -37,6 +37,20 @@ export const DemoField = memo(function DemoField({
       0,
       0,
     );
+    if (sample.contours?.length) {
+      context.beginPath();
+      for (const { lines } of sample.contours)
+        for (let i = 0; i < lines.length; i += 4) {
+          context.moveTo(lines[i], lines[i + 1]);
+          context.lineTo(lines[i + 2], lines[i + 3]);
+        }
+      context.strokeStyle = 'rgba(0,0,0,.65)';
+      context.lineWidth = 2;
+      context.stroke();
+      context.strokeStyle = 'rgba(255,255,255,.88)';
+      context.lineWidth = 0.9;
+      context.stroke();
+    }
     if (!sample.arrows.length) return;
     context.strokeStyle = 'rgba(255,255,255,.72)';
     context.lineWidth = 0.7;
@@ -69,6 +83,25 @@ export const DemoField = memo(function DemoField({
         role="img"
         aria-label={view.label || i18n('intui.surface', 'Interactive result')}
       />
+      {sample?.colorRange ? (
+        <div className="demo-legend" aria-label={i18n('intui.demo.colorScale', 'Color scale')}>
+          <svg viewBox="0 0 120 10" width="120" height="10" aria-hidden="true">
+            {Array.from({ length: 60 }, (_, i) => {
+              const z = (i / 59) * 3;
+              const r = Math.round(255 * Math.min(1, z));
+              const g = Math.round(255 * Math.max(0, Math.min(1, z - 1)));
+              const b = Math.round(255 * Math.max(0, z - 2));
+              return <rect key={i} x={i * 2} y={0} width={2} height={10} fill={`rgb(${r},${g},${b})`} />;
+            })}
+          </svg>
+          <span>{Number(sample.colorRange[0].toPrecision(4))} – {Number(sample.colorRange[1].toPrecision(4))} {view.unit && <MathText text={view.unit} />}</span>
+        </div>
+      ) : null}
+      {sample?.contours?.length ? (
+        <div className="demo-legend">
+          <span>{i18n('intui.demo.contourLevels', 'Contour levels')}: {sample.contours.map(({ level }) => Number(level.toPrecision(4))).join(', ')} {view.unit && <MathText text={view.unit} />}</span>
+        </div>
+      ) : null}
       {problem ? (
         <div className="demo-note" role="status">
           <DemoIssue headline={headline} details={[problem]} />
