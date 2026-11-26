@@ -106,6 +106,7 @@ function solveSmallSystem(matrix, rhs, n) {
   return rhs.every(Number.isFinite);
 }
 const extraFunctions = {
+  sparseAt: () => Number.NaN,
   log2: Math.log2,
   cbrt: Math.cbrt,
   trunc: Math.trunc,
@@ -467,6 +468,7 @@ export function parseDemonstrationExpression(input) {
 /* ---------- Evaluator ---------- */
 /** Scopes may be chained (sum/iterate locals, lazy definitions); never read Object.prototype. */
 const resolveDefinition = Symbol('resolveDefinition');
+const sparseReader = Symbol('sparseReader');
 function lookup(scope, name) {
   for (
     let current = scope;
@@ -532,6 +534,10 @@ export function evaluateDemonstrationExpression(ast, scope, budget = { remaining
         return +(a !== b);
     }
     throw Error(`Unknown operator ${ast.op}`);
+  }
+  if (ast.name === 'sparseAt') {
+    if (!scope[sparseReader]) throw Error('sparseAt requires a sparse system');
+    return scope[sparseReader](run(ast.args[0]));
   }
   if (ast.name === 'if') return run(ast.args[0]) ? run(ast.args[1]) : run(ast.args[2]);
   if (ast.name === 'sum' || ast.name === 'iterate') {
@@ -608,6 +614,7 @@ function expressionNames(ast, allowed, used) {
   }
   if (ast.kind === 'unary') expressionNames(ast.arg, allowed, used);
   if (ast.kind === 'call') {
+    if (ast.name === 'sparseAt' && !allowed.has('sparseValue')) throw Error('sparseAt requires a sparse system');
     if (['sum', 'iterate'].includes(ast.name)) {
       expressionNames(ast.args[1], allowed, used);
       expressionNames(ast.args[2], allowed, used);
@@ -2465,6 +2472,7 @@ function* prepareRuntime(program, definitions, stateNames, compile, dependencies
   const timeValues = new Map();
   const scopeAt = (t, x, y, state, evaluate, reusableSample, spaceZ=0) => {
     const scope = Object.assign(Object.create(base), state, { x, y, t },hasSpaceZ?{spaceZ}:{});
+    if(sparse)scope[sparseReader]=i=>Number.isInteger(i)&&i>=0&&i<sparse.x.length?sparse.x[i]:Number.NaN;
     if (!definitions.size) return scope;
     const sample = reusableSample ?? new Map();
     scope[resolveDefinition] = (name) => {
