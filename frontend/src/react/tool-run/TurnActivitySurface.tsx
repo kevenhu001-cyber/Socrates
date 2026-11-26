@@ -147,19 +147,14 @@ function toolActivityRows(
   return rows;
 }
 
-/** One stable disclosure per assistant turn. Tool artifacts and pending
- * approvals deliberately remain in the transcript, outside the activity log. */
-export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
-  const { activities, calls, activeTool, status, messageId, readOnly } = props;
-  const [open, setOpen] = useState(false);
-  const id = useId();
-  const intentRef = useRef('');
-  useLocaleRefresh();
-  if (props.intentSummary?.trim()) intentRef.current = props.intentSummary.trim();
-  const intent = intentRef.current;
+function useActivityTimeline(
+  activities: TurnActivitySurfaceProps['activities'],
+  calls: TurnActivitySurfaceProps['calls'],
+  publicSummary: TurnActivitySurfaceProps['publicSummary'],
+) {
   const steps = useMemo(
-    () => stepsWithFallback(publicSummariesOf(activities), props.publicSummary),
-    [activities, props.publicSummary],
+    () => stepsWithFallback(publicSummariesOf(activities), publicSummary),
+    [activities, publicSummary],
   );
   const reasoningLabel = i18n('think.observedReasoning', 'Model reasoning');
   const reasoningDone = i18n('think.observedReasoningDone', 'Reasoning finished');
@@ -191,6 +186,20 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
         })),
     );
   }, [steps, calls, activities, reasoningLabel, reasoningDone]);
+  return { steps, timeline };
+}
+
+/** One stable disclosure per assistant turn. Tool artifacts and pending
+ * approvals deliberately remain in the transcript, outside the activity log. */
+export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
+  const { activities, calls, activeTool, status, messageId, readOnly } = props;
+  const [open, setOpen] = useState(false);
+  const id = useId();
+  const intentRef = useRef('');
+  useLocaleRefresh();
+  if (props.intentSummary?.trim()) intentRef.current = props.intentSummary.trim();
+  const intent = intentRef.current;
+  const { steps, timeline } = useActivityTimeline(activities, calls, props.publicSummary);
   const hasSummary = steps.length > 0 || Boolean(intent);
   const expandable = timeline.length > 0 || Boolean(intent);
   const latestEntry = timeline[timeline.length - 1];
