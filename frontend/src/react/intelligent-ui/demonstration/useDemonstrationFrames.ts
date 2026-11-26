@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
-import type { DemonstrationProgram, DemonstrationWarning } from '@socrates/core/demonstration';
+import type { DemonstrationProgram, DemonstrationWarning, DemonstrationDiagnostics } from '@socrates/core/demonstration';
 import { connectDemonstration } from './demonstrationClient';
 import { errorMessage } from './sampleField';
 import type { Problem, ViewSample } from './demonstrationProtocol';
@@ -35,6 +35,7 @@ type Snapshot = {
   playing: boolean;
   animated: boolean;
   warnings: DemonstrationWarning[];
+  diagnostics?: DemonstrationDiagnostics;
   views: (ViewSample | undefined)[];
   preview: boolean;
 };
@@ -70,6 +71,7 @@ export function useDemonstrationFrames(
               animated: frame.animated,
               duration: frame.duration,
               warnings: frame.warnings,
+              diagnostics: frame.diagnostics,
               views,
               preview: input.preview,
             };
