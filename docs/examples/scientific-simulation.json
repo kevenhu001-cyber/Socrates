@@ -1282,5 +1282,108 @@
         "kind": "controls"
       }
     ]
+  },
+  "vectorRotation": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "angle",
+        "label": "Rotation angle",
+        "value": 0.8,
+        "min": 0,
+        "max": 6.28,
+        "unit": "rad"
+      }
+    ],
+    "linearAlgebra": [
+      {
+        "id": "force",
+        "op": "vector",
+        "values": [
+          3,
+          4
+        ]
+      },
+      {
+        "id": "rotation",
+        "op": "matrix",
+        "values": [
+          [
+            "cos(angle)",
+            "-sin(angle)"
+          ],
+          [
+            "sin(angle)",
+            "cos(angle)"
+          ]
+        ]
+      },
+      {
+        "id": "rotated",
+        "op": "matmul",
+        "a": "rotation",
+        "b": "force"
+      },
+      {
+        "id": "magnitude",
+        "op": "norm",
+        "a": "rotated"
+      }
+    ],
+    "views": [
+      {
+        "kind": "scene",
+        "label": "Vector rotation",
+        "x": [
+          -6,
+          6
+        ],
+        "y": [
+          -6,
+          6
+        ],
+        "objects": [
+          {
+            "kind": "vector",
+            "from": [
+              0,
+              0
+            ],
+            "to": [
+              "force_1",
+              "force_2"
+            ],
+            "label": "F",
+            "color": "muted"
+          },
+          {
+            "kind": "vector",
+            "from": [
+              0,
+              0
+            ],
+            "to": [
+              "rotated_1",
+              "rotated_2"
+            ],
+            "label": "RF",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "Magnitude",
+            "expression": "magnitude",
+            "unit": "N"
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
   }
 }
