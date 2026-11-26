@@ -159,7 +159,7 @@ export interface DemonstrationProgram {
     };
     duration: number;
     step: number;
-    method?: 'rk4' | 'rk45' | 'sdirk2';
+    method?: 'rk4' | 'rk45' | 'sdirk2' | 'grid-implicit';
     /** Nonsingular M in M*state'=derivatives; rows/columns follow initial-state key order. */
     massMatrix?: DemonstrationValue[][];
     /** Semi-explicit index-one constraints g(t, state, algebraic)=0. */
