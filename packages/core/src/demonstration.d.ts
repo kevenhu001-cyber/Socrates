@@ -47,6 +47,10 @@ export interface DemonstrationField extends DemonstrationViewBase {
   exposure?: DemonstrationValue;
   height?: number;
   vector?: [DemonstrationValue, DemonstrationValue];
+  vectorScale?: DemonstrationValue;
+  colorRange?: [DemonstrationValue, DemonstrationValue];
+  unit?: string;
+  contours?: DemonstrationValue[];
 }
 export interface DemonstrationTrajectory extends DemonstrationViewBase {
   kind: 'trajectory';
@@ -106,8 +110,17 @@ export interface DemonstrationProgram {
   parameters?: DemonstrationParameter[];
   definitions?: Record<string, DemonstrationValue>;
   dynamics?: {
-    initial: Record<string, DemonstrationValue>;
-    derivatives: Record<string, DemonstrationValue>;
+    initial?: Record<string, DemonstrationValue>;
+    derivatives?: Record<string, DemonstrationValue>;
+    spatial?: {
+      nodes: number;
+      domain: [number, number];
+      diffusivity: DemonstrationValue;
+      initial: DemonstrationValue;
+      left: DemonstrationValue;
+      right: DemonstrationValue;
+      source?: DemonstrationValue;
+    };
     duration: number;
     step: number;
     method?: 'rk4' | 'rk45';
@@ -128,6 +141,7 @@ export interface DemonstrationRuntime {
   duration: number;
   parameters: Record<string, number>;
   warnings: DemonstrationWarning[];
+  eventTimes?: number[];
   /** Bit mask: x = 1, y = 2, time or dynamic state = 4. Parameters are fixed for this runtime. */
   dependencies(expression: DemonstrationValue): number;
   resetBudget(): void;
