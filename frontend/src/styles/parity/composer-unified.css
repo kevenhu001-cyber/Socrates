@@ -350,8 +350,9 @@
   /* Both groups stay pinned to the lower edge while the editor gains room
      above them. The contenteditable and its controls keep their DOM nodes. */
   #appShell .composer-shell [data-composer-slot='inline'] > [data-composer-slot='body'] {
-    --composer-body-padding: 5px var(--composer-editor-inset-end)
-      calc(5px + var(--composer-toolbar-space)) var(--composer-editor-inset-start);
+    /* 26px editor + 4px vertical inset + 40px rail reserve + 16px frame = 86px. */
+    --composer-body-padding: 2px var(--composer-editor-inset-end)
+      calc(2px + var(--composer-toolbar-space)) var(--composer-editor-inset-start);
     flex-basis: 100%;
     transition: padding var(--composer-motion);
   }
