@@ -1,10 +1,6 @@
 import { memo, useId, type ReactNode } from 'react';
-import {
-  demonstrationDomain,
-  type DemonstrationObject,
-  type DemonstrationScene,
-  type DemonstrationValue,
-} from '@socrates/core/demonstration';
+import { demonstrationDomain } from '@socrates/core/demonstrationLight';
+import type { DemonstrationObject, DemonstrationScene, DemonstrationValue } from '@socrates/core/demonstration';
 import { MathText } from '../../rn/useInlineMath';
 import { SvgMathText } from '../../rn/SvgMathText';
 import { i18n } from '../../../ui/legacyI18n.ts';
