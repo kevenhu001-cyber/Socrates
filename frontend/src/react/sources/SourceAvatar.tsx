@@ -7,17 +7,19 @@ export function SourceAvatar({
   host,
   className,
   imageClassName,
+  testId,
 }: {
   url: string;
   host: string;
   className: string;
   imageClassName?: string;
+  testId?: string;
 }) {
   const src = faviconProxyUrl(url);
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const monogram = host.replace(/^www\./i, '').charAt(0).toUpperCase() || '?';
   return (
-    <span className={className} title={host} aria-hidden="true">
+    <span className={className} title={host} aria-hidden="true" data-testid={testId}>
       {src && failedSrc !== src ? (
         <img
           className={imageClassName}
