@@ -216,3 +216,26 @@ test('desktop configuration reuses the same content in an anchored popover', asy
   await page.keyboard.press('Escape');
   await expect(pop).toBeHidden();
 });
+
+for (const width of [320, 360, 430]) {
+  test(`phone composer keeps a stable two-row layout at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await mockAuthedApp(page, { lang: 'en' });
+    await gotoAndSettle(page, '/');
+    await waitForAppShell(page);
+    const host = page.locator('#composerInputWrap');
+    const frame = host.locator('[data-composer-frame]');
+    const editor = host.locator('.rich-composer-editor');
+    await expect(frame).toHaveCSS('height', '86px');
+    await expect(frame).toHaveCSS('border-radius', '28px');
+    const idle = await frame.boundingBox();
+    await editor.click();
+    await expect(frame).toHaveCSS('height', '86px');
+    const focused = await frame.boundingBox();
+    expect(focused.width).toBeCloseTo(idle.width, 0);
+    expect(focused.height).toBeCloseTo(idle.height, 0);
+    expect(focused.x).toBeGreaterThanOrEqual(0);
+    expect(focused.x + focused.width).toBeLessThanOrEqual(width + 1);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width + 1);
+  });
+}
