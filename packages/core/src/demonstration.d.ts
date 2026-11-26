@@ -45,7 +45,11 @@ export interface DemonstrationPlot extends DemonstrationViewBase {
 export interface DemonstrationField extends DemonstrationViewBase {
   kind: 'field';
   expression: DemonstrationValue;
-  presentation?: 'map' | 'surface';
+  presentation?: 'map' | 'surface' | 'curve3d' | 'vectors3d';
+  curve3d?: [DemonstrationValue, DemonstrationValue, DemonstrationValue];
+  vector3d?: [DemonstrationValue, DemonstrationValue, DemonstrationValue];
+  parameterRange?: [DemonstrationValue, DemonstrationValue];
+  curveHistory?: boolean;
   surfaceStyle?: 'wireframe' | 'shaded';
   zRange?: [DemonstrationValue, DemonstrationValue];
   palette?: 'light' | 'signed' | 'heat';
@@ -116,6 +120,7 @@ export interface DemonstrationProgram {
   resetKey?: string;
   parameters?: DemonstrationParameter[];
   definitions?: Record<string, DemonstrationValue>;
+  sparseSystem?: {size:number;entries:[number,number,DemonstrationValue][];rhs:DemonstrationValue[];tolerance?:number;maxIterations?:number};
   linearAlgebra?: ({id:string;op:'vector';values:DemonstrationValue[]} | {id:string;op:'matrix';values:DemonstrationValue[][]} | {id:string;op:'scale';a:string;factor:DemonstrationValue} | {id:string;op:'norm'|'transpose';a:string} | {id:string;op:'add'|'sub'|'dot'|'cross'|'matmul';a:string;b:string})[];
   dynamics?: {
     initial?: Record<string, DemonstrationValue>;
@@ -187,7 +192,7 @@ export interface DemonstrationRuntime {
   /** Bit mask: x = 1, y = 2, time or dynamic state = 4. Parameters are fixed for this runtime. */
   dependencies(expression: DemonstrationValue): number;
   resetBudget(): void;
-  evaluate(expression: DemonstrationValue, time?: number, x?: number, y?: number): number;
+  evaluate(expression: DemonstrationValue, time?: number, x?: number, y?: number, spaceZ?: number): number;
   stateAt(time: number): Record<string, number>;
 }
 export function parseDemonstrationExpression(input: DemonstrationValue): DemonstrationExpression;
