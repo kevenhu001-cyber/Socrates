@@ -47,6 +47,19 @@ function engineeringSymbol(kind: string, from: Point, to: Point, color: string):
   const mid = length/2, r = Math.min(length*.23, 16), left = mid-r, right = mid+r;
   let d: string;
   switch (kind) {
+    case 'bond':
+    case 'doubleBond':
+    case 'tripleBond': {
+      const offsets=kind==='bond'?[0]:kind==='doubleBond'?[-2.5,2.5]:[-4,0,4];
+      d=offsets.map(y=>`M0 ${y}H${length}`).join(' ');break;
+    }
+    case 'reactionArrow':
+    case 'reversibleArrow':
+    case 'inhibition': {
+      const h=Math.min(9,length/4);
+      d=kind==='reactionArrow'?`M0 0H${length}l${-h} ${-h*.45}M${length} 0l${-h} ${h*.45}`:kind==='inhibition'?`M0 0H${length}M${length} ${-h*.6}v${h*1.2}`:`M0 -4H${length}l${-h} ${-h*.45}M${length} 4H0l${h} ${h*.45}`;
+      break;
+    }
     case 'resistor':
       d = `M0 0H${left}V${-r*.5}H${right}V${r*.5}H${left}V0M${right} 0H${length}`; break;
     case 'capacitor':
@@ -118,9 +131,15 @@ function drawSceneObject({
       />
     );
     labelAt = [points[0][0], points[0][1] - 10];
-  } else if (object.kind === 'body' || object.kind === 'block') {
+  } else if (object.kind === 'body' || object.kind === 'block' || object.kind === 'atom' || object.kind === 'cell') {
     const [cx, cy] = project(object.center);
-    if (object.kind === 'body') {
+    if (object.kind === 'atom' || object.kind === 'cell') {
+      const radius=size(object.radius);
+      const elementColors:Record<string,string>={H:'#9ca3af',C:'#64748b',N:'#3478da',O:'#d34d4d',S:'#c89b27',P:'#db8734',Cl:'#32945c'};
+      const tint=object.kind==='atom'?elementColors[object.element]??color:color;
+      drawing=<g><circle cx={cx} cy={cy} r={radius} fill={tint} fillOpacity={object.kind==='atom'?.88:.12} stroke={tint} strokeWidth="1.8"/>{object.kind==='atom'?<text x={cx} y={cy} dy=".35em" textAnchor="middle" fontSize={Math.min(15,radius*.85)} fill="#fff">{object.element}</text>:<circle cx={cx+radius*.15} cy={cy-radius*.1} r={radius*.28} stroke={tint} fill={tint} fillOpacity=".25" strokeWidth="1.2"/>}</g>;
+      labelAt=[cx,cy-radius-8];
+    } else if (object.kind === 'body') {
       const radius = size(object.radius);
       drawing = (
         <circle
