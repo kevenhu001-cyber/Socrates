@@ -848,3 +848,40 @@ test('scalar volume slices remap physical coordinates and planar flow samples st
   assert.ok(field.streamlines.length>0);
   for(const line of field.streamlines)for(let i=3;i<line.length;i+=2)assert.ok(Math.abs(line[i]-line[1])<1e-9);
 });
+
+test('forward AD and Simpson quadrature evaluate bounded explicit calculus',()=>{
+  const scientific=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
+  const rt=createDemonstrationRuntime(scientific.calculus);
+  assert.ok(Math.abs(rt.evaluate('slope',0,.3)-2*Math.cos(.6))<1e-12);
+  assert.ok(Math.abs(rt.evaluate('area',0,.3)-(1-Math.cos(.6))/2)<1e-8);
+  assert.ok(Math.abs(rt.evaluate('integral(s,0,pi,sin(s))')-2)<1e-8);
+  assert.equal(rt.evaluate('diff(s,-2,s^3)'),12);
+  assert.throws(()=>rt.evaluate('diff(s,0,abs(s))'),/undefined or unsupported/);
+  const root=createDemonstrationRuntime(scientific.nonlinearEquilibrium);
+  assert.ok(root.diagnostics.adColumns>0);
+  assert.equal(root.diagnostics.finiteDifferenceColumns,0);
+});
+test('box-constrained optimization solves Rosenbrock and a boundary optimum',()=>{
+  const scientific=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
+  const rt=createDemonstrationRuntime(scientific.optimizationRosenbrock);
+  assert.ok(Math.abs(rt.evaluate('q')-1)<1e-5);
+  assert.ok(Math.abs(rt.evaluate('v')-1)<1e-5);
+  assert.ok(rt.evaluate('optObjective')<1e-12);
+  assert.ok(rt.diagnostics.projectedGradient<=1e-6);
+  const bound={version:1,optimization:{variables:[{id:'q',min:0,max:1,initial:0}],objective:'(q-3)^2'},views:[{kind:'metrics',values:[{expression:'q'}]}]};
+  const b=createDemonstrationRuntime(bound);assert.equal(b.evaluate('q'),1);
+  assert.equal(b.evaluate('optGradient'),0);
+  const view=scientific.optimizationRosenbrock.views[0],field=finishGenerator(sampleField(view,rt,0,false));
+  assert.equal(field.markers.length,1);
+  assert.ok(Math.abs(field.markers[0].x-1)<1e-5);
+});
+test('parametric surface stores full coordinate triples rather than scalar height only',()=>{
+  const scientific=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
+  const p=scientific.parametricTorus,rt=createDemonstrationRuntime(p);
+  const f=finishGenerator(sampleField(p.views[0],rt,0,false));
+  assert.equal(f.surface.size,33);
+  assert.equal(f.surface.vertices.length,1089);
+  assert.equal(f.surface.vertices.filter(Boolean).length,1089);
+  assert.ok(Math.abs(f.surface.vertices[0][0]-.725)<1e-12);
+  assert.ok(Math.abs(f.surface.vertices[16*33][0]-.275)<1e-12);
+});
