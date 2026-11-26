@@ -1288,18 +1288,53 @@ html[data-mode='dark'] #appShell .msg-body .hljs :is(.hljs-comment, .hljs-quote)
 #appShell #msgList .msg-body :is(p, li, blockquote, td) a[href^='http'] .site-link-favicon {
   display: none;
 }
+/* Markdown tables (`.ds-table-wrap > table.ds-table` from markdownExtensions,
+   plus legacy un-wrapped tables) span the prose column like the reference:
+   no frame, a bold header, one hairline between rows. Visualization and
+   intelligent-UI tables keep their own contract. */
+#appShell
+  #msgList
+  .msg-body
+  .ds-table-wrap:not(.visualization-table-wrap):not(.intui-table-wrap):not(.iui-table-wrap)
+  > table.ds-table,
 #appShell #msgList .msg-body table:not(.ds-table):not(.intui-table) {
   width: 100%;
   font-size: var(--prose-size, var(--ui-font-size-md));
   line-height: 1.6;
 }
+#appShell
+  #msgList
+  .msg-body
+  .ds-table-wrap:not(.visualization-table-wrap):not(.intui-table-wrap):not(.iui-table-wrap)
+  > table.ds-table
+  :is(th, td),
 #appShell #msgList .msg-body :where(th, td):not(.ds-table *):not(.intui-table *) {
+  min-width: 72px;
+  max-width: none;
   padding: 12px 16px 12px 0;
+  border: 0;
   border-bottom: 1px solid var(--ui-border-subtle);
+  background: transparent;
 }
+#appShell
+  #msgList
+  .msg-body
+  .ds-table-wrap:not(.visualization-table-wrap):not(.intui-table-wrap):not(.iui-table-wrap)
+  > table.ds-table
+  th,
 #appShell #msgList .msg-body th:not(.ds-table th):not(.intui-table th) {
   border-bottom-color: var(--ui-border-subtle);
   font-weight: var(--ui-font-weight-bold);
+}
+#appShell
+  #msgList
+  .msg-body
+  .ds-table-wrap:not(.visualization-table-wrap):not(.intui-table-wrap):not(.iui-table-wrap)
+  > table.ds-table
+  tbody
+  tr:hover
+  td {
+  background: transparent;
 }
 #appShell #msgList .msg-body hr {
   border-top-color: var(--ui-border-subtle);

@@ -247,7 +247,13 @@ function renderMermaidResult(
   if (result.bindFunctions) result.bindFunctions(card.body);
   const svg = card.body.querySelector('svg') as SVGElement | null;
   if (svg) {
-    svg.style.maxWidth = '100%';
+    /* Mermaid writes width="100%" plus its natural max-width; overriding that
+       with a bare 100% stretched a three-node chart to the full column (2026-11-26
+       reference shows diagrams at their natural size). Keep the natural width
+       from the viewBox and only cap it at the card. */
+    const natural = mermaidNaturalWidth(svg);
+    svg.style.width = '100%';
+    svg.style.maxWidth = natural ? `min(100%, ${natural}px)` : '100%';
     svg.style.height = 'auto';
   }
   /* A re-render (theme switch, resize, re-parse) replaces the SVG but keeps
@@ -256,6 +262,16 @@ function renderMermaidResult(
   const body = card.body as HTMLElement & { _vizMathCleanup?: () => void };
   body._vizMathCleanup?.();
   body._vizMathCleanup = installVisualizationMath(body);
+}
+
+function mermaidNaturalWidth(svg: SVGElement): number | null {
+  const box = svg
+    .getAttribute('viewBox')
+    ?.trim()
+    .split(/[\s,]+/)
+    .map(Number);
+  const width = box && box.length === 4 ? box[2] : NaN;
+  return Number.isFinite(width) && width > 0 ? Math.ceil(width) : null;
 }
 
 function mermaidErrorMessage(error: unknown): string {

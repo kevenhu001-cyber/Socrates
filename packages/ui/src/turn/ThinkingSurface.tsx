@@ -102,6 +102,9 @@ export function ThinkingSurface({
           minWidth: 0,
           flexWrap: 'nowrap',
           alignItems: 'center',
+          /* Global button resets centre flex content; the activity caption
+             reads from the left edge like the reference ("已搜索… ⌄"). */
+          justifyContent: 'flex-start',
           gap: S[75],
           paddingInline: fullWidth ? 0 : S[75],
           marginLeft: fullWidth ? 0 : -S[75],
@@ -286,6 +289,7 @@ export function ActivityStep({
         minWidth: 0,
         flexWrap: 'nowrap',
         alignItems: 'center',
+        justifyContent: 'flex-start',
         gap: ROW_GAP,
         paddingInline: ROW_PAD,
         borderRadius: R.row,
