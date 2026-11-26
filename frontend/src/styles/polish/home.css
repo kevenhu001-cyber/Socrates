@@ -27,22 +27,21 @@
   font-size: calc(var(--ui-type-greeting-size) * var(--app-font-scale, 1));
   font-weight: var(--ui-font-weight-regular);
   letter-spacing: -0.02em;
-  color: var(--ui-text-secondary);
+  color: var(--ui-text-primary);
   text-align: center;
   line-height: 1.3;
-  animation: emptyStateIn 0.4s var(--ease-out) both;
+  animation: emptyStateIn var(--ui-duration-normal) var(--ui-ease-out) both;
 }
 .topic-sub {
   text-align: center;
   line-height: 1.5;
   animation: emptyStateIn 0.4s var(--ease-out) 70ms both;
 }
-/* UI-align: staged empty-state entrance (open-webui Placeholder —
-   greeting, subtitle, then input fade in one after another). */
+/* A quiet entrance for the empty state. */
 @keyframes emptyStateIn {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(3px);
   }
   to {
     opacity: 1;
