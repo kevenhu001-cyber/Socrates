@@ -61,6 +61,9 @@ export const DemoField = memo(function DemoField({
       context.strokeStyle='rgba(0,0,0,.55)';context.lineWidth=1.8;context.stroke();
       context.strokeStyle='rgba(255,255,255,.8)';context.lineWidth=.8;context.stroke();
     }
+    for(const marker of sample.markers??[]){
+      context.beginPath();context.arc(marker.px,marker.py,4,0,2*Math.PI);context.fillStyle='#1b9a70';context.fill();context.strokeStyle='white';context.lineWidth=1.5;context.stroke();
+    }
     if (!sample.arrows.length) return;
     context.strokeStyle = 'rgba(255,255,255,.72)';
     context.lineWidth = 0.7;
@@ -86,12 +89,13 @@ export const DemoField = memo(function DemoField({
           <MathText text={view.label} />
         </figcaption>
       ) : null}
-      {['surface','curve3d','vectors3d'].includes(view.presentation ?? '') ? (
+      {['surface','curve3d','vectors3d','parametricSurface'].includes(view.presentation ?? '') ? (
         <DemoSurface sample={sample?.surface} label={view.label} style={view.surfaceStyle} />
       ) : (
         <canvas ref={canvas} width={FIELD_WIDTH} height={fieldHeight(view)} role="img"
           aria-label={view.label || i18n('intui.surface', 'Interactive result')} />
       )}
+      {sample?.markers?.map((m,i)=><div className="demo-legend" key={i}><span>{m.label||i18n('intui.demo.marker','Marker {n}').replace('{n}',String(i+1))}: ({Number(m.x.toPrecision(5))}, {Number(m.y.toPrecision(5))})</span></div>)}
       {sample?.slice && <div className="demo-legend"><span>{i18n('intui.demo.slicePlane','Slice plane')}: {sample.slice.axis} = {Number(sample.slice.position.toPrecision(5))}</span><span>{sample.slice.axis==='x'?'y / z':sample.slice.axis==='y'?'x / z':'x / y'}</span></div>}
       {sample?.colorRange ? (
         <div className="demo-legend" aria-label={i18n('intui.demo.colorScale', 'Color scale')}>
