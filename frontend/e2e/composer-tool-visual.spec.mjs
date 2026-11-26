@@ -116,7 +116,7 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
   const mobileComposer = page.locator('#composerInputWrap');
   const mobileEditor = page.locator('#composerRoot .rich-composer-editor');
   await expect(mobileComposer.locator('.rich-composer-toolbar')).toBeHidden();
-  /* Non-default reasoning stays directly visible on phones. */
+  /* Reasoning stays directly visible on supported phones, including idle. */
   await expect(mobileComposer.locator('[data-composer-control=effort]')).toBeVisible();
   const collapsedBox = await mobileComposer.boundingBox();
   expect(collapsedBox?.height).toBeLessThanOrEqual(112);
@@ -139,11 +139,9 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
   });
   console.log('[mobile-collapsed-geometry]', JSON.stringify(collapsedGeometry));
   expect(['contents', 'grid', 'flex']).toContain(collapsedGeometry.bodyDisplay);
-  const mobileSendCenter =
-    ((collapsedGeometry.send?.top ?? 0) + (collapsedGeometry.send?.bottom ?? 0)) / 2;
-  const mobileEditorCenter =
-    ((collapsedGeometry.editor?.top ?? 0) + (collapsedGeometry.editor?.bottom ?? 0)) / 2;
-  expect(Math.abs(mobileSendCenter - mobileEditorCenter)).toBeLessThanOrEqual(2);
+  expect(collapsedGeometry.editor?.bottom ?? Infinity).toBeLessThanOrEqual(
+    collapsedGeometry.send?.top ?? 0,
+  );
   await page.screenshot({
     path: 'test-results/visual-qa/chat-composer-mobile-collapsed.png',
     fullPage: true,
