@@ -170,7 +170,45 @@ function createStripHtmlCommentsPlugin() {
   };
 }
 
+// The Worker build has its own chunk graph. Guard the actual static
+// closure, not source-file sizes or the main-thread entry report.
+function createSimulationWorkerAudit() {
+  return {
+    name: 'socrates-simulation-worker-audit',
+    generateBundle(_options, bundle) {
+      const chunks = Object.values(bundle).filter(item => item.type === 'chunk');
+      const entry = chunks.find(chunk => chunk.isEntry &&
+        (chunk.facadeModuleId || '').replaceAll('\\\\','/').endsWith('/demonstration.worker.ts'));
+      if (!entry) return;
+      const byFile = new Map(chunks.map(chunk => [chunk.fileName, chunk]));
+      const eager = new Set([entry.fileName]);
+      for (const file of eager) for (const dep of byFile.get(file)?.imports || []) eager.add(dep);
+      const rows = chunks.map(chunk => ({
+        file: chunk.fileName,
+        eager: eager.has(chunk.fileName),
+        gzipBytes: gzipSync(chunk.code).length,
+        modules: Object.entries(chunk.modules).filter(([,info]) => info.renderedLength > 0)
+          .map(([id]) => id.replaceAll('\\\\','/').split('/').slice(-5).join('/')),
+      }));
+      for (const row of rows.filter(row => row.eager)) {
+        const leaked = row.modules.find(id =>
+          /simulation\/numerics\/(?!dense\.js$)/.test(id) ||
+          /demonstration\/(?:sampling\/|geometry\/(?:spatial|surface|isosurface|marchingTetrahedra)\.ts)/.test(id));
+        if (leaked) this.error('Advanced simulation code in eager Worker closure: ' + leaked);
+      }
+      const eagerBytes = rows.filter(row => row.eager).reduce((n,row) => n+row.gzipBytes,0);
+      const lazyBytes = rows.filter(row => !row.eager).reduce((n,row) => n+row.gzipBytes,0);
+      console.log('[simulation-worker-audit] static gzip=' + eagerBytes + ' bytes; lazy gzip=' + lazyBytes + ' bytes; chunks=' + rows.length);
+    },
+  };
+}
+
+// Dynamic imports in a module Worker require ESM output rather than IIFE.
 export default defineConfig({
+  worker: {
+    format: 'es',
+    plugins: () => [createSimulationWorkerAudit()],
+  },
   define: { __SOCRATES_BUILD_ID__: JSON.stringify(getBuildId()) },
   root: '.',
   publicDir: 'public',
