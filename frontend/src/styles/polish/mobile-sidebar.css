@@ -530,10 +530,10 @@
     height: 20px;
   }
   #appShell #sidebarHeader #sidebarSearchBtn {
-    --sidebar-search-button-bg: color-mix(in srgb, var(--foreground) 5%, transparent);
-    border: 1px solid var(--ui-border-subtle);
+    --sidebar-search-button-bg: transparent;
+    border: 0;
     border-radius: var(--ui-radius-pill);
-    background: color-mix(in srgb, var(--foreground) 5%, transparent);
+    background: transparent;
   }
   #appShell #sidebarHeader #sidebarSearchBtn svg {
     width: 24px;
@@ -559,12 +559,12 @@
   /* The nav label is a shared UiText (bodySm) whose size reads this role
      (SidebarNavButton); on the phone it takes the reference's 14px step. */
   #appShell #sidebarNav {
-    --nav-label-size: calc(16px * var(--app-type-scale));
-    --sidebar-glyph-size: 24px;
+    --nav-label-size: var(--ui-mobile-font-nav);
+    --sidebar-glyph-size: 20px;
   }
   #appShell #sidebarNav .sidebar-nav-btn {
     display: grid;
-    grid-template-columns: 24px minmax(0, 1fr) auto;
+    grid-template-columns: 20px minmax(0, 1fr) auto;
     align-items: center;
     column-gap: 12px;
     width: 100%;
@@ -689,7 +689,7 @@
     gap: var(--ui-space-sm);
     padding: 0 0 0 4px;
     border-radius: var(--ui-radius-row);
-    font-size: calc(16px * var(--app-type-scale));
+    font-size: var(--ui-mobile-font-nav);
     color: var(--ui-text-nav);
     transition:
       background-color var(--ui-duration-hover) ease,
