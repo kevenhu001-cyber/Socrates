@@ -188,10 +188,17 @@ interface SourceCandidate {
   url: string;
   date: string;
   source: string;
+  snippet: string;
 }
 
 function sourceCandidateOf(value: unknown): SourceCandidate | null {
-  const item = value as { title?: unknown; url?: unknown; date?: unknown; source?: unknown } | null;
+  const item = value as {
+    title?: unknown;
+    url?: unknown;
+    date?: unknown;
+    source?: unknown;
+    snippet?: unknown;
+  } | null;
   if (!item) return null;
   const url = String(item.url || '').trim();
   const title = String(item.title || url || '').trim();
@@ -202,6 +209,7 @@ function sourceCandidateOf(value: unknown): SourceCandidate | null {
     url,
     date: typeof item.date === 'string' ? item.date.trim() : '',
     source: typeof item.source === 'string' ? item.source.trim() : '',
+    snippet: typeof item.snippet === 'string' ? item.snippet.trim() : '',
   };
 }
 
@@ -224,11 +232,12 @@ export function normalizeSources(results: ReadonlyArray<unknown> | null | undefi
     if (!candidate || seen.has(candidate.key)) continue;
     seen.add(candidate.key);
     out.push({
-      title: clip(candidate.title, 120),
+      title: clip(candidate.title, 280),
       url: /^https?:\/\//i.test(candidate.url) ? candidate.url : '',
       host: sourceHost(candidate.url),
       ...(candidate.date ? { date: clip(candidate.date, 30) } : {}),
       ...(candidate.source ? { source: clip(candidate.source, 32) } : {}),
+      ...(candidate.snippet ? { snippet: clip(candidate.snippet, 480) } : {}),
     });
   }
   return out;
