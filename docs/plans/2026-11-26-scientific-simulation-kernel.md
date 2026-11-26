@@ -442,6 +442,48 @@ split 2D sampling and 3D geometry; measure actual bundle/device baselines
 before introducing dynamic imports; modularize model-facing contracts.
 Do not add new solvers during the equivalence migration.
 
+## Stage twelve: separate validation, model adapters and execution
+
+- Split the validator, lowering registry and runtime compiler. An ordered
+  registry builds and passes one specialized spec per lowering stage.
+  Nested source programs (FFT/sweep) still undergo their independent safety
+  validation. Existing public API and DSL stay unchanged.
+- Eight specialized adapters now reside in models/ (analysis, finite
+  element, Verlet, optimization, nonlinear, sparse, coupled and implicit
+  grids). Their numerical implementations remain in numerics/. Gillespie
+  SSA execution is separate from reaction network lowering. Removed all
+  interim adapter re-exports from numerical modules.
+- intelligentUiValidation directly imports the validator; its dependency
+  graph is intended to exclude runtime and execution algorithms other than
+  small dense algebra used by expression functions. The full public
+  facade still uses static imports; dynamic loading/bundle measurement
+  remain future work.
+- Runtime preparation shrank from 318 to 118 lines. Common result store
+  registers named output readers and optional indexed sparse reader;
+  stationary/spatial solvers and post-analysis adapters register their
+  outputs and diagnostics without solver-specific names in prepare.js.
+  Duplicate provider names are rejected. Runtime instances own all readers
+  and caches. Spatial and ODE trajectories expose duration, stateAt,
+  eventTimes and diagnostics.
+- Extract index-one algebraic consistency and dynamics orchestration.
+  RK4 is an independent generator; time integrator registry dispatches
+  RK4, RK45, SDIRK2, Verlet and SSA, preserving method-specific semantics.
+- Extend architecture tests to check import/re-export DAG, validation-only
+  dependency reachability and numerical-to-model boundary. No new
+  runtime dependencies, public protocol changes or Android changes.
+
+Numerical parity: isolated JS comparisons of the extracted model and
+runtime bodies against the stage-ten baseline ran all 59 programs at
+default and a second parameter setting (118 runtime preparations,
+1476 expression observations). Duration, warnings, event times,
+diagnostics and sampled states matched exactly. This is a direct
+equivalence check, not a full module/bundler or browser CI run.
+Full latest CI and actual bundle/device performance remain unverified.
+
+Next: split scalar/vector sampling, 3D mesh geometry, renderer and
+interaction modules; then measure actual bundles and evaluate on-demand
+loading. Keep the generator-based Worker scheduler and wire format.
+
 ## Deliberate limits / next steps
 
 This is a bounded educational engine, not an industrial multiphysics solver.
