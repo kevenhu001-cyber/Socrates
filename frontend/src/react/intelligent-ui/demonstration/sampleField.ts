@@ -20,6 +20,7 @@ export function fieldExpressions(view: DemonstrationField): DemonstrationValue[]
     ...(view.vector ?? []),
     ...(view.colorRange ?? []),
     ...(view.zRange ?? []),
+    ...(view.slicePlane ? [view.slicePlane.at] : []),
     ...(view.curve3d ?? []),
     ...(view.vector3d ?? []),
     ...(view.parameterRange ?? []),
@@ -373,6 +374,17 @@ function* sampleSpace(view: DemonstrationField,runtime:DemonstrationRuntime,time
   return result;
 }
 
+function sliceRuntime(view:DemonstrationField,runtime:DemonstrationRuntime,time:number){
+  if(!view.slicePlane)return {runtime,slice:undefined};
+  const {axis,at}=view.slicePlane,position=runtime.evaluate(at,time);
+  if(!Number.isFinite(position))throw Error('Slice coordinate must be finite');
+  const map=(u:number,v:number):Point3=>axis==='x'?[position,u,v]:axis==='y'?[u,position,v]:[u,v,position];
+  const projected:DemonstrationRuntime={...runtime,evaluate(expression,t=0,x?,y?,z?){
+    return x===undefined||y===undefined?runtime.evaluate(expression,t,x,y,z):runtime.evaluate(expression,t,...map(x,y));
+  },dependencies(expression){const mask=runtime.dependencies(expression);return (mask&4)|(axis==='x'?((mask&2)?1:0)|((mask&8)?2:0):axis==='y'?(mask&1)|((mask&8)?2:0):mask&3);}};
+  return {runtime:projected,slice:{axis,position}};
+}
+
 export function* sampleField(
   view: DemonstrationField,
   runtime: DemonstrationRuntime,
@@ -384,21 +396,22 @@ export function* sampleField(
   const y = demonstrationDomain(view.y, runtime, time);
   if (view.presentation === 'curve3d' || view.presentation === 'vectors3d') {
     const surface=yield* sampleSpace(view,runtime,time,x,y,preview);
-    return {pixels:new ArrayBuffer(0),arrows:[],contours:[],colorRange:undefined,surface};
+    return {pixels:new ArrayBuffer(0),arrows:[],contours:[],colorRange:undefined,surface,slice:undefined};
   }
   if (view.presentation === 'surface') {
     const surface = yield* sampleSurface(view, runtime, time, x, y, preview ? 17 : 33);
-    return { pixels: new ArrayBuffer(0), arrows: [], contours: [], colorRange: undefined, surface };
+    return { pixels: new ArrayBuffer(0), arrows: [], contours: [], colorRange: undefined, surface,slice:undefined };
   }
+  const {runtime:projected,slice}=sliceRuntime(view,runtime,time);
   const colorRange = view.colorRange?.map((v) => runtime.evaluate(v, time)) as Domain | undefined;
   if (colorRange && (!colorRange.every(Number.isFinite) || colorRange[0] >= colorRange[1]))
     throw Error('Color range must be finite and increasing');
   for (const stride of preview ? [4, 8, 1, 2] : [1, 2, 4, 8]) {
     try {
-      const pixels = yield* sampleGrid(view, runtime, time, x, y, stride, colorRange);
+      const pixels = yield* sampleGrid(view, projected, time, x, y, stride, colorRange);
       const arrows = yield* sampleVectors(view, runtime, time, x, y);
-      const contours = yield* sampleContours(view, runtime, time, x, y, stride);
-      return { pixels: pixels.buffer, arrows, contours, colorRange, surface: undefined };
+      const contours = yield* sampleContours(view, projected, time, x, y, stride);
+      return { pixels: pixels.buffer, arrows, contours, colorRange, surface: undefined,slice };
     } catch (error) {
       if (!isDemonstrationBudgetError(error)) throw error;
     }
