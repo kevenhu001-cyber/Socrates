@@ -6,6 +6,9 @@ import { fileURLToPath } from 'node:url';
 import { compileDemonstrationRuntime } from '@socrates/core/demonstration';
 import { sampleField } from '../src/react/intelligent-ui/demonstration/sampleField.ts';
 import { samplePlot } from '../src/react/intelligent-ui/demonstration/samplePlot.ts';
+import { extractIsosurface } from '../src/react/intelligent-ui/demonstration/geometry/marchingTetrahedra.ts';
+import { createProjection, projectIsoFaces, projectSurfaceFaces, surfacePath, spaceCurvePath, spaceArrow } from '../src/react/intelligent-ui/demonstration/geometry/projection.ts';
+import { plotProjection, pathFor } from '../src/react/intelligent-ui/demonstration/geometry/plotProjection.ts';
 import {
   parseDemonstrationExpression,
   evaluateDemonstrationExpression,
@@ -1038,4 +1041,44 @@ test('compiled factory reuses validated expressions without sharing parameter re
   const invalid={...p,definitions:{foo:1,bar:'#1'}};
   assert.equal(validateDemonstration(invalid).ok,false);
   assert.throws(()=>compileDemonstrationRuntime(invalid));
+});
+
+test('geometry extraction is independent of model evaluation and preserves its resource limits',()=>{
+  const size=17,values=new Float64Array(size**3);
+  for(let k=0;k<size;k++)for(let j=0;j<size;j++)for(let i=0;i<size;i++){
+    const [x,y,z]=[i,j,k].map(v=>-1.2+2.4*v/(size-1));
+    values[(k*size+j)*size+i]=x*x+y*y+z*z;
+  }
+  const triangles=finishGenerator(extractIsosurface(values,size,1));
+  assert.equal(triangles.length,4992);
+  for(const triangle of triangles)for(const point of triangle)
+    assert.ok(Math.abs(point.reduce((s,x)=>s+1.44*x*x,0)-1)<.02);
+  assert.deepEqual(finishGenerator(extractIsosurface(new Float64Array(8),2,1)),[]);
+  assert.throws(()=>finishGenerator(extractIsosurface(new Float64Array(8),18,1)),/cubic grid/);
+  assert.throws(()=>finishGenerator(extractIsosurface(new Float64Array(8),2,NaN)),/finite level/);
+});
+test('camera projection transforms existing geometry without numerical runtime or mutation',()=>{
+  const sample={size:2,values:[0,.25,.5,1],x:[0,1],y:[0,1],z:[0,1],
+    triangles:[[[0,0,0],[1,0,0],[0,1,1]],[[0,0,-1],[-1,0,0],[0,-1,0]]],
+    curve:[[0,0,0],null,[.5,.5,1],[1,1,0]]};
+  const original=structuredClone(sample),p=createProjection(0,0);
+  assert.deepEqual(p(0,0,0),[260,135]);
+  assert.equal(surfacePath(sample,p,true,0),'M178.00,217.00L342.00,176.00');
+  assert.equal(spaceCurvePath(sample,p),'M260,135M301,53L342,135');
+  assert.ok(spaceArrow(p,[0,0,0],[1,0,0]).startsWith('M260,135L342,135'));
+  assert.equal(projectSurfaceFaces(sample,'shaded',0,0).length,1);
+  assert.deepEqual(projectSurfaceFaces(sample,'wireframe',0,0),[]);
+  const a=projectIsoFaces(sample,0,0),b=projectIsoFaces(sample,.6,.5);
+  assert.equal(a.length,2);assert.equal(b.length,2);assert.notDeepEqual(a,b);
+  assert.ok(a[0].depth<=a[1].depth&&b[0].depth<=b[1].depth);
+  assert.deepEqual(sample,original);
+});
+test('plot projection is standalone for both linear and logarithmic axes',()=>{
+  const p=plotProjection([1,10],[1,100],'log','log');
+  assert.ok(Math.abs(p.sx(Math.sqrt(10))-(p.sx(1)+p.sx(10))/2)<1e-10);
+  const points=[[1,1],[2,10],null,[3,20],[4,30]];
+  const line=pathFor(points,p.sx,p.sy),step=pathFor(points,p.sx,p.sy,'step');
+  assert.equal((line.match(/M/g)||[]).length,2);
+  assert.equal((step.match(/H/g)||[]).length,2);
+  assert.equal((pathFor(points,p.sx,p.sy,'stem',p.sy(1)).match(/V/g)||[]).length,4);
 });
