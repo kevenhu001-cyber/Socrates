@@ -30,12 +30,8 @@ html[data-theme='socrates'][data-mode]:lang(zh) {
   --ui-font-ui: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
     'Noto Sans SC', 'Microsoft YaHei', 'Geist Sans', sans-serif;
   --font-sans: var(--ui-font-ui);
-  /* RN-9 — the display face is separate; the bundled
-     Newsreader serif, which the landing hero, learning-mode headings and any
-     `.greeting` surface opt into. It is a local, same-origin face (packaged
-     with @fontsource/newsreader), so nothing new is fetched. The serif is what
-     gives the empty state a voice: at 32–40px it reads as written language
-     rather than as a UI label. Chinese falls through to Noto Sans SC. */
+  /* Optional display typography stays separate from system UI typography.
+     The bundled display face remains available to learning surfaces. */
   --font-display: 'Newsreader', 'Charis SIL', 'Noto Sans SC', 'Georgia', serif;
   --font-serif: var(--font-display);
   --font-mono: var(--ui-font-ui-mono);
