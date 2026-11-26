@@ -87,12 +87,10 @@ function useArtifactAvailability(url: string, skipCheck: boolean) {
 function ArtifactErrorView({
   output,
   url,
-  failure,
   onRetry,
 }: {
   output: ArtifactOutputData;
   url: string;
-  failure: string;
   onRetry: () => void;
 }) {
   return (
@@ -112,10 +110,6 @@ function ArtifactErrorView({
           onClick={onRetry}
         />
       </span>
-      <details className="artifact-error-detail">
-        <summary>{i18n('artifact.details', 'Details')}</summary>
-        <code>{`${failure} · ${output.fileId}`}</code>
-      </details>
     </div>
   );
 }
@@ -156,7 +150,7 @@ export function ArtifactOutput({ output }: ArtifactOutputProps) {
   }
 
   if (failure) {
-    return <ArtifactErrorView output={output} url={url} failure={failure} onRetry={retry} />;
+    return <ArtifactErrorView output={output} url={url} onRetry={retry} />;
   }
 
   const downloadText = i18n('common.downloadFile', '[download {type}]').replace(
