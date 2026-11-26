@@ -48,7 +48,8 @@ export interface DemonstrationField extends DemonstrationViewBase {
   kind: 'field';
   expression: DemonstrationValue;
   slicePlane?: {axis:'x'|'y'|'z';at:DemonstrationValue};
-  presentation?: 'map' | 'surface' | 'curve3d' | 'vectors3d' | 'parametricSurface';
+  presentation?: 'map' | 'surface' | 'curve3d' | 'vectors3d' | 'parametricSurface' | 'isosurface';
+  isoLevel?: DemonstrationValue;
   surface3d?: [DemonstrationValue,DemonstrationValue,DemonstrationValue];
   uRange?: [DemonstrationValue,DemonstrationValue];
   vRange?: [DemonstrationValue,DemonstrationValue];
@@ -132,6 +133,7 @@ export interface DemonstrationProgram {
   parameters?: DemonstrationParameter[];
   definitions?: Record<string, DemonstrationValue>;
   analysis?: {kind:'fft';expression:DemonstrationValue;timeRange:[number,number];samples?:number;window?:'rectangular'|'hann';removeMean?:boolean;lowpass?:DemonstrationValue} | {kind:'eigen';matrix:DemonstrationValue[][]} | {kind:'sweep';parameter:string;range:[number,number];samples?:number;expression:DemonstrationValue;time?:number};
+  finiteElement?: {nodes:number[];diffusion:DemonstrationValue;reaction?:DemonstrationValue;source:DemonstrationValue;left:DemonstrationValue;right:DemonstrationValue};
   optimization?: {variables:{id:string;initial:DemonstrationValue;min:number;max:number}[];objective:DemonstrationValue;goal?:'min'|'max';tolerance?:number;maxIterations?:number};
   nonlinearSystem?: {guess:Record<string,DemonstrationValue>;residuals:Record<string,DemonstrationValue>;tolerance?:number;maxIterations?:number};
   sparseSystem?: {method?:'pcg'|'bicgstab';size:number;entries:[number,number,DemonstrationValue][];rhs:DemonstrationValue[];tolerance?:number;maxIterations?:number};
@@ -164,7 +166,8 @@ export interface DemonstrationProgram {
       boundary: DemonstrationValue;
       source?: DemonstrationValue;
     };
-    coupledFields?: {dimension:1|2;nx:number;ny?:number;xDomain:[number,number];yDomain?:[number,number];boundary:'periodic'|'noFlux';fields:{id:string;initial:DemonstrationValue;diffusivity:DemonstrationValue;reaction?:DemonstrationValue}[]};
+    mechanics?: {coordinates:{position:string;velocity:string;initialPosition:DemonstrationValue;initialVelocity:DemonstrationValue;acceleration:DemonstrationValue}[]};
+    coupledFields?: {dimension:1|2;nx:number;ny?:number;xDomain:[number,number];yDomain?:[number,number];boundary:'periodic'|'noFlux';fields:{id:string;initial:DemonstrationValue;diffusivity:DemonstrationValue;reaction?:DemonstrationValue;advection?:[DemonstrationValue]|[DemonstrationValue,DemonstrationValue]}[]};
     reactionNetwork?: {seed?:number;species:{id:string;initial:DemonstrationValue;composition?:Record<string,number>}[];reactions:{id:string;reactants:Record<string,number>;products:Record<string,number>;rateConstant?:DemonstrationValue;rate?:DemonstrationValue}[]};
     stateSpace?: {
       states: string[];
@@ -182,7 +185,7 @@ export interface DemonstrationProgram {
     };
     duration: number;
     step: number;
-    method?: 'rk4' | 'rk45' | 'sdirk2' | 'grid-implicit' | 'ssa' | 'grid-heun';
+    method?: 'rk4' | 'rk45' | 'sdirk2' | 'grid-implicit' | 'ssa' | 'grid-heun' | 'verlet';
     /** Nonsingular M in M*state'=derivatives; rows/columns follow initial-state key order. */
     massMatrix?: DemonstrationValue[][];
     /** Semi-explicit index-one constraints g(t, state, algebraic)=0. */
@@ -217,6 +220,7 @@ export interface DemonstrationDiagnostics {
   relativeResidual?: number;
   absoluteResidual?: number;
   diffusionCFL?: number;
+  transportCFL?: number;
   adColumns?: number;
   finiteDifferenceColumns?: number;
   projectedGradient?: number;
