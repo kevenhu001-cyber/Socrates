@@ -226,18 +226,6 @@
   color: var(--ui-text-primary);
   text-decoration: underline;
 }
-.artifact-error-detail {
-  width: 100%;
-  color: var(--ui-text-secondary);
-  font-size: var(--ui-font-size-xs);
-}
-.artifact-error-detail code {
-  display: block;
-  margin-top: var(--ui-space-xs);
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  color: inherit;
-}
 
 @media (max-width: 768px) {
   .exec-artifact-html-frame {
