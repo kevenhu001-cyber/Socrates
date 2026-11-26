@@ -228,11 +228,11 @@ test('live chat shows a running search row while the model is searching', async 
   await page.evaluate(() => window.__finishSearchStream());
   await expect(row).toHaveAttribute('data-state', 'done');
   /* P_declarative-tool-run — the settled row still names its object, swaps its
-     tool glyph for the source-site marks, and the source count moves into the
-     open panel. */
+     search glyph and exposes the actual source row; complete details remain
+     available behind the per-call disclosure. */
   await expect(row.locator(TURN.spinner)).toHaveCount(0);
   await expect(row.locator(TURN.stepTitle)).toContainText('weather today');
-  await expect(row.locator('.tool-site-marks [data-testid="tool-site-mark"]')).toHaveCount(1);
+  await expect(row.locator('.activity-source-preview [data-testid="tool-site-mark"]')).toHaveCount(1);
   const detail = await openToolDetail(page, bubble, 'late-search');
   await expect(detail.locator(TURN.source)).toHaveCount(1);
 });
