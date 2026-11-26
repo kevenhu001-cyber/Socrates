@@ -55,6 +55,7 @@ export function ToolSiteMarks({ sites }: { sites: readonly string[] }) {
           host={hostOf(url)}
           className="tool-site-mark"
           testId="tool-site-mark"
+          loadingFallback
         />
       ))}
     </span>
