@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { sampleField } from '../src/react/intelligent-ui/demonstration/sampleField.ts';
 import { samplePlot } from '../src/react/intelligent-ui/demonstration/samplePlot.ts';
 import {
@@ -9,6 +11,7 @@ import {
   demonstrationDomain,
   validateDemonstration,
   createDemonstrationRuntime,
+  compileDemonstrationRuntime,
   validateIntelligentUi,
 } from '@socrates/core';
 const examples = JSON.parse(
@@ -976,4 +979,46 @@ test('marching tetrahedra extracts bounded sphere triangles from actual scalar s
   assert.equal(f.surface.isoLevel,1);
   const preview=finishGenerator(sampleField(p.views[0],rt,0,true));
   assert.ok(preview.surface.triangles.length<f.surface.triangles.length);
+});
+
+test('simulation modules have no circular imports and preserve the public facade',()=>{
+  const root=fileURLToPath(new URL('../../packages/core/src/simulation/',import.meta.url));
+  const files=[];
+  function walk(dir){
+    for(const item of readdirSync(dir,{withFileTypes:true})){
+      const path=join(dir,item.name);
+      if(item.isDirectory())walk(path);
+      else if(item.name.endsWith('.js'))files.push(path);
+    }
+  }
+  walk(root);
+  assert.ok(files.length>=22);
+  const available=new Set(files),graph=new Map();
+  for(const path of files){
+    const source=readFileSync(path,'utf8');
+    const dependencies=[...source.matchAll(/^import\s+.*?from\s+['"]([^'"]+)['"];/gm)].map(m=>resolve(dirname(path),m[1]));
+    for(const dep of dependencies)assert.ok(available.has(dep),`Internal module must not import outside the kernel: ${path} -> ${dep}`);
+    graph.set(path,dependencies);
+  }
+  const visiting=new Set(),visited=new Set();
+  function visit(path){
+    assert.ok(!visiting.has(path),`Circular simulation dependency: ${path}`);
+    if(visited.has(path))return;
+    visiting.add(path);for(const dep of graph.get(path))visit(dep);
+    visiting.delete(path);visited.add(path);
+  }
+  for(const path of files)visit(path);
+  const facade=readFileSync(new URL('../../packages/core/src/demonstration.js',import.meta.url),'utf8');
+  assert.ok(facade.split('\n').length<20);
+});
+test('compiled factory reuses validated expressions without sharing parameter revision results',()=>{
+  const p={version:1,parameters:[{id:'k',min:1,max:3,value:2}],definitions:{f:'k*x'},views:[{kind:'plot',x:[0,1],y:[0,3],curves:[{expression:'f'}]}]};
+  const factory=compileDemonstrationRuntime(p);
+  const a=finishGenerator(factory({k:1})),b=finishGenerator(factory({k:3}));
+  assert.equal(a.evaluate('f',0,.5),.5);
+  assert.equal(b.evaluate('f',0,.5),1.5);
+  assert.equal(a.evaluate('f',0,.5),.5);
+  const invalid={...p,definitions:{foo:1,bar:'#1'}};
+  assert.equal(validateDemonstration(invalid).ok,false);
+  assert.throws(()=>compileDemonstrationRuntime(invalid));
 });
