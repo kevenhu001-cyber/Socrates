@@ -736,8 +736,8 @@ html[data-mode='dark'] #appShell .msg-body .hljs :is(.hljs-comment, .hljs-quote)
 /* User bubble: slightly narrower + tighter pad; the radius comes from
    parity/transcript.css's --ui-radius-bubble role. */
 @media (max-width: 768px) {
-  #appShell#appShell .msg.user .msg-body {
-    max-width: min(72%, 560px);
+  #appShell #msgList .msg.user .msg-body {
+    max-width: min(85%, 560px);
     padding: 10px 16px;
   }
 }
