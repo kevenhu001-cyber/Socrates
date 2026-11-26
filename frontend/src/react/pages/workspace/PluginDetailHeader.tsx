@@ -60,9 +60,9 @@ export function PluginDetailHeader({
               {detailText('Code repositories and pull requests', '代码仓库与 Pull Request')}
             </span>
           ) : null}
-          {plugin.id !== 'github' || isConnected || pending || failed || !connectable ? (
-            <span className="plugin-detail-status-pill">{status}</span>
-          ) : null}
+          <span className={`plugin-detail-status-pill${isConnected ? ' connected' : ''}`}>
+            {status}
+          </span>
         </span>
       }
       actions={
