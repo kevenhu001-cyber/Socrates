@@ -535,3 +535,29 @@ test('history plots sample state at each plotted time and carry event guides', (
   assert.ok(Math.abs(sample.playhead-1)<1e-8);
   assert.ok(Math.abs(sample.eventTimes[0]-1)<1e-8);
 });
+
+test('L-stable SDIRK2 tracks a stiff forced decay', () => {
+  const program = {
+    version: 1, dynamics: { method: 'sdirk2', duration: 1, step: 0.1,
+      rtol: 1e-5, atol: 1e-8, initial: { q: 1 },
+      derivatives: { q: '-10000*(q-cos(t))-sin(t)' } },
+    views: [{ kind: 'metrics', values: [{ expression: 'q' }] }],
+  };
+  const runtime = createDemonstrationRuntime(program);
+  assert.equal(runtime.duration, 1);
+  assert.deepEqual(runtime.warnings, []);
+  assert.ok(Math.abs(runtime.stateAt(1).q - Math.cos(1)) < 1e-4);
+});
+test('simultaneous events apply disjoint resets to the same prior state', () => {
+  const runtime = createDemonstrationRuntime({
+    version: 1, dynamics: { method: 'rk45', duration: 2, step: 0.1,
+      initial: { q: 0, v: 0 }, derivatives: { q: 1, v: 1 },
+      events: [{ expression: 't-1', direction: 1, reset: { q: 'q+2' } },
+        { expression: 't-1', direction: 1, reset: { v: 'v+3' } }] },
+    views: [{ kind: 'metrics', values: [{ expression: 'q' }] }],
+  });
+  assert.deepEqual(runtime.warnings, []);
+  assert.equal(runtime.eventTimes.length, 1);
+  assert.ok(Math.abs(runtime.stateAt(2).q - 4) < 1e-7);
+  assert.ok(Math.abs(runtime.stateAt(2).v - 5) < 1e-7);
+});
