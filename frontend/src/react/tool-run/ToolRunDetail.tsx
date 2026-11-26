@@ -1,17 +1,8 @@
-import { useId, useState } from 'react';
-import {
-  CodeBlock,
-  Chevron,
-  DetailSection,
-  ImageOutput,
-  PlainDetail,
-  sourceCardsOf,
-} from '@socrates/ui/turn';
+import { DetailSection, ImageOutput, PlainDetail, sourceCardsOf } from '@socrates/ui/turn';
 import { UiButton } from '@socrates/ui/primitives';
-import { useWindowDimensions } from '../rn/useWindowDimensions';
 import { SourceAvatar } from '../sources/SourceAvatar';
-import { basename, tf, translate } from '../../legacy/toolPresentationModel.ts';
-import { copyText, openExternal } from './copyText';
+import { basename, translate } from '../../legacy/toolPresentationModel.ts';
+import { openExternal } from './copyText';
 import { toolOutputsOf } from './toolOutputs';
 import { openSourcesPanel } from '../sources/mount';
 import type { DetailSection as Section, ToolCallRecord, ToolRunView } from './toolRunModel';
@@ -19,103 +10,16 @@ import type { DetailSection as Section, ToolCallRecord, ToolRunView } from './to
 export interface ToolRunDetailProps {
   view: ToolRunView;
   call?: ToolCallRecord;
-  /** Share / history-replay surfaces hide the actions that mutate state. */
   readOnly?: boolean;
   inFlight?: boolean;
-}
-
-function copyLabels() {
-  return {
-    copyLabel: translate('tool.copy', 'Copy'),
-    copiedLabel: translate('tool.copied', 'Copied'),
-    failedLabel: translate('tool.copyFailed', 'Copy failed'),
-  };
-}
-
-function TextSection({
-  section,
-  readable = false,
-}: {
-  section: Extract<Section, { kind: 'output' | 'error' }>;
-  readable?: boolean;
-}) {
-  const [expanded, setExpanded] = useState(false);
-  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle');
-  const { width } = useWindowDimensions();
-  const expandable = Boolean(section.fullText) && section.fullText !== section.text;
-  const fullText = section.fullText || section.text;
-  const shown = expanded ? fullText : section.text;
-  const labels = copyLabels();
-  const expandAction = expandable ? (
-    <UiButton
-      testID="tool-output-expand"
-      variant="ghost"
-      size={width < 768 ? 'lg' : 'sm'}
-      aria-expanded={expanded}
-      label={
-        expanded
-          ? translate('tool.showLess', 'Show less')
-          : tf('tool.showAll', 'Show all ({n} chars)', {
-              n: fullText.length.toLocaleString(),
-            })
-      }
-      onPress={() => setExpanded((value) => !value)}
-    />
-  ) : null;
-  return (
-    <DetailSection title={section.title} kind={section.kind}>
-      {readable ? (
-        <>
-          <div
-            className={`tool-detail-readable-output${section.kind === 'error' ? ' tool-detail-error-message' : ''}`}
-            data-testid="tool-code-output"
-          >
-            {shown}
-          </div>
-          <div className="tool-readable-actions">
-            {expandAction}
-            <UiButton
-              testID="tool-code-copy"
-              variant="ghost"
-              size={width < 768 ? 'lg' : 'sm'}
-              label={
-                copyStatus === 'copied'
-                  ? labels.copiedLabel
-                  : copyStatus === 'failed'
-                    ? labels.failedLabel
-                    : labels.copyLabel
-              }
-              aria-live="polite"
-              onPress={() => {
-                void copyText(fullText).then(
-                  (ok) => setCopyStatus(ok ? 'copied' : 'failed'),
-                  () => setCopyStatus('failed'),
-                );
-              }}
-            />
-          </div>
-        </>
-      ) : (
-        <CodeBlock
-          text={shown}
-          tone={section.kind === 'error' ? 'error' : 'plain'}
-          onCopy={() => copyText(fullText)}
-          {...labels}
-          extra={expandAction}
-        />
-      )}
-    </DetailSection>
-  );
 }
 
 function ResultSection({
   section,
   entryKey,
-  readable = false,
 }: {
   section: Section;
   entryKey: string;
-  readable?: boolean;
 }) {
   if (section.kind === 'sources') {
     const items = section.items.map((item, index) => ({
@@ -191,10 +95,7 @@ function ResultSection({
       </DetailSection>
     );
   }
-  const plainError = section.kind === 'error' && section.title !== 'stderr';
-  const plainOutput =
-    section.kind === 'output' && readable && !/^[\s]*[\[{]/.test(section.text);
-  return <TextSection section={section} readable={plainError || plainOutput} />;
+  return null;
 }
 
 function imageOutputsOf(call: ToolCallRecord | undefined) {
@@ -208,33 +109,6 @@ function imageOutputsOf(call: ToolCallRecord | undefined) {
           },
         ]
       : [],
-  );
-}
-
-interface LiveOutputSectionProps {
-  view: ToolRunView;
-}
-
-function LiveOutputSection({ view }: LiveOutputSectionProps) {
-  return (
-    <DetailSection title={translate('tool.detail.liveOutput', 'Live output')} kind="live">
-      {view.livePreview ? (
-        <CodeBlock
-          testID="tool-live-preview"
-          maxHeight={280}
-          text={view.livePreview}
-          {...copyLabels()}
-        />
-      ) : null}
-      {view.liveOutput ? (
-        <CodeBlock
-          testID="tool-live-output"
-          maxHeight={320}
-          text={view.liveOutput}
-          {...copyLabels()}
-        />
-      ) : null}
-    </DetailSection>
   );
 }
 
@@ -253,73 +127,24 @@ function ToolImagesSection({ images }: { images: ReturnType<typeof imageOutputsO
   );
 }
 
-function ToolArgsCollapsible({ args, width }: { args: Array<{ text: string }>; width: number }) {
-  const [showInput, setShowInput] = useState(false);
-  const inputId = useId();
-  if (!args.length) return null;
-  return (
-    <div className="thinking-tool-input">
-      <UiButton
-        testID="tool-input-toggle"
-        variant="ghost"
-        size={width < 768 ? 'lg' : 'sm'}
-        label={translate('tool.detail.input', 'Input')}
-        leading={<Chevron open={showInput} />}
-        aria-expanded={showInput}
-        aria-controls={inputId}
-        onPress={() => setShowInput((previous) => !previous)}
-      />
-      <div id={inputId} hidden={!showInput} data-testid="tool-detail-section-input">
-        {showInput
-          ? args.map((section, index) => (
-              <CodeBlock key={index} text={section.text} onCopy={copyText} {...copyLabels()} />
-            ))
-          : null}
-      </div>
-    </div>
+/** Only explicitly structured public results may enter the transcript.
+ * Raw arguments, stdout/stderr, JSON responses and technical diagnostics are
+ * for the tool runtime, not an alternate user-facing answer. */
+export function ToolRunDetail({ view, call }: ToolRunDetailProps) {
+  const results = view.sections.filter(
+    (section) => section.kind === 'sources' || section.kind === 'files',
   );
-}
-
-export function ToolRunDetail({ view, call, inFlight = false }: ToolRunDetailProps) {
-  const { width } = useWindowDimensions();
-  const args = view.tech.filter((section) => section.kind === 'args');
-  const facts = view.tech.filter((section) => section.kind === 'fact');
-  const hasLiveOutput = inFlight && Boolean(view.livePreview || view.liveOutput);
-  const results = view.sections.filter((section) => section.kind !== 'error');
-  const errors = view.sections.filter((section) => section.kind === 'error');
   const images = imageOutputsOf(call);
-  const empty =
-    !args.length && !hasLiveOutput && !view.sections.length && !images.length && !facts.length;
   const entryKey = call?.id || view.id;
   return (
     <>
-      {hasLiveOutput ? <LiveOutputSection view={view} /> : null}
-      {results.map((section, index) =>
-        !hasLiveOutput || section.kind === 'sources' ? (
-          <ResultSection
-            key={`${section.kind}-${index}`}
-            section={section}
-            entryKey={entryKey}
-            readable={view.category === 'fetch' || view.category === 'connector'}
-          />
-        ) : null,
-      )}
-      <ToolImagesSection images={images} />
-      {errors.map((section, index) => (
-        <ResultSection key={`error-${index}`} section={section} entryKey={entryKey} />
+      {results.map((section, index) => (
+        <ResultSection key={`${section.kind}-${index}`} section={section} entryKey={entryKey} />
       ))}
-      <ToolArgsCollapsible args={args} width={width} />
-      {facts.length ? (
-        <DetailSection title={translate('tool.techDetails', 'Technical details')} kind="technical">
-          {facts.map((section, index) => (
-            <PlainDetail
-              key={`${section.title}-${index}`}
-              text={`${section.title}: ${section.text}`}
-            />
-          ))}
-        </DetailSection>
+      <ToolImagesSection images={images} />
+      {!results.length && !images.length && !view.agentRun ? (
+        <PlainDetail text={view.label} />
       ) : null}
-      {empty ? <PlainDetail text={translate('tool.noDetails', 'No additional details.')} /> : null}
     </>
   );
 }
