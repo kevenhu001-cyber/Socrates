@@ -41,8 +41,8 @@ export function DemoSurface({ sample, label, style = 'wireframe' }: { sample?: S
     let d = '', pen = false;
     for (let k=0;k<sample.size;k++) {
       const i = row ? k : index, j = row ? index : k;
-      const index=j*sample.size+i,z=sample.values[index];
-      const vertex=sample.vertices?sample.vertices[index]:Number.isFinite(z)?[2*i/(sample.size-1)-1,2*j/(sample.size-1)-1,2*(z-sample.z[0])/(sample.z[1]-sample.z[0])-1] as [number,number,number]:null;
+      const vertexIndex=j*sample.size+i,z=sample.values[vertexIndex];
+      const vertex=sample.vertices?sample.vertices[vertexIndex]:Number.isFinite(z)?[2*i/(sample.size-1)-1,2*j/(sample.size-1)-1,2*(z-sample.z[0])/(sample.z[1]-sample.z[0])-1] as [number,number,number]:null;
       if(!vertex){pen=false;continue;}
       const point=project(...vertex);
       d += `${pen?'L':'M'}${point[0].toFixed(2)},${point[1].toFixed(2)}`;
