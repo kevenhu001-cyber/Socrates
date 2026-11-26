@@ -160,7 +160,7 @@ const aliases = {
   sgn: 'sign',
   power: 'pow',
 };
-const SPECIAL = ['sum', 'if', 'iterate'];
+const SPECIAL = ['sum', 'if', 'iterate','diff','integral'];
 const callable = (name) =>
   Object.hasOwn(functions, name) || Object.hasOwn(extraFunctions, name) || SPECIAL.includes(name)
     ? name
@@ -168,9 +168,9 @@ const callable = (name) =>
       ? aliases[name]
       : null;
 const expectedArity = (name) =>
-  name === 'sum' || name === 'iterate'
+  name === 'sum' || name === 'iterate' || name==='integral'
     ? 4
-    : name === 'if'
+    : name === 'if' || name==='diff'
       ? 3
       : (arity[name] ??
         extraArity[name] ??
@@ -406,10 +406,10 @@ export function parseDemonstrationExpression(input) {
             `Wrong argument count: ${written} takes ${expected ?? '1–8'} argument${expected === 1 ? '' : 's'}`,
           );
         if (
-          ['sum', 'iterate'].includes(name) &&
+          ['sum', 'iterate','diff','integral'].includes(name) &&
           (args[0]?.kind !== 'variable' || !SAFE.test(args[0].name) || RESERVED.has(args[0].name))
         )
-          throw Error('sum/iterate needs a safe local variable as its first argument');
+          throw Error('sum/iterate/diff/integral needs a safe local variable as its first argument');
         return { kind: 'call', name, args };
       }
       // "sin x" and "sin 2x": a core one-argument function without parentheses.
@@ -489,6 +489,63 @@ const budgetError = () => Error('Demonstration calculation budget exceeded');
 export function isDemonstrationBudgetError(error) {
   return error instanceof Error && error.message.includes('budget exceeded');
 }
+
+/** Forward-mode directional AD for smooth, explicitly authored scalar ASTs.
+ * Unsupported or nondifferentiable operations return NaN tangent; callers
+ * either report that limitation or use a documented finite-difference fallback.
+ */
+function dualExpression(ast,scope,variable,budget){
+  if(--budget.remaining<0)throw budgetError();
+  const run=node=>dualExpression(node,scope,variable,budget);
+  if(ast.kind==='number')return [ast.value,0];
+  if(ast.kind==='variable'){
+    const v=ast.name==='pi'?Math.PI:ast.name==='e'?Math.E:Number(lookup(scope,ast.name));
+    return [v,ast.name===variable?1:0];
+  }
+  if(ast.kind==='unary'){
+    const [v,d]=run(ast.arg);
+    return ast.op==='-'?[-v,-d]:ast.op==='+'?[v,d]:[+!v,Number.NaN];
+  }
+  const power=(a,da,b,db)=>{
+    const v=a**b;
+    if(db===0)return [v,b===0?0:da===0?0:b*a**(b-1)*da];
+    return [v,a>0?v*(db*Math.log(a)+b*da/a):Number.NaN];
+  };
+  if(ast.kind==='binary'){
+    if(['&&','||','<','>','<=','>=','==','!=','%'].includes(ast.op))
+      return [evaluateDemonstrationExpression(ast,scope,budget),Number.NaN];
+    const [a,da]=run(ast.left),[b,db]=run(ast.right);
+    switch(ast.op){
+      case '+':return [a+b,da+db];
+      case '-':return [a-b,da-db];
+      case '*':return [a*b,da*b+a*db];
+      case '/':return [a/b,(da*b-a*db)/(b*b)];
+      case '^':return power(a,da,b,db);
+    }
+  }
+  if(ast.kind==='call'){
+    const fn=ast.name;
+    if(fn==='if')return [evaluateDemonstrationExpression(ast,scope,budget),Number.NaN];
+    if(!['sin','cos','tan','asin','acos','atan','sqrt','abs','exp','expm1','log','log1p','log10','log2','sinh','cosh','tanh','cbrt','pow','hypot','atan2'].includes(fn))
+      return [evaluateDemonstrationExpression(ast,scope,budget),Number.NaN];
+    const args=ast.args.map(run),[a,da]=args[0],b=args[1]?.[0],db=args[1]?.[1];
+    if(fn==='pow')return power(a,da,b,db);
+    if(fn==='hypot'){
+      const v=Math.hypot(...args.map(p=>p[0]));
+      return [v,v===0?Number.NaN:args.reduce((s,[q,d])=>s+q*d,0)/v];
+    }
+    if(fn==='atan2')return [Math.atan2(a,b),(b*da-a*db)/(a*a+b*b)];
+    const v=(functions[fn]??extraFunctions[fn])(a);
+    const factor={sin:()=>Math.cos(a),cos:()=>-Math.sin(a),tan:()=>1/Math.cos(a)**2,
+      asin:()=>1/Math.sqrt(1-a*a),acos:()=>-1/Math.sqrt(1-a*a),atan:()=>1/(1+a*a),
+      sqrt:()=>a>0?.5/Math.sqrt(a):Number.NaN,abs:()=>a===0?Number.NaN:Math.sign(a),
+      exp:()=>v,expm1:()=>Math.exp(a),log:()=>1/a,log1p:()=>1/(1+a),
+      log10:()=>1/(a*Math.LN10),log2:()=>1/(a*Math.LN2),sinh:()=>Math.cosh(a),
+      cosh:()=>Math.sinh(a),tanh:()=>1-v*v,cbrt:()=>a===0?Number.NaN:1/(3*v*v)}[fn]();
+    return [v,da===0?0:da*factor];
+  }
+  return [Number.NaN,Number.NaN];
+}
 export function evaluateDemonstrationExpression(ast, scope, budget = { remaining: 2000000 }) {
   if (--budget.remaining < 0) throw budgetError();
   const run = (node) => evaluateDemonstrationExpression(node, scope, budget);
@@ -541,6 +598,27 @@ export function evaluateDemonstrationExpression(ast, scope, budget = { remaining
     return scope[sparseReader](run(ast.args[0]));
   }
   if (ast.name === 'if') return run(ast.args[0]) ? run(ast.args[1]) : run(ast.args[2]);
+  if(ast.name==='diff'||ast.name==='integral'){
+    const key=ast.args[0].name,local=Object.create(scope),start=run(ast.args[1]);
+    if(!finite(start))throw Error('Calculus bounds must be finite');
+    Object.defineProperty(local,key,{value:start,writable:true,enumerable:true});
+    if(ast.name==='diff'){
+      const [value,slope]=dualExpression(ast.args[2],local,key,budget);
+      if(!finite(value)||!finite(slope))throw Error('Derivative undefined or unsupported; use smooth explicit expression');
+      return slope;
+    }
+    const end=run(ast.args[2]),n=128,h=(end-start)/n;
+    if(!finite(end)||!finite(h))throw Error('Integral bounds must be finite');
+    if(start===end)return 0;
+    let total=0;
+    for(let i=0;i<=n;i++){
+      local[key]=i===n?end:start+i*h;
+      const v=evaluateDemonstrationExpression(ast.args[3],local,budget);
+      if(!finite(v))throw Error('Nonfinite quadrature sample');
+      total+=(i===0||i===n?1:i%2?4:2)*v;
+    }
+    return total*h/3;
+  }
   if (ast.name === 'sum' || ast.name === 'iterate') {
     // The loop variable shadows the outer scope through the prototype chain, so
     // lazily evaluated definitions are computed once, not once per term.
@@ -616,7 +694,10 @@ function expressionNames(ast, allowed, used) {
   if (ast.kind === 'unary') expressionNames(ast.arg, allowed, used);
   if (ast.kind === 'call') {
     if (ast.name === 'sparseAt' && !allowed.has('sparseValue')) throw Error('sparseAt requires a sparse system');
-    if (['sum', 'iterate'].includes(ast.name)) {
+    if(ast.name==='diff'){
+      expressionNames(ast.args[1],allowed,used);
+      expressionNames(ast.args[2],new Set([...allowed,ast.args[0].name]),used);
+    }else if (['sum', 'iterate','integral'].includes(ast.name)) {
       expressionNames(ast.args[1], allowed, used);
       expressionNames(ast.args[2], allowed, used);
       expressionNames(ast.args[3], new Set([...allowed, ast.args[0].name]), used);
@@ -1633,11 +1714,15 @@ function* solveNonlinearSystem(s,params,compile){
     return Float64Array.from(s.ids,id=>read(s.residuals[id]));
   };
   const norm=v=>v.every(finite)?Math.max(...v.map(Math.abs)):Infinity;
-  let f=residual(z),error=norm(f);
+  let f=residual(z),error=norm(f),adColumns=0,finiteDifferenceColumns=0;
   if(!finite(error)||!z.every(v=>finite(v)&&Math.abs(v)<=1e12))fail('Nonfinite initial residual or guess');
   while(error>s.tolerance&&iterations<s.maxIterations){
     const jac=new Float64Array(n*n),delta=Float64Array.from(f,v=>-v);
     for(let j=0;j<n;j++){
+      s.ids.forEach((id,i)=>{scope[id]=z[i];});
+      const column=s.ids.map(id=>dualExpression(compile(s.residuals[id]),scope,s.ids[j],budget)[1]);
+      if(column.every(finite)){for(let i=0;i<n;i++)jac[i*n+j]=column[i];adColumns++;continue;}
+      finiteDifferenceColumns++;
       const h=1e-6*Math.max(1,Math.abs(z[j])),trial=z.slice();trial[j]+=h;
       let g=residual(trial),sign=1;
       if(!g.every(finite)){trial[j]=z[j]-h;g=residual(trial);sign=-1;}
@@ -1656,7 +1741,7 @@ function* solveNonlinearSystem(s,params,compile){
     iterations++;yield;
   }
   if(error>s.tolerance)fail('Newton iteration limit exceeded; residual '+error);
-  return {values:Object.fromEntries(s.ids.map((id,i)=>[id,z[i]])),error,iterations};
+  return {values:Object.fromEntries(s.ids.map((id,i)=>[id,z[i]])),error,iterations,adColumns,finiteDifferenceColumns};
 }
 function lowerSparseSystem(program){
   if(!sparseSystemSpec(program))return program;
@@ -2593,7 +2678,8 @@ export function compileDemonstrationRuntime(input) {
     if (ast.kind === 'unary') return astMask(ast.arg, locals);
     if (ast.kind === 'binary') return astMask(ast.left, locals) | astMask(ast.right, locals);
     if (ast.kind !== 'call') return 0;
-    if (ast.name === 'sum' || ast.name === 'iterate') {
+    if(ast.name==='diff')return astMask(ast.args[1],locals)|astMask(ast.args[2],new Set([...locals,ast.args[0].name]));
+    if (ast.name === 'sum' || ast.name === 'iterate' || ast.name==='integral') {
       return (
         astMask(ast.args[1], locals) |
         astMask(ast.args[2], locals) |
@@ -3053,7 +3139,7 @@ function* prepareRuntime(program, definitions, stateNames, compile, dependencies
   return {
     duration,
     eventTimes: adaptiveResult?.eventTimes ?? [],
-    diagnostics: root ? {method:'Newton',unknowns:rootSpec.ids.length,iterations:root.iterations,absoluteResidual:root.error} : sparse ? {method:sparse.method??'PCG',unknowns:sparse.x.length,nonzeros:sparse.nnz,iterations:sparse.iterations,relativeResidual:sparse.error} :
+    diagnostics: root ? {method:'Newton',unknowns:rootSpec.ids.length,iterations:root.iterations,absoluteResidual:root.error,adColumns:root.adColumns,finiteDifferenceColumns:root.finiteDifferenceColumns} : sparse ? {method:sparse.method??'PCG',unknowns:sparse.x.length,nonzeros:sparse.nnz,iterations:sparse.iterations,relativeResidual:sparse.error} :
       coupled ? {method:'grid-heun',...coupled.diagnostics} : grid ? {method:'grid-implicit',...grid.diagnostics} : dynamics ? {method:dynamics.method??'rk4',derivativeEvaluations,
         ...(adaptiveResult?.diagnostics??{acceptedSteps:Math.max(0,trajectory.length-1),rejectedSteps:0,events:0,minStep:step,maxStep:step})} : undefined,
     parameters: params,
