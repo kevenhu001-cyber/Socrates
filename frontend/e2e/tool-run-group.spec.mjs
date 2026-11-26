@@ -191,11 +191,8 @@ test('a row opens its detail inline, and closes on a second press', async ({ pag
   const detail = await openDetail(page, body, 's1');
   await expect(row).toHaveAttribute('aria-expanded', 'true');
   expect(await detail.getAttribute('role')).toBe(null);
-  await expect(detail.getByTestId('tool-detail-section-input')).toBeHidden();
-  await detail.getByTestId('tool-input-toggle').click();
-  await expect(detail.getByTestId('tool-detail-section-input')).toContainText(
-    '"query": "alpha theory"',
-  );
+  await expect(detail.getByTestId('tool-detail-section-input')).toHaveCount(0);
+  await expect(detail.getByTestId('tool-input-toggle')).toHaveCount(0);
   const sources = detail.getByTestId('tool-detail-section-sources');
   await expect(sources.getByTestId('tool-source')).toHaveCount(2);
   await expect(sources.getByTestId('tool-source-title').first()).toHaveText('Alpha one');
@@ -226,59 +223,23 @@ test('keyboard activation toggles the row disclosure', async ({ page }) => {
   await expect(row).toHaveAttribute('aria-expanded', 'false');
 });
 
-test('long tool output expands and copies the complete source text', async ({ page }) => {
-  const output = Array.from({ length: 30 }, (_, i) => `line-${i}: ${'x'.repeat(500)}`).join('\n');
-  const call = {
-    id: 'long-output',
-    name: 'code_interpreter',
-    input: { code: 'print(1)' },
-    output,
-    status: 'completed',
-    textOffset: 0,
-  };
-  const body = await loadFixtureSession(page, { toolCalls: [call] });
-  await page.evaluate(() => {
-    Object.defineProperty(navigator, 'clipboard', {
-      configurable: true,
-      value: {
-        writeText: async (text) => {
-          window.__copiedToolOutput = text;
-        },
-      },
-    });
-  });
-  const detail = await openDetail(page, body, 'long-output');
-  const section = detail.getByTestId('tool-detail-section-output');
-  const block = section.getByTestId('tool-code-output');
-  await expect(block).toContainText('line-0:');
-  await expect(block).not.toContainText('line-15:');
-  const expand = section.getByTestId('tool-output-expand');
-  await expect(expand).toHaveAttribute('aria-expanded', 'false');
-  await expand.click();
-  await expect(expand).toHaveAttribute('aria-expanded', 'true');
-  await expect(block).toContainText('line-15:');
-  await section.getByTestId('tool-code-copy').click();
-  await expect(section.getByTestId('tool-code-copy')).toHaveText('Copied');
-  expect(await page.evaluate(() => window.__copiedToolOutput)).toBe(output);
-  await expand.click();
-  await expect(block).not.toContainText('line-15:');
-});
-
-test('long arguments stay inside the inline panel viewport', async ({ page }) => {
-  const longCall = {
-    ...searchCall('wide-args', 'wide detail', []),
-    input: { query: 'wide detail', payload: 'x'.repeat(2048) },
-  };
-  const body = await loadFixtureSession(page, { toolCalls: [longCall] });
-  const detail = await openDetail(page, body, 'wide-args');
-  await detail.getByTestId('tool-input-toggle').click();
-  const input = detail.getByTestId('tool-detail-section-input');
-  await expect(input).toContainText('wide detail');
-  const bounds = await input.evaluate((element) => ({
-    right: element.getBoundingClientRect().right,
-    viewport: document.documentElement.clientWidth,
-  }));
-  expect(bounds.right).toBeLessThanOrEqual(bounds.viewport);
+test('raw Python output and search JSON never enter expanded tool details', async ({ page }) => {
+  const calls = [
+    { id: 'raw-python', name: 'code_interpreter', input: { code: 'print("private_python_probe")' },
+      output: 'private_stdout_probe', status: 'completed', textOffset: 0 },
+    { ...searchCall('raw-search', 'wide detail', [{ title: 'Public result', url: 'https://example.test/a' }]),
+      input: { query: 'wide detail', payload: 'private_arg_probe' },
+      output: '{"raw":"private_json_probe"}' },
+  ];
+  const body = await loadFixtureSession(page, { toolCalls: calls });
+  for (const id of ['raw-python', 'raw-search']) {
+    const detail = await openDetail(page, body, id);
+    await expect(detail.getByTestId('tool-code-output')).toHaveCount(0);
+    await expect(detail.getByTestId('tool-input-toggle')).toHaveCount(0);
+    if (id === 'raw-search') await expect(detail.getByTestId('tool-source')).toHaveCount(1);
+    await body.getByTestId(`tool-row-${id}`).click();
+  }
+  await expect(body).not.toContainText(/private_(python|stdout|arg|json)_probe/);
 });
 
 test('tool failures remain internal until details are explicitly opened', async ({ page }) => {
@@ -288,10 +249,10 @@ test('tool failures remain internal until details are explicitly opened', async 
   await expect(body.getByText('Search upstream timed out after 30s')).toHaveCount(0);
   await expect(body.locator('.rn-tool-row[data-tcid="f1"]')).toHaveAttribute('data-error', '1');
   const detail = await openDetail(page, body, 'f1');
-  await expect(detail.getByTestId('tool-detail-section-error')).toContainText(
-    'Search upstream timed out after 30s',
-  );
-  await expect(detail.getByTestId('tool-detail-section-technical')).toContainText('SEARCH_TIMEOUT');
+  await expect(detail.getByTestId('tool-detail-section-error')).toHaveCount(0);
+  await expect(detail.getByTestId('tool-detail-section-technical')).toHaveCount(0);
+  await expect(detail).not.toContainText('Search upstream timed out after 30s');
+  await expect(detail).not.toContainText('SEARCH_TIMEOUT');
 });
 
 test('each file action names its file in the row and in its own details', async ({ page }) => {
@@ -301,7 +262,7 @@ test('each file action names its file in the row and in its own details', async 
   const w2 = body.getByTestId('tool-row-w2');
   await expect(w2).toContainText('moe.py');
   const detail = await openDetail(page, body, 'w1');
-  await detail.getByTestId('tool-input-toggle').click();
+  await expect(detail.getByTestId('tool-input-toggle')).toHaveCount(0);
   await expect(detail).toContainText('router_v2.py');
 });
 
@@ -512,24 +473,11 @@ test('a running code call streams into the open panel and keeps it open on compl
   const preview = page.getByTestId('tool-live-preview');
   await expect(preview).toHaveCount(0);
   const detail = await openDetail(page, bubble, 'live-code');
-  await expect(preview).toBeVisible();
-  await expect(preview).toContainText('step_39(data)');
-  const box = await preview.evaluate((el) => ({
-    maxHeight: getComputedStyle(el).maxHeight,
-    client: el.clientHeight,
-    scroll: el.scrollHeight,
-  }));
-  const cap = parseFloat(box.maxHeight);
-  expect(Number.isNaN(cap)).toBe(false);
-  expect(cap).toBeLessThanOrEqual(200);
-  expect(box.client).toBeLessThanOrEqual(cap + 1);
-  expect(box.scroll).toBeGreaterThan(box.client);
-
+  await expect(preview).toHaveCount(0);
+  await expect(detail).not.toContainText('step_39(data)');
   await page.evaluate(() => window.__streamStdout());
-  const output = page.getByTestId('tool-live-output');
-  await expect(output).toBeVisible();
-  await expect(output).toContainText('running step_0');
-  await detail.screenshot({ path: 'test-results/tool-run-live-preview.png' });
+  await expect(page.getByTestId('tool-live-output')).toHaveCount(0);
+  await expect(detail).not.toContainText('running step_0');
   const snapshotChecks = await page.evaluate(() => {
     const current = window.__socratesTestState.session().messages.at(-1);
     const call = current.toolCalls[0];
@@ -561,7 +509,7 @@ test('a running code call streams into the open panel and keeps it open on compl
      live blocks for the output section and stays open. */
   await expect(page.getByTestId('tool-live-preview')).toHaveCount(0);
   await expect(page.getByTestId('tool-detail')).toBeVisible();
-  await expect(page.getByTestId('tool-detail-section-output')).toContainText('all steps ran');
+  await expect(page.getByTestId('tool-detail-section-output')).toHaveCount(0);
 });
 
 test('a pending approval stays visible in the transcript with pill decisions', async ({ page }) => {
