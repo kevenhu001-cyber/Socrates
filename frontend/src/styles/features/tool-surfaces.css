@@ -735,30 +735,6 @@
   color: var(--ui-text-secondary);
   font-size: var(--ui-font-size-xs);
 }
-.tool-detail-readable-output {
-  min-width: 0;
-  max-height: 360px;
-  overflow: auto;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  font-size: var(--ui-font-size-sm);
-  line-height: 1.6;
-  color: var(--ui-text-primary);
-}
-.tool-readable-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--ui-space-xs);
-}
-.tool-detail-error-message {
-  margin: 0;
-  color: var(--ui-text-secondary);
-  font-size: var(--ui-font-size-sm);
-  line-height: 1.5;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
 /* Expanding a tool is a disclosure, not a page jump: the detail arrives on
  * the same short opacity/offset clock as the other overlays. */
 .tool-run-detail-body {
