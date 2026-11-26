@@ -178,7 +178,7 @@ function createSimulationWorkerAudit() {
     generateBundle(_options, bundle) {
       const chunks = Object.values(bundle).filter(item => item.type === 'chunk');
       const entry = chunks.find(chunk => chunk.isEntry &&
-        (chunk.facadeModuleId || '').replaceAll('\\\\','/').endsWith('/demonstration.worker.ts'));
+        (chunk.facadeModuleId || '').replaceAll('\\','/').endsWith('/demonstration.worker.ts'));
       if (!entry) return;
       const byFile = new Map(chunks.map(chunk => [chunk.fileName, chunk]));
       const eager = new Set([entry.fileName]);
@@ -188,7 +188,7 @@ function createSimulationWorkerAudit() {
         eager: eager.has(chunk.fileName),
         gzipBytes: gzipSync(chunk.code).length,
         modules: Object.entries(chunk.modules).filter(([,info]) => info.renderedLength > 0)
-          .map(([id]) => id.replaceAll('\\\\','/').split('/').slice(-5).join('/')),
+          .map(([id]) => id.replaceAll('\\','/').split('/').slice(-5).join('/')),
       }));
       for (const row of rows.filter(row => row.eager)) {
         const leaked = row.modules.find(id =>
