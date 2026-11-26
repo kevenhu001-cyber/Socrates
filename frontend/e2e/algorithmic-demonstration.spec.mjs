@@ -600,3 +600,18 @@ test('general numerical views expose local roots, field slices and linked contro
   await expect(slice.getByText('Slice plane: z = 0.8',{exact:true})).toBeVisible();
   await expectNoGlobalError(page);
 });
+
+test('parametric mesh and optimization marker are linked scientific views',async({page})=>{
+  const scientific=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
+  const nodes=[{id:'torus',type:'demonstration',title:'Torus mesh',program:scientific.parametricTorus},{id:'optimum',type:'demonstration',title:'Optimization landscape',program:scientific.optimizationRosenbrock}];
+  await prepareChatWorkbench(page,{lang:'en',viewport:{width:390,height:844},messages:nodes.map(node=>({clientId:node.id,role:'assistant',type:'assistant',rawText:'\x60\x60\x60socrates-ui\n'+JSON.stringify(node)+'\n\x60\x60\x60'}))});
+  const torus=page.getByRole('region',{name:'Torus mesh',exact:true});
+  await torus.scrollIntoViewIfNeeded();
+  await expect(torus).toHaveAttribute('data-demo-quality','full');
+  await expect(torus.locator('[data-surface-style="shaded"] polygon').first()).toBeVisible();
+  const opt=page.getByRole('region',{name:'Optimization landscape',exact:true});
+  await opt.scrollIntoViewIfNeeded();
+  await expect(opt).toHaveAttribute('data-demo-quality','full');
+  await expect(opt.getByText('Computed local optimum: (1, 1)',{exact:true})).toBeVisible();
+  await expectNoGlobalError(page);
+});
