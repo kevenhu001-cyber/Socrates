@@ -223,6 +223,50 @@ and 149 events over 20 s; 27 scientific and 15 historical examples validate
 and execute without warnings. Added unit and browser regressions. Browser
 rendering and newest full CI remain unverified. No added runtime dependencies.
 
+## Stage seven: general equation solvers and coupled spatial fields
+
+- Central lowering pipeline shared by validation and compilation; specialized
+  dynamics forms are mutually exclusive, and solver metadata is prepared
+  once from the same lowered model. No new runtime dependencies.
+- Standalone square nonlinear residual systems (1–8 unknowns) via damped
+  Newton, finite-difference Jacobian, scaled pivoting and bounded line
+  search. Parameter-dependent guesses, absolute residual and iterations.
+  Local root only; no global optimization or all-root guarantee.
+- Nonsymmetric sparse CSR systems via Jacobi-preconditioned BiCGSTAB,
+  full zero-based triplets, nonzero diagonal required. Existing PCG remains
+  the default for upper-triangle SPD systems. Actual residual checked;
+  explicit breakdown/nonconvergence. Neither convergence nor matrix
+  definiteness is certified in advance.
+- Multi-field reaction/diffusion on a cell-centred Cartesian grid: 1–4
+  scalar fields, 3–257 cells in 1D or 3–33 cells per axis in 2D. Periodic
+  or zero normal flux boundaries, conservative nearest-neighbor Laplacian,
+  coupled local expressions and explicit Heun (order 2 in time for smooth
+  solutions). Diffusion CFL <= 0.5, up to 2000 steps and 2 million stored
+  scalar values. No general positivity, stiff-reaction stability,
+  advection, arbitrary meshes or 3D PDE solver. Use convergence checks.
+- Scalar analytic 3D volume slice maps at an x/y/z plane, with coordinate
+  remapping, shared time/parameter controls, calibrated colors and contours.
+  Not a volumetric simulation or full volume renderer.
+- Instantaneous 2D streamlines by normalized midpoint stepping in display
+  coordinates, up to 25 seeds and 80 steps per direction, bounded sampling,
+  closed-loop/invalid/boundary termination. Not physical particle paths
+  or speed inference. Existing arrows retained.
+- Root residual and diffusion CFL added to opt-in numerical diagnostics.
+- Six new general examples and targeted unit/E2E cases.
+
+Direct verification: two-variable root (2,1) absolute residual 1.066e-14
+in 5 iterations; 64-unknown nonsymmetric system relative residual
+7.049e-11 in 17 iterations; 1D mean exchange amplitude error 2.273e-6
+with conservation residual 2.221e-16; 25x25 2D two-field conservation
+residual 1.666e-16. Extracted slice mapper verified physical x-plane
+coordinate mapping and third-coordinate dependency; extracted streamline
+sampler produced 25 horizontal lines, zero vertical deviation (2015
+points). All 33 scientific and 15 historical programs validate and run
+without warnings. Latest full CI/browser/device verification remains
+pending; previous Agent, Security, Server and Image checks passed,
+other lanes were cancelled when superseded. Earlier unrelated streaming
+math failure is not claimed fixed.
+
 ## Deliberate limits / next steps
 
 This is a bounded educational engine, not an industrial multiphysics solver.
