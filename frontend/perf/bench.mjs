@@ -90,14 +90,12 @@ function instrument() {
     B.hits = {};
     B.frames = [];
     B.lastMutation = 0;
-    const list = document.getElementById('msgList');
     if (B.mo) B.mo.disconnect();
     B.mo = new MutationObserver(() => {
       B.lastMutation = performance.now();
     });
     const root = document.body;
     B.mo.observe(root, { childList: true, subtree: true, characterData: true, attributes: false });
-    void list;
     let idx = 0;
     const loop = (ts) => {
       B.frames.push(ts);
@@ -156,8 +154,7 @@ function instrument() {
       };
       const wait = () => {
         const now = performance.now();
-        const allHit = B.targets == null || true;
-        if (now - t0 >= windowMs && allHit) return done();
+        if (now - t0 >= windowMs) return done();
         setTimeout(wait, 100);
       };
       wait();

@@ -469,8 +469,8 @@
 }
 .rn-turn-activity .rn-turn-activity-toggle .tool-site-mark {
   box-sizing: border-box;
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   border: 1px solid var(--ui-bg-page);
   border-radius: var(--ui-radius-pill);
   overflow: hidden;

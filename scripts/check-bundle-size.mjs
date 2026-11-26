@@ -40,7 +40,7 @@
  *
  * Usage:  node scripts/check-bundle-size.mjs [--update]
  */
-import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
@@ -117,10 +117,64 @@ const measurement = measure();
 
 if (!measurement) {
   console.log(
-    'bundle size: frontend/dist/assets is empty — skipping (run the frontend build first).',
+    'bundle size: frontend/dist/assets is empty — run the frontend build first.',
   );
-  process.exit(0);
+  process.exit(1);
 }
+
+// The 44-byte bootstrap shim is not the actual cold entry payload.
+// Recompute the static graph closure from the production HTML and disk bytes;
+// do not rely on the generated entry flag or the filename convention.
+const dist = join(ROOT, 'frontend', 'dist');
+const html = readFileSync(join(dist, 'index.html'), 'utf8');
+const graph = JSON.parse(readFileSync(join(dist, '.vite', 'entry-graph.json'), 'utf8'));
+const chunks = new Map(graph.chunks.map(chunk => [chunk.file, chunk]));
+const scripts = new Set([...html.matchAll(/(?:src|href)="\/(assets\/[^"?#]+\.js)"/g)].map(match => match[1]));
+const styles = new Set([...html.matchAll(/(?:src|href)="\/(assets\/[^"?#]+\.css)"/g)].map(match => match[1]));
+if (!scripts.size || !styles.size) throw new Error('Missing production HTML entry assets');
+for (const file of scripts) {
+  const chunk = chunks.get(file);
+  if (!chunk) throw new Error('Missing entry graph chunk: ' + file);
+  for (const dependency of chunk.imports) scripts.add(dependency);
+}
+const sumGzip = files => [...files].reduce((sum, file) => sum + gzipSync(readFileSync(join(dist, file))).length, 0);
+const entry = {
+  htmlGzipBytes: gzipSync(Buffer.from(html)).length,
+  staticJsGzipBytes: sumGzip(scripts),
+  linkedCssGzipBytes: sumGzip(styles),
+};
+for (const [key, value] of Object.entries(entry)) {
+  if (graph.metrics[key] !== value) throw new Error('Entry graph disagrees with production bytes: ' + key);
+}
+const staticTotal = Object.values(entry).reduce((sum, bytes) => sum + bytes, 0);
+console.log('Production static entry (gzip bytes): ' + JSON.stringify({ ...entry, staticTotal, staticJsChunks: scripts.size }));
+// Same limits as performance-loading.spec.mjs, surfaced before the long E2E run.
+const limits = { htmlGzipBytes: 19000, staticJsGzipBytes: 360000, linkedCssGzipBytes: 210000 };
+for (const [key, limit] of Object.entries(limits)) {
+  if (entry[key] >= limit) { console.error(key + ': ' + entry[key] + ' >= ' + limit); process.exitCode = 1; }
+}
+if (staticTotal >= 588000) { console.error('Static entry exceeds 588000 gzip bytes'); process.exitCode = 1; }
+if (process.exitCode) process.exit(process.exitCode);
+
+// Dist inventory: include nested assets and files outside assets/ (fonts,
+// WASM, PDF support, etc.). Precompressed siblings are separate storage,
+// not additional uncompressed payload; report them independently.
+function inventory(directory, result = { rawBytes: 0, gzipSidecarBytes: 0, brotliSidecarBytes: 0, files: 0, byExtension: {} }) {
+  for (const item of readdirSync(directory, { withFileTypes: true })) {
+    const file = join(directory, item.name);
+    if (item.isDirectory()) { inventory(file, result); continue; }
+    if (!item.isFile()) continue;
+    const bytes = statSync(file).size;
+    if (item.name.endsWith('.gz')) { result.gzipSidecarBytes += bytes; continue; }
+    if (item.name.endsWith('.br')) { result.brotliSidecarBytes += bytes; continue; }
+    const ext = item.name.includes('.') ? item.name.slice(item.name.lastIndexOf('.')).toLowerCase() : '(none)';
+    result.rawBytes += bytes;
+    result.files++;
+    result.byExtension[ext] = (result.byExtension[ext] || 0) + bytes;
+  }
+  return result;
+}
+console.log('Production dist inventory (bytes): ' + JSON.stringify(inventory(dist)));
 
 let budget = null;
 try {
