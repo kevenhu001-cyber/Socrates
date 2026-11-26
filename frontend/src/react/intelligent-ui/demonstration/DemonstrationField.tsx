@@ -89,8 +89,8 @@ export const DemoField = memo(function DemoField({
           <MathText text={view.label} />
         </figcaption>
       ) : null}
-      {['surface','curve3d','vectors3d','parametricSurface'].includes(view.presentation ?? '') ? (
-        <DemoSurface sample={sample?.surface} label={view.label} style={view.surfaceStyle} />
+      {['surface','curve3d','vectors3d','parametricSurface','isosurface'].includes(view.presentation ?? '') ? (
+        <DemoSurface sample={sample?.surface} label={view.label} style={view.surfaceStyle??(view.presentation==='isosurface'?'shaded':undefined)} />
       ) : (
         <canvas ref={canvas} width={FIELD_WIDTH} height={fieldHeight(view)} role="img"
           aria-label={view.label || i18n('intui.surface', 'Interactive result')} />
