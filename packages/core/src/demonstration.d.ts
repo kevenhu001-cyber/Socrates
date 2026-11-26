@@ -117,6 +117,7 @@ export type DemonstrationView =
   | { kind: 'controls' };
 export interface DemonstrationProgram {
   version: 1;
+  diagnostics?: boolean;
   resetKey?: string;
   parameters?: DemonstrationParameter[];
   definitions?: Record<string, DemonstrationValue>;
@@ -184,12 +185,29 @@ export interface DemonstrationWarning {
   time: number;
   message: string;
 }
+export interface DemonstrationDiagnostics {
+  method: string;
+  acceptedSteps?: number;
+  rejectedSteps?: number;
+  events?: number;
+  derivativeEvaluations?: number;
+  maxLocalError?: number;
+  minStep?: number;
+  maxStep?: number;
+  gridNodes?: number;
+  storedValues?: number;
+  unknowns?: number;
+  nonzeros?: number;
+  iterations?: number;
+  relativeResidual?: number;
+}
 export interface DemonstrationRuntime {
   duration: number;
   parameters: Record<string, number>;
   warnings: DemonstrationWarning[];
   eventTimes?: number[];
-  /** Bit mask: x = 1, y = 2, time or dynamic state = 4. Parameters are fixed for this runtime. */
+  diagnostics?: DemonstrationDiagnostics;
+  /** Bit mask: x = 1, y = 2, time/state = 4, spaceZ = 8. Parameters are fixed per runtime. */
   dependencies(expression: DemonstrationValue): number;
   resetBudget(): void;
   evaluate(expression: DemonstrationValue, time?: number, x?: number, y?: number, spaceZ?: number): number;
