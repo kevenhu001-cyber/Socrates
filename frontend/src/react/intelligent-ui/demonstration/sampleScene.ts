@@ -4,7 +4,7 @@ import type {
   DemonstrationScene,
   DemonstrationValue,
 } from '@socrates/core/demonstration';
-import { errorMessage } from './sampleField';
+import { errorMessage } from './fieldCommon';
 
 function objectExpressions(object: DemonstrationObject): DemonstrationValue[] {
   switch (object.kind) {
