@@ -4,6 +4,10 @@
    of the shell so labels stay consistent regardless of the user's installed
    system fonts. */
 .visualization-card {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   margin: 14px 0 4px;
   border: 1px solid var(--ui-border-default);
   border-radius: var(--ui-radius-md);
@@ -67,7 +71,7 @@
   min-height: 300px;
   display: grid;
   place-items: center;
-  padding: 22px;
+  padding: var(--ui-space-sm);
 }
 .visualization-card[data-visualization-renderer='mermaid'] .visualization-stage > svg {
   max-width: 100%;
