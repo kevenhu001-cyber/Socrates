@@ -1247,7 +1247,8 @@
         "zRange": [
           20,
           100
-        ]
+        ],
+        "surfaceStyle": "shaded"
       },
       {
         "kind": "plot",
