@@ -20,6 +20,7 @@ Views are ordered freely (1–8). Every view has "kind" (not "type"). Axis bound
 - metrics: needs 1–6 values of {label, expression, unit?, digits? from 0 to 5} and displays live numerical readouts.
 Optional presets: at most four label and values entries, where values maps a parameter id to a number or expression evaluated against the current parameters/definitions at t=0 before resetting playback. The whole preset applies atomically; every result must be finite and inside its declared parameter range. For example {label:"Current optical limit",values:{separation:"clamp(radius,0.2,3)"}} follows current optics; keep only meaningful scientific comparison states and omit unnecessary button rows. Keep explanatory prose and equations outside the demonstration. Prefer a focused scene, a shared set of 1–3 visible sliders, and linked views to a wall of controls. Do not print implementation details or require the user to choose tools. Existing native panels/text/metric/table/chart components may surround demonstrations. All algorithms remain bounded mathematical data; unsupported operations must be explained rather than imitated with fake visuals.
 A field can instead be a rotatable 3D wireframe of z=expression(x,y,t): presentation:'surface', x/y bounds and required zRange:[min,max]. Use physical z units; out-of-range or nonfinite vertices leave gaps. Use a separate field map for contours/vectors/color calibration. The browser rotates the already sampled mesh without re-solving. This is a scalar height surface, not a volumetric or arbitrary 3D mesh.
+Optional linearAlgebra is an ordered list of named structured arrays, with vector/matrix literals (values), add/sub/matmul/dot/cross (a,b earlier array IDs), scale (a,factor), norm/transpose (a). Example [{id:'force',op:'vector',values:[3,4]},{id:'rot',op:'matrix',values:[[0,-1],[1,0]]},{id:'result',op:'matmul',a:'rot',b:'force'},{id:'magnitude',op:'norm',a:'result'}]. Refer to vector components result_1/result_2, matrix entries rot_1_2 and scalar magnitude in ordinary expressions. Shapes up to 6; all generated components share the 24-definition limit. Array IDs are not scalar values. Operations are compiled to bounded scalar expressions, not arbitrary JS or a general tensor runtime.
 One format for new physics content: {version:1,nodes:[{id,type:"demonstration",title,program:{version:1,parameters,definitions,dynamics?,views,presets?}}]}. Do not emit a separate physics renderer, hand-written SVG/HTML/JS, or a fixed scene ID for a new model. Historical physics IDs and OpenUI Rayleigh are compatibility adapters into this same program renderer. Ordinary explanations stay in prose. Reuse a definition across force arrows, geometry, trajectories and readouts instead of generating disconnected visuals.
 Build a new model by declaring units/assumptions, choosing independent state variables, deriving force laws and initial conditions, then composing only the views that help. Change equations, boundary parameters, initial conditions, expressions, object count/order and view composition freely within the documented limits. The examples are editable starting points, not a list of permitted models. Derive new equations rather than selecting the nearest named scene; verify dimensions, conservation or a known limiting case. State approximations such as point masses, lumped temperature or prescribed motion. Never imply generic collision/PDE/contact/circuit solving.
 Available composed examples and assumptions:
@@ -82,6 +83,15 @@ export const DEMONSTRATION_PROGRAM_SCHEMA = {
           },
         },
       },
+    },
+    linearAlgebra: {
+      type: 'array', minItems:1,maxItems:12,
+      description: 'Ordered named vector/matrix expressions. Components are exposed as scalar definitions.',
+      items:{type:'object',required:['id','op'],properties:{
+        id:{type:'string'},op:{type:'string',enum:['vector','matrix','add','sub','scale','dot','norm','cross','transpose','matmul']},
+        a:{type:'string'},b:{type:'string'},factor:EXPRESSION,
+        values:{anyOf:[{type:'array',minItems:1,maxItems:6,items:EXPRESSION},{type:'array',minItems:1,maxItems:6,items:{type:'array',minItems:1,maxItems:6,items:EXPRESSION}}]},
+      }},
     },
     definitions: {
       type: 'object',
