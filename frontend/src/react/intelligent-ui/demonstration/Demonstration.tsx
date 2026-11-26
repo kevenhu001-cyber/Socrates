@@ -498,7 +498,7 @@ const diagnosticLabels: [keyof Omit<DemonstrationDiagnostics,'method'>,string,st
   ['gridNodes','gridNodes','Grid nodes'],['storedValues','storedValues','Stored scalar values'],
   ['unknowns','unknowns','Unknowns'],['nonzeros','nonzeros','Matrix nonzero entries'],
   ['iterations','iterations','Iterations'],['relativeResidual','relativeResidual','Relative residual'],
-  ['absoluteResidual','absoluteResidual','Absolute residual'],['diffusionCFL','diffusionCFL','Diffusion CFL'],
+  ['absoluteResidual','absoluteResidual','Absolute residual'],['diffusionCFL','diffusionCFL','Diffusion CFL'],['transportCFL','transportCFL','Combined transport CFL'],
   ['adColumns','adColumns','Automatic differentiation columns'],['finiteDifferenceColumns','finiteDifferenceColumns','Finite-difference columns'],['projectedGradient','projectedGradient','Projected gradient norm'],['objectiveEvaluations','objectiveEvaluations','Objective evaluations'],
   ['analysisSamples','analysisSamples','Analysis samples'],['eigenResidual','eigenResidual','Scaled eigen residual'],['eigenOrthogonality','eigenOrthogonality','Orthogonality error'],['eigenIterations','eigenIterations','Eigen rotations'],
 ];
