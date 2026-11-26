@@ -158,7 +158,7 @@ function* calculate(card: Card, request: JobRequest): Generator<void, WorkerRepl
   const { input, known } = request;
   const state = yield* ensureCardState(card, input);
   const patches: ViewPatch[] = [];
-  const { duration, warnings } = state.runtime;
+  const { duration, warnings, diagnostics } = state.runtime;
   const time = Math.min(duration, input.time);
   for (const [index, view] of card.program.views.entries()) {
     if (view.kind === 'controls') continue;
@@ -175,7 +175,7 @@ function* calculate(card: Card, request: JobRequest): Generator<void, WorkerRepl
   return {
     ...reply,
     type: 'frame',
-    frame: { duration, warnings, patches, animated: state.staticViews.includes(false) },
+    frame: { duration, warnings, diagnostics: card.program.diagnostics ? diagnostics : undefined, patches, animated: state.staticViews.includes(false) },
   };
 }
 
