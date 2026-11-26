@@ -42,4 +42,3 @@ function* solveFiniteElement(s,params,compile){
 }
 
 export { solveFiniteElement };
-export { finiteElementSpec, lowerFiniteElement } from '../models/finiteElement.js';
