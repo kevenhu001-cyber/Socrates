@@ -78,7 +78,7 @@ export const DemoField = memo(function DemoField({
           <MathText text={view.label} />
         </figcaption>
       ) : null}
-      {view.presentation === 'surface' ? (
+      {['surface','curve3d','vectors3d'].includes(view.presentation ?? '') ? (
         <DemoSurface sample={sample?.surface} label={view.label} style={view.surfaceStyle} />
       ) : (
         <canvas ref={canvas} width={FIELD_WIDTH} height={fieldHeight(view)} role="img"
