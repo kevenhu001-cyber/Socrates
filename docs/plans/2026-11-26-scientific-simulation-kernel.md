@@ -310,6 +310,48 @@ All 36 scientific plus 15 historical cases validated and executed without
 warnings. Added unit and E2E regressions. Latest full CI/browser/device
 verification pending.
 
+## Stage nine: frequency, modal and parameter analysis
+
+- A shared top-level analysis contract provides bounded scientific
+  postprocessing with the same expression/view protocol. Analysis output
+  names are validated against collisions; source models are separately
+  validated without analysis outputs, preventing feedback into dynamics.
+- Radix-2 FFT (32–2048 power-of-two samples), half-open uniform time
+  windows, rectangular or periodic Hann windows, optional mean removal,
+  coherent-gain-corrected one-sided amplitude and nearest-bin phase,
+  bin spacing, Nyquist and peak readouts. Supports analytic signals and
+  actual previously integrated state expressions. Optional ideal low-pass
+  uses conjugate-symmetric DFT-bin truncation and inverse FFT on original
+  samples: periodic, noncausal, offline, not a streaming filter or PSD.
+- Real symmetric eigenanalysis (1–8 square matrix) by Jacobi rotations,
+  sorted eigenvalues, normalized eigenvector components, scaled residual
+  and orthogonality checks. Not a general complex/non-symmetric
+  eigensolver; repeated eigenvalues have nonunique bases.
+- One-parameter sweeps over the existing parameter range with independent
+  model revisions; up to 17 analytic samples or 9 runs of an explicit
+  RK4/RK45 ODE (8 states, 500 nominal steps, no events/DAEs/specialized
+  dynamics). Reuses the compiled submodel; reports sampled extrema,
+  response and finite-difference sensitivity. Not global optimization,
+  arbitrary-dimensional sweeps or adjoint sensitivity.
+- Explicit plot sample counts (2–2049 inclusive points), discrete points
+  and baseline-clipped stem plots, preserving exact linear FFT bins.
+- Corrected prior TypeScript variable shadowing in 3D surface renderer
+  (the actual failing check on the eighth-stage head) and bounded clock
+  rounding correction for tiny artificial terminal integration steps.
+  No runtime dependency or native Android change.
+
+Direct verification: two-tone FFT detects 5 Hz amplitude 2 and 19 Hz
+amplitude 0.5, Hann peak normalization within floating-point roundoff;
+ideal low-pass retains 5 Hz and removes 19 Hz. Integrated 3 Hz oscillator
+has peak amplitude 0.9999998522 and exactly 400 accepted steps. Three
+symmetric eigenvalues 0.5857864376, 2, 3.4142135624; scaled residual
+4.441e-16 and orthogonality error 2.221e-16. Nine ODE sweep runs maximum
+absolute error 4.046e-9 versus analytic decay; finite-difference
+sensitivity at k=2 is -0.1367494359. Extracted stem path verified 129
+stems / 258 arcs. All 40 scientific plus 15 historical examples validate
+and execute without warnings. Added targeted unit and browser regression
+cases; newest full CI and browser/device verification pending.
+
 ## Deliberate limits / next steps
 
 This is a bounded educational engine, not an industrial multiphysics solver.
