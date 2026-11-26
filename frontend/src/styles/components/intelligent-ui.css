@@ -650,10 +650,11 @@
 }
 .intui .intui-entity-description {
   margin: 0;
+  overflow-wrap: anywhere;
 }
 .intui .intui-entity-fields {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 7rem), 1fr));
   gap: var(--ui-space-sm) var(--ui-space-lg);
   margin: var(--ui-space-xs) 0 0;
 }
@@ -704,12 +705,10 @@
   background: var(--ui-bg-control);
 }
 .intui .intui-image-gallery figcaption {
-  overflow: hidden;
-  color: var(--ui-text-tertiary);
+  color: var(--ui-text-secondary);
   font-size: var(--ui-font-size-xs);
   line-height: var(--ui-line-height-normal);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 /* Pip and split panes are narrower than the transcript, so composition reacts
