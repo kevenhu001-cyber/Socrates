@@ -1682,6 +1682,99 @@ function sparseSystemSpec(program) {
   return {...s,tolerance,maxIterations,method,symmetric};
 }
 
+
+function optimizationSpec(program){
+  const s=program.optimization;if(s===undefined)return null;
+  const fail=m=>{throw located('optimization',Error(m));};
+  if(!record(s)||!Array.isArray(s.variables)||s.variables.length<1||s.variables.length>8||
+      program.dynamics!==undefined||program.duration!==undefined||program.sparseSystem!==undefined||program.nonlinearSystem!==undefined)
+    fail('Optimization is a standalone box-constrained problem with 1–8 variables');
+  const params=new Set((Array.isArray(program.parameters)?program.parameters:[]).map(p=>p?.id));
+  const used=new Set([...params,...Object.keys(program.definitions??{}),'optObjective','optGradient','optIterations']);
+  const ids=[];
+  const check=(v,scope)=>{try{expressionNames(parseDemonstrationExpression(v),scope);}catch(e){fail(String(e));}};
+  for(const v of s.variables){
+    if(!record(v)||!name(v.id)||used.has(v.id)||!finite(v.min)||!finite(v.max)||v.max<=v.min||
+      Math.abs(v.min)>1e6||Math.abs(v.max)>1e6)fail('Variables need unique identifiers and finite increasing numeric bounds');
+    check(v.initial,params);ids.push(v.id);used.add(v.id);
+  }
+  check(s.objective,new Set([...params,...ids]));
+  const tolerance=s.tolerance??1e-7,maxIterations=s.maxIterations??150,goal=s.goal??'min';
+  if(!['min','max'].includes(goal)||!finite(tolerance)||tolerance<1e-10||tolerance>1e-2||
+    !Number.isInteger(maxIterations)||maxIterations<1||maxIterations>300)fail('Invalid optimization goal, tolerance or iteration cap');
+  return {...s,ids,tolerance,maxIterations,goal};
+}
+function lowerOptimization(program){
+  const s=optimizationSpec(program);if(!s)return program;
+  return {...program,definitions:{...program.definitions,...Object.fromEntries(s.ids.map(id=>[id,0])),optObjective:0,optGradient:0,optIterations:0}};
+}
+function* solveOptimization(s,params,compile){
+  const n=s.ids.length,scope=Object.assign(Object.create(null),params),budget={remaining:DYNAMICS_BUDGET};
+  const objective=compile(s.objective),sign=s.goal==='max'?-1:1;
+  const fail=m=>{throw located('optimization',Error(m));};
+  const clamp=v=>Math.max(0,Math.min(1,v));
+  const widths=s.variables.map(v=>v.max-v.min);
+  const decode=(u,i)=>s.variables[i].min+u*widths[i];
+  const read=ast=>evaluateDemonstrationExpression(ast,scope,budget);
+  let u=Float64Array.from(s.variables,(v,i)=>{
+    const initial=read(compile(v.initial));
+    if(!finite(initial)||initial<v.min||initial>v.max)fail('Initial variable outside bounds');
+    return (initial-v.min)/widths[i];
+  });
+  const set=u=>s.ids.forEach((id,i)=>{scope[id]=decode(u[i],i);});
+  const value=u=>{set(u);return sign*read(objective);};
+  let adColumns=0,finiteDifferenceColumns=0,evaluations=0;
+  const evaluate=u=>{evaluations++;return value(u);};
+  const gradient=(u,f)=>{
+    set(u);
+    const g=new Float64Array(n);
+    for(let i=0;i<n;i++){
+      set(u);
+      const d=dualExpression(objective,scope,s.ids[i],budget)[1];
+      if(finite(d)){g[i]=sign*d*widths[i];adColumns++;continue;}
+      finiteDifferenceColumns++;
+      const l=u.slice(),r=u.slice();l[i]=clamp(u[i]-1e-6);r[i]=clamp(u[i]+1e-6);
+      const a=evaluate(l),b=evaluate(r);
+      g[i]=finite(a)&&finite(b)?(b-a)/(r[i]-l[i]):finite(b)&&r[i]>u[i]?(b-f)/(r[i]-u[i]):finite(a)&&l[i]<u[i]?(f-a)/(u[i]-l[i]):Number.NaN;
+    }
+    if(!g.every(finite))fail('Nonfinite objective gradient');
+    return g;
+  };
+  const H=new Float64Array(n*n);
+  const reset=()=>{H.fill(0);for(let i=0;i<n;i++)H[i*n+i]=1;};
+  const dot=(a,b)=>a.reduce((sum,v,i)=>sum+v*b[i],0);
+  const projected=(u,g)=>g.map((v,i)=>(u[i]<=1e-12&&v>0)||(u[i]>=1-1e-12&&v<0)?0:v);
+  reset();
+  let f=evaluate(u);if(!finite(f))fail('Initial objective is not finite');
+  let g=gradient(u,f),iterations=0;
+  while(iterations<s.maxIterations){
+    const pg=projected(u,g),error=Math.max(...pg.map(Math.abs));
+    if(error<=s.tolerance)break;
+    let accepted=null;
+    for(let attempt=0;attempt<2&&!accepted;attempt++){
+      if(attempt)reset();
+      const direction=pg.map((_,i)=>-pg.reduce((sum,v,j)=>sum+H[i*n+j]*v,0));
+      for(let k=0;k<24;k++){
+        const a=2**(-k),trial=u.map((v,i)=>clamp(v+a*direction[i])),step=trial.map((v,i)=>v-u[i]);
+        const slope=dot(g,step);if(!(slope<0))continue;
+        const q=evaluate(trial);
+        if(finite(q)&&q<=f+1e-4*slope){accepted={trial,step,q};break;}
+      }
+    }
+    if(!accepted)fail('Optimization line search failed; rescale the objective or change the initial guess');
+    const {trial,step,q}=accepted,next=gradient(trial,q),y=next.map((v,i)=>v-g[i]),ys=dot(y,step);
+    if(ys>1e-12*Math.sqrt(dot(y,y)*dot(step,step))){
+      const hy=y.map((_,i)=>y.reduce((sum,v,j)=>sum+H[i*n+j]*v,0)),factor=(ys+dot(y,hy))/(ys*ys);
+      for(let i=0;i<n;i++)for(let j=0;j<n;j++)H[i*n+j]+=factor*step[i]*step[j]-(hy[i]*step[j]+step[i]*hy[j])/ys;
+      if(!H.every(finite))reset();
+    }else reset();
+    u=trial;g=next;f=q;iterations++;yield;
+  }
+  const error=Math.max(...projected(u,g).map(Math.abs));
+  if(error>s.tolerance)fail('Optimization iteration limit reached; projected gradient '+error);
+  return {values:Object.fromEntries(s.ids.map((id,i)=>[id,decode(u[i],i)])),objective:sign*f,error,iterations,adColumns,finiteDifferenceColumns,evaluations};
+}
+
 function nonlinearSpec(program){
   const s=program.nonlinearSystem;
   if(s===undefined)return null;
@@ -2166,8 +2259,9 @@ function lowerNumericalProgram(program, metadata){
     sparseSpec:sparseSystemSpec(lowered),
     rootSpec:nonlinearSpec(lowered),
     coupledSpec:coupledGridSpec(lowered),
+    optimizationSpec:optimizationSpec(lowered),
   });
-  for(const lower of [lowerNonlinearSystem,lowerSparseSystem,lowerCoupledGrid,lowerImplicitGrid,lowerReactionNetwork,lowerStateSpace,lowerCircuitProgram,lowerSpatialProgram])
+  for(const lower of [lowerOptimization,lowerNonlinearSystem,lowerSparseSystem,lowerCoupledGrid,lowerImplicitGrid,lowerReactionNetwork,lowerStateSpace,lowerCircuitProgram,lowerSpatialProgram])
     lowered=lower(lowered);
   return lowered;
 }
@@ -2916,7 +3010,7 @@ function* integrateAdaptive(dynamics, names, initial, derivative, eventValue, ev
 
 /** Yield between integration batches so a host can cancel them. */
 function* prepareRuntime(program, definitions, stateNames, compile, dependencies, values, solver) {
-  const {implicitGrid,sparseSpec,reactionModel,reactionSSA,rootSpec,coupledSpec}=solver;
+  const {implicitGrid,sparseSpec,reactionModel,reactionSSA,rootSpec,coupledSpec,optimizationSpec:optSpec}=solver;
   const budget = { remaining: BUDGET };
   const warnings = [];
   const params = Object.fromEntries(
@@ -2931,6 +3025,7 @@ function* prepareRuntime(program, definitions, stateNames, compile, dependencies
   let grid,coupled;
   const sparse = sparseSpec ? yield* solveSparseSystem(sparseSpec,params,compile) : null;
   const root = rootSpec ? yield* solveNonlinearSystem(rootSpec,params,compile) : null;
+  const optimum=optSpec?yield* solveOptimization(optSpec,params,compile):null;
   let previousTime;
   const timeValues = new Map();
   const scopeAt = (t, x, y, state, evaluate, reusableSample, spaceZ=0) => {
@@ -2939,6 +3034,10 @@ function* prepareRuntime(program, definitions, stateNames, compile, dependencies
     if (!definitions.size) return scope;
     const sample = reusableSample ?? new Map();
     scope[resolveDefinition] = (name) => {
+      if(optimum&&Object.hasOwn(optimum.values,name))return optimum.values[name];
+      if(optimum&&name==='optObjective')return optimum.objective;
+      if(optimum&&name==='optGradient')return optimum.error;
+      if(optimum&&name==='optIterations')return optimum.iterations;
       if(root&&Object.hasOwn(root.values,name))return root.values[name];
       if(root&&name==='rootResidual')return root.error;
       if(root&&name==='rootIterations')return root.iterations;
@@ -3139,7 +3238,7 @@ function* prepareRuntime(program, definitions, stateNames, compile, dependencies
   return {
     duration,
     eventTimes: adaptiveResult?.eventTimes ?? [],
-    diagnostics: root ? {method:'Newton',unknowns:rootSpec.ids.length,iterations:root.iterations,absoluteResidual:root.error,adColumns:root.adColumns,finiteDifferenceColumns:root.finiteDifferenceColumns} : sparse ? {method:sparse.method??'PCG',unknowns:sparse.x.length,nonzeros:sparse.nnz,iterations:sparse.iterations,relativeResidual:sparse.error} :
+    diagnostics: optimum ? {method:'Projected BFGS',unknowns:optSpec.ids.length,iterations:optimum.iterations,projectedGradient:optimum.error,objectiveEvaluations:optimum.evaluations,adColumns:optimum.adColumns,finiteDifferenceColumns:optimum.finiteDifferenceColumns} : root ? {method:'Newton',unknowns:rootSpec.ids.length,iterations:root.iterations,absoluteResidual:root.error,adColumns:root.adColumns,finiteDifferenceColumns:root.finiteDifferenceColumns} : sparse ? {method:sparse.method??'PCG',unknowns:sparse.x.length,nonzeros:sparse.nnz,iterations:sparse.iterations,relativeResidual:sparse.error} :
       coupled ? {method:'grid-heun',...coupled.diagnostics} : grid ? {method:'grid-implicit',...grid.diagnostics} : dynamics ? {method:dynamics.method??'rk4',derivativeEvaluations,
         ...(adaptiveResult?.diagnostics??{acceptedSteps:Math.max(0,trajectory.length-1),rejectedSteps:0,events:0,minStep:step,maxStep:step})} : undefined,
     parameters: params,
