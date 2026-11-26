@@ -123,7 +123,9 @@ export const ToolRunRow = memo(function ToolRunRow({
         {sources.length > 0 && !disclosure.open ? (
           <div className="activity-source-preview" data-testid="activity-source-preview">
             {sources.map((source) => (
-              <button
+              <Button
+                variant="surface"
+                size="surface"
                 key={source.url}
                 type="button"
                 className="activity-source-row"
@@ -140,7 +142,7 @@ export const ToolRunRow = memo(function ToolRunRow({
                   <span className="activity-source-title">{source.title || source.url}</span>
                   <span className="activity-source-host">{source.host}</span>
                 </span>
-              </button>
+              </Button>
             ))}
           </div>
         ) : null}
