@@ -79,11 +79,7 @@ function observedToolStatus(
 ): LiveTurnStatus | undefined {
   const call = message.toolCalls?.find((entry) => entry.id === activity.toolCallId);
   if (call && !['running', 'awaiting'].includes(toolRunStateOf(call))) return undefined;
-  const legacy = message._liveStatus;
-  const label =
-    legacy?.phase === 'tool-running'
-      ? legacy.label
-      : toolRunLabel({ name: activity.toolName }, 'running').text;
+  const label = toolRunLabel(call || { name: activity.toolName }, 'running').text;
   return { phase: 'tool-running', toolName: activity.toolName, label };
 }
 
@@ -176,7 +172,12 @@ function activityStatusFor(
       label: toolRunLabel(options.activeTool, state).text,
     };
   }
-  if (status?.phase === 'tool-running') return status;
+  if (status?.phase === 'tool-running') {
+    return {
+      ...status,
+      label: toolRunLabel({ name: status.toolName || '' }, 'running').text,
+    };
+  }
   if (answerStarted) {
     return { phase: 'answering', label: translate('think.answering', 'Writing the answer…') };
   }
