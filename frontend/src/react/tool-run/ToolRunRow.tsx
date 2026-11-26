@@ -1,6 +1,6 @@
 import { memo, useId } from 'react';
 import { Chevron, toolVerbOf } from '@socrates/ui/turn';
-import { translate } from '../../legacy/toolPresentationModel.ts';
+import { basename, clip, filePathOf, hostOf, queryOf, translate, urlOf } from '../../legacy/toolPresentationModel.ts';
 import { Button } from '../ui/shadcn/button';
 import { Icon } from '../../legacy/Icon';
 import { SourceAvatar } from '../sources/SourceAvatar';
@@ -196,9 +196,9 @@ function executionStateLabel(state: ToolRunView['state'], live: boolean): string
 function toolActionLabel(call: ToolCallRecord): string {
   const verb = toolVerbOf(call.name);
   const category = toolCategory(call.name);
-  // The normal row label already carries safe search/file/site targets.
-  if (category === 'search' || category === 'read' || category === 'fetch') {
-    return toolRunView(call).label;
-  }
-  return translate(verb.key, verb.fallback);
+  const target = category === 'search' ? queryOf(call.input)
+    : category === 'fetch' ? hostOf(urlOf(call.input))
+    : category === 'read' || category === 'write' ? basename(filePathOf(call.input))
+    : '';
+  return [translate(verb.key, verb.fallback), clip(target, 40)].filter(Boolean).join(' · ');
 }
