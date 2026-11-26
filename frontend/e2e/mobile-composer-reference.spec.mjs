@@ -19,7 +19,7 @@ test('mobile composer stays two-row on landing and in a conversation', async ({ 
 
   const checkStacked = async () => {
     await expect(frame).toHaveAttribute('data-expanded', 'true');
-    await expect(frame).toHaveCSS('height', '92px');
+    await expect(frame).toHaveCSS('height', '86px');
     await expect(frame).toHaveCSS('border-radius', '28px');
     const compact = await frame.boundingBox();
     const hostBox = await host.boundingBox();
@@ -54,7 +54,7 @@ test('mobile composer stays two-row on landing and in a conversation', async ({ 
   });
   await expect(editor).toBeFocused();
   await expect(host.locator('[data-composer-control=effort]')).toBeVisible();
-  await expect(frame).toHaveCSS('height', '92px');
+  await expect(frame).toHaveCSS('height', '86px');
   await expect(frame).toHaveCSS('border-radius', '28px');
   const expanded = await frame.boundingBox();
   expect(mid.width).toBeCloseTo(compact.width, 0);
@@ -88,7 +88,7 @@ test('mobile composer stays two-row on landing and in a conversation', async ({ 
   const chatCompact = await checkStacked();
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await editor.click();
-  await expect(frame).toHaveCSS('height', '92px');
+  await expect(frame).toHaveCSS('height', '86px');
   const geometryTransitions = await frame.evaluate(
     (node) =>
       node.getAnimations().filter(({ transitionProperty }) => transitionProperty === 'max-width')
