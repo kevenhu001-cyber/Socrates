@@ -180,11 +180,12 @@ test('the mic records inline and the phone shows the live spectrum', async ({ pa
   await expect(mic).toHaveCount(1);
   await expect(mic).toBeVisible();
   await expect(mic).toHaveAttribute('aria-label', 'Voice input');
-  await expect(primary).toHaveAttribute('aria-label', 'Send');
+  /* Empty draft: the primary is the blue voice disc (2026-11-26 reference). */
+  await expect(primary).toHaveAttribute('aria-label', 'Voice input');
   await expect(editor).toHaveCSS('text-align', 'left');
-  await expect(primary.locator('[data-ui-icon=arrow-up]')).toHaveCount(1);
+  await expect(primary.locator('[data-ui-icon=waveform]')).toHaveCount(1);
   await expect(primary.locator('.icon-voice')).toHaveCount(0);
-  await expect(primary).toBeDisabled();
+  await expect(primary).toHaveAttribute('data-voice', 'true');
 
   await editor.click();
   const emptyCaret = await editor.evaluate((node) => {
@@ -220,7 +221,7 @@ test('the mic records inline and the phone shows the live spectrum', async ({ pa
   await editor.press(process.platform === 'darwin' ? 'Meta+A' : 'Control+A');
   await editor.press('Backspace');
   expect(await primary.evaluate((button) => button.dataset.ready === 'true')).toBe(false);
-  await expect(primary).toBeDisabled();
+  await expect(primary).toHaveAttribute('data-voice', 'true');
 
   await mic.click();
   await expect(mic).toHaveAttribute('data-voice-phase', 'recording');
@@ -282,11 +283,12 @@ test('the chat mic uses the same inline recording state', async ({ page }) => {
   const mic = wrap.locator('#composerMicBtn');
   await expect(mic).toHaveCount(1);
   await expect(mic).toHaveAttribute('aria-label', 'Voice input');
-  await expect(primary).toHaveAttribute('aria-label', 'Send');
+  /* Empty draft: the primary is the blue voice disc (2026-11-26 reference). */
+  await expect(primary).toHaveAttribute('aria-label', 'Voice input');
   await expect(editor).toHaveCSS('text-align', 'left');
-  await expect(primary.locator('[data-ui-icon=arrow-up]')).toHaveCount(1);
+  await expect(primary.locator('[data-ui-icon=waveform]')).toHaveCount(1);
   await expect(primary.locator('.icon-voice')).toHaveCount(0);
-  await expect(primary).toBeDisabled();
+  await expect(primary).toHaveAttribute('data-voice', 'true');
 
   await mic.click();
   await expect(mic).toHaveAttribute('data-voice-phase', 'recording');
