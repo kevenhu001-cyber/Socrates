@@ -7,6 +7,7 @@ import { installVisualizationMath } from './visualizationMath.ts';
 
 /** The vendored Mermaid global, injected by the lazy loader. */
 declare const mermaid: {
+  initialize?(options: Record<string, unknown>): void;
   render(
     id: string,
     code: string,
@@ -266,6 +267,14 @@ function renderMermaidFailure(item: MermaidItem, error: unknown): void {
   if (card) _rememberLiveVizCard?.(item.id, card);
 }
 
+/* The transcript queue never initialised Mermaid, so a first render used the
+   library's default lilac theme on the dark canvas. Initialise from the live
+   colour mode before every render; displayPrefs re-runs it on a mode switch. */
+function applyMermaidTheme(): void {
+  const dark = document.documentElement.getAttribute('data-mode') === 'dark';
+  mermaid.initialize?.({ startOnLoad: false, theme: dark ? 'dark' : 'neutral' });
+}
+
 function renderPendingMermaidItem(item: MermaidItem): void {
   const liveEl = document.getElementById(item.id);
   /* A card reclaimed from the live-card registry is already rendered —
@@ -280,6 +289,7 @@ function renderPendingMermaidItem(item: MermaidItem): void {
   }
   if (_mermaidInFlight[item.id]) return;
   try {
+    applyMermaidTheme();
     const inflight = mermaid.render('mermaid-svg-' + item.id, item.code);
     _mermaidInFlight[item.id] = inflight;
     inflight

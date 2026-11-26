@@ -201,7 +201,9 @@ const MERMAID_CHECKED_MAX = 500;
 
 function mermaidHeader(id: string): string {
   return (
-    '<div class="viz-mermaid-header"><span class="viz-mermaid-title">Mermaid</span>' +
+    '<div class="viz-mermaid-header"><span class="viz-mermaid-title">' +
+    '<svg class="viz-mermaid-glyph" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/><path d="M7 11v4a2 2 0 0 0 2 2h4"/></svg>' +
+    'Mermaid</span>' +
     vizActions(id, false, true) +
     '</div>'
   );
