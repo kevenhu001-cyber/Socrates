@@ -781,3 +781,115 @@ body.workspace-active #appShell .main-page:not(.creation-panel) {
     overflow: visible;
   }
 }
+
+/* Project run history and reviewable execution details. */
+.project-run-history {
+  margin-top: 16px;
+  padding-top: 13px;
+  border-top: 0.5px solid var(--ui-border-subtle);
+}
+.project-runtime-heading {
+  margin-bottom: 7px;
+  color: var(--ui-text-primary);
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-font-weight-semibold);
+}
+.project-run-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 0;
+  border-bottom: 0.5px solid var(--ui-border-subtle);
+}
+.project-run-row:last-child {
+  border-bottom: 0;
+}
+.project-run-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+}
+.project-run-copy strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ui-text-primary);
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-font-weight-semibold);
+}
+.project-run-copy span {
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xxs);
+}
+.project-run-open {
+  opacity: 1;
+  flex: 0 0 auto;
+}
+.agent-run-details {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.agent-run-details-summary {
+  margin: 0;
+  color: var(--ui-text-primary);
+  font-size: var(--ui-font-size-xs);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.agent-run-details-status {
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xxs);
+}
+.agent-run-details-section-title {
+  margin-top: 4px;
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-xxs);
+}
+.agent-run-artifacts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding-left: 18px;
+  color: var(--ui-text-primary);
+  font: var(--ui-font-size-xxs) var(--font-mono);
+}
+.agent-run-details-activity {
+  margin-top: 3px;
+  border-top: 0.5px solid var(--ui-border-subtle);
+  padding-top: 8px;
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-xxs);
+}
+.agent-run-details-activity summary {
+  cursor: pointer;
+  color: var(--ui-text-secondary);
+  font-weight: var(--ui-font-weight-semibold);
+}
+.agent-run-details-activity ol {
+  display: flex;
+  max-height: 220px;
+  flex-direction: column;
+  gap: 5px;
+  overflow: auto;
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-family: var(--font-mono);
+  font-size: var(--ui-font-size-xxs);
+  line-height: 1.45;
+}
+@media (max-width: 480px) {
+  .project-run-row {
+    align-items: flex-start;
+  }
+  .project-run-open {
+    padding-inline: 4px;
+  }
+  .agent-run-details-activity ol {
+    max-height: 180px;
+  }
+}

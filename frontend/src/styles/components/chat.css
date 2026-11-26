@@ -1021,3 +1021,98 @@ a.has-site-favicon {
 .site-link-favicon.is-unavailable {
   display: none;
 }
+
+/* Stream fragments preserve their settled sibling's reading width. */
+.stream-settled-content,
+.stream-live-content {
+  min-width: 0;
+}
+.stream-settled-content:not(:empty) > p:last-child {
+  margin-bottom: 8px;
+}
+.stream-live-content:empty {
+  display: none;
+}
+
+/* URL previews: same neutral surface in either theme. */
+.link-previews {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+  align-items: flex-end;
+  max-width: 100%;
+}
+.msg.user .link-previews {
+  align-items: flex-end;
+}
+.msg.assistant .link-previews {
+  align-items: flex-start;
+}
+.link-card {
+  width: 100%;
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 12px;
+  border-radius: var(--ui-radius-row);
+  border: 0.5px solid var(--ui-border-subtle);
+  background: var(--ui-bg-control);
+  font-size: var(--ui-font-size-xs);
+  line-height: 1.45;
+  color: var(--ui-text-primary);
+  text-align: left;
+  box-sizing: border-box;
+}
+.link-card.err {
+  border-color: var(--ui-border-subtle);
+}
+.link-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: var(--ui-font-size-xxs);
+  color: var(--ui-text-secondary);
+}
+.link-card-host {
+  font-weight: var(--ui-font-weight-semibold);
+  letter-spacing: -0.01em;
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.link-card-status {
+  font-size: var(--ui-font-size-xxs);
+  color: var(--ui-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.link-card-status.err {
+  color: var(--ui-danger);
+  font-weight: var(--ui-font-weight-medium);
+}
+.link-card-title {
+  color: var(--ui-text-primary);
+  text-decoration: none;
+  font-weight: var(--ui-font-weight-medium);
+  font-size: var(--ui-font-size-xs);
+  line-height: 1.35;
+  word-break: break-word;
+}
+.link-card-title:hover {
+  text-decoration: underline;
+}
+.link-card-excerpt {
+  font-size: var(--ui-font-size-xxs);
+  color: var(--ui-text-secondary);
+  line-height: 1.5;
+  margin-top: 2px;
+  max-height: 3.6em;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+}

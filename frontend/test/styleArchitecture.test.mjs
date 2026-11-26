@@ -342,7 +342,6 @@ test('external link favicons stay with chat and final compatibility slice is ret
 
 test('retired imperative tool cards retain history cleanup but no visual skin', async () => {
   const paths = [
-    'src/styles/legacy/11-agent-tools.css',
     'src/styles/legacy/14-tool-surfaces.css',
     'src/styles/features/tool-surfaces.css',
   ];
@@ -353,10 +352,25 @@ test('retired imperative tool cards retain history cleanup but no visual skin', 
   assert.match(await read('src/react/tool-run/toolRunLegacyHtml.ts'), /\.agent-tool-card/);
 });
 
+test('learning and project execution legacy slices stay retired', async () => {
+  for (const file of ['10-tutor-scaffolds.css', '11-agent-tools.css']) {
+    await assert.rejects(access(new URL('src/styles/legacy/' + file, root)));
+  }
+  const [learning, activity, workspace, chat] = await Promise.all([
+    read('src/styles/features/learn-scaffolds.css'),
+    read('src/styles/features/thinking-activity.css'),
+    read('src/styles/polish/workspace.css'),
+    read('src/styles/components/chat.css'),
+  ]);
+  assert.match(learning, /\.inline-quiz-feedback\s*\{/);
+  assert.match(activity, /\.shimmer-text\s*\{/);
+  assert.match(workspace, /\.project-run-history\s*\{/);
+  assert.match(chat, /\.link-card\s*\{/);
+});
+
 test('artifact preview, download and retry use one stylesheet owner', async () => {
   const [owner, ...legacy] = await Promise.all([
     read('src/styles/components/tool-card.css'),
-    read('src/styles/legacy/11-agent-tools.css'),
     read('src/styles/legacy/12-tutor-inline-tools.css'),
   ]);
   for (const selector of [

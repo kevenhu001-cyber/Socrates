@@ -54,8 +54,6 @@ const ORDERED_MANIFESTS = {
     './07-composer-settings.css',
     './08-exam.css',
     './09-viz-markdown.css',
-    './10-tutor-scaffolds.css',
-    './11-agent-tools.css',
     './12-tutor-inline-tools.css',
     './13-composer-rich.css',
     './14-tool-surfaces.css',

@@ -1259,3 +1259,26 @@ html[data-detail-open='true'][data-detail-layout='docked'] #appShell .main {
     padding-block: 8px;
   }
 }
+
+/* Tutor count badges share the same sidebar typography and palette. */
+.tab-badge {
+  display: inline-block;
+  min-width: 16px;
+  height: 16px;
+  line-height: 14px;
+  padding: 0 4px;
+  margin-left: 4px;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-ink);
+  color: var(--ui-on-ink);
+  font-size: var(--ui-font-size-xxs);
+  font-weight: var(--ui-font-weight-semibold);
+  text-align: center;
+  vertical-align: middle;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+.tab-badge:empty {
+  display: none;
+}
