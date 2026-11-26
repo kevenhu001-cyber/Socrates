@@ -376,3 +376,51 @@ test('cooperative RK4 can yield and produces the same complete history as the sy
   for (const time of [0, 0.023, 2.36, 15.2, 20])
     assert.deepEqual(result.value.stateAt(time), sync.stateAt(time));
 });
+
+test('adaptive RK45 integrates a nonstiff RC decay and interpolates in time', () => {
+  const runtime = createDemonstrationRuntime({
+    version: 1,
+    parameters: [{ id: 'tau', value: 2, min: 0.5, max: 4 }],
+    dynamics: {
+      method: 'rk45', duration: 10, step: 0.25,
+      initial: { voltage: 5 }, derivatives: { voltage: '-voltage/tau' },
+    },
+    views: [{ kind: 'plot', history: true, x: [0, 10], y: [0, 5], curves: [{ expression: 'voltage' }] }],
+  });
+  assert.equal(runtime.duration, 10);
+  assert.deepEqual(runtime.warnings, []);
+  for (const time of [0, 0.123, 1.55, 5, 10])
+    assert.ok(Math.abs(runtime.stateAt(time).voltage - 5*Math.exp(-time/2)) < 2e-5);
+});
+
+test('hybrid dynamics locate a falling impact and apply simultaneous state resets', () => {
+  const runtime = createDemonstrationRuntime({
+    version: 1,
+    dynamics: {
+      method: 'rk45', duration: 1, step: 0.1,
+      initial: { height: 1, velocity: 0 },
+      derivatives: { height: 'velocity', velocity: -9.81 },
+      events: [{ expression: 'height', direction: -1, reset: { height: 0, velocity: '-0.8*velocity' } }],
+    },
+    views: [{ kind: 'trajectory', x: [0, 1], y: [0, 2], horizontal: 't', vertical: 'height' }],
+  });
+  assert.deepEqual(runtime.warnings, []);
+  const impact = Math.sqrt(2/9.81);
+  assert.ok(runtime.stateAt(impact-0.0001).velocity < 0);
+  assert.ok(runtime.stateAt(impact+0.0001).velocity > 0);
+  assert.ok(runtime.stateAt(0.6).height > 0);
+});
+
+test('terminal event limits playback to a root, not the next output sample', () => {
+  const runtime = createDemonstrationRuntime({
+    version: 1,
+    dynamics: {
+      method: 'rk45', duration: 5, step: 0.2,
+      initial: { q: 1 }, derivatives: { q: -1 },
+      events: [{ expression: 'q', direction: -1, terminal: true }],
+    },
+    views: [{ kind: 'metrics', values: [{ expression: 'q' }] }],
+  });
+  assert.ok(Math.abs(runtime.duration-1) < 1e-8);
+  assert.ok(Math.abs(runtime.stateAt(5).q) < 1e-8);
+});
