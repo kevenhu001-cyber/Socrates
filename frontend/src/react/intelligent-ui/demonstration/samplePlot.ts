@@ -61,11 +61,15 @@ function* sampleCurvePoints(
     firstError = '';
   for (let i = 0; i <= samples; i++) {
     try {
-      const t = view.kind === 'trajectory' ? (time * i) / samples : time;
+      const history = view.kind === 'plot' && view.history;
+      const left = Math.max(0, xDomain[0]);
+      const right = Math.min(time, xDomain[1]);
+      if (history && right < left) continue;
+      const t = view.kind === 'trajectory' ? (time * i) / samples : history ? left + ((right - left) * i) / samples : time;
       const x =
         view.kind === 'trajectory'
           ? read(view.horizontal, t, 0)
-          : xDomain[0] + ((xDomain[1] - xDomain[0]) * i) / samples;
+          : history ? t : xDomain[0] + ((xDomain[1] - xDomain[0]) * i) / samples;
       const y = read(curve.expression, t, x);
       if (Number.isFinite(x) && Number.isFinite(y)) {
         points.push([x, y]);
@@ -135,7 +139,7 @@ function* sample(
   const curves: Point[][] = [];
   for (const [index, curve] of sources.entries()) {
     const reusable =
-      view.kind === 'plot' &&
+      view.kind === 'plot' && !view.history &&
       ![...view.x, curve.expression].some((expression) => runtime.dependencies(expression) & 4);
     const key = `${index}:${samples}`;
     let sampled = reusable ? cache.get(key) : undefined;
@@ -184,6 +188,7 @@ export function plotExpressions(view: PlotView) {
     ? [
         ...view.x,
         ...view.y,
+        ...(view.history ? ['t'] : []),
         ...view.curves.map((curve) => curve.expression),
         ...(view.markers ?? []).flatMap((marker) => [marker.x, marker.y]),
       ]
