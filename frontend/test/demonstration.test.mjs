@@ -561,3 +561,26 @@ test('simultaneous events apply disjoint resets to the same prior state', () => 
   assert.ok(Math.abs(runtime.stateAt(2).q - 4) < 1e-7);
   assert.ok(Math.abs(runtime.stateAt(2).v - 5) < 1e-7);
 });
+
+test('two-dimensional diffusion matches a separable heat mode and fixed boundaries', () => {
+  const runtime = createDemonstrationRuntime({
+    version: 1, dynamics: { method: 'rk45', duration: 0.2, step: 0.01,
+      spatial: { dimension: 2, nx: 7, ny: 7, xDomain: [0,1], yDomain: [0,1],
+        diffusivity: 0.1, initial: 'sin(pi*x)*sin(pi*y)', boundary: 0 }},
+    views: [{ kind: 'field', x: [0,1], y: [0,1], expression: 'gridValue' }],
+  });
+  assert.deepEqual(runtime.warnings, []);
+  assert.ok(Math.abs(runtime.evaluate('gridValue', 0.2, 0.5, 0.5) - Math.exp(-0.04*Math.PI**2)) < 0.01);
+  for (const [x,y] of [[0,0.5],[1,0.5],[0.5,0],[0.5,1]])
+    assert.ok(Math.abs(runtime.evaluate('gridValue',0.2,x,y)) < 1e-12);
+});
+test('logarithmic plots sample physical frequencies and reject invalid bounds', () => {
+  const view = {kind:'plot', x:[1,1000], y:[0,3], xScale:'log', curves:[{expression:'log10(x)'}]};
+  const program = {version:1, views:[view]};
+  const runtime = createDemonstrationRuntime(program);
+  const sample = finishGenerator(samplePlot(view,runtime,0,false,new Map()));
+  assert.equal(sample.xScale,'log');
+  assert.ok(sample.paths[0].startsWith('M48.00,194.00'));
+  assert.ok(sample.paths[0].endsWith('L508.00,14.00'));
+  assert.equal(validateDemonstration({...program,views:[{...view,x:[0,1000]}]}).ok,false);
+});
