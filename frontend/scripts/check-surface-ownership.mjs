@@ -16,7 +16,7 @@ const surfaces = {
       /knowledge|mistake|kb-|tab-badge|sidebar-view-btn|tutor-only|recents-filter|filter-chip|recent-item-menu|recent-item-(?:tag|archive|del|action|rename|tags)|rename|tag-|drag|drop|more-popover|popover|backdrop|voice-/,
   },
   topbar: {
-    owners: ['parity/topbar.css', 'polish/topbar.css'],
+    owners: ['parity/topbar.css'],
     context:
       /\.top-bar(?![-\w])|\.top-bar-(?:left|right)(?![-\w])|#modeSegmentedTop|\.top-mode-tabs(?![-\w])|\.app-mode-toggle|#shareBtn|\.share-btn(?![-\w])|\.share-btn-label|#findBtn|\.find-btn(?![-\w])|\.top-model-switcher/,
     exclude:
