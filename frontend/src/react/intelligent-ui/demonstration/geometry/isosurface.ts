@@ -1,4 +1,4 @@
-import { demonstrationDomain, isDemonstrationBudgetError } from '@socrates/core/demonstration';
+import { demonstrationDomain, isDemonstrationBudgetError } from '@socrates/core/demonstrationLight';
 import type { DemonstrationField, DemonstrationRuntime } from '@socrates/core/demonstration';
 import type { Domain } from '../fieldCommon';
 import type { Point3, SurfaceSample } from './types';
