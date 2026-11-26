@@ -32,42 +32,91 @@ function copyLabels() {
   };
 }
 
-function TextSection({ section }: { section: Extract<Section, { kind: 'output' | 'error' }> }) {
+function TextSection({
+  section,
+  readable = false,
+}: {
+  section: Extract<Section, { kind: 'output' | 'error' }>;
+  readable?: boolean;
+}) {
   const [expanded, setExpanded] = useState(false);
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle');
   const { width } = useWindowDimensions();
   const expandable = Boolean(section.fullText) && section.fullText !== section.text;
-  const shown = expanded && section.fullText ? section.fullText : section.text;
+  const fullText = section.fullText || section.text;
+  const shown = expanded ? fullText : section.text;
+  const labels = copyLabels();
+  const expandAction = expandable ? (
+    <UiButton
+      testID="tool-output-expand"
+      variant="ghost"
+      size={width < 768 ? 'lg' : 'sm'}
+      aria-expanded={expanded}
+      label={
+        expanded
+          ? translate('tool.showLess', 'Show less')
+          : tf('tool.showAll', 'Show all ({n} chars)', {
+              n: fullText.length.toLocaleString(),
+            })
+      }
+      onPress={() => setExpanded((value) => !value)}
+    />
+  ) : null;
   return (
     <DetailSection title={section.title} kind={section.kind}>
-      <CodeBlock
-        text={shown}
-        tone={section.kind === 'error' ? 'error' : 'plain'}
-        onCopy={() => copyText(section.fullText || section.text)}
-        {...copyLabels()}
-        extra={
-          expandable ? (
+      {readable ? (
+        <>
+          <div
+            className={`tool-detail-readable-output${section.kind === 'error' ? ' tool-detail-error-message' : ''}`}
+            data-testid="tool-code-output"
+          >
+            {shown}
+          </div>
+          <div className="tool-readable-actions">
+            {expandAction}
             <UiButton
-              testID="tool-output-expand"
+              testID="tool-code-copy"
               variant="ghost"
               size={width < 768 ? 'lg' : 'sm'}
-              aria-expanded={expanded}
               label={
-                expanded
-                  ? translate('tool.showLess', 'Show less')
-                  : tf('tool.showAll', 'Show all ({n} chars)', {
-                      n: (section.fullText || '').length.toLocaleString(),
-                    })
+                copyStatus === 'copied'
+                  ? labels.copiedLabel
+                  : copyStatus === 'failed'
+                    ? labels.failedLabel
+                    : labels.copyLabel
               }
-              onPress={() => setExpanded((value) => !value)}
+              aria-live="polite"
+              onPress={() => {
+                void copyText(fullText).then(
+                  (ok) => setCopyStatus(ok ? 'copied' : 'failed'),
+                  () => setCopyStatus('failed'),
+                );
+              }}
             />
-          ) : null
-        }
-      />
+          </div>
+        </>
+      ) : (
+        <CodeBlock
+          text={shown}
+          tone={section.kind === 'error' ? 'error' : 'plain'}
+          onCopy={() => copyText(fullText)}
+          {...labels}
+          extra={expandAction}
+        />
+      )}
     </DetailSection>
   );
 }
 
-function ResultSection({ section, entryKey }: { section: Section; entryKey: string }) {
+function ResultSection({
+  section,
+  entryKey,
+  readable = false,
+}: {
+  section: Section;
+  entryKey: string;
+  readable?: boolean;
+}) {
   if (section.kind === 'sources') {
     const items = section.items.map((item, index) => ({
       id: `${entryKey}-${index}`,
@@ -89,7 +138,9 @@ function ResultSection({ section, entryKey }: { section: Section; entryKey: stri
               data-testid="tool-source"
               role={source.url ? 'link' : undefined}
               disabled={!source.url}
-              aria-label={[section.items[index]?.title || source.title, source.host].filter(Boolean).join(' · ')}
+              aria-label={[section.items[index]?.title || source.title, source.host]
+                .filter(Boolean)
+                .join(' · ')}
               onClick={() => source.url && openExternal(source.url)}
             >
               <SourceAvatar
@@ -140,14 +191,10 @@ function ResultSection({ section, entryKey }: { section: Section; entryKey: stri
       </DetailSection>
     );
   }
-  if (section.kind === 'error' && section.title !== 'stderr' && !section.fullText) {
-    return (
-      <DetailSection title={section.title} kind="error">
-        <p className="tool-detail-error-message">{section.text}</p>
-      </DetailSection>
-    );
-  }
-  return <TextSection section={section} />;
+  const plainError = section.kind === 'error' && section.title !== 'stderr';
+  const plainOutput =
+    section.kind === 'output' && readable && !/^[\s]*[\[{]/.test(section.text);
+  return <TextSection section={section} readable={plainError || plainOutput} />;
 }
 
 function imageOutputsOf(call: ToolCallRecord | undefined) {
@@ -249,7 +296,12 @@ export function ToolRunDetail({ view, call, inFlight = false }: ToolRunDetailPro
       {hasLiveOutput ? <LiveOutputSection view={view} /> : null}
       {results.map((section, index) =>
         !hasLiveOutput || section.kind === 'sources' ? (
-          <ResultSection key={`${section.kind}-${index}`} section={section} entryKey={entryKey} />
+          <ResultSection
+            key={`${section.kind}-${index}`}
+            section={section}
+            entryKey={entryKey}
+            readable={view.category === 'fetch' || view.category === 'connector'}
+          />
         ) : null,
       )}
       <ToolImagesSection images={images} />
