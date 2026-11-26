@@ -2240,6 +2240,7 @@ export function validateDemonstration(input) {
           at(`${path}.curves[${j}]`, () => {
             if (!record(c) || !text(c.label))
               throw Error('Curve needs an expression and an optional text label');
+            if(c.interpolation!==undefined&&!['linear','step'].includes(c.interpolation))throw Error('Curve interpolation must be linear or step');
             check(c.expression);
             curves++;
           }),
