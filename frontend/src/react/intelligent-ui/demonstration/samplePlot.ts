@@ -199,7 +199,7 @@ function* sample(
     yDomain,
     xScale,
     yScale,
-    paths: curves.map((points) => pathFor(points, sx, sy)),
+    paths: curves.map((points,index) => pathFor(points, sx, sy, view.kind==='plot'&&view.curves[index].interpolation==='step')),
     markers,
     issues,
     ...(view.kind === 'plot' && view.history ? { playhead: time, eventTimes: (runtime.eventTimes ?? []).filter((t) => t <= time && t >= xDomain[0] && t <= xDomain[1]) } : {}),
@@ -269,6 +269,7 @@ function pathFor(
   points: Point[],
   sx: (value: number) => number,
   sy: (value: number) => number,
+  staircase = false,
 ): string {
   let pen = false;
   let path = '';
@@ -284,7 +285,7 @@ function pathFor(
       pen = false;
       continue;
     }
-    path += `${pen ? 'L' : 'M'}${px.toFixed(2)},${py.toFixed(2)}`;
+    path += pen&&staircase?`H${px.toFixed(2)}V${py.toFixed(2)}`:`${pen ? 'L' : 'M'}${px.toFixed(2)},${py.toFixed(2)}`;
     pen = true;
   }
   return path;
