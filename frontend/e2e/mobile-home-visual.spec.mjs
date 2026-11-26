@@ -182,6 +182,7 @@ test('mobile conversation home matches the compact dark reference layout', async
       find: measure('#findBtn'),
       share: measure('#shareBtn'),
       sidebarStatus: measure('.mobile-sidebar-status'),
+      actionGroup: measure('.top-bar-right'),
       findIcon: measure('#findBtn svg'),
       shareIcon: measure('#shareBtn svg'),
       shareLabelVisible: Boolean(
@@ -220,6 +221,8 @@ test('mobile conversation home matches the compact dark reference layout', async
   }
   expect(headerVisual.find?.borderWidth).toBe('0px');
   expect(headerVisual.share?.borderWidth).toBe('0px');
+  expect(headerVisual.actionGroup?.borderWidth).toBe('0px');
+  expect(headerVisual.actionGroup?.background).toBe('rgba(0, 0, 0, 0)');
   /* The reference header shows no always-on status dot next to the
      sidebar toggle, so it stays display:none on mobile. */
   expect(headerVisual.sidebarStatus?.width).toBe(0);
