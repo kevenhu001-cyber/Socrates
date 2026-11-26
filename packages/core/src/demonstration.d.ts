@@ -46,6 +46,7 @@ export interface DemonstrationPlot extends DemonstrationViewBase {
 export interface DemonstrationField extends DemonstrationViewBase {
   kind: 'field';
   expression: DemonstrationValue;
+  slicePlane?: {axis:'x'|'y'|'z';at:DemonstrationValue};
   presentation?: 'map' | 'surface' | 'curve3d' | 'vectors3d';
   curve3d?: [DemonstrationValue, DemonstrationValue, DemonstrationValue];
   vector3d?: [DemonstrationValue, DemonstrationValue, DemonstrationValue];
@@ -124,7 +125,8 @@ export interface DemonstrationProgram {
   resetKey?: string;
   parameters?: DemonstrationParameter[];
   definitions?: Record<string, DemonstrationValue>;
-  sparseSystem?: {size:number;entries:[number,number,DemonstrationValue][];rhs:DemonstrationValue[];tolerance?:number;maxIterations?:number};
+  nonlinearSystem?: {guess:Record<string,DemonstrationValue>;residuals:Record<string,DemonstrationValue>;tolerance?:number;maxIterations?:number};
+  sparseSystem?: {method?:'pcg'|'bicgstab';size:number;entries:[number,number,DemonstrationValue][];rhs:DemonstrationValue[];tolerance?:number;maxIterations?:number};
   linearAlgebra?: ({id:string;op:'vector';values:DemonstrationValue[]} | {id:string;op:'matrix';values:DemonstrationValue[][]} | {id:string;op:'scale';a:string;factor:DemonstrationValue} | {id:string;op:'norm'|'transpose';a:string} | {id:string;op:'add'|'sub'|'dot'|'cross'|'matmul';a:string;b:string})[];
   dynamics?: {
     initial?: Record<string, DemonstrationValue>;
@@ -154,6 +156,7 @@ export interface DemonstrationProgram {
       boundary: DemonstrationValue;
       source?: DemonstrationValue;
     };
+    coupledFields?: {dimension:1|2;nx:number;ny?:number;xDomain:[number,number];yDomain?:[number,number];boundary:'periodic'|'noFlux';fields:{id:string;initial:DemonstrationValue;diffusivity:DemonstrationValue;reaction?:DemonstrationValue}[]};
     reactionNetwork?: {seed?:number;species:{id:string;initial:DemonstrationValue;composition?:Record<string,number>}[];reactions:{id:string;reactants:Record<string,number>;products:Record<string,number>;rateConstant?:DemonstrationValue;rate?:DemonstrationValue}[]};
     stateSpace?: {
       states: string[];
@@ -171,7 +174,7 @@ export interface DemonstrationProgram {
     };
     duration: number;
     step: number;
-    method?: 'rk4' | 'rk45' | 'sdirk2' | 'grid-implicit' | 'ssa';
+    method?: 'rk4' | 'rk45' | 'sdirk2' | 'grid-implicit' | 'ssa' | 'grid-heun';
     /** Nonsingular M in M*state'=derivatives; rows/columns follow initial-state key order. */
     massMatrix?: DemonstrationValue[][];
     /** Semi-explicit index-one constraints g(t, state, algebraic)=0. */
@@ -204,6 +207,8 @@ export interface DemonstrationDiagnostics {
   nonzeros?: number;
   iterations?: number;
   relativeResidual?: number;
+  absoluteResidual?: number;
+  diffusionCFL?: number;
 }
 export interface DemonstrationRuntime {
   duration: number;
