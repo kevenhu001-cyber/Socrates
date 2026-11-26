@@ -797,6 +797,7 @@ function normalizeView(raw) {
     if (view.y !== undefined) view.y = rangeLike(view.y);
   }
   if (view.kind === 'plot') {
+    if (view.sliceY !== undefined) view.sliceY = expressionLike(view.sliceY);
     let curves = asArray(view.curves);
     if (curves === undefined && view.expression !== undefined) {
       curves = [{ expression: view.expression }];
@@ -1217,6 +1218,11 @@ function lowerCircuitProgram(program) {
   if ((program.parameters !== undefined && !Array.isArray(program.parameters)) ||
       (program.definitions !== undefined && !record(program.definitions)))
     invalid('Parameters and definitions must have their normal program shapes');
+  const parameterScope = new Set((program.parameters ?? []).map((p) => p?.id));
+  for (const e of elements.filter((e) => ['C','L'].includes(e.kind))) {
+    try { expressionNames(parseDemonstrationExpression(e.value), parameterScope); }
+    catch { invalid('Capacitance and inductance must be constants or parameter expressions'); }
+  }
   const valueId = (e) => `mnaVal_${e.id}`;
   const stateId = (e) => `mnaState_${e.id}`;
   const voltageId = (id) => `voltage_${id}`;
@@ -1553,6 +1559,11 @@ export function validateDemonstration(input) {
           throw located(`${path}.${axis}Scale`, Error('Use linear or log scales on plots only'));
         if (scale === 'log' && Array.isArray(view[axis]) && view[axis].some((v) => finite(v) && v <= 0))
           throw located(`${path}.${axis}`, Error('Logarithmic axis needs positive bounds'));
+      }
+      if (view.sliceY !== undefined) {
+        if (view.kind !== 'plot' || view.history)
+          throw located(`${path}.sliceY`, Error('Spatial slice is available on non-history plots only'));
+        at(`${path}.sliceY`, () => check(view.sliceY));
       }
       if (view.history !== undefined &&
           (view.kind !== 'plot' || typeof view.history !== 'boolean' || (view.history && !dynamics)))
