@@ -19,6 +19,7 @@ export function fieldExpressions(view: DemonstrationField): DemonstrationValue[]
     view.exposure ?? 1,
     ...(view.vector ?? []),
     ...(view.colorRange ?? []),
+    ...(view.zRange ?? []),
     ...(view.contours ?? []),
     ...(view.vectorScale === undefined ? [] : [view.vectorScale]),
   ];
@@ -289,6 +290,37 @@ function* sampleContours(
   return output;
 }
 
+export interface SurfaceSample {
+  size: number;
+  values: number[];
+  x: Domain;
+  y: Domain;
+  z: Domain;
+}
+function* sampleSurface(view: DemonstrationField, runtime: DemonstrationRuntime,
+  time: number, x: Domain, y: Domain, size: number): Generator<void, SurfaceSample, void> {
+  runtime.resetBudget();
+  if (!view.zRange) throw Error('Surface requires z bounds');
+  const z = view.zRange.map((v) => runtime.evaluate(v, time)) as Domain;
+  if (!z.every(Number.isFinite) || z[1] <= z[0]) throw Error('Surface z bounds must increase');
+  const values: number[] = [];
+  for (let j = 0; j < size; j++) {
+    for (let i = 0; i < size; i++) {
+      try {
+        const value = runtime.evaluate(view.expression, time,
+          x[0] + (x[1]-x[0])*i/(size-1), y[0] + (y[1]-y[0])*j/(size-1));
+        values.push(Number.isFinite(value) && value >= z[0] && value <= z[1] ? value : Number.NaN);
+      } catch (error) {
+        if (isDemonstrationBudgetError(error)) throw error;
+        values.push(Number.NaN);
+      }
+    }
+    yield;
+  }
+  if (!values.some(Number.isFinite)) throw Error('No finite surface samples in z range');
+  return {size, values, x, y, z};
+}
+
 export function* sampleField(
   view: DemonstrationField,
   runtime: DemonstrationRuntime,
@@ -298,6 +330,10 @@ export function* sampleField(
   runtime.resetBudget();
   const x = demonstrationDomain(view.x, runtime, time);
   const y = demonstrationDomain(view.y, runtime, time);
+  if (view.presentation === 'surface') {
+    const surface = yield* sampleSurface(view, runtime, time, x, y, preview ? 17 : 33);
+    return { pixels: new ArrayBuffer(0), arrows: [], contours: [], colorRange: undefined, surface };
+  }
   const colorRange = view.colorRange?.map((v) => runtime.evaluate(v, time)) as Domain | undefined;
   if (colorRange && (!colorRange.every(Number.isFinite) || colorRange[0] >= colorRange[1]))
     throw Error('Color range must be finite and increasing');
@@ -306,7 +342,7 @@ export function* sampleField(
       const pixels = yield* sampleGrid(view, runtime, time, x, y, stride, colorRange);
       const arrows = yield* sampleVectors(view, runtime, time, x, y);
       const contours = yield* sampleContours(view, runtime, time, x, y, stride);
-      return { pixels: pixels.buffer, arrows, contours, colorRange };
+      return { pixels: pixels.buffer, arrows, contours, colorRange, surface: undefined };
     } catch (error) {
       if (!isDemonstrationBudgetError(error)) throw error;
     }
