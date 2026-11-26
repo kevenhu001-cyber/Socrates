@@ -170,7 +170,7 @@ test('primary, secondary, and readable muted text meet WCAG AA for normal text',
   }
 });
 
-test('the background ladder follows the explicit white-paper and black-canvas policies', () => {
+test('the background ladder follows the white-paper and November reference canvas policies', () => {
   for (const mode of ['dark', 'light']) {
     const rungs = RUNGS[mode].map((rung) => sharedRungHex(mode, rung));
 
@@ -187,9 +187,8 @@ test('the background ladder follows the explicit white-paper and black-canvas po
     }
     const banded = mode === 'light' ? rungs.slice(1) : rungs;
     assert.equal(new Set(banded).size, mode === 'light' ? 3 : 4, `${mode} unique surface count`);
-    // Black canvas (surface-ladder.baseline.json blackCanvas): only the dark
-    // page may be pure #000, and its gap to the rail may reach 12%.
-    if (mode === 'dark') assert.equal(rungs[0], '#000000', 'dark canvas is pure black');
+    // The measured November near-black canvas retains the neutral ladder.
+    if (mode === 'dark') assert.equal(rungs[0], '#0e0e0e', 'dark canvas matches the reference');
     assert.ok(
       !rungs.slice(mode === 'dark' ? 1 : 0).includes('#000000'),
       `${mode} raised rungs must not use pure black`,
@@ -198,7 +197,7 @@ test('the background ladder follows the explicit white-paper and black-canvas po
     const sorted = [...new Set(banded)].sort((a, b) => lightnessPercent(a) - lightnessPercent(b));
     for (let i = 1; i < sorted.length; i += 1) {
       const step = Math.abs(lightnessPercent(sorted[i]) - lightnessPercent(sorted[i - 1]));
-      const maxStep = mode === 'dark' && i === 1 ? 12 : MAX_STEP;
+      const maxStep = MAX_STEP;
       assert.ok(
         step >= MIN_STEP - 0.01 && step <= maxStep + 0.01,
         `${mode} ladder step ${sorted[i - 1]} → ${sorted[i]} is ${step.toFixed(2)}%, outside ${MIN_STEP}%-${maxStep}%`,
