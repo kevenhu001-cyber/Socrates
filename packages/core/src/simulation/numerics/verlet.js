@@ -26,4 +26,3 @@ function* integrateVerlet(d,s,state,derivative,warnings){
 }
 
 export { integrateVerlet };
-export { verletSpec, lowerVerlet } from '../models/verlet.js';
