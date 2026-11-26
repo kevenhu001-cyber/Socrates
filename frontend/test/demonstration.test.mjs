@@ -711,3 +711,49 @@ test('event rearming prevents a second crossing caused solely by numerical root 
   assert.ok(Math.abs(runtime.stateAt(2).q-1)<1e-7);
   assert.equal(runtime.stateAt(2).v,1);
 });
+
+test('CSR PCG solves a sparse symmetric chain and rejects detected indefinite curvature', () => {
+  const n=128,entries=[],rhs=[];
+  for(let i=0;i<n;i++){
+    entries.push([i,i,4]);if(i<n-1)entries.push([i,i+1,-1]);rhs.push(i===0||i===n-1?3:2);
+  }
+  const program={version:1,diagnostics:true,sparseSystem:{size:n,entries,rhs,tolerance:1e-10},
+    views:[{kind:'plot',x:[0,n-1],y:[0,2],curves:[{expression:'sparseValue'}]}]};
+  const runtime=createDemonstrationRuntime(program);
+  for(let i=0;i<n;i++)assert.ok(Math.abs(runtime.evaluate('sparseValue',0,i)-1)<1e-8);
+  assert.ok(Math.abs(runtime.evaluate('sparseAt(64)')-1)<1e-8);
+  assert.ok(runtime.evaluate('sparseResidual')<1e-10);
+  assert.equal(runtime.diagnostics.method,'PCG');
+  assert.ok(runtime.diagnostics.iterations>0);
+  assert.throws(()=>createDemonstrationRuntime({...program,sparseSystem:{size:2,entries:[[0,0,1],[0,1,2],[1,1,1]],rhs:[1,-1]}}),/positive definite/);
+  assert.equal(validateDemonstration({...program,sparseSystem:{size:2,entries:[[0,0,1],[0,0,2],[1,1,1]],rhs:[1,1]}}).ok,false);
+});
+test('3D vector scope does not cache across the third spatial coordinate', () => {
+  const view={kind:'field',presentation:'vectors3d',x:[-1,1],y:[-1,1],zRange:[-1,1],vector3d:['-y','x','spaceZ'],vectorScale:2,expression:0};
+  const runtime=createDemonstrationRuntime({version:1,definitions:{radial:'x^2+y^2+spaceZ^2'},views:[view]});
+  assert.equal(runtime.evaluate('radial',0,1,1,1),3);
+  assert.equal(runtime.evaluate('radial',0,1,1,0),2);
+  assert.equal(runtime.dependencies('radial')&8,8);
+  const sample=finishGenerator(sampleField(view,runtime,0,false));
+  assert.ok(sample.surface.arrows3d.length>300);
+  assert.equal(sample.pixels.byteLength,0);
+});
+test('3D curve sampling follows the actual parameter and dynamics history', () => {
+  const view={kind:'field',presentation:'curve3d',x:[-1,1],y:[-1,1],zRange:[0,2],parameterRange:[0,2*Math.PI],curve3d:['cos(x)','sin(x)','x/pi'],expression:0};
+  const runtime=createDemonstrationRuntime({version:1,views:[view]});
+  const sample=finishGenerator(sampleField(view,runtime,0,false));
+  assert.ok(sample.surface.curve.length>400);
+  assert.ok(Math.abs(sample.surface.curve[0][0]-1)<1e-10);
+  assert.ok(Math.abs(sample.surface.curve.at(-1)[2]-1)<1e-10);
+  const history={...view,parameterRange:undefined,curveHistory:true,curve3d:['q','0','t']};
+  const dynamic=createDemonstrationRuntime({version:1,dynamics:{method:'rk45',duration:1,step:.1,initial:{q:0},derivatives:{q:1}},views:[history]});
+  const trail=finishGenerator(sampleField(history,dynamic,.5,false));
+  assert.ok(Math.abs(trail.surface.curve.at(-1)[0]-.5)<1e-10);
+});
+test('adaptive diagnostics count rejected and accepted steps, not global errors',()=>{
+  const runtime=createDemonstrationRuntime({version:1,diagnostics:true,dynamics:{method:'rk45',duration:1,step:.2,initial:{q:1},derivatives:{q:'-10*q'}},views:[{kind:'metrics',values:[{expression:'q'}]}]});
+  assert.ok(runtime.diagnostics.acceptedSteps>0);
+  assert.ok(runtime.diagnostics.rejectedSteps>0);
+  assert.ok(runtime.diagnostics.maxLocalError<=1);
+  assert.equal(runtime.diagnostics.derivativeEvaluations,7*(runtime.diagnostics.acceptedSteps+runtime.diagnostics.rejectedSteps));
+});
