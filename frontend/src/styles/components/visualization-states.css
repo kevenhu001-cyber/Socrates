@@ -879,6 +879,12 @@
   border-bottom: 0;
   background: var(--ui-bg-elevated);
 }
+/* Light runs the ladder the other way: the elevated rung is the paper the
+   card sits on, so the strip steps down to the panel rung to read as a
+   header (#f2f2f2 over the white diagram body) instead of vanishing. */
+html[data-mode='light'] #appShell .viz-mermaid-header {
+  background: var(--ui-bg-panel);
+}
 #appShell .viz-mermaid-title {
   display: inline-flex;
   align-items: center;
