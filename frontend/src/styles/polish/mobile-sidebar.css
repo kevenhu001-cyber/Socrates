@@ -907,8 +907,8 @@
   }
 
   #appShell #sidebarOpenBtn {
-    border: var(--ui-phone-drawer-border, 0);
-    background: var(--ui-phone-drawer-bg, transparent);
+    border: 0;
+    background: transparent;
     box-shadow: none;
   }
 
@@ -942,8 +942,8 @@
     min-width: var(--ui-hit-area);
     height: var(--ui-hit-area);
     min-height: var(--ui-hit-area);
-    border: 1px solid var(--ui-border-default);
-    background: var(--ui-bg-surface);
+    border: 0;
+    background: transparent;
     color: var(--ui-icon-secondary, var(--ui-text-primary));
     box-shadow: none;
   }
