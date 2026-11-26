@@ -7,6 +7,7 @@ import { INTELLIGENT_UI_CONTROL_GUIDANCE } from '@socrates/core/intelligentUiCon
 import { LEARNING_UI_GUIDANCE } from '@socrates/core/learningUi';
 import { PHYSICS_MODELS } from '@socrates/core/physicsModelRegistry';
 import { DEMONSTRATION_GUIDANCE } from './demonstrationGuide.js';
+import { DEMONSTRATION_SECTIONS, demonstrationSectionContent, demonstrationSectionIndex, type DemonstrationSection } from './demonstrationSections.js';
 import { OPENUI_TOOL_GUIDANCE } from './openUiPrompt.generated.js';
 import { VISUALIZATION_TEMPLATES, VISUALIZATION_TEMPLATE_CONTRACTS } from './visualization.js';
 
@@ -25,7 +26,7 @@ export const GET_UI_CONTRACT_TOOL = {
   function: {
     name: 'get_ui_contract',
     description:
-      'Get the exact advanced Intelligent UI contract only when render_intelligent_ui compact schema is insufficient. Use kind; for a visualization also provide its template for a validated example. Long contracts are paginated: request page 2, 3, etc as needed. Common bar/line/pie/function charts do not need this lookup.',
+      'Get the exact advanced Intelligent UI contract only when render_intelligent_ui compact schema is insufficient. Use kind; for a visualization also provide its template for a validated example. For demonstration, use section (index lists available sections; basics, expressions, ode, electrical, pde, chemistry, algebra, analysis, plots, geometry3d, scenes, examples). Long contracts are paginated: request page 2, 3, etc as needed. Common bar/line/pie/function charts do not need this lookup.',
     parameters: {
       type: 'object',
       additionalProperties: false,
@@ -33,6 +34,7 @@ export const GET_UI_CONTRACT_TOOL = {
       properties: {
         kind: { type: 'string', enum: [...KINDS] },
         template: { type: 'string', enum: VISUALIZATION_TEMPLATES },
+        section: { type: 'string', enum: ['index', ...Object.keys(DEMONSTRATION_SECTIONS)] },
         page: { type: 'integer', minimum: 1 },
       },
     },
@@ -45,6 +47,8 @@ export function uiContractContent(
   const kind = args.kind;
   if (typeof kind !== 'string' || !KINDS.some((candidate) => candidate === kind))
     return { ok: false, error: 'Choose a kind from the get_ui_contract schema.' };
+  if (args.section !== undefined && kind !== 'demonstration')
+    return { ok: false, error: 'section is only supported for demonstration contracts.' };
   let content: string;
   if (kind === 'visualization') {
     const template = args.template;
@@ -92,7 +96,12 @@ export function uiContractContent(
         })),
       );
   } else if (kind === 'demonstration') {
-    content = DEMONSTRATION_GUIDANCE;
+    const section = args.section;
+    if (section === undefined) content = DEMONSTRATION_GUIDANCE; // Legacy full contract pagination.
+    else if (section === 'index') content = demonstrationSectionIndex();
+    else if (typeof section === 'string' && Object.hasOwn(DEMONSTRATION_SECTIONS, section))
+      content = demonstrationSectionContent(section as DemonstrationSection);
+    else return { ok: false, error: 'Unknown demonstration section; request section index.' };
   } else if (kind === 'openui') {
     content = OPENUI_TOOL_GUIDANCE;
   } else {
@@ -107,7 +116,7 @@ export function uiContractContent(
     page,
     pages,
     output:
-      `Contract ${kind}${args.template ? ':' + args.template : ''}, page ${page}/${pages}:\n` +
+      `Contract ${kind}${args.template ? ':' + args.template : ''}${args.section ? ':' + args.section : ''}, page ${page}/${pages}:\n` +
       content.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
   };
 }
