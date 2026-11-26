@@ -175,6 +175,7 @@ test('compact provider schema preserves valid fixtures; full local schema still 
     }
   }
   const malformed={nodes:[{type:'demonstration',program:{version:1,finiteElement:{nodes:[0,1],diffusion:1,source:2,left:0,right:0},views:[{kind:'plot',x:[0,1],y:[0,1],curves:[{expression:'femValue'}]}]}}]};
-  assert.equal(validateToolArguments(malformed,full).ok,false);
+  // Generic argument validation is depth-bounded; check the program schema directly.
+  assert.equal(validateToolArguments(malformed.nodes[0].program,fullProgram).ok,false);
   assert.equal(validateIntelligentUi(malformed).ok,false);
 });
