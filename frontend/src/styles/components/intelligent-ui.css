@@ -468,9 +468,9 @@
 .intui-table th {
   background: transparent;
   color: var(--ui-text-primary);
-  font-weight: var(--ui-font-weight-medium, 500);
+  font-weight: var(--ui-font-weight-semibold);
   white-space: normal;
-  border-bottom-color: var(--ui-border-strong);
+  border-bottom-color: var(--ui-border-subtle);
 }
 .ds-table-wrap > table.ds-table code,
 .intui-table code {
