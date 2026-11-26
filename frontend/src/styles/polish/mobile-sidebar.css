@@ -536,8 +536,8 @@
     background: transparent;
   }
   #appShell #sidebarHeader #sidebarSearchBtn svg {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     color: var(--foreground);
   }
   #appShell #sidebarHeader #sidebarCloseBtn {
@@ -555,10 +555,7 @@
     flex-direction: column;
     gap: var(--ui-step-25);
     padding: 0;
-  }
-  /* The nav label is a shared UiText (bodySm) whose size reads this role
-     (SidebarNavButton); on the phone it takes the reference's 14px step. */
-  #appShell #sidebarNav {
+    /* Shared row typography and glyph footprint. */
     --nav-label-size: var(--ui-mobile-font-nav);
     --sidebar-glyph-size: 20px;
   }
@@ -624,7 +621,7 @@
   #appShell .sidebar-project-create:active {
     background: var(--ui-bg-selected);
   }
-  #appShell #sidebarNav :is(#navNew, #navSearch, #navImages, #navAssistants, #navSkills, #navExam) {
+  #appShell #sidebarNav :is(#navNew, #navImages, #navAssistants, #navSkills, #navExam) {
     display: none;
   }
   :root #appShell #sidebarNav #navSites {
