@@ -66,14 +66,14 @@ for (const mode of ['dark', 'light']) {
        not paper cards (docs/design/chatgpt-alignment.md §3.8). Corner: 26px
        on the landing capsule (28px applies inside a conversation). */
     expect(rgbChannels(frameStyle.background)).toEqual(
-      mode === 'dark' ? [48, 48, 48] : [244, 244, 244],
+      mode === 'dark' ? [33, 33, 33] : [244, 244, 244],
     );
     expect(frameStyle.radius).toBe('26px');
     const composerBox = await page.locator('#composerInputWrap').boundingBox();
     expect(composerBox.x).toBe(16);
     expect(composerBox.width).toBe(358);
     /* The landing composer is the collapsed one-row capsule. */
-    expect(composerBox.height).toBe(52);
+    expect(composerBox.height).toBe(92);
     expect(Math.round(769 - composerBox.y - composerBox.height)).toBe(24);
     /* The landing shortcut rail and the phone suggestion line were removed
        on 2026-11-16; the composer is the last thing on the landing now. */
