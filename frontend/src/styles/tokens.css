@@ -242,7 +242,5 @@
   :root {
     /* Leave a tappable strip of the covered page outside the phone drawer. */
     --ui-sidebar-mobile: min(420px, 90vw);
-    /* Phone reference bubble: a pill on one line (44px tall, 22px radius). */
-    --ui-radius-bubble: 22px;
   }
 }
