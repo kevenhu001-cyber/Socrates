@@ -143,10 +143,10 @@ html[data-theme='socrates'][data-mode]:lang(zh) {
   --ui-bg-surface: var(--ui-bg-elevated);
   --ui-bg-overlay: var(--popover);
   --ui-bg-composer: var(--ui-bg-elevated);
-  /* The question box is a field tone, not a ladder rung: #303030 in dark
+  /* The question box is a field tone, not a ladder rung: #212121 in dark
      sits just above the rail and below a menu, exactly as the reference
      measures, so the field reads as an object without a shadow. */
-  --ui-bg-ask: rgb(48 48 48);
+  --ui-bg-ask: rgb(33 33 33);
   --ui-bg-control: var(--secondary);
   --ui-bg-hover: var(--accent);
   --ui-bg-selected: var(--ui-bg-control);
@@ -407,7 +407,7 @@ html[data-theme='socrates'][data-mode]:lang(zh) {
 
   --ui-avatar-bg: var(--ui-brand-accent);
   --ui-bg-composer: var(--ui-bg-elevated);
-  /* One flat field tone in both modes: #f4f4f4 on paper, #303030 on black. */
+  /* One flat field tone in both modes: #f4f4f4 on paper, #212121 on black. */
   --ui-bg-ask: rgb(244 244 244);
   --ui-bg-chip: var(--ui-bg-hover);
   --ui-bg-chip-hover: var(--geist-gray-alpha-200);
