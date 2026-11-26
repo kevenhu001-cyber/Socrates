@@ -863,6 +863,9 @@ function normalizeView(raw) {
       if (view[key] !== undefined) view[key] = expressionLike(view[key]);
     if (view.colorRange !== undefined) view.colorRange = rangeLike(view.colorRange);
     if (view.zRange !== undefined) view.zRange = rangeLike(view.zRange);
+    if (view.parameterRange !== undefined) view.parameterRange = rangeLike(view.parameterRange);
+    for(const key of ['curve3d','vector3d']) if(Array.isArray(view[key])) view[key]=view[key].map(expressionLike);
+    if (['curve3d','vectors3d'].includes(view.presentation) && view.expression === undefined) view.expression=0;
     if (Array.isArray(view.contours)) view.contours = view.contours.map(expressionLike);
     const vector = asArray(view.vector);
     if (Array.isArray(vector)) view.vector = vector.map(expressionLike);
@@ -1754,6 +1757,7 @@ export function validateDemonstration(input) {
     if (!record(definitions) || Object.keys(definitions).length > 24)
       throw located('definitions', Error('Use a map of at most 24 definitions'));
     const allowed = new Set(['x', 'y', 't', 'pi', 'e']);
+    if (program.views?.some(view=>view?.presentation==='vectors3d')) allowed.add('spaceZ');
     params.forEach((p, i) =>
       at(`parameters.${record(p) && typeof p.id === 'string' ? p.id : `[${i}]`}`, () => {
         if (!record(p)) throw Error('Parameter must be an object');
@@ -2029,16 +2033,33 @@ export function validateDemonstration(input) {
         });
       } else if (view.kind === 'field') {
         fields++;
-        if (view.presentation !== undefined && !['map', 'surface'].includes(view.presentation))
-          throw located(`${path}.presentation`, Error('Field presentation must be map or surface'));
+        if (view.presentation !== undefined && !['map', 'surface', 'curve3d', 'vectors3d'].includes(view.presentation))
+          throw located(`${path}.presentation`, Error('Use map, surface, curve3d or vectors3d'));
         if (view.surfaceStyle !== undefined && (view.presentation !== 'surface' || !['wireframe','shaded'].includes(view.surfaceStyle)))
           throw located(`${path}.surfaceStyle`, Error('Surface style must be wireframe or shaded on a surface'));
-        if (view.presentation === 'surface') {
+        if (['surface','curve3d','vectors3d'].includes(view.presentation)) {
           if (!range(view.zRange)) throw located(`${path}.zRange`, Error('Surface needs increasing z bounds'));
           view.zRange.forEach((v) => check(v));
           if (view.vector !== undefined || view.contours !== undefined || view.colorRange !== undefined)
-            throw located(path, Error('Surface is a wireframe view; use a separate map for contours, vectors or color calibration'));
-        } else if (view.zRange !== undefined) throw located(`${path}.zRange`, Error('zRange requires surface presentation'));
+            throw located(path, Error('3D views cannot include 2D contours, vectors or color calibration'));
+        } else if (view.zRange !== undefined) throw located(`${path}.zRange`, Error('zRange requires 3D presentation'));
+        if(view.presentation==='curve3d'){
+          if(!Array.isArray(view.curve3d)||view.curve3d.length!==3)throw located(path,Error('Curve needs three coordinate expressions'));
+          view.curve3d.forEach(v=>check(v));
+          if(view.curveHistory!==undefined&&typeof view.curveHistory!=='boolean')throw located(path,Error('curveHistory must be boolean'));
+          if(view.curveHistory){
+            if(!dynamics||view.parameterRange!==undefined)throw located(path,Error('History curve needs dynamics and no parameterRange'));
+          }else{
+            if(!range(view.parameterRange))throw located(path,Error('Parametric curve needs parameterRange'));
+            view.parameterRange.forEach(v=>check(v));
+          }
+        }else if(view.curve3d!==undefined||view.curveHistory!==undefined||view.parameterRange!==undefined)
+          throw located(path,Error('Curve options require curve3d presentation'));
+        if(view.presentation==='vectors3d'){
+          if(!Array.isArray(view.vector3d)||view.vector3d.length!==3||view.vectorScale===undefined)
+            throw located(path,Error('3D vector field needs three components and vectorScale'));
+          view.vector3d.forEach(v=>check(v));
+        }else if(view.vector3d!==undefined)throw located(path,Error('vector3d requires vectors3d presentation'));
         at(`${path}.expression`, () => check(view.expression));
         for (const key of ['gamma', 'exposure', 'vectorScale'])
           if (view[key] !== undefined) at(`${path}.${key}`, () => check(view[key]));
@@ -2053,7 +2074,7 @@ export function validateDemonstration(input) {
             throw located(`${path}.contours`, Error('Use 1–6 contour levels'));
           view.contours.forEach((value) => check(value));
         }
-        if (view.vectorScale !== undefined && (!view.vector || (finite(view.vectorScale) && view.vectorScale <= 0)))
+        if (view.vectorScale !== undefined && (!(view.vector||view.vector3d) || (finite(view.vectorScale) && view.vectorScale <= 0)))
           throw located(`${path}.vectorScale`, Error('Vector scale requires a vector and positive reference magnitude'));
         if (view.vector !== undefined)
           at(`${path}.vector`, () => {
@@ -2173,6 +2194,7 @@ export function compileDemonstrationRuntime(input) {
   const definitions = new Map(Object.entries(program.definitions ?? {}));
   const stateNames = Object.keys(program.dynamics?.initial ?? {});
   const flags = new Map([['x', 1], ['y', 2], ['t', 4], ...stateNames.map((name) => [name, 4]), ...Object.keys(program.dynamics?.algebraic?.guess ?? {}).map(name=>[name,4])]);
+  if(program.views.some(view=>view.presentation==='vectors3d')) flags.set('spaceZ',8);
   const expressionMasks = new Map();
   const definitionMasks = new Map();
   function dependencies(expression) {
@@ -2428,14 +2450,15 @@ function* prepareRuntime(program, definitions, stateNames, compile, dependencies
       return [p.id, finite(value) ? Math.max(p.min, Math.min(p.max, value)) : p.value];
     }),
   );
-  const base = Object.assign(Object.create(null), params);
+  const hasSpaceZ=program.views.some(view=>view.presentation==='vectors3d');
+  const base = Object.assign(Object.create(null), params,hasSpaceZ?{spaceZ:0}:{});
   const constants = new Map();
   let grid;
   const sparse = sparseSpec ? yield* solveSparseSystem(sparseSpec,params,compile) : null;
   let previousTime;
   const timeValues = new Map();
-  const scopeAt = (t, x, y, state, evaluate, reusableSample) => {
-    const scope = Object.assign(Object.create(base), state, { x, y, t });
+  const scopeAt = (t, x, y, state, evaluate, reusableSample, spaceZ=0) => {
+    const scope = Object.assign(Object.create(base), state, { x, y, t },hasSpaceZ?{spaceZ}:{});
     if (!definitions.size) return scope;
     const sample = reusableSample ?? new Map();
     scope[resolveDefinition] = (name) => {
@@ -2515,7 +2538,7 @@ function* prepareRuntime(program, definitions, stateNames, compile, dependencies
     const dynamicsBudget = { remaining: DYNAMICS_BUDGET };
     const evalDynamics = (expression, scope) =>
       evaluateDemonstrationExpression(compile(expression), scope, dynamicsBudget);
-    const base = Object.assign(Object.create(null), params, { x: 0, y: 0, t: 0 });
+    const base = Object.assign(Object.create(null), params, { x: 0, y: 0, t: 0 },hasSpaceZ?{spaceZ:0}:{});
     const state = Object.fromEntries(
       names.map((key) => {
         const value = at(`dynamics.initial.${key}`, () =>
@@ -2632,7 +2655,7 @@ function* prepareRuntime(program, definitions, stateNames, compile, dependencies
     resetBudget() {
       budget.remaining = BUDGET;
     },
-    evaluate(expression, t = 0, x = 0, y = 0) {
+    evaluate(expression, t = 0, x = 0, y = 0, spaceZ=0) {
       const needsState = (dependencies(expression) & 4) !== 0 && stateNames.length > 0;
       if (t !== previousTime) {
         previousTime = t;
@@ -2642,11 +2665,12 @@ function* prepareRuntime(program, definitions, stateNames, compile, dependencies
       if (!sampleScope || (needsState && !sampleHasState)) {
         sampleValues.clear();
         sampleHasState = needsState;
-        sampleScope = scopeAt(t, x, y, needsState ? stateAt(t) : emptyState, evalRaw, sampleValues);
-      } else if (x !== sampleScope.x || y !== sampleScope.y) {
+        sampleScope = scopeAt(t, x, y, needsState ? stateAt(t) : emptyState, evalRaw, sampleValues,spaceZ);
+      } else if (x !== sampleScope.x || y !== sampleScope.y || (hasSpaceZ && spaceZ!==sampleScope.spaceZ)) {
         sampleValues.clear();
         sampleScope.x = x;
         sampleScope.y = y;
+        if(hasSpaceZ)sampleScope.spaceZ=spaceZ;
       }
       return evalRaw(expression, sampleScope);
     },
