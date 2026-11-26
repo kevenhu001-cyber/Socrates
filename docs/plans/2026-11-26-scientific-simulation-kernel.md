@@ -524,6 +524,60 @@ preserving synchronous core APIs and cooperative cancellation. Split
 AI-facing contracts by capability after establishing request-size
 baselines. Do not infer bundle savings from source-file line counts.
 
+## Stage fourteen: feature-driven loading and performance instrumentation
+
+- Preserve the synchronous public demonstration API. Extract a lightweight
+  validation/expression/domain entry and an asynchronous compilation entry.
+  Both use the same validated compilation plan, AST/dependency caches and
+  generator runtime. Inject numerical functions into result providers and
+  integrator dispatch; the common runtime statically imports no advanced
+  numerical execution modules.
+- Async compilation selects from eleven literal dynamic imports based on
+  validated model metadata. Analytic-only programs need none; RK4, adaptive
+  RK45/SDIRK2, Verlet, SSA, sparse, nonlinear, optimization, grids, FEM
+  and analysis are individually selectable groups. FFT/eigen/sweep share
+  the analysis chunk; sweep source is independently compiled before
+  generator execution. ES module imports cache their loaded implementations.
+- Worker waits for compilation and the required planar/spatial sampling
+  modules outside its cooperative generator queue. A per-card pending
+  promise deduplicates loads. Job/card identity checks suppress stale
+  completion or failure after cancellation, replacement or close; an
+  already-started module import itself is not abortable. Successful
+  compilation is reused for subsequent parameter revisions. Keep wire
+  protocol, generator fairness, pixel transfers and preview scheduling.
+- Planar and spatial sampling have separate dynamic entry points; 3D
+  React rendering uses lazy/Suspense and the existing loading skeleton.
+  Common error and domain helpers no longer pull sampling or sync
+  execution modules into the UI or Worker. The synchronous field sampler
+  remains available for existing callers and tests.
+- Vite Worker output uses ESM to support code splitting. A Worker bundle
+  plugin walks the actual static chunk closure and rejects advanced
+  execution/field sampling modules in it, logging eager/lazy gzip bytes.
+  It does not claim a byte reduction until a real build runs.
+- Fresh Node process benchmark: from frontend, run
+  npm run benchmark:simulation -- 5
+  to report median import, compilation, first and warm preparation,
+  first-ready time, heap use and yields for analytic, adaptive/FFT,
+  sparse, FEM and Verlet cases. No new runtime dependencies or native
+  Android code changes.
+
+Direct comparison of extracted synchronous/asynchronous orchestration
+against stage-ten numerical bodies: 59 fixtures, 118 parameter
+configurations, 2952 expression observations across the two paths;
+states, event times, durations, warnings and diagnostics match. Loader
+selection instrumented with mock import resolution: 20 of 59 require
+no numerical execution algorithm; remaining cases request only their
+selected groups (including nested sweep preparation). This was not an
+actual browser network or bundle test. Added real-module async parity
+and selection tests for CI. Previous head Security, Server, Agent,
+Image and Native Android passed; previous full CI cancelled by new
+commits. Latest actual build, gzip sizes, benchmark output and device
+performance remain unverified.
+
+Next: modularize model-facing tool contracts, reduce schema/prompt
+payloads with capability-specific retrieval, then complete actual CI,
+bundle and browser/device performance acceptance before merge.
+
 ## Deliberate limits / next steps
 
 This is a bounded educational engine, not an industrial multiphysics solver.
