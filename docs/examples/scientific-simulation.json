@@ -5143,5 +5143,380 @@
         "kind": "controls"
       }
     ]
+  },
+  "verletOscillator": {
+    "version": 1,
+    "diagnostics": true,
+    "parameters": [
+      {
+        "id": "omega",
+        "label": "Angular frequency",
+        "value": 1,
+        "min": 0.5,
+        "max": 2,
+        "step": 0.1
+      }
+    ],
+    "dynamics": {
+      "method": "verlet",
+      "duration": 100,
+      "step": 0.02,
+      "mechanics": {
+        "coordinates": [
+          {
+            "position": "q",
+            "velocity": "v",
+            "initialPosition": 1,
+            "initialVelocity": 0,
+            "acceleration": "-omega^2*q"
+          }
+        ]
+      }
+    },
+    "definitions": {
+      "energy": ".5*(v^2+omega^2*q^2)",
+      "error": "energy-.5*omega^2"
+    },
+    "views": [
+      {
+        "kind": "plot",
+        "label": "Displacement",
+        "history": true,
+        "x": [
+          0,
+          100
+        ],
+        "y": [
+          -1.1,
+          1.1
+        ],
+        "curves": [
+          {
+            "expression": "q",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "kind": "trajectory",
+        "label": "Phase space",
+        "x": [
+          -1.2,
+          1.2
+        ],
+        "y": [
+          -2.2,
+          2.2
+        ],
+        "horizontal": "q",
+        "vertical": "v",
+        "color": "blue"
+      },
+      {
+        "kind": "plot",
+        "label": "Energy error",
+        "history": true,
+        "x": [
+          0,
+          100
+        ],
+        "y": [
+          -0.001,
+          0.001
+        ],
+        "curves": [
+          {
+            "expression": "error",
+            "color": "green"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "Energy",
+            "expression": "energy",
+            "digits": 8
+          },
+          {
+            "label": "Energy error",
+            "expression": "error",
+            "digits": 8
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "finiteElementPoisson": {
+    "version": 1,
+    "diagnostics": true,
+    "parameters": [
+      {
+        "id": "load",
+        "label": "Source strength",
+        "value": 2,
+        "min": 0.5,
+        "max": 4,
+        "step": 0.1
+      }
+    ],
+    "finiteElement": {
+      "nodes": [
+        0,
+        0.015625,
+        0.03125,
+        0.046875,
+        0.0625,
+        0.078125,
+        0.09375,
+        0.109375,
+        0.125,
+        0.140625,
+        0.15625,
+        0.171875,
+        0.1875,
+        0.203125,
+        0.21875,
+        0.234375,
+        0.25,
+        0.265625,
+        0.28125,
+        0.296875,
+        0.3125,
+        0.328125,
+        0.34375,
+        0.359375,
+        0.375,
+        0.390625,
+        0.40625,
+        0.421875,
+        0.4375,
+        0.453125,
+        0.46875,
+        0.484375,
+        0.5,
+        0.515625,
+        0.53125,
+        0.546875,
+        0.5625,
+        0.578125,
+        0.59375,
+        0.609375,
+        0.625,
+        0.640625,
+        0.65625,
+        0.671875,
+        0.6875,
+        0.703125,
+        0.71875,
+        0.734375,
+        0.75,
+        0.765625,
+        0.78125,
+        0.796875,
+        0.8125,
+        0.828125,
+        0.84375,
+        0.859375,
+        0.875,
+        0.890625,
+        0.90625,
+        0.921875,
+        0.9375,
+        0.953125,
+        0.96875,
+        0.984375,
+        1
+      ],
+      "diffusion": 1,
+      "reaction": 0,
+      "source": "load",
+      "left": 0,
+      "right": 0
+    },
+    "views": [
+      {
+        "kind": "plot",
+        "label": "P1 finite element solution",
+        "x": [
+          0,
+          1
+        ],
+        "y": [
+          0,
+          0.55
+        ],
+        "curves": [
+          {
+            "expression": "femValue",
+            "color": "blue",
+            "label": "FEM"
+          },
+          {
+            "expression": "load*x*(1-x)/2",
+            "dashed": true,
+            "color": "muted",
+            "label": "Analytic"
+          }
+        ]
+      },
+      {
+        "kind": "plot",
+        "label": "Element gradient",
+        "x": [
+          0,
+          1
+        ],
+        "y": [
+          -2.1,
+          2.1
+        ],
+        "curves": [
+          {
+            "expression": "femGradient",
+            "interpolation": "step",
+            "color": "orange"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "Discrete residual",
+            "expression": "femResidual",
+            "digits": 8
+          },
+          {
+            "label": "Mesh nodes",
+            "expression": "femNodes",
+            "digits": 8
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "periodicTransport": {
+    "version": 1,
+    "diagnostics": true,
+    "parameters": [
+      {
+        "id": "speed",
+        "label": "Advection speed",
+        "value": 1,
+        "min": -1,
+        "max": 1,
+        "step": 0.1
+      }
+    ],
+    "dynamics": {
+      "method": "grid-heun",
+      "duration": 0.25,
+      "step": 0.0025,
+      "coupledFields": {
+        "dimension": 1,
+        "nx": 64,
+        "xDomain": [
+          0,
+          1
+        ],
+        "boundary": "periodic",
+        "fields": [
+          {
+            "id": "U",
+            "initial": "1+.5*cos(2*pi*x)",
+            "diffusivity": 0,
+            "advection": [
+              "speed"
+            ]
+          }
+        ]
+      }
+    },
+    "views": [
+      {
+        "kind": "plot",
+        "label": "Conservative upwind transport",
+        "x": [
+          0,
+          1
+        ],
+        "y": [
+          0.4,
+          1.6
+        ],
+        "curves": [
+          {
+            "expression": "U",
+            "color": "blue",
+            "label": "Numerical"
+          },
+          {
+            "expression": "1+.5*cos(2*pi*(x-speed*t))",
+            "color": "muted",
+            "dashed": true,
+            "label": "Exact translation"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "Spatial mean",
+            "expression": "mean_U",
+            "digits": 8
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "scalarIsosurface": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "level",
+        "label": "Isosurface level",
+        "value": 1,
+        "min": 0.25,
+        "max": 1,
+        "step": 0.05
+      }
+    ],
+    "views": [
+      {
+        "kind": "field",
+        "label": "Scalar field isosurface",
+        "presentation": "isosurface",
+        "x": [
+          -1.2,
+          1.2
+        ],
+        "y": [
+          -1.2,
+          1.2
+        ],
+        "zRange": [
+          -1.2,
+          1.2
+        ],
+        "expression": "x^2+y^2+spaceZ^2",
+        "isoLevel": "level",
+        "surfaceStyle": "shaded"
+      },
+      {
+        "kind": "controls"
+      }
+    ]
   }
 }
