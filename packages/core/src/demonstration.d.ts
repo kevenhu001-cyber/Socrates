@@ -162,6 +162,8 @@ export interface DemonstrationProgram {
     method?: 'rk4' | 'rk45' | 'sdirk2';
     /** Nonsingular M in M*state'=derivatives; rows/columns follow initial-state key order. */
     massMatrix?: DemonstrationValue[][];
+    /** Semi-explicit index-one constraints g(t, state, algebraic)=0. */
+    algebraic?: { guess: Record<string, DemonstrationValue>; residuals: Record<string, DemonstrationValue>; tolerance?: number };
     rtol?: number;
     atol?: number;
     events?: { expression: DemonstrationValue; direction?: -1 | 0 | 1; terminal?: boolean; reset?: Record<string, DemonstrationValue> }[];
