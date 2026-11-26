@@ -46,7 +46,7 @@ function lowerNumericalProgram(program, metadata){
     lowered=lower(lowered);
   return lowered;
 }
-function validateDemonstration(input) {
+function inspectProgram(input, solver, parsed) {
   try {
     if (!record(input) && typeof input !== 'string')
       throw Error(
@@ -67,7 +67,7 @@ function validateDemonstration(input) {
     if (program.diagnostics !== undefined && typeof program.diagnostics !== 'boolean')
       throw located('diagnostics',Error('Diagnostics must be boolean'));
     if (JSON.stringify(program).length > 40000) throw Error('Demonstration is too large');
-    program = lowerNumericalProgram(program);
+    program = lowerNumericalProgram(program,solver);
     const shape = demonstrationShapeIssues(program);
     if (shape.length) {
       const issues = shape.slice(0, SHAPE_ISSUE_LIMIT);
@@ -107,7 +107,7 @@ function validateDemonstration(input) {
       }),
     );
     const check = (expression, scope = allowed, used) => {
-      const ast = parseDemonstrationExpression(expression);
+      const ast = parsed ? cachedAst(parsed,expression) : parseDemonstrationExpression(expression);
       expressionNames(ast, scope, used);
       return ast;
     };
@@ -510,13 +510,23 @@ function validateDemonstration(input) {
         }),
       );
     }
-    return { ok: true };
+    return { ok: true, program };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Invalid demonstration';
     return error instanceof Error && error.path
       ? { ok: false, error: message, path: error.path }
       : { ok: false, error: message };
   }
+}
+
+function validateDemonstration(input) {
+  const result=inspectProgram(input);
+  return result.ok ? {ok:true} : result;
+}
+function cachedAst(cache,expression){
+  const key=typeof expression==='number'?`#${expression}`:String(expression);
+  if(!cache.has(key))cache.set(key,parseDemonstrationExpression(expression));
+  return cache.get(key);
 }
 
 /* ---------- Runtime ---------- */
@@ -530,22 +540,19 @@ function createDemonstrationRuntime(input, values = {}) {
 
 /** Share validation, expression compilation and dependency analysis across parameter changes. */
 function compileDemonstrationRuntime(input) {
-  let program = normalizeDemonstrationProgram(input);
-  const validation = validateDemonstration(program);
+  const solver={}, parsed=new Map();
+  const validation = inspectProgram(input,solver,parsed);
   if (!validation.ok) {
     const error = Error(validation.error);
     if (validation.path) error.path = validation.path;
     throw error;
   }
-  const solver={};
-  program=lowerNumericalProgram(program,solver);
-  const compiled = new Map();
+  const program=validation.program;
+  const prepared = new WeakSet();
   const compile = (expression) => {
-    const key = typeof expression === 'number' ? `#${expression}` : String(expression);
-    if (!compiled.has(key)) {
-      const ast=parseDemonstrationExpression(expression);prepareExpressionTape(ast);compiled.set(key,ast);
-    }
-    return compiled.get(key);
+    const ast=cachedAst(parsed,expression);
+    if(!prepared.has(ast)){prepareExpressionTape(ast);prepared.add(ast);}
+    return ast;
   };
   const definitions = new Map(Object.entries(program.definitions ?? {}));
   const stateNames = Object.keys(program.dynamics?.initial ?? {});
