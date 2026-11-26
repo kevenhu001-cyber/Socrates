@@ -885,3 +885,15 @@ test('parametric surface stores full coordinate triples rather than scalar heigh
   assert.ok(Math.abs(f.surface.vertices[0][0]-.725)<1e-12);
   assert.ok(Math.abs(f.surface.vertices[16*33][0]-.275)<1e-12);
 });
+
+test('compiled arithmetic and interpreter agree at varied coordinates and lazy branches remain lazy',()=>{
+  const expression='sin(x)^2+cos(x)^2+2*x^3-4*x/(1+x^2)';
+  const ast=parseDemonstrationExpression(expression);
+  const runtime=createDemonstrationRuntime({version:1,views:[{kind:'plot',x:[-5,5],y:[-300,300],curves:[{expression}]}]});
+  for(let i=0;i<1000;i++){
+    const x=(i-500)/100;
+    assert.equal(runtime.evaluate(expression,0,x),evaluateDemonstrationExpression(ast,{x}));
+  }
+  assert.equal(runtime.evaluate('if(x==0,1,1/x)',0,0),1);
+  assert.ok(Math.abs(runtime.evaluate('integral(s,0,pi,sin(s)^2)')-Math.PI/2)<1e-9);
+});
