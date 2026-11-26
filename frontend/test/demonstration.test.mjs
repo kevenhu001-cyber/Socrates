@@ -922,7 +922,7 @@ test('Jacobi symmetric eigenvectors satisfy residual and orthogonality, and swee
   for(let i=0;i<3;i++)assert.ok(Math.abs(eigen.evaluate('eigenValue',0,i)-exact[i])<1e-12);
   assert.ok(eigen.diagnostics.eigenResidual<1e-12);
   assert.ok(eigen.diagnostics.eigenOrthogonality<1e-12);
-  const nonsymmetric={...scientific.symmetricEigen,analysis:{kind:'eigen',matrix:[[1,2],[3,4]]}};
+  const nonsymmetric={...scientific.symmetricEigen,analysis:{kind:'eigen',matrix:[[1,2,0],[3,4,0],[0,0,1]]}};
   assert.throws(()=>createDemonstrationRuntime(nonsymmetric),/symmetric/);
   const p=scientific.odeParameterSweep,rt=createDemonstrationRuntime(p);
   assert.equal(rt.evaluate('sweepCount'),9);
@@ -931,4 +931,49 @@ test('Jacobi symmetric eigenvectors satisfy residual and orthogonality, and swee
   assert.ok(Math.abs(rt.evaluate('sweepSensitivity',0,2)+Math.exp(-2))<.002);
   const plot=finishGenerator(samplePlot(p.views[0],rt,0,false,new Map()));
   assert.equal((plot.paths[0].match(/a1\.8,1\.8/g)||[]).length,18);
+});
+
+test('velocity Verlet preserves bounded oscillator energy at 5000 actual integration steps',()=>{
+  const ex=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
+  const rt=createDemonstrationRuntime(ex.verletOscillator);
+  assert.equal(rt.duration,100);assert.equal(rt.diagnostics.acceptedSteps,5000);
+  assert.equal(rt.diagnostics.storedValues,10002);assert.deepEqual(rt.warnings,[]);
+  for(let i=0;i<=5000;i++)assert.ok(Math.abs(rt.evaluate('energy',i*.02)-.5)<6e-5);
+  const invalid=structuredClone(ex.verletOscillator);
+  invalid.dynamics.mechanics.coordinates[0].acceleration='-q-.1*v';
+  assert.equal(validateDemonstration(invalid).ok,false);
+});
+test('one-dimensional Galerkin finite elements solve nonuniform meshes and report discrete residual',()=>{
+  const ex=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
+  const p=ex.finiteElementPoisson,rt=createDemonstrationRuntime(p);
+  for(let i=0;i<=64;i++){const x=i/64;assert.ok(Math.abs(rt.evaluate('femValue',0,x)-x*(1-x))<1e-12);}
+  assert.ok(rt.evaluate('femResidual')<1e-12);
+  const nonuniform={...p,finiteElement:{...p.finiteElement,nodes:[0,.1,.31,.7,1]}};
+  const q=createDemonstrationRuntime(nonuniform);
+  for(const x of nonuniform.finiteElement.nodes)assert.ok(Math.abs(q.evaluate('femValue',0,x)-x*(1-x))<1e-12);
+  assert.throws(()=>createDemonstrationRuntime({...p,finiteElement:{...p.finiteElement,diffusion:-1}}),/positive diffusion/);
+});
+test('periodic upwind transport conserves mean in both directions and checks CFL',()=>{
+  const ex=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
+  const p=ex.periodicTransport;
+  for(const speed of [-1,1]){
+    const rt=createDemonstrationRuntime(p,{speed});
+    assert.deepEqual(rt.warnings,[]);
+    assert.ok(Math.abs(rt.evaluate('mean_U',.25)-1)<1e-12);
+    assert.ok(rt.evaluate('U',.25,speed===1?.25:.75)>1.4);
+    assert.ok(Math.abs(rt.diagnostics.transportCFL-.16)<1e-12);
+  }
+  const unstable=structuredClone(p);unstable.dynamics.step=.1;
+  assert.throws(()=>createDemonstrationRuntime(unstable),/CFL/);
+});
+test('marching tetrahedra extracts bounded sphere triangles from actual scalar samples',()=>{
+  const ex=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
+  const p=ex.scalarIsosurface,rt=createDemonstrationRuntime(p);
+  const f=finishGenerator(sampleField(p.views[0],rt,0,false));
+  assert.equal(f.surface.triangles.length,4992);
+  for(const triangle of f.surface.triangles)for(const point of triangle)
+    assert.ok(Math.abs(point.reduce((s,x)=>s+1.44*x*x,0)-1)<.02);
+  assert.equal(f.surface.isoLevel,1);
+  const preview=finishGenerator(sampleField(p.views[0],rt,0,true));
+  assert.ok(preview.surface.triangles.length<f.surface.triangles.length);
 });
