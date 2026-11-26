@@ -940,7 +940,7 @@ export function normalizeDemonstrationProgram(input) {
     );
     let duration = numberLike(dynamics.duration),
       step = numberLike(dynamics.step);
-    if (dynamics.method !== 'rk45') {
+    if (!['rk45', 'sdirk2'].includes(dynamics.method)) {
       if (finite(duration) && duration > 30) duration = 30;
       if (finite(step)) step = Math.max(0.002, Math.min(0.05, step));
       if (finite(duration) && finite(step) && duration > 0 && Math.ceil(duration / step) > 10000)
@@ -1269,9 +1269,9 @@ export function validateDemonstration(input) {
       at('dynamics', () => {
         if (!record(dynamics) || !record(dynamics.initial) || !record(dynamics.derivatives))
           throw Error('Dynamics needs initial and derivatives maps');
-        const adaptive = dynamics.method === 'rk45';
-        if (dynamics.method !== undefined && !['rk4', 'rk45'].includes(dynamics.method))
-          throw Error('Unknown dynamics method; use rk4 or rk45');
+        const adaptive = ['rk45', 'sdirk2'].includes(dynamics.method);
+        if (dynamics.method !== undefined && !['rk4', 'rk45', 'sdirk2'].includes(dynamics.method))
+          throw Error('Unknown dynamics method; use rk4, rk45 or sdirk2');
         if (
           !finite(dynamics.duration) || dynamics.duration <= 0 ||
           dynamics.duration > (adaptive ? 300 : 30) ||
@@ -1283,14 +1283,14 @@ export function validateDemonstration(input) {
         for (const key of ['rtol', 'atol']) {
           if (dynamics[key] !== undefined &&
               (!adaptive || !finite(dynamics[key]) || dynamics[key] < 1e-10 || dynamics[key] > 0.01))
-            throw Error('RK45 tolerances must be between 1e-10 and 0.01');
+            throw Error('Adaptive tolerances must be between 1e-10 and 0.01');
         }
         if (dynamics.events !== undefined &&
             (!adaptive || !Array.isArray(dynamics.events) || dynamics.events.length > 8))
-          throw Error('Events require RK45 and at most eight event definitions');
+          throw Error('Events require an adaptive solver and at most eight event definitions');
       });
       const keys = Object.keys(dynamics.initial);
-      const maxStates = dynamics.method === 'rk45' ? 32 : 6;
+      const maxStates = dynamics.method === 'sdirk2' ? 8 : dynamics.method === 'rk45' ? 32 : 6;
       if (!keys.length || keys.length > maxStates)
         throw located('dynamics.initial', Error(`Dynamics supports 1–${maxStates} states`));
       for (const key of keys) {
@@ -1309,10 +1309,10 @@ export function validateDemonstration(input) {
             Error('Derivative has no matching initial state'),
           );
       if (dynamics.massMatrix !== undefined &&
-          (dynamics.method !== 'rk45' || keys.length > 8 ||
+          (!['rk45', 'sdirk2'].includes(dynamics.method) || keys.length > 8 ||
             !Array.isArray(dynamics.massMatrix) || dynamics.massMatrix.length !== keys.length ||
             dynamics.massMatrix.some((row) => !Array.isArray(row) || row.length !== keys.length)))
-        throw located('dynamics.massMatrix', Error('A square mass matrix of 1–8 states requires RK45'));
+        throw located('dynamics.massMatrix', Error('A square mass matrix of 1–8 states requires an adaptive solver'));
       keys.forEach((key) => allowed.add(key));
     }
     // Definitions may appear in any order; reject only genuine cycles.
@@ -1664,6 +1664,53 @@ const DP_A = [
 const DP_C = [0, 1 / 5, 3 / 10, 4 / 5, 8 / 9, 1, 1];
 const DP_B4 = [5179 / 57600, 0, 7571 / 16695, 393 / 640, -92097 / 339200, 187 / 2100, 1 / 40];
 
+
+// L-stable two-stage SDIRK, order two. Newton solves use a finite-difference
+// Jacobian and the existing row-scaled pivoted linear solver. Step doubling
+// estimates local error without a dependency or generated code.
+function createImplicitStepper(n, rhs, rtol, atol) {
+  const gamma = 1 - 1 / Math.sqrt(2);
+  const jac = new Float64Array(n * n), delta = new Float64Array(n);
+  const norm = (v, a, b) => v.reduce((m, x, i) =>
+    Math.max(m, Math.abs(x) / (atol + rtol * Math.max(Math.abs(a[i]), Math.abs(b[i])))), 0);
+  function stage(base, time, hg) {
+    const z = base.slice();
+    for (let iteration = 0; iteration < 8; iteration++) {
+      const f = rhs(z, time);
+      for (let i = 0; i < n; i++) delta[i] = base[i] + hg * f[i] - z[i];
+      if (norm(delta, base, z) <= 0.025) return { z, f };
+      for (let j = 0; j < n; j++) {
+        const shifted = z.slice();
+        const eps = Math.sqrt(Number.EPSILON) * Math.max(1, Math.abs(z[j]));
+        shifted[j] += eps;
+        const fp = rhs(shifted, time);
+        for (let i = 0; i < n; i++)
+          jac[i * n + j] = (i === j ? 1 : 0) - hg * (fp[i] - f[i]) / (shifted[j] - z[j]);
+      }
+      if (!solveSmallSystem(jac, delta, n)) return null;
+      for (let i = 0; i < n; i++) z[i] += delta[i];
+      if (!z.every((v) => finite(v) && Math.abs(v) <= 1e12)) return null;
+    }
+    return null;
+  }
+  function step(a, t, h) {
+    const first = stage(a, t + gamma * h, gamma * h);
+    if (!first) return null;
+    const base = a.map((v, i) => v + h * (1 - gamma) * first.f[i]);
+    return stage(base, t + h, gamma * h);
+  }
+  return (a, t, h) => {
+    const full = step(a, t, h);
+    if (!full) return null;
+    const half = step(a, t, h / 2);
+    if (!half) return null;
+    const end = step(half.z, t + h / 2, h / 2);
+    if (!end) return null;
+    const error = end.z.map((v, i) => (v - full.z[i]) / 3);
+    return { next: end.z, err: norm(error, a, end.z), k0: rhs(a, t), k1: end.f };
+  };
+}
+
 function* integrateAdaptive(dynamics, names, initial, derivative, eventValue, eventReset, warnings) {
   const n = names.length;
   const stages = Array.from({ length: 7 }, () => new Float64Array(n));
@@ -1694,12 +1741,21 @@ function* integrateAdaptive(dynamics, names, initial, derivative, eventValue, ev
   let eventCount = 0;
   const eventTimes = [];
   const rtol = dynamics.rtol ?? 1e-6, atol = dynamics.atol ?? 1e-9;
+  const stiff = dynamics.method === 'sdirk2';
+  const rhsVector = (v, time) => { const k = derivative(toState(v), time); return checked(Float64Array.from(names, (name) => k[name])); };
+  const implicit = stiff ? createImplicitStepper(n, rhsVector, rtol, atol) : null;
   try {
     for (let attempt = 0; t < dynamics.duration; attempt++) {
       if (attempt >= 10000) throw Error('Adaptive integration step budget exceeded');
       if (attempt % 16 === 0) yield;
       h = Math.min(h, dynamics.duration - t);
       if (t + h === t) throw Error('Adaptive step underflow');
+      let next, err = 0, k0, k1;
+      if (implicit) {
+        const result = implicit(current, t, h);
+        if (!result) { h *= 0.25; continue; }
+        ({ next, err, k0, k1 } = result);
+      } else {
       for (let stage = 0; stage < 7; stage++) {
         for (let i = 0; i < n; i++) {
           let value = current[i];
@@ -1711,44 +1767,64 @@ function* integrateAdaptive(dynamics, names, initial, derivative, eventValue, ev
         for (let i = 0; i < n; i++) stages[stage][i] = k[names[i]];
         checked(stages[stage]);
       }
-      const next = work.slice();
-      let err = 0;
+      next = work.slice();
       for (let i = 0; i < n; i++) {
         let low = current[i];
         for (let j = 0; j < 7; j++) low += h * DP_B4[j] * stages[j][i];
         err = Math.max(err, Math.abs(next[i] - low) / (atol + rtol * Math.max(Math.abs(current[i]), Math.abs(next[i]))));
       }
+      k0 = stages[0].slice();
+      k1 = stages[6].slice();
+      }
       if (!finite(err)) throw Error('Non-finite integration error');
-      const factor = err === 0 ? 5 : Math.max(0.2, Math.min(5, 0.9 * err ** -0.2));
+      const factor = err === 0 ? 5 : Math.max(0.2, Math.min(5, 0.9 * err ** (stiff ? -1 / 3 : -0.2)));
       if (err > 1) {
         h *= Math.min(0.9, factor);
         continue;
       }
-      const segment = { t, h, end: t + h, a: current, b: next, k0: stages[0].slice(), k1: stages[6].slice() };
-      let hit;
+      const segment = { t, h, end: t + h, a: current, b: next, k0, k1 };
+      const hits = [];
       for (const event of events) {
-        const a = readEvent(event, t, current), b = readEvent(event, t + h, next);
         const direction = event.direction ?? 0;
-        if (!((direction <= 0 && a > 0 && b <= 0) || (direction >= 0 && a < 0 && b >= 0))) continue;
-        let lo = t, hi = t + h;
+        const crosses = (a, b) => (direction <= 0 && a > 0 && b <= 0) || (direction >= 0 && a < 0 && b >= 0);
+        let lo = t, hi = t + h, a = readEvent(event, t, current);
+        const mid = t + h / 2;
+        const m = readEvent(event, mid, interpolate(segment, mid));
+        const b = readEvent(event, hi, next);
+        if (crosses(a, m)) hi = mid;
+        else if (crosses(m, b)) { lo = mid; a = m; }
+        else continue;
         for (let i = 0; i < 40 && hi - lo > Math.max(1e-12, h * 1e-9); i++) {
           const mid = (lo + hi) / 2;
           const m = readEvent(event, mid, interpolate(segment, mid));
           if ((m > 0) === (a > 0) && m !== 0) lo = mid;
           else hi = mid;
         }
-        if (!hit || hi < hit.time) hit = { event, time: hi };
+        hits.push({ event, time: hi });
       }
+      hits.sort((a, b) => a.time - b.time);
+      const hit = hits[0];
       if (hit) {
         if (++eventCount > 128) throw Error('Event budget exceeded; possible chattering or repeated contact');
         const before = interpolate(segment, hit.time);
-        const reset = eventReset(hit.event, hit.time, toState(before));
+        const prior = toState(before);
+        const reset = { ...prior };
+        const assigned = new Set();
+        const simultaneous = hits.filter((item) => Math.abs(item.time - hit.time) <= Math.max(1e-12, h * 1e-8));
+        for (const { event } of simultaneous) {
+          const result = eventReset(event, hit.time, prior);
+          for (const key of Object.keys(event.reset ?? {})) {
+            if (assigned.has(key)) throw Error('Simultaneous events reset the same state; combine their reset maps');
+            assigned.add(key);
+            reset[key] = result[key];
+          }
+        }
         const after = checked(Float64Array.from(names, (name) => reset[name]));
         segments.push({ ...segment, end: hit.time });
         t = hit.time;
         eventTimes.push(t);
         current = after;
-        if (hit.event.terminal) break;
+        if (simultaneous.some(({ event }) => event.terminal)) break;
         // Move forward from a reset rather than replaying the remainder of a pre-event step.
         h = Math.min(dynamics.step, Math.max(h * 0.25, 1e-9));
       } else {
@@ -1759,7 +1835,7 @@ function* integrateAdaptive(dynamics, names, initial, derivative, eventValue, ev
       }
     }
   } catch (error) {
-    warnings.push({ path: 'dynamics', time: t, message: `Adaptive dynamics stopped at t = ${t}: ${error instanceof Error ? error.message : String(error)}` });
+    warnings.push({ path: error instanceof Error && error.path ? error.path : 'dynamics', time: t, message: `Adaptive dynamics stopped at t = ${t}: ${error instanceof Error ? error.message : String(error)}` });
   }
   return {
     duration: t,
@@ -1859,7 +1935,7 @@ function* prepareRuntime(program, definitions, stateNames, compile, dependencies
     };
     const add = (s, k, factor) =>
       Object.fromEntries(names.map((key) => [key, s[key] + factor * k[key]]));
-    if (dynamics.method === 'rk45') {
+    if (['rk45', 'sdirk2'].includes(dynamics.method)) {
       const eventValue = (event, t, s) =>
         evalDynamics(event.expression, scopeAt(t, 0, 0, s, evalDynamics));
       const eventReset = (event, t, s) => {
