@@ -685,13 +685,21 @@ export async function runToolLoop(input: ToolLoopInput): Promise<'failed' | void
       // while retaining the original result order for the provider hop.
       // SSE frames from independent tools may interleave, but the client
       // correlates every frame by tool_call id.
-      const toolMessages = await dispatchToolCalls(
-        prepared,
-        /* Scheduling hints must follow the resolved name, otherwise an
-           aliased code_interpreter call would lose its serial slot. */
-        (entry) => entry.toolName,
-        toolRegistry,
-        (entry) => runToolCall(entry, activeToolNames),
+      const toolMessages = await withSpan(
+        'tools.batch',
+        {
+          'socrates.tool_iteration': iter,
+          'socrates.tool_count': prepared.length,
+        },
+        () =>
+          dispatchToolCalls(
+            prepared,
+            /* Scheduling hints follow the resolved name so an alias cannot
+               bypass a serial lane. */
+            (entry) => entry.toolName,
+            toolRegistry,
+            (entry) => runToolCall(entry, activeToolNames),
+          ),
       );
       workingMessages = workingMessages.concat(toolMessages);
       activity.synthesizing();

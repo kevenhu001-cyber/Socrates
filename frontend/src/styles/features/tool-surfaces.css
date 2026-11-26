@@ -717,6 +717,24 @@
   color: var(--destructive);
 }
 
+.tool-file-list {
+  display: grid;
+  gap: var(--ui-space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tool-file-list li {
+  display: grid;
+  min-width: 0;
+  gap: var(--ui-space-xxs);
+  color: var(--ui-text-primary);
+  overflow-wrap: anywhere;
+}
+.tool-file-list small {
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-xs);
+}
 /* Expanding a tool is a disclosure, not a page jump: the detail arrives on
  * the same short opacity/offset clock as the other overlays. */
 .tool-run-detail-body {

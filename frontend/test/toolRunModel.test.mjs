@@ -363,7 +363,7 @@ test('labels carry the object so two calls never render identically', () => {
   assert.equal(fetch.label, 'Read arxiv.org');
 });
 
-test('bash rows render the command as mono text with the outcome appended', () => {
+test('bash rows render a semantic action with the outcome appended', () => {
   const view = toolRunView({
     id: 'b',
     name: 'Bash',
@@ -371,8 +371,8 @@ test('bash rows render the command as mono text with the outcome appended', () =
     output: '8 passed in 4.02s',
     durationMs: 4100,
   });
-  assert.equal(view.mono, true);
-  assert.equal(view.label, '$ pytest tests/test_moe.py -q');
+  assert.equal(view.mono, false);
+  assert.equal(view.label, 'Ran a command');
   assert.deepEqual(view.meta, ['8 passed', '4.1s']);
 });
 

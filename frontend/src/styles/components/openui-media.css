@@ -48,6 +48,8 @@
 }
 .intui-openui .iui-map-frame {
   position: relative;
+  width: 100%;
+  min-width: 0;
   isolation: isolate;
   overflow: hidden;
   border: 1px solid var(--ui-border-subtle);
@@ -109,8 +111,8 @@
   font-size: var(--ui-font-size-xs);
 }
 .intui-openui .iui-map-places {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
   gap: var(--ui-space-sm);
   margin: 0;
   padding: 0;
@@ -124,10 +126,17 @@
   max-width: 100%;
 }
 .intui-openui .iui-map-places a {
-  max-width: 24rem;
+  max-width: 100%;
   color: var(--ui-link);
   overflow-wrap: anywhere;
   font-size: var(--ui-font-size-xs);
+}
+.intui-openui .iui-map-places button {
+  justify-content: flex-start;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  min-height: var(--ui-control-touch);
+  text-align: start;
 }
 .intui-openui .iui-map-places button[aria-pressed='true'] {
   background: var(--secondary);

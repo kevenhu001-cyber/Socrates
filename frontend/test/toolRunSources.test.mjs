@@ -26,5 +26,10 @@ test('the source list drops duplicate entries and strips unsafe URLs', () => {
   assert.equal(sources[1].host, '');
 });
 
-/* Rendering (links only for http(s), provider text as text) moved to the
-   shared RN SourceList; see packages/ui/src/turn/turnModels.test.ts. */
+test('source details retain readable long titles and snippets', () => {
+  const title = 'A detailed research result '.repeat(6).trim();
+  const snippet = 'A short description of the actual source.';
+  const [source] = normalizeSources([{ title, url: 'https://example.com/research', snippet }]);
+  assert.equal(source.title, title);
+  assert.equal(source.snippet, snippet);
+});

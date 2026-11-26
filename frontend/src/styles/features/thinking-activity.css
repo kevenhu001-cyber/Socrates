@@ -237,17 +237,6 @@
   max-height: none;
 }
 
-.tool-run-detail-body .thinking-tool-input {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  min-width: 0;
-}
-
-.tool-run-detail-body .thinking-tool-input > [role='button'] {
-  align-self: flex-start;
-}
-
 :is(.rn-turn-activity, .tool-run-trigger, .tool-run-group-trigger) .tool-site-marks {
   display: inline-flex;
   align-items: center;
@@ -281,19 +270,16 @@
   object-fit: contain;
 }
 
-/* Long output scrolls beneath the trigger without moving the answer out of view. */
+/* Individual logs scroll; the detail itself remains in the transcript flow. */
 .tool-run-detail-body {
   display: flex;
   flex-direction: column;
   gap: var(--ui-gap-3);
   min-width: 0;
-  max-height: min(440px, 55dvh);
-  padding-inline-start: calc(1em + var(--ui-space-xs));
+  max-width: 100%;
+  padding-inline-start: 0;
   margin-block: var(--ui-space-xs) var(--ui-space-sm);
-  overflow: auto;
   overflow-wrap: anywhere;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
 }
 
 /* Public timeline entries remain still beneath the one live caption. */
@@ -627,8 +613,10 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.agent-step > .agent-step-head :is(.agent-step-cmd, .agent-step-meta) {
-  display: none;
+.agent-step-meta {
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-xs);
+  overflow-wrap: anywhere;
 }
 .agent-step[data-state='running'] .agent-step-icon {
   opacity: 1;
@@ -644,22 +632,7 @@
   flex-direction: column;
   gap: 5px;
   margin: 1px 0 6px;
-  padding: 0 0 0 26px;
-}
-.agent-step-pre {
-  max-height: 200px;
-  margin: 0;
-  padding: 6px 9px;
-  overflow: auto;
-  border-radius: var(--ui-radius-row);
-  background: var(--ui-bg-code);
-  color: var(--ui-text-secondary);
-  font: var(--ui-font-size-xs)/1.5 var(--font-mono);
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-.agent-step-pre[data-kind='command'] {
-  color: var(--ui-text-secondary);
+  padding: 0;
 }
 .agent-step-paths {
   display: flex;

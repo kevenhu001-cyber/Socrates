@@ -1,10 +1,10 @@
 import { memo, useId } from 'react';
-import { Chevron, toolTargetOf, toolVerbOf } from '@socrates/ui/turn';
-import { translate } from '../../legacy/toolPresentationModel.ts';
+import { Chevron, toolVerbOf } from '@socrates/ui/turn';
+import { basename, clip, filePathOf, hostOf, queryOf, translate, urlOf } from '../../legacy/toolPresentationModel.ts';
 import { Button } from '../ui/shadcn/button';
 import { Icon } from '../../legacy/Icon';
 import { SourceAvatar } from '../sources/SourceAvatar';
-import { isInlineSearchTool } from '../../render/toolCategory';
+import { isInlineSearchTool, toolCategory } from '../../render/toolCategory';
 import { openExternal } from './copyText';
 import { useLocaleRefresh, WebUiTheme } from '../rn/WebUiTheme';
 import { ToolActivityIcon, toolActivitySites } from './ToolActivityIcon';
@@ -195,6 +195,10 @@ function executionStateLabel(state: ToolRunView['state'], live: boolean): string
 
 function toolActionLabel(call: ToolCallRecord): string {
   const verb = toolVerbOf(call.name);
-  const target = toolTargetOf(call.name, call.input);
-  return [translate(verb.key, verb.fallback), target].filter(Boolean).join(' · ');
+  const category = toolCategory(call.name);
+  const target = category === 'search' ? queryOf(call.input)
+    : category === 'fetch' ? hostOf(urlOf(call.input))
+    : category === 'read' || category === 'write' ? basename(filePathOf(call.input))
+    : '';
+  return [translate(verb.key, verb.fallback), clip(target, 40)].filter(Boolean).join(' · ');
 }

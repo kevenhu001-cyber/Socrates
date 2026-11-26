@@ -75,12 +75,13 @@ test('the workspace agent streams its steps into the chat', async ({ page }) => 
   const steps = surface.locator('.agent-step');
   await expect(steps).toHaveCount(3);
   await expect(steps.nth(0).locator('.agent-step-label')).toHaveText('读取了文件');
-  await expect(steps.nth(1).locator('.agent-step-label')).toHaveText('已运行 npm run test:unit');
+  await expect(steps.nth(1).locator('.agent-step-label')).toHaveText('运行了命令');
   await expect(steps.nth(2).locator('.agent-step-label')).toHaveText('编辑了文件');
   await expect(steps.nth(1).locator('.agent-step-meta')).toContainText('2.4s');
   await expect(steps.nth(2).locator('.agent-step-meta')).toContainText('+1 -0');
-  /* Diff counts live in the meta column, so the excerpt only names files. */
-  await expect(steps.nth(2).locator('.agent-step-cmd')).toHaveText('notes.txt');
+  await expect(surface.locator('.agent-step-cmd')).toHaveCount(0);
+  await steps.nth(2).locator('.agent-step-head').click();
+  await expect(steps.nth(2).locator('.agent-step-paths')).toContainText('notes.txt');
 
   // One plan card per run, showing the final state of every item.
   const plan = surface.locator('.agent-plan');
@@ -93,12 +94,9 @@ test('the workspace agent streams its steps into the chat', async ({ page }) => 
   await expect(run).toHaveAttribute('data-state', 'done');
   await expect(run.locator('.agent-run-elapsed')).toHaveText('用时 1m 2s');
 
-  // Expanding a step reveals the command and its output.
-  const stepHead = steps.nth(1).locator('.agent-step-head');
-  await stepHead.click();
-  await expect(steps.nth(1).locator('.agent-step-pre[data-kind="output"]')).toContainText(
-    '226 pass',
-  );
+  await expect(surface.locator('.agent-step-pre')).toHaveCount(0);
+  await expect(surface).not.toContainText('npm run test:unit');
+  await expect(surface).not.toContainText('226 pass');
 
   /* P_declarative-tool-run — what survives serialization is the data, not the
      markup: `message.html` is prose only, and the step list comes back from

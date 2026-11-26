@@ -271,8 +271,7 @@ function connectorLabel(call: ToolCallLike): RunLabel | null {
 
 function runningCommandLabel(call: ToolCallLike, name: string): RunLabel | null {
   if (name !== 'Bash' && !(toolCategory(name) === 'write' && commandOf(call.input))) return null;
-  const command = commandOf(call.input);
-  return command ? { text: `$ ${clip(command)}`, mono: true, meta: [] } : null;
+  return { text: translate('tool.actionDefault', 'Using a tool') };
 }
 
 function runningCodeLabel(call: ToolCallLike): RunLabel {
@@ -447,10 +446,7 @@ function doneFileLabel(call: ToolCallLike, name: string): RunLabel {
 
 function doneBashLabel(call: ToolCallLike): RunLabel {
   const meta = outcomeOf(call.output);
-  const command = commandOf(call.input);
-  return command
-    ? { text: `$ ${clip(command)}`, mono: true, meta: meta ? [meta] : [] }
-    : { text: translate('tool.ranCommand', 'Ran a command'), meta: meta ? [meta] : [] };
+  return { text: translate('tool.ranCommand', 'Ran a command'), meta: meta ? [meta] : [] };
 }
 
 function doneFetchLabel(call: ToolCallLike): RunLabel {

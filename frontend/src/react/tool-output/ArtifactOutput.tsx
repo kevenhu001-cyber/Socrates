@@ -87,12 +87,10 @@ function useArtifactAvailability(url: string, skipCheck: boolean) {
 function ArtifactErrorView({
   output,
   url,
-  failure,
   onRetry,
 }: {
   output: ArtifactOutputData;
   url: string;
-  failure: string;
   onRetry: () => void;
 }) {
   return (
@@ -112,10 +110,6 @@ function ArtifactErrorView({
           onClick={onRetry}
         />
       </span>
-      <details className="artifact-error-detail">
-        <summary>{i18n('artifact.details', 'Details')}</summary>
-        <code>{`${failure} · ${output.fileId}`}</code>
-      </details>
     </div>
   );
 }
@@ -156,7 +150,7 @@ export function ArtifactOutput({ output }: ArtifactOutputProps) {
   }
 
   if (failure) {
-    return <ArtifactErrorView output={output} url={url} failure={failure} onRetry={retry} />;
+    return <ArtifactErrorView output={output} url={url} onRetry={retry} />;
   }
 
   const downloadText = i18n('common.downloadFile', '[download {type}]').replace(
@@ -172,7 +166,15 @@ export function ArtifactOutput({ output }: ArtifactOutputProps) {
       rel="noopener"
       download
     >
-      {output.name?.trim() || downloadText}
+      <span className="exec-artifact-file-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h6" />
+        </svg>
+      </span>
+      <span className="exec-artifact-file-name">{output.name?.trim() || downloadText}</span>
+      <svg className="exec-artifact-download-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M12 3v12m-5-5 5 5 5-5M5 16v4h14v-4" />
+      </svg>
     </a>
   );
 }

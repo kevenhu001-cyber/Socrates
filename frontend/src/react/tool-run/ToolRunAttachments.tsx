@@ -14,7 +14,7 @@
 import { normalizeIntelligentUiArgs, validateIntelligentUi } from '@socrates/core';
 import { LazyIntelligentUiBlock } from '../intelligent-ui/LazyIntelligentUiBlock';
 import { NormalizedVisualizationsContext } from '../intelligent-ui/openui/normalizedVisualizations';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import type { ReactElement } from 'react';
 
 import { ToolOutputRenderer } from '../tool-output/ToolOutputRenderer';
@@ -155,14 +155,9 @@ function renderIntelligentUiAttachment(
 
 export function ToolRunAttachments({ call, tools = [call], readOnly }: ToolRunAttachmentsProps) {
   const outputs = attachmentOutputsOf(call);
-  const hostRef = useRef<HTMLDivElement | null>(null);
-  /* Charts mount only once the host element exists. React artifact markup is
-     present from the first commit so history recovery can recognize it. */
-  const [host, setHost] = useState<HTMLElement | null>(null);
-
-  useEffect(() => {
-    setHost(hostRef.current);
-  }, [call.id]);
+  /* A callback ref also observes a host that first appears when a running
+     call settles. An effect keyed only by call.id misses that transition. */
+  const [host, setHost] = useState<HTMLDivElement | null>(null);
 
   if (call.name === 'render_intelligent_ui') {
     const intelligentUiAttachment = renderIntelligentUiAttachment(call, tools, readOnly);
@@ -172,7 +167,7 @@ export function ToolRunAttachments({ call, tools = [call], readOnly }: ToolRunAt
   if (!outputs.length) return null;
 
   return (
-    <div className="tool-inline-attachments" data-tool-anchor={call.id} ref={hostRef}>
+    <div className="tool-inline-attachments" data-tool-anchor={call.id} ref={setHost}>
       {outputs.map((output) => (
         <ToolOutputRenderer key={output.id} output={output} host={host ?? undefined} />
       ))}
