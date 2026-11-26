@@ -84,6 +84,7 @@ export const DemoField = memo(function DemoField({
         <canvas ref={canvas} width={FIELD_WIDTH} height={fieldHeight(view)} role="img"
           aria-label={view.label || i18n('intui.surface', 'Interactive result')} />
       )}
+      {sample?.slice && <div className="demo-legend"><span>{i18n('intui.demo.slicePlane','Slice plane')}: {sample.slice.axis} = {Number(sample.slice.position.toPrecision(5))}</span><span>{sample.slice.axis==='x'?'y / z':sample.slice.axis==='y'?'x / z':'x / y'}</span></div>}
       {sample?.colorRange ? (
         <div className="demo-legend" aria-label={i18n('intui.demo.colorScale', 'Color scale')}>
           <svg className="demo-color-scale" viewBox="0 0 120 10" aria-hidden="true">
