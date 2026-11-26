@@ -13,11 +13,12 @@ import {
 } from '../chat-configuration/useChatConfigurationLabels';
 import { effortLabel } from '../chat-configuration/ChatConfigurationPanels';
 import { toggleSidebar } from '../../sidebar/sidebar.service.ts';
-import { startNewChat } from '../../app/lifecycle/index.ts';
+import { startNewChat, toggleIncognito } from '../../app/lifecycle/index.ts';
 import { toggleAppMode } from '../../app/lifecycle/mode.ts';
 import { openFindInSession } from '../find-in-session/findInSession.actions.ts';
 import { openShareModal } from '../../legacy/share.ts';
 import { useAppMode } from '../app-mode/useAppMode.ts';
+import { useIncognito } from '../app-mode/useIncognito.ts';
 import { useSidebarStore } from '../../sidebar/sidebar.store.ts';
 import { useMobileViewport } from '../sidebar-chrome/useMobileViewport.ts';
 import { WebUiTheme } from '../rn/WebUiTheme';
@@ -395,13 +396,43 @@ function ModeSwitch({
   );
 }
 
-/* ── Right: find · share ──────────────────────────────────────────────── */
+/* ── Right: incognito (phone home) · find · share ─────────────────────── */
 
-function TopBarRight({ phone }: { phone: boolean }) {
+/**
+ * 2026-11-26 reference: the phone home header carries the temporary-chat
+ * (glasses) button on the right, opposite the drawer. It drives the same
+ * incognito state as the 更多 menu item and is a pressed toggle; inside a
+ * conversation the slot belongs to find / share instead.
+ */
+function IncognitoAction({ visible }: { visible: boolean }) {
+  const on = useIncognito();
+  return (
+    <TopBarAction
+      id="mobileIncognitoBtn"
+      icon="incognito"
+      label={t('sidebar.nav.incognito', 'Incognito chat')}
+      pressed={on}
+      touch
+      visible={visible}
+      onPress={() => {
+        void toggleIncognito();
+      }}
+    />
+  );
+}
+
+function TopBarRight({
+  phone,
+  conversationActive,
+}: {
+  phone: boolean;
+  conversationActive: boolean;
+}) {
   const { conversationActions, sharedView } = useTopbarState();
   return (
     <div className="top-bar-right">
       <WebUiTheme>
+        <IncognitoAction visible={phone && !conversationActive && !sharedView} />
         <TopBarAction
           id="findBtn"
           icon="search"
@@ -434,7 +465,7 @@ export function TopBar() {
     <>
       <TopBarLeft phone={phone} conversationActive={conversationActive} />
       <ModeSwitch phone={phone} conversationActive={conversationActive} />
-      <TopBarRight phone={phone} />
+      <TopBarRight phone={phone} conversationActive={conversationActive} />
     </>
   );
 }

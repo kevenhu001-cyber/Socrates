@@ -120,16 +120,28 @@ async function enterChat(page) {
   await page.waitForTimeout(300);
 }
 
-test('incognito lives in the 更多 popover; new-chat stays out of the home header', async ({
+test('phone home header carries the incognito toggle; new-chat stays out of it', async ({
   page,
 }) => {
   await bootVoiceFixture(page, { width: 390, height: 844 });
-  /* The home header keeps the hamburger and mode pill; new-chat is hidden
-     here. Incognito moved into the sidebar's 更多 menu. */
+  /* 2026-11-26 reference: the home header keeps the drawer button and the
+     mode pill, with the temporary-chat (glasses) toggle on the right.
+     New-chat is hidden here. The 更多 menu keeps its incognito item too. */
   const newChat = page.locator('#mobileNewChatBtn');
   const incognito = page.locator('#mobileIncognitoBtn');
   await expect(newChat).toBeHidden();
-  await expect(incognito).toHaveCount(0);
+  await expect(incognito).toBeVisible();
+  await expect(incognito).toHaveAttribute('aria-label', 'Incognito chat');
+  await expect(incognito).toHaveAttribute('aria-pressed', 'false');
+  const [pill, glasses] = await Promise.all([
+    page.locator('.top-mode-switch').boundingBox(),
+    incognito.boundingBox(),
+  ]);
+  expect(glasses.x).toBeGreaterThan(pill.x + pill.width);
+  expect(glasses.x + glasses.width).toBeLessThanOrEqual(390);
+  await incognito.click();
+  await expect(page.locator('body')).toHaveAttribute('data-incognito', 'true');
+  await expect(incognito).toHaveAttribute('aria-pressed', 'true');
 
   await page.locator('#sidebarOpenBtn').click();
   await expect(page.locator('#sidebar')).toBeVisible();
@@ -138,25 +150,17 @@ test('incognito lives in the 更多 popover; new-chat stays out of the home head
   await expect(popover).toBeVisible();
   const incognitoItem = popover.getByRole('menuitemcheckbox', { name: 'Incognito chat' });
   await expect(incognitoItem).toBeVisible();
-  await expect(incognitoItem).toHaveAttribute('aria-checked', 'false');
-  await incognitoItem.click();
-  await expect(page.locator('body')).toHaveAttribute('data-incognito', 'true');
-
-  /* Entering incognito resets the view, which closes the drawer —
-     reopen it to toggle back off through the same menu path. */
-  await page.locator('#sidebarOpenBtn').click();
-  await expect(page.locator('#sidebar')).toBeVisible();
-  await page.locator('#navMore').click();
   await expect(incognitoItem).toHaveAttribute('aria-checked', 'true');
   await incognitoItem.click();
   await expect(page.locator('body')).toHaveAttribute('data-incognito', 'false');
+  await expect(incognito).toHaveAttribute('aria-pressed', 'false');
 
   await enterChat(page);
 
   /* New-chat becomes available in the active conversation header;
-     incognito remains out of the header. */
+     the incognito toggle yields its slot to the conversation actions. */
   await expect(newChat).toBeVisible();
-  await expect(incognito).toHaveCount(0);
+  await expect(incognito).toBeHidden();
 });
 
 test('the mic records inline and the phone shows the live spectrum', async ({ page }) => {
