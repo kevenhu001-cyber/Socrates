@@ -1170,5 +1170,117 @@
         ]
       }
     ]
+  },
+  "implicitHeat2D": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "alpha",
+        "label": "Thermal diffusivity",
+        "value": 0.1,
+        "min": 0.02,
+        "max": 0.2,
+        "unit": "m²/s"
+      }
+    ],
+    "dynamics": {
+      "method": "grid-implicit",
+      "duration": 1,
+      "step": 0.005,
+      "spatial": {
+        "dimension": 2,
+        "nx": 65,
+        "ny": 65,
+        "xDomain": [
+          0,
+          1
+        ],
+        "yDomain": [
+          0,
+          1
+        ],
+        "diffusivity": "alpha",
+        "initial": "20+80*sin(pi*x)*sin(pi*y)",
+        "boundary": 20
+      }
+    },
+    "views": [
+      {
+        "kind": "field",
+        "label": "Temperature field",
+        "x": [
+          0,
+          1
+        ],
+        "y": [
+          0,
+          1
+        ],
+        "expression": "gridValue",
+        "palette": "heat",
+        "colorRange": [
+          20,
+          100
+        ],
+        "unit": "°C",
+        "contours": [
+          30,
+          50,
+          70,
+          90
+        ],
+        "height": 320
+      },
+      {
+        "kind": "field",
+        "label": "Temperature surface",
+        "x": [
+          0,
+          1
+        ],
+        "y": [
+          0,
+          1
+        ],
+        "expression": "gridValue",
+        "presentation": "surface",
+        "zRange": [
+          20,
+          100
+        ]
+      },
+      {
+        "kind": "plot",
+        "label": "Mid-plane temperature",
+        "x": [
+          0,
+          1
+        ],
+        "y": [
+          20,
+          100
+        ],
+        "sliceY": 0.5,
+        "curves": [
+          {
+            "expression": "gridValue",
+            "color": "orange"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "Mean nodal temperature",
+            "expression": "gridMean",
+            "unit": "°C"
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
   }
 }
