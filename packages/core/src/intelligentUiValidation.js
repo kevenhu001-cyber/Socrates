@@ -3,7 +3,7 @@ import {
   normalizeIntelligentUiControl,
 } from './intelligentUiControls.js';
 import { normalizeLearningUiNode, learningUiIssues } from './learningUi.js';
-import { validateDemonstration } from './demonstration.js';
+import { validateDemonstration } from './simulation/compiler/validate.js';
 import { physicsParametersError } from './physicsModelRegistry.js';
 import { normalizeIntelligentUiArgs } from './intelligentUiNormalize.js';
 import { VISUALIZATION_TEMPLATES } from './visualizationTemplates.js';
