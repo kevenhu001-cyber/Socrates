@@ -22,6 +22,8 @@ export interface PlotSample {
   paths: string[];
   markers: Point[];
   issues: Issue[];
+  playhead?: number;
+  eventTimes?: number[];
 }
 
 /** Fit the y-axis to the finite samples when the declared bounds cannot be evaluated. */
@@ -177,6 +179,7 @@ function* sample(
     paths: curves.map((points) => pathFor(points, sx, sy)),
     markers,
     issues,
+    ...(view.kind === 'plot' && view.history ? { playhead: time, eventTimes: (runtime.eventTimes ?? []).filter((t) => t <= time && t >= xDomain[0] && t <= xDomain[1]) } : {}),
   };
 }
 
