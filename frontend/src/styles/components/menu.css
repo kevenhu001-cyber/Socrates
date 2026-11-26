@@ -360,6 +360,14 @@ body #composerToolsMenu.composer-tools-menu {
    Surface: a raised card like the other menus, with the ghost wash for
    rows. */
 .chat-config-row {
+  /* Rows read left to right — label column, then value / check at the end —
+     as in every reference menu. The UiButton default centred its children,
+     which stacked "Beagle✓" and "Effort High ›" in the middle of the card. */
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  text-align: left;
   min-height: 40px;
   padding: var(--ui-menu-item-padding);
   gap: var(--ui-menu-item-gap);
@@ -382,6 +390,21 @@ body #composerToolsMenu.composer-tools-menu {
 .chat-config-row small,
 .chat-config-value {
   color: var(--ui-text-tertiary);
+}
+.chat-config-row > span:first-child {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+}
+.chat-config-row strong {
+  font-weight: var(--ui-font-weight-regular);
+}
+.chat-config-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-inline-start: auto;
 }
 .chat-config-divider {
   margin: 3px 8px;
@@ -790,5 +813,85 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side='sheet'] {
     background-color: var(--ui-bg-surface);
     border-color: var(--ui-border-subtle);
     box-shadow: var(--ui-shadow-menu);
+  }
+}
+
+/* 2026-11-26 phone reference "+" sheet: one floating 28px card resting just
+   above the question box with side margins — no grabber, no tile grid. Every
+   action is a 46px row (glyph · label · inline grey hint), the quick tiles
+   included, so the sheet reads as one list. */
+@media (max-width: 768px) {
+  body #composerToolsMenu.composer-tools-menu {
+    left: var(--ui-step-100);
+    right: var(--ui-step-100);
+    bottom: calc(112px + env(safe-area-inset-bottom, 0px));
+    width: auto;
+    max-width: none;
+    max-height: min(64dvh, 560px);
+    padding: var(--ui-step-75);
+    border: 0;
+    border-radius: var(--ui-radius-composer-desktop);
+    background: var(--ui-bg-ask);
+    box-shadow: var(--ui-shadow-popover);
+  }
+  .composer-tools-sheet-handle {
+    display: none;
+  }
+  .composer-tools-tiles {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 0;
+  }
+  .composer-tools-tile {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 14px;
+    min-height: 46px;
+    padding: 8px 12px;
+    border-radius: var(--ui-radius-lg);
+    background: transparent;
+  }
+  [data-mode='light'] .composer-tools-tile {
+    background: transparent;
+  }
+  .composer-tools-tile:active {
+    transform: none;
+  }
+  .composer-tools-tile-icon {
+    width: 24px;
+    height: 24px;
+    margin-bottom: 0;
+  }
+  .composer-tools-tile-icon svg {
+    width: 22px;
+    height: 22px;
+  }
+  .composer-tools-tile-label {
+    font-size: var(--ui-font-size-md);
+  }
+  .composer-tools-mobile-list {
+    padding: 0;
+  }
+  #composerToolsMenu .composer-tools-row-item {
+    min-height: 46px;
+    gap: 14px;
+    border-radius: var(--ui-radius-lg);
+  }
+  #composerToolsMenu .composer-tools-row-copy {
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: flex-start;
+    gap: 12px;
+  }
+  #composerToolsMenu .composer-tools-row-title {
+    flex: none;
+    font-size: var(--ui-font-size-md);
+    font-weight: var(--ui-font-weight-regular);
+  }
+  #composerToolsMenu .composer-tools-row-subtitle {
+    min-width: 0;
+    color: var(--ui-text-tertiary);
+    font-size: var(--ui-font-size-md);
   }
 }

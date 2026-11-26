@@ -131,7 +131,10 @@ export function ThinkingSurface({
           numberOfLines={1}
           ellipsizeMode="tail"
           style={{
-            flex: fullWidth ? '1 1 0' : undefined,
+            /* The disclosure chevron follows the caption ("Thought for 8s ⌄",
+               2026-11-26 reference) instead of parking at the far edge; the
+               button keeps its full-width hit area. */
+            flex: fullWidth ? '0 1 auto' : undefined,
             flexShrink: 1,
             minWidth: 0,
             fontVariant: ['tabular-nums'],
