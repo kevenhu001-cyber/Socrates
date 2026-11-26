@@ -21,6 +21,7 @@ Views are ordered freely (1–8). Every view has "kind" (not "type"). Axis bound
 Optional presets: at most four label and values entries, where values maps a parameter id to a number or expression evaluated against the current parameters/definitions at t=0 before resetting playback. The whole preset applies atomically; every result must be finite and inside its declared parameter range. For example {label:"Current optical limit",values:{separation:"clamp(radius,0.2,3)"}} follows current optics; keep only meaningful scientific comparison states and omit unnecessary button rows. Keep explanatory prose and equations outside the demonstration. Prefer a focused scene, a shared set of 1–3 visible sliders, and linked views to a wall of controls. Do not print implementation details or require the user to choose tools. Existing native panels/text/metric/table/chart components may surround demonstrations. All algorithms remain bounded mathematical data; unsupported operations must be explained rather than imitated with fake visuals.
 A field can instead be a rotatable 3D wireframe of z=expression(x,y,t): presentation:'surface', x/y bounds and required zRange:[min,max]. Use physical z units; out-of-range or nonfinite vertices leave gaps. Use a separate field map for contours/vectors/color calibration. The browser rotates the already sampled mesh without re-solving. Optional surfaceStyle:'shaded' fills finite mesh faces in height-calibrated colors, with a numeric z legend; default is wireframe. This is a scalar height surface, not a volumetric or arbitrary 3D mesh.
 Optional linearAlgebra is an ordered list of named structured arrays, with vector/matrix literals (values), add/sub/matmul/dot/cross (a,b earlier array IDs), scale (a,factor), norm/transpose (a). Example [{id:'force',op:'vector',values:[3,4]},{id:'rot',op:'matrix',values:[[0,-1],[1,0]]},{id:'result',op:'matmul',a:'rot',b:'force'},{id:'magnitude',op:'norm',a:'result'}]. Refer to vector components result_1/result_2, matrix entries rot_1_2 and scalar magnitude in ordinary expressions. Shapes up to 6; all generated components share the 24-definition limit. Array IDs are not scalar values. Operations are compiled to bounded scalar expressions, not arbitrary JS or a general tensor runtime.
+For 3D curves use field presentation:'curve3d', x/y/zRange are physical bounds, curve3d:[X,Y,Z], parameterRange:[min,max] where x is the curve parameter; or curveHistory:true with dynamics and no parameterRange, evaluating coordinates at each simulation time. For 3D vector fields use presentation:'vectors3d', vector3d:[Fx,Fy,Fz], x/y/zRange, required positive vectorScale; components can use x,y,spaceZ,t and shared state. spaceZ is reserved in programs containing this view. Use expression:0 for these two presentations. 3D arrows are sampled on a bounded Cartesian grid and scaled by reference magnitude. For standalone stationary symmetric positive-definite systems use sparseSystem:{size:2,entries:[[0,0,2],[0,1,-1],[1,1,2]],rhs:[1,1]}; coordinates are zero-based, unique upper triangle, all diagonals explicit. Entries and RHS use constants/parameters only. CSR + Jacobi-preconditioned CG, up to 1024 unknowns and 8192 entries subject to 40KB program and 8M iteration-work budget; nonconvergence or breakdown errors explicitly. Plot sparseValue against index x=0..size-1 (interpolated); sparseResidual and sparseIterations are scalar metrics. Do not claim SPD verification or general nonsymmetric sparse solve. Do not combine sparseSystem with dynamics.
 One format for new physics content: {version:1,nodes:[{id,type:"demonstration",title,program:{version:1,parameters,definitions,dynamics?,views,presets?}}]}. Do not emit a separate physics renderer, hand-written SVG/HTML/JS, or a fixed scene ID for a new model. Historical physics IDs and OpenUI Rayleigh are compatibility adapters into this same program renderer. Ordinary explanations stay in prose. Reuse a definition across force arrows, geometry, trajectories and readouts instead of generating disconnected visuals.
 Build a new model by declaring units/assumptions, choosing independent state variables, deriving force laws and initial conditions, then composing only the views that help. Change equations, boundary parameters, initial conditions, expressions, object count/order and view composition freely within the documented limits. The examples are editable starting points, not a list of permitted models. Derive new equations rather than selecting the nearest named scene; verify dimensions, conservation or a known limiting case. State approximations such as point masses, lumped temperature or prescribed motion. Never imply generic collision/PDE/contact/circuit solving.
 Available composed examples and assumptions:
@@ -82,6 +83,15 @@ export const DEMONSTRATION_PROGRAM_SCHEMA = {
             description: 'Disclose this slider under an advanced section.',
           },
         },
+      },
+    },
+    sparseSystem: {
+      type:'object',required:['size','entries','rhs'],properties:{
+        size:{type:'integer',minimum:1,maximum:1024},
+        entries:{type:'array',minItems:1,maxItems:8192,items:{type:'array',minItems:3,maxItems:3,items:EXPRESSION}},
+        rhs:{type:'array',minItems:1,maxItems:1024,items:EXPRESSION},
+        tolerance:{type:'number',minimum:1e-12,maximum:1e-3},
+        maxIterations:{type:'integer',minimum:1,maximum:1024},
       },
     },
     linearAlgebra: {
@@ -303,7 +313,11 @@ export const DEMONSTRATION_PROGRAM_SCHEMA = {
             },
           },
           expression: EXPRESSION,
-          presentation: { type: 'string', enum: ['map', 'surface'] },
+          presentation: { type: 'string', enum: ['map', 'surface', 'curve3d', 'vectors3d'] },
+          curve3d: {type:'array',minItems:3,maxItems:3,items:EXPRESSION},
+          vector3d: {type:'array',minItems:3,maxItems:3,items:EXPRESSION},
+          parameterRange: AXIS,
+          curveHistory: {type:'boolean'},
           surfaceStyle: { type: 'string', enum: ['wireframe', 'shaded'] },
           zRange: AXIS,
           palette: { type: 'string', enum: ['light', 'signed', 'heat'] },
