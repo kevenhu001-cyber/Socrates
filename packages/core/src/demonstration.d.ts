@@ -47,7 +47,11 @@ export interface DemonstrationField extends DemonstrationViewBase {
   kind: 'field';
   expression: DemonstrationValue;
   slicePlane?: {axis:'x'|'y'|'z';at:DemonstrationValue};
-  presentation?: 'map' | 'surface' | 'curve3d' | 'vectors3d';
+  presentation?: 'map' | 'surface' | 'curve3d' | 'vectors3d' | 'parametricSurface';
+  surface3d?: [DemonstrationValue,DemonstrationValue,DemonstrationValue];
+  uRange?: [DemonstrationValue,DemonstrationValue];
+  vRange?: [DemonstrationValue,DemonstrationValue];
+  markers?: DemonstrationMarker[];
   curve3d?: [DemonstrationValue, DemonstrationValue, DemonstrationValue];
   vector3d?: [DemonstrationValue, DemonstrationValue, DemonstrationValue];
   parameterRange?: [DemonstrationValue, DemonstrationValue];
@@ -126,6 +130,7 @@ export interface DemonstrationProgram {
   resetKey?: string;
   parameters?: DemonstrationParameter[];
   definitions?: Record<string, DemonstrationValue>;
+  optimization?: {variables:{id:string;initial:DemonstrationValue;min:number;max:number}[];objective:DemonstrationValue;goal?:'min'|'max';tolerance?:number;maxIterations?:number};
   nonlinearSystem?: {guess:Record<string,DemonstrationValue>;residuals:Record<string,DemonstrationValue>;tolerance?:number;maxIterations?:number};
   sparseSystem?: {method?:'pcg'|'bicgstab';size:number;entries:[number,number,DemonstrationValue][];rhs:DemonstrationValue[];tolerance?:number;maxIterations?:number};
   linearAlgebra?: ({id:string;op:'vector';values:DemonstrationValue[]} | {id:string;op:'matrix';values:DemonstrationValue[][]} | {id:string;op:'scale';a:string;factor:DemonstrationValue} | {id:string;op:'norm'|'transpose';a:string} | {id:string;op:'add'|'sub'|'dot'|'cross'|'matmul';a:string;b:string})[];
@@ -210,6 +215,10 @@ export interface DemonstrationDiagnostics {
   relativeResidual?: number;
   absoluteResidual?: number;
   diffusionCFL?: number;
+  adColumns?: number;
+  finiteDifferenceColumns?: number;
+  projectedGradient?: number;
+  objectiveEvaluations?: number;
 }
 export interface DemonstrationRuntime {
   duration: number;
