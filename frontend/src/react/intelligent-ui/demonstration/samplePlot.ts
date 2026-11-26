@@ -10,6 +10,15 @@ import { errorMessage } from './sampleField';
 export type PlotView = DemonstrationPlot | DemonstrationTrajectory;
 type Point = [number, number] | null;
 type Domain = [number, number];
+export type AxisScale = 'linear' | 'log';
+function axisValue(domain: Domain, fraction: number, scale: AxisScale = 'linear') {
+  return scale === 'log'
+    ? Math.exp(Math.log(domain[0]) + fraction * (Math.log(domain[1]) - Math.log(domain[0])))
+    : domain[0] + fraction * (domain[1] - domain[0]);
+}
+function positiveDomain(domain: Domain, scale: AxisScale, axis: string) {
+  if (scale === 'log' && domain[0] <= 0) throw Error(`Logarithmic ${axis} axis needs positive bounds`);
+}
 export interface Issue {
   part: 'curve' | 'marker';
   index: number;
@@ -22,6 +31,8 @@ export interface PlotSample {
   paths: string[];
   markers: Point[];
   issues: Issue[];
+  xScale?: AxisScale;
+  yScale?: AxisScale;
   playhead?: number;
   eventTimes?: number[];
 }
@@ -67,13 +78,16 @@ function* sampleCurvePoints(
       const left = Math.max(0, xDomain[0]);
       const right = Math.min(time, xDomain[1]);
       if (history && right < left) continue;
-      const t = view.kind === 'trajectory' ? (time * i) / samples : history ? left + ((right - left) * i) / samples : time;
+      const scale = view.kind === 'plot' ? view.xScale : undefined;
+      const t = view.kind === 'trajectory' ? (time * i) / samples
+        : history ? axisValue([left, right], i / samples, scale) : time;
       const x =
         view.kind === 'trajectory'
           ? read(view.horizontal, t, 0)
-          : history ? t : xDomain[0] + ((xDomain[1] - xDomain[0]) * i) / samples;
+          : history ? t : axisValue(xDomain, i / samples, scale);
       const y = read(curve.expression, t, x);
-      if (Number.isFinite(x) && Number.isFinite(y)) {
+      if (Number.isFinite(x) && Number.isFinite(y) &&
+          !(view.kind === 'plot' && view.yScale === 'log' && y <= 0)) {
         points.push([x, y]);
         finite++;
       } else points.push(null);
@@ -132,6 +146,9 @@ function* sample(
   runtime.resetBudget();
   const issues: Issue[] = [];
   const xDomain = demonstrationDomain(view.x, runtime, time);
+  const xScale = view.kind === 'plot' ? view.xScale ?? 'linear' : 'linear';
+  const yScale = view.kind === 'plot' ? view.yScale ?? 'linear' : 'linear';
+  positiveDomain(xDomain, xScale, 'x');
   const read = (expression: DemonstrationValue, t: number, x: number) =>
     runtime.evaluate(expression, t, x);
   const sources =
@@ -172,10 +189,13 @@ function* sample(
   }
   const yDomain = demonstrationDomain(view.y, runtime, time, fittedRange(curves));
   const markers = samplePlotMarkers(view, time, read, issues);
-  const { sx, sy } = plotProjection(xDomain, yDomain);
+  positiveDomain(yDomain, yScale, 'y');
+  const { sx, sy } = plotProjection(xDomain, yDomain, xScale, yScale);
   return {
     xDomain,
     yDomain,
+    xScale,
+    yScale,
     paths: curves.map((points) => pathFor(points, sx, sy)),
     markers,
     issues,
@@ -232,11 +252,12 @@ export const RIGHT = 12;
 export const TOP = 14;
 export const BOTTOM = 38;
 
-export function plotProjection(xDomain: Domain, yDomain: Domain) {
-  const sx = (x: number) =>
-    LEFT + ((x - xDomain[0]) / (xDomain[1] - xDomain[0])) * (WIDTH - LEFT - RIGHT);
-  const sy = (y: number) =>
-    HEIGHT - BOTTOM - ((y - yDomain[0]) / (yDomain[1] - yDomain[0])) * (HEIGHT - TOP - BOTTOM);
+export function plotProjection(xDomain: Domain, yDomain: Domain, xScale: AxisScale = 'linear', yScale: AxisScale = 'linear') {
+  const fraction = (v: number, d: Domain, scale: AxisScale) => scale === 'log'
+    ? (Math.log(v) - Math.log(d[0])) / (Math.log(d[1]) - Math.log(d[0]))
+    : (v - d[0]) / (d[1] - d[0]);
+  const sx = (x: number) => LEFT + fraction(x, xDomain, xScale) * (WIDTH - LEFT - RIGHT);
+  const sy = (y: number) => HEIGHT - BOTTOM - fraction(y, yDomain, yScale) * (HEIGHT - TOP - BOTTOM);
   return { sx, sy };
 }
 
