@@ -578,6 +578,46 @@ Next: modularize model-facing tool contracts, reduce schema/prompt
 payloads with capability-specific retrieval, then complete actual CI,
 bundle and browser/device performance acceptance before merge.
 
+## Stage fifteen: capability-specific AI contracts and compact provider schema
+
+- Canonical simulation guides are organized by twelve named sections:
+  basics, expressions, ode, electrical, pde, chemistry, algebra,
+  analysis, plots, geometry3d, scenes and examples. The discovery
+  tool supports kind:demonstration and section:index or a named
+  section. Each current section fits within the existing 5000-character
+  pagination limit. The legacy no-section request still returns the
+  full paginated contract, now composed from the canonical sections;
+  its ordering and exact page boundaries change, not its request format.
+- Route the model to focused sections in the tool description and
+  conditional routing prompt. Keep the scientific assumptions, limits,
+  executable examples and warnings. Correct stale guidance about
+  periodic constant advection.
+- Generate the provider-only compact program schema from the full
+  contract: retain every named field, nested array item shape, required
+  key, enum and union. Trim redundant range/length/description metadata
+  in advanced fields only. Keep the full registry definition for
+  local repair/argument validation and the existing authoritative
+  semantic validator; only provider-visible turn tool definitions use
+  the projection. No user DSL changes.
+- Direct checks of the extracted schemas and bounded argument validator:
+  227 named anchors retained; 59 example programs accepted by both
+  schemas; an invalid finite-element program fails the full program
+  schema. New program schema JSON 21,019 -> 17,293 characters
+  (3,726 fewer; 17.7%); actual provider tokenizer and total request
+  savings vary. Section index 1,057 characters, sections 1,499–4,936;
+  full reorganized guide 34,526 characters. These are character counts,
+  not measured token billing. Added regression tests for all sections,
+  malicious/inherited section names, schema anchors and all examples.
+- Fix Vite alias resolution for the lightweight/async core subpaths:
+  previous complete CI failed production build because the root barrel
+  alias captured the new subpaths. Add specific aliases ahead of it.
+  Previous lint/typecheck and other workflows passed; actual successful
+  rebuild and newest full CI still need confirmation.
+
+Next: stop adding features, verify CI and fix remaining actual failures,
+run the Worker bundle audit and benchmark, and complete browser/mobile
+Web regression and final performance acceptance before merging.
+
 ## Deliberate limits / next steps
 
 This is a bounded educational engine, not an industrial multiphysics solver.
