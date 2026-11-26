@@ -289,6 +289,14 @@ function renderPlot(view: View, result: Sampled, id: string) {
         <YAxis domain={yDomain} sy={sy} />
         <XAxis xDomain={xDomain} yDomain={yDomain} sy={sy} sx={sx} />
         <g clipPath={`url(#${id})`}>
+          {result.eventTimes?.map((time, index) => (
+            <line key={index} x1={sx(time)} x2={sx(time)} y1={TOP} y2={HEIGHT - BOTTOM}
+              stroke={demoColors.orange} strokeWidth="1" strokeDasharray="3 4" opacity=".65" />
+          ))}
+          {result.playhead !== undefined && (
+            <line x1={sx(result.playhead)} x2={sx(result.playhead)} y1={TOP} y2={HEIGHT - BOTTOM}
+              stroke={demoColors.muted} strokeWidth="1" strokeDasharray="4 3" />
+          )}
           <CurvePaths curves={curves} paths={result.paths} />
           <PlotMarkers view={view} result={result} project={project} />
         </g>
