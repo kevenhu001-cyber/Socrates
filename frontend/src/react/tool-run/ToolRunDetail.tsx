@@ -1,4 +1,5 @@
 import { DetailSection, ImageOutput, PlainDetail, sourceCardsOf } from '@socrates/ui/turn';
+import { Button } from '../ui/shadcn/button';
 import { UiButton } from '@socrates/ui/primitives';
 import { SourceAvatar } from '../sources/SourceAvatar';
 import { basename, translate } from '../../legacy/toolPresentationModel.ts';
@@ -35,7 +36,9 @@ function ResultSection({
       <DetailSection title={section.title} kind="sources">
         <div className="tool-source-results" data-testid="tool-sources">
           {sourceCardsOf(section.items).map((source, index) => (
-            <button
+            <Button
+              variant="surface"
+              size="surface"
               key={source.key}
               type="button"
               className="tool-source-result"
@@ -63,7 +66,7 @@ function ResultSection({
                   </span>
                 ) : null}
               </span>
-            </button>
+            </Button>
           ))}
         </div>
         <UiButton
