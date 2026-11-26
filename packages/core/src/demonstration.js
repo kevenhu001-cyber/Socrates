@@ -954,8 +954,9 @@ function normalizeView(raw) {
     if (view.zRange !== undefined) view.zRange = rangeLike(view.zRange);
     if(record(view.slicePlane))view.slicePlane={...view.slicePlane,at:expressionLike(view.slicePlane.at)};
     if (view.parameterRange !== undefined) view.parameterRange = rangeLike(view.parameterRange);
-    for(const key of ['curve3d','vector3d']) if(Array.isArray(view[key])) view[key]=view[key].map(expressionLike);
-    if (['curve3d','vectors3d'].includes(view.presentation) && view.expression === undefined) view.expression=0;
+    for(const key of ['uRange','vRange'])if(view[key]!==undefined)view[key]=rangeLike(view[key]);
+    for(const key of ['curve3d','vector3d','surface3d']) if(Array.isArray(view[key])) view[key]=view[key].map(expressionLike);
+    if (['curve3d','vectors3d','parametricSurface'].includes(view.presentation) && view.expression === undefined) view.expression=0;
     if (Array.isArray(view.contours)) view.contours = view.contours.map(expressionLike);
     const vector = asArray(view.vector);
     if (Array.isArray(vector)) view.vector = vector.map(expressionLike);
@@ -2588,16 +2589,27 @@ export function validateDemonstration(input) {
             throw located(path,Error('Scalar map slice needs axis x/y/z and at; no planar vector overlay'));
           check(view.slicePlane.at);
         }
-        if (view.presentation !== undefined && !['map', 'surface', 'curve3d', 'vectors3d'].includes(view.presentation))
-          throw located(`${path}.presentation`, Error('Use map, surface, curve3d or vectors3d'));
-        if (view.surfaceStyle !== undefined && (view.presentation !== 'surface' || !['wireframe','shaded'].includes(view.surfaceStyle)))
+        if (view.presentation !== undefined && !['map', 'surface', 'curve3d', 'vectors3d','parametricSurface'].includes(view.presentation))
+          throw located(`${path}.presentation`, Error('Use map, surface, curve3d, vectors3d or parametricSurface'));
+        if (view.surfaceStyle !== undefined && (!['surface','parametricSurface'].includes(view.presentation) || !['wireframe','shaded'].includes(view.surfaceStyle)))
           throw located(`${path}.surfaceStyle`, Error('Surface style must be wireframe or shaded on a surface'));
-        if (['surface','curve3d','vectors3d'].includes(view.presentation)) {
+        if (['surface','curve3d','vectors3d','parametricSurface'].includes(view.presentation)) {
           if (!range(view.zRange)) throw located(`${path}.zRange`, Error('Surface needs increasing z bounds'));
           view.zRange.forEach((v) => check(v));
           if (view.vector !== undefined || view.contours !== undefined || view.colorRange !== undefined)
             throw located(path, Error('3D views cannot include 2D contours, vectors or color calibration'));
         } else if (view.zRange !== undefined) throw located(`${path}.zRange`, Error('zRange requires 3D presentation'));
+        if(view.presentation==='parametricSurface'){
+          if(!Array.isArray(view.surface3d)||view.surface3d.length!==3||!range(view.uRange)||!range(view.vRange))
+            throw located(path,Error('Parametric surface needs three coordinate expressions and uRange/vRange'));
+          [...view.surface3d,...view.uRange,...view.vRange].forEach(v=>check(v));
+        }else if(view.surface3d!==undefined||view.uRange!==undefined||view.vRange!==undefined)
+          throw located(path,Error('Parametric surface fields require parametricSurface presentation'));
+        if(view.markers!==undefined){
+          if(![undefined,'map'].includes(view.presentation)||!Array.isArray(view.markers)||view.markers.length>8)
+            throw located(path,Error('Use at most 8 markers on a scalar map'));
+          view.markers.forEach(m=>{if(!record(m)||!text(m.label))throw located(path,Error('Marker needs x/y and optional label'));check(m.x);check(m.y);});
+        }
         if(view.presentation==='curve3d'){
           if(!Array.isArray(view.curve3d)||view.curve3d.length!==3)throw located(path,Error('Curve needs three coordinate expressions'));
           view.curve3d.forEach(v=>check(v));
