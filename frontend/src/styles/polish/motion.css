@@ -116,3 +116,16 @@
     transform: none;
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .display-prefs-segs::before {
+    transition: none;
+  }
+  .display-prefs-seg:active,
+  .recent-item:hover,
+  .recent-item-del:hover svg,
+  .sidebar-nav-btn:active:not([disabled]),
+  .composer-tools-item:active {
+    transform: none;
+  }
+}

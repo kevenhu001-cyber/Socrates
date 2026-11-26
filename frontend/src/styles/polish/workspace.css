@@ -893,3 +893,62 @@ body.workspace-active #appShell .main-page:not(.creation-panel) {
     max-height: 180px;
   }
 }
+
+/* Connector marks remain owned by the plugin surface; branded SVG ink is inherited. */
+.connector-row .connector-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-bg-surface);
+  border: 1px solid var(--ui-border-subtle);
+  box-shadow: none;
+  color: var(--ui-text-secondary);
+  overflow: hidden;
+}
+.connector-row .connector-icon svg {
+  width: 18px;
+  height: 18px;
+  color: inherit;
+}
+.connector-row .connector-icon span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: var(--ui-font-size-xxs);
+  font-weight: var(--ui-font-weight-semibold);
+  color: inherit;
+}
+.connector-row .connector-icon .connector-logo {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  display: block;
+}
+.connector-row .connector-icon .connector-logo-fallback {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: var(--ui-font-size-xxs);
+  font-weight: var(--ui-font-weight-semibold);
+  color: inherit;
+}
+.connector-row .workspace-row-copy {
+  gap: 4px;
+}
+.connector-row .workspace-row-copy strong {
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-semibold);
+  color: var(--ui-text-primary);
+}
+.connector-row .workspace-row-copy > span {
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-font-weight-regular);
+  color: var(--ui-text-secondary);
+}
+.connector-row .workspace-note {
+  display: none;
+}

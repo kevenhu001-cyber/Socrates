@@ -620,3 +620,16 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side='sheet'] {
   font-size: var(--ui-font-size-xs);
   text-align: center;
 }
+
+#composerToolsMenu .composer-tools-item {
+  position: relative;
+}
+#composerToolsMenu .composer-tools-item.is-active {
+  color: var(--ui-text-primary);
+}
+#composerToolsMenu .composer-tools-active-check {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  color: var(--ui-text-primary);
+}

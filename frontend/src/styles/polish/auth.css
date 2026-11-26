@@ -378,3 +378,35 @@
   margin-top: var(--ui-space-sm);
   text-decoration: none;
 }
+
+/* Auth utility labels are visually hidden, not removed from the accessibility tree. */
+.auth-inline-link-right {
+  text-align: right;
+  display: block;
+}
+.auth-github-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ui-space-sm);
+  text-decoration: none;
+}
+.auth-code-login-link {
+  text-align: center;
+  display: block;
+  margin-bottom: var(--ui-space-xs);
+}
+.sr-only-old {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+.sr-only-opacity {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}

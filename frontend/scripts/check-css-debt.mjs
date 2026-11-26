@@ -54,9 +54,6 @@ const ORDERED_MANIFESTS = {
     './07-composer-settings.css',
     './08-exam.css',
     './09-viz-markdown.css',
-    './12-tutor-inline-tools.css',
-    './13-composer-rich.css',
-    './14-tool-surfaces.css',
   ],
   'parity/index.css': [
     './sidebar.css',

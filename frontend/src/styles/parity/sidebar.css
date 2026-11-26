@@ -1282,3 +1282,17 @@ html[data-detail-open='true'][data-detail-layout='docked'] #appShell .main {
 .tab-badge:empty {
   display: none;
 }
+
+/* Shared sidebar host geometry. */
+.sidebar-nav {
+  flex-shrink: 0;
+}
+.sidebar-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-xxs);
+}
+.logo-img {
+  border-radius: var(--ui-radius-xs);
+  flex-shrink: 0;
+}

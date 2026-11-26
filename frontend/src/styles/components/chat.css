@@ -1116,3 +1116,22 @@ a.has-site-favicon {
   line-clamp: 2;
   -webkit-box-orient: vertical;
 }
+
+/* Compact fallback transcript sizing for standalone/read-only hosts. */
+@media (max-width: 480px) {
+  .msg-body {
+    padding: 10px 12px;
+    font-size: var(--ui-font-size-xs);
+  }
+  .msg.user .msg-body {
+    font-size: var(--ui-font-size-xs);
+  }
+}
+@media (min-width: 1200px) {
+  .msg-body {
+    padding: 14px 20px;
+  }
+  .msg.user .msg-body {
+    font-size: var(--ui-font-size-sm);
+  }
+}
