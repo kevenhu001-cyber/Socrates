@@ -806,3 +806,45 @@ test('stochastic plot uses a sampled staircase instead of fractional slopes',()=
   assert.match(sample.paths[0],/H[0-9.]+V[0-9.]+/);
   assert.doesNotMatch(sample.paths[1],/H[0-9.]+V[0-9.]+/);
 });
+
+test('local nonlinear residual solver and nonsymmetric sparse linear solver match known roots',()=>{
+  const scientific=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
+  const root=createDemonstrationRuntime(scientific.nonlinearEquilibrium);
+  assert.ok(Math.abs(root.evaluate('q')-2)<1e-8);
+  assert.ok(Math.abs(root.evaluate('v')-1)<1e-8);
+  assert.ok(root.diagnostics.absoluteResidual<1e-9);
+  const sparse=createDemonstrationRuntime(scientific.nonsymmetricSparse);
+  assert.equal(sparse.diagnostics.method,'BiCGSTAB');
+  assert.ok(sparse.diagnostics.relativeResidual<1e-10);
+  for(let i=0;i<64;i++)assert.ok(Math.abs(sparse.evaluate('sparseAt('+i+')')-1)<1e-8);
+  const bad={version:1,nonlinearSystem:{guess:{q:0},residuals:{q:'q^2+1'}},views:[{kind:'metrics',values:[{expression:'q'}]}]};
+  assert.throws(()=>createDemonstrationRuntime(bad),/Newton/);
+});
+test('coupled spatial fields conserve exchange pools and reject unstable diffusion steps',()=>{
+  const scientific=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
+  const one=createDemonstrationRuntime(scientific.coupledFields1D);
+  assert.deepEqual(one.warnings,[]);
+  assert.ok(Math.abs(one.evaluate('mean_U',1)-(.5+.5*Math.exp(-2)))<1e-5);
+  assert.ok(Math.abs(one.evaluate('mean_U+mean_V',1)-1)<1e-10);
+  assert.ok(Math.abs(one.evaluate('U',1,0)-one.evaluate('U',1,1))<1e-12);
+  const two=createDemonstrationRuntime(scientific.coupledFields2D);
+  assert.deepEqual(two.warnings,[]);
+  assert.ok(Math.abs(two.evaluate('mean_U+mean_V',1)-two.evaluate('mean_U+mean_V',0))<1e-10);
+  const invalid=structuredClone(scientific.coupledFields1D);invalid.dynamics.step=.1;
+  assert.throws(()=>createDemonstrationRuntime(invalid),/CFL/);
+  const conflict=structuredClone(scientific.coupledFields1D);conflict.dynamics.reactionNetwork={};
+  assert.equal(validateDemonstration(conflict).ok,false);
+});
+test('scalar volume slices remap physical coordinates and planar flow samples streamlines',()=>{
+  const view={kind:'field',x:[0,1],y:[0,1],height:64,expression:'spaceZ',palette:'heat',colorRange:[0,1],slicePlane:{axis:'x',at:.5}};
+  const rt=createDemonstrationRuntime({version:1,views:[view]});
+  const sample=finishGenerator(sampleField(view,rt,0,false));
+  assert.equal(sample.slice.axis,'x');
+  assert.equal(sample.slice.position,.5);
+  const pixels=new Uint8ClampedArray(sample.pixels);
+  assert.ok(pixels[1]>pixels[(63*320)*4+1]); // vertical displayed coordinate is physical z
+  const flow={kind:'field',x:[0,1],y:[0,1],height:64,expression:0,vector:[1,0],streamlines:true};
+  const field=finishGenerator(sampleField(flow,createDemonstrationRuntime({version:1,views:[flow]}),0,false));
+  assert.ok(field.streamlines.length>0);
+  for(const line of field.streamlines)for(let i=3;i<line.length;i+=2)assert.ok(Math.abs(line[i]-line[1])<1e-9);
+});
