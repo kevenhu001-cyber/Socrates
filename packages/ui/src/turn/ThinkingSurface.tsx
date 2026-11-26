@@ -125,7 +125,7 @@ export function ThinkingSurface({
         <UiText
           testID="turn-activity-label"
           className={labelClassName}
-          variant="bodySm"
+          variant={fullWidth ? "body" : "bodySm"}
           tone="secondary"
           role={live ? 'status' : undefined}
           numberOfLines={1}
@@ -147,7 +147,7 @@ export function ThinkingSurface({
             <UiText
               testID="turn-activity-duration"
               className={durationClassName}
-              variant="labelSm"
+              variant={fullWidth ? "bodySm" : "labelSm"}
               tone="secondary"
               aria-live="off"
               numberOfLines={1}
