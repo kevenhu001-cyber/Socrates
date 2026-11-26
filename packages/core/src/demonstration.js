@@ -546,6 +546,60 @@ function dualExpression(ast,scope,variable,budget){
   }
   return [Number.NaN,Number.NaN];
 }
+
+// Small CSP-safe arithmetic instruction tape. No generated JS, no eval.
+// Keep lazy logic, special functions and budgeted loops on the interpreter.
+// One scratch stack per compiled AST; reentrant evaluation falls back safely.
+const expressionTapes=new WeakMap();
+const tapeOps={'+':2,'-':3,'*':4,'/':5,'%':6,'^':7,'<':8,'>':9,'<=':10,'>=':11,'==':12,'!=':13};
+function prepareExpressionTape(ast){
+  const ops=[],args=[];
+  const push=(op,arg=0)=>{ops.push(op);args.push(arg);};
+  function visit(node){
+    if(node.kind==='number'){push(0,node.value);return true;}
+    if(node.kind==='variable'){
+      if(node.name==='pi'||node.name==='e')push(0,node.name==='pi'?Math.PI:Math.E);
+      else push(1,node.name);
+      return true;
+    }
+    if(node.kind==='unary'&&['+','-','!'].includes(node.op)&&visit(node.arg)){push(node.op==='-'?14:node.op==='!'?15:16);return true;}
+    if(node.kind==='binary'&&Object.hasOwn(tapeOps,node.op)&&visit(node.left)&&visit(node.right)){push(tapeOps[node.op]);return true;}
+    if(node.kind==='call'&&node.args.length===1&&Object.hasOwn(unary,node.name)&&visit(node.args[0])){push(17,unary[node.name]);return true;}
+    return false;
+  }
+  if(visit(ast)&&ops.length>=5)expressionTapes.set(ast,{ops:Uint8Array.from(ops),args,stack:new Float64Array(ops.length),busy:false});
+  // Hot inner expressions in bounded loops have their own reusable tape.
+  if(ast.kind==='call'&&['sum','iterate','integral'].includes(ast.name))prepareExpressionTape(ast.args[3]);
+}
+function evaluatePreparedExpression(ast,scope,budget){
+  const tape=expressionTapes.get(ast);
+  if(!tape||tape.busy)return evaluateDemonstrationExpression(ast,scope,budget);
+  budget.remaining-=tape.ops.length;
+  if(budget.remaining<0)throw budgetError();
+  const {ops,args,stack}=tape;
+  let sp=0;tape.busy=true;
+  try{
+    for(let i=0;i<ops.length;i++){
+      const op=ops[i];
+      if(op===0){stack[sp++]=args[i];continue;}
+      if(op===1){stack[sp++]=Number(lookup(scope,args[i]));continue;}
+      if(op===14){stack[sp-1]=-stack[sp-1];continue;}
+      if(op===15){stack[sp-1]=+!stack[sp-1];continue;}
+      if(op===16)continue;
+      if(op===17){stack[sp-1]=args[i](stack[sp-1]);continue;}
+      const b=stack[--sp],a=stack[sp-1];
+      switch(op){
+        case 2:stack[sp-1]=a+b;break;case 3:stack[sp-1]=a-b;break;
+        case 4:stack[sp-1]=a*b;break;case 5:stack[sp-1]=a/b;break;
+        case 6:stack[sp-1]=a%b;break;case 7:stack[sp-1]=a**b;break;
+        case 8:stack[sp-1]=+(a<b);break;case 9:stack[sp-1]=+(a>b);break;
+        case 10:stack[sp-1]=+(a<=b);break;case 11:stack[sp-1]=+(a>=b);break;
+        case 12:stack[sp-1]=+(a===b);break;case 13:stack[sp-1]=+(a!==b);break;
+      }
+    }
+    return stack[0];
+  }finally{tape.busy=false;}
+}
 export function evaluateDemonstrationExpression(ast, scope, budget = { remaining: 2000000 }) {
   if (--budget.remaining < 0) throw budgetError();
   const run = (node) => evaluateDemonstrationExpression(node, scope, budget);
@@ -613,7 +667,7 @@ export function evaluateDemonstrationExpression(ast, scope, budget = { remaining
     let total=0;
     for(let i=0;i<=n;i++){
       local[key]=i===n?end:start+i*h;
-      const v=evaluateDemonstrationExpression(ast.args[3],local,budget);
+      const v=evaluatePreparedExpression(ast.args[3],local,budget);
       if(!finite(v))throw Error('Nonfinite quadrature sample');
       total+=(i===0||i===n?1:i%2?4:2)*v;
     }
@@ -640,7 +694,7 @@ export function evaluateDemonstrationExpression(ast, scope, budget = { remaining
       let result = 0;
       for (let i = start; i <= end; i++) {
         local[key] = i;
-        result += evaluateDemonstrationExpression(ast.args[3], local, budget);
+        result += evaluatePreparedExpression(ast.args[3], local, budget);
       }
       return result;
     }
@@ -652,7 +706,7 @@ export function evaluateDemonstrationExpression(ast, scope, budget = { remaining
       throw Error(`iterate supports 0–${DEMONSTRATION_LOOP_LIMIT} steps`);
     for (let i = 0; i < count; i++) {
       local[key] = result;
-      result = evaluateDemonstrationExpression(ast.args[3], local, budget);
+      result = evaluatePreparedExpression(ast.args[3], local, budget);
     }
     return result;
   }
@@ -2757,7 +2811,9 @@ export function compileDemonstrationRuntime(input) {
   const compiled = new Map();
   const compile = (expression) => {
     const key = typeof expression === 'number' ? `#${expression}` : String(expression);
-    if (!compiled.has(key)) compiled.set(key, parseDemonstrationExpression(expression));
+    if (!compiled.has(key)) {
+      const ast=parseDemonstrationExpression(expression);prepareExpressionTape(ast);compiled.set(key,ast);
+    }
     return compiled.get(key);
   };
   const definitions = new Map(Object.entries(program.definitions ?? {}));
@@ -3074,7 +3130,7 @@ function* prepareRuntime(program, definitions, stateNames, compile, dependencies
     return scope;
   };
   const evalRaw = (expression, scope) =>
-    evaluateDemonstrationExpression(compile(expression), scope, budget);
+    evaluatePreparedExpression(compile(expression), scope, budget);
   let trajectory = [],
     step = 0;
   let adaptiveResult, derivativeEvaluations=0;
@@ -3133,7 +3189,7 @@ function* prepareRuntime(program, definitions, stateNames, compile, dependencies
     // Integration has its own budget, so a long ODE does not starve the views.
     const dynamicsBudget = { remaining: DYNAMICS_BUDGET };
     const evalDynamics = (expression, scope) =>
-      evaluateDemonstrationExpression(compile(expression), scope, dynamicsBudget);
+      evaluatePreparedExpression(compile(expression), scope, dynamicsBudget);
     const base = Object.assign(Object.create(null), params, { x: 0, y: 0, t: 0 },hasSpaceZ?{spaceZ:0}:{});
     const state = Object.fromEntries(
       names.map((key) => {
