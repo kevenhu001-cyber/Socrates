@@ -3,5 +3,6 @@ export { DEMONSTRATION_LOOP_LIMIT, normalizeDemonstrationExpression, normalizeDe
 export { evaluateDemonstrationExpression } from './simulation/expression/evaluate.js';
 export { isDemonstrationBudgetError } from './simulation/foundation.js';
 export { normalizeDemonstrationProgram } from './simulation/compiler/normalize.js';
-export { validateDemonstration, createDemonstrationRuntime, compileDemonstrationRuntime } from './simulation/compiler/compile.js';
+export { validateDemonstration } from './simulation/compiler/validate.js';
+export { createDemonstrationRuntime, compileDemonstrationRuntime } from './simulation/compiler/compile.js';
 export { demonstrationDomain } from './simulation/runtime/prepare.js';
