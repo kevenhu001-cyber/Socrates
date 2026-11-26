@@ -2323,7 +2323,7 @@ function scientificAnalysisSpec(program){
   }else{
     // Validate source and underlying model without generated analysis outputs.
     // This also prevents hidden feedback into dynamics/definitions.
-    subprogram={...program,analysis:undefined,views:[{kind:'metrics',values:[{expression:a.expression}]}]};
+    subprogram={...program,analysis:undefined,linearAlgebra:undefined,views:[{kind:'metrics',values:[{expression:a.expression}]}]};
     const result=validateDemonstration(subprogram);
     if(!result.ok)fail('Invalid analysis source: '+result.error);
     if(a.kind==='fft'){
@@ -2355,7 +2355,8 @@ function lowerScientificAnalysis(program){
   return {...program,definitions:{...program.definitions,...s.outputs}};
 }
 function linearSample(array,u){
-  if(!finite(u)||u<0||u>array.length-1)return Number.NaN;
+  if(!finite(u)||u< -1e-10||u>array.length-1+1e-10)return Number.NaN;
+  u=Math.max(0,Math.min(array.length-1,u));
   const i=Math.floor(u),f=u-i;return array[i]*(1-f)+array[Math.min(i+1,array.length-1)]*f;
 }
 function fftInPlace(re,im,inverse=false){
@@ -2385,7 +2386,7 @@ function* prepareScientificAnalysis(s,runtime,params,compile){
   const read=expr=>evaluatePreparedExpression(compile(expr),scope,budget);
   if(s.kind==='fft'){
     const n=s.samples??256,[start,end]=s.timeRange,dt=(end-start)/n,df=1/(end-start),nyquist=1/(2*dt);
-    if(runtime.duration>0&&end>runtime.duration+1e-10)fail('FFT window exceeds completed trajectory');
+    if(runtime.warnings.length||runtime.duration>0&&end>runtime.duration+1e-10)fail('FFT window exceeds completed trajectory');
     const signal=new Float64Array(n);runtime.resetBudget();
     for(let i=0;i<n;i++){signal[i]=runtime.evaluate(s.expression,start+i*dt);if(!finite(signal[i]))fail('Nonfinite signal sample');if(i%32===0)yield;}
     const mean=s.removeMean?signal.reduce((a,b)=>a+b,0)/n:0;
@@ -2415,7 +2416,7 @@ function* prepareScientificAnalysis(s,runtime,params,compile){
   }
   if(s.kind==='eigen'){
     const n=s.matrix.length,original=Float64Array.from(s.matrix.flat(),read),a=original.slice(),v=new Float64Array(n*n);
-    if(!a.every(finite))fail('Nonfinite matrix');
+    if(!a.every(v=>finite(v)&&Math.abs(v)<=1e12))fail('Nonfinite or excessive matrix coefficient');
     let scale=0;
     for(let i=0;i<n;i++){v[i*n+i]=1;for(let j=0;j<n;j++)scale=Math.max(scale,Math.abs(a[i*n+j]));}
     const norm=scale||1;
@@ -2899,7 +2900,8 @@ export function validateDemonstration(input) {
           at(`${path}.curves[${j}]`, () => {
             if (!record(c) || !text(c.label))
               throw Error('Curve needs an expression and an optional text label');
-            if(c.interpolation!==undefined&&!['linear','step'].includes(c.interpolation))throw Error('Curve interpolation must be linear or step');
+            if(c.interpolation!==undefined&&!['linear','step','points','stem'].includes(c.interpolation))throw Error('Curve interpolation must be linear, step, points or stem');
+            if(c.samples!==undefined&&(!Number.isInteger(c.samples)||c.samples<2||c.samples>2049))throw Error('Explicit curve sample count must be 2–2049');
             check(c.expression);
             curves++;
           }),
