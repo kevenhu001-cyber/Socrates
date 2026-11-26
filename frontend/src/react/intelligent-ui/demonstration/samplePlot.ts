@@ -1,4 +1,4 @@
-import { demonstrationDomain, isDemonstrationBudgetError } from '@socrates/core/demonstration';
+import { demonstrationDomain, isDemonstrationBudgetError } from '@socrates/core/demonstrationLight';
 import type {
   DemonstrationPlot,
   DemonstrationTrajectory,
