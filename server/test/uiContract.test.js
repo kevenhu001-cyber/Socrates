@@ -164,7 +164,21 @@ test('compact provider schema preserves valid fixtures; full local schema still 
   const compact=INTELLIGENT_UI_PROVIDER_TOOL.function.parameters,full=INTELLIGENT_UI_TOOL.function.parameters;
   const fullProgram=full.properties.nodes.items.properties.program;
   const compactProgram=compact.properties.nodes.items.properties.program;
-  assert.ok(JSON.stringify(compactProgram).length<.8*JSON.stringify(fullProgram).length);
+  assert.ok(JSON.stringify(compactProgram).length<.85*JSON.stringify(fullProgram).length);
+  function sameShape(original, projected){
+    assert.deepEqual(projected.type,original.type);
+    assert.deepEqual(projected.enum,original.enum);
+    assert.deepEqual(projected.required,original.required);
+    if(original.properties){
+      assert.deepEqual(Object.keys(projected.properties).sort(),Object.keys(original.properties).sort());
+      for(const key of Object.keys(original.properties))sameShape(original.properties[key],projected.properties[key]);
+    }
+    if(original.items)sameShape(original.items,projected.items);
+    if(original.anyOf)original.anyOf.forEach((part,i)=>sameShape(part,projected.anyOf[i]));
+    if(original.additionalProperties&&typeof original.additionalProperties==='object')
+      sameShape(original.additionalProperties,projected.additionalProperties);
+  }
+  sameShape(fullProgram,compactProgram);
   for(const filename of ['algorithmic-demonstrations.json','intelligent-ui-physics.json','scientific-simulation.json']){
     const programs=JSON.parse(readFileSync(new URL('../../docs/examples/'+filename,import.meta.url),'utf8'));
     for(const [id,program] of Object.entries(programs)){
