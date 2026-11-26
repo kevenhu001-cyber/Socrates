@@ -148,8 +148,9 @@ test('the declarative tool row runs, settles, and opens its details', async ({ p
   await rowButton.click();
   const detail = page.getByTestId('tool-detail');
   await expect(detail).toBeVisible();
-  await detail.getByTestId('tool-input-toggle').click();
-  await expect(detail.getByTestId('tool-detail-section-input')).toBeVisible();
+  await expect(detail.getByTestId('tool-input-toggle')).toHaveCount(0);
+  await expect(detail.getByTestId('tool-detail-section-input')).toHaveCount(0);
+  await expect(detail.getByTestId('tool-code-output')).toHaveCount(0);
   await rowButton.click();
   await expect(page.getByTestId('tool-detail')).toHaveCount(0);
 });
