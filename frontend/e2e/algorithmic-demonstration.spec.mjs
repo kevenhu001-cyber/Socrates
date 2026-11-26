@@ -505,3 +505,19 @@ test('scientific field renders a physical color scale and contours without horiz
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
   await expectNoGlobalError(page);
 });
+
+test('Bode plots render physical decade tick labels on a narrow viewport', async ({ page }) => {
+  const scientific = JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json', import.meta.url), 'utf8'));
+  const node = { id: 'scientific-bode', type: 'demonstration', title: 'Bode response', program: scientific.bode };
+  await prepareChatWorkbench(page, {
+    lang: 'en', viewport: { width: 390, height: 844 },
+    messages: [{ clientId: 'scientific-bode', role: 'assistant', type: 'assistant',
+      rawText: '\x60\x60\x60socrates-ui\n' + JSON.stringify(node) + '\n\x60\x60\x60' }],
+  });
+  const demo = page.getByRole('region', { name: node.title, exact: true });
+  await demo.scrollIntoViewIfNeeded();
+  await expect(demo).toHaveAttribute('data-demo-quality', 'full');
+  await expect(demo.locator('.demo-plot').first().getByText('1000',{exact:true})).toBeVisible();
+  await expect(demo.locator('.demo-plot').first().getByText('0.1',{exact:true})).toBeVisible();
+  await expectNoGlobalError(page);
+});
