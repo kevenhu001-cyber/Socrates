@@ -501,19 +501,18 @@
   display: inline-flex;
   align-self: flex-start;
   align-items: center;
-  /* Activity is a caption, not a second answer: 13px on a 28px row, with an
-     8px gap so the site mark and its label read as one unit. */
+  /* Flat activity rows align with public summary and source rows. */
   gap: var(--ui-space-sm);
   min-width: 0;
   max-width: 100%;
-  min-height: 28px;
-  font-size: var(--ui-font-size-xs);
-  line-height: 20px;
+  min-height: var(--ui-control-sm);
+  font-size: var(--prose-size, var(--ui-text-body));
+  line-height: var(--ui-line-height-relaxed);
   padding: 0;
   border: 0;
   border-radius: var(--ui-radius-sm);
   background: transparent;
-  color: var(--ui-text-secondary);
+  color: var(--ui-text-primary);
   font-family: inherit;
   font-weight: var(--ui-font-weight-regular);
   text-align: start;
@@ -528,6 +527,57 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.rn-tool-row.is-live .tool-run-label {
+  color: var(--ui-text-secondary);
+}
+.activity-source-preview {
+  display: grid;
+  min-width: 0;
+  gap: var(--ui-space-sm);
+}
+.activity-source-row {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--ui-space-sm);
+  width: 100%;
+  min-width: 0;
+  padding: var(--ui-space-xs) 0;
+  border: 0;
+  background: transparent;
+  color: var(--ui-text-primary);
+  text-align: start;
+  font: inherit;
+  cursor: pointer;
+}
+.activity-source-row:hover .activity-source-title {
+  text-decoration: underline;
+}
+.activity-source-row:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-focus-shadow);
+  border-radius: var(--ui-radius-row);
+}
+.activity-source-copy {
+  display: grid;
+  min-width: 0;
+  gap: var(--ui-space-xxs);
+}
+.activity-source-title,
+.activity-source-host {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.activity-source-title {
+  font-size: var(--prose-size, var(--ui-text-body));
+  line-height: var(--ui-line-height-relaxed);
+}
+.activity-source-host {
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-sm);
+  line-height: var(--ui-text-ui-line);
 }
 .tool-run-trigger .tool-run-state {
   flex: 0 1 auto;
