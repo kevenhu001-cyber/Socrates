@@ -54,10 +54,8 @@ test('theme selector follows the operating system and persists explicit modes', 
       retiredLobe: styles.getPropertyValue('--lobe-color-bg-layout').trim(),
     };
   });
-  // The dark canvas is the reference's pure #000 (Geist background-200, the
-  // ladder's blackCanvas policy); rail / panel / elevated stay a consecutive
-  // slice of the Geist scale.
-  expect(hex6(darkPalette.page)).toBe('#000000');
+  // The supplied November reference uses near-black, with a neutral surface ramp.
+  expect(hex6(darkPalette.page)).toBe('#0e0e0e');
   expect(hex6(darkPalette.sidebar)).toBe('#1a1a1a');
   expect(hex6(darkPalette.raised)).toBe('#1f1f1f');
   expect(hex6(darkPalette.surface)).toBe('#292929');
