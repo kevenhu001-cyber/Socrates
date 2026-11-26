@@ -521,3 +521,20 @@ test('Bode plots render physical decade tick labels on a narrow viewport', async
   await expect(demo.locator('.demo-plot').first().getByText('0.1',{exact:true})).toBeVisible();
   await expectNoGlobalError(page);
 });
+
+test('rotatable scientific surface uses a sampled wireframe and local camera control', async ({ page }) => {
+  const scientific = JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json', import.meta.url), 'utf8'));
+  const node={id:'surface-3d',type:'demonstration',title:'Scientific surface',program:scientific.surface3D};
+  await prepareChatWorkbench(page,{lang:'en',viewport:{width:390,height:844},messages:[{clientId:'surface-3d',role:'assistant',type:'assistant',rawText:'\x60\x60\x60socrates-ui\n'+JSON.stringify(node)+'\n\x60\x60\x60'}]});
+  const demo=page.getByRole('region',{name:node.title,exact:true});
+  await demo.scrollIntoViewIfNeeded();
+  await expect(demo).toHaveAttribute('data-demo-quality','full');
+  const surface=demo.getByRole('img',{name:'Radially damped surface'});
+  await expect(surface).toBeVisible();
+  const mesh=surface.locator('g[stroke] path').first();
+  const before=await mesh.getAttribute('d');
+  await demo.getByRole('slider',{name:'Azimuth'}).fill('75');
+  await expect(mesh).not.toHaveAttribute('d',before);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
+  await expectNoGlobalError(page);
+});
