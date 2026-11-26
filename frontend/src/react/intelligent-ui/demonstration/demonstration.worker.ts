@@ -4,7 +4,8 @@ import type {
   DemonstrationRuntime,
   DemonstrationView,
 } from '@socrates/core/demonstration';
-import { errorMessage, fieldExpressions, sampleField } from './sampleField';
+import { errorMessage, fieldExpressions } from './fieldCommon';
+import { sampleField } from './sampleField';
 import { plotExpressions, samplePlot, type PlotCache } from './samplePlot';
 import { sampleScene, sceneExpressions } from './sampleScene';
 import type { ViewPatch, ViewSample, WorkerReply, WorkerRequest } from './demonstrationProtocol';
