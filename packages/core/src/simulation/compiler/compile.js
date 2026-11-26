@@ -524,9 +524,9 @@ function validateDemonstration(input) {
   return result.ok ? {ok:true} : result;
 }
 function cachedAst(cache,expression){
-  const key=typeof expression==='number'?`#${expression}`:String(expression);
-  if(!cache.has(key))cache.set(key,parseDemonstrationExpression(expression));
-  return cache.get(key);
+  // Keep numbers and strings distinct, including invalid string spellings.
+  if(!cache.has(expression))cache.set(expression,parseDemonstrationExpression(expression));
+  return cache.get(expression);
 }
 
 /* ---------- Runtime ---------- */
