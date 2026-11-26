@@ -20,7 +20,7 @@ const GUIDES = {
 
 A demonstration node is {"id":"demo","type":"demonstration","title":"...","program":{"version":1,"parameters":[],"definitions":{},"views":[]}}. views has 1-8 entries. Required per view: plot -> x, y and 1-6 curves; field -> x, y and expression; trajectory -> x, y, horizontal, vertical and program.dynamics; scene -> x, y and 1-32 objects; metrics -> 1-6 values; controls -> nothing. At most one controls, two field views and twelve curves total. The compact schema marks per-kind fields optional; semantic validation still requires them. Fix every field named in an error in one corrected call.
 
-All views share parameters, definitions, time t and optional ODE state. To drive an existing demonstration from the conversation, patch its program with changed parameter value fields: edited defaults apply immediately while unrelated manual control values survive. Set or change the optional resetKey string to restore all declared defaults, including a value equal to a previous default. This is the preferred route for novel mathematical/physical demonstrations and custom compositions.
+Up to 12 parameters (id, label, value, min, max; optional step, unit, advanced) and 24 definitions. IDs are case-sensitive ASCII identifiers. All views share parameters, definitions, time t and optional ODE state. To drive an existing demonstration from the conversation, patch its program with changed parameter value fields: edited defaults apply immediately while unrelated manual control values survive. Set or change the optional resetKey string to restore all declared defaults, including a value equal to a previous default. This is the preferred route for novel mathematical/physical demonstrations and custom compositions.
 
 Display labels and units use inline LaTeX for formulas and symbols. In JSON use dollar delimiters and escape each backslash, for example {"xLabel":"$t\\\\,(\\\\mathrm{s})$","yLabel":"$I/I_0$","unit":"$\\\\theta_R$"}. Keep expressions in executable mathematical syntax (see expressions section).
 
@@ -107,7 +107,7 @@ export function demonstrationSectionContent(section: DemonstrationSection): stri
   return GUIDES[section];
 }
 export function demonstrationSectionIndex(): string {
-  return 'Choose a section with get_ui_contract({kind:"demonstration",section:"..."}). Read basics first if new to the DSL.\\n'+Object.entries(DEMONSTRATION_SECTIONS).map(([id,description])=>id+': '+description).join('\\n');
+  return 'Choose a section with get_ui_contract({kind:"demonstration",section:"..."}). Read basics first if new to the DSL.\n'+Object.entries(DEMONSTRATION_SECTIONS).map(([id,description])=>id+': '+description).join('\n');
 }
 
 export const DEMONSTRATION_GUIDANCE = Object.values(GUIDES).join('\n\n');
