@@ -12,12 +12,9 @@
  * adapters wait for its DOM node.
  */
 import { normalizeIntelligentUiArgs, validateIntelligentUi } from '@socrates/core';
-import {
-  LazyIntelligentUiBlock,
-  preloadIntelligentUiBlock,
-} from '../intelligent-ui/LazyIntelligentUiBlock';
+import { LazyIntelligentUiBlock } from '../intelligent-ui/LazyIntelligentUiBlock';
 import { NormalizedVisualizationsContext } from '../intelligent-ui/openui/normalizedVisualizations';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { ReactElement } from 'react';
 
 import { ToolOutputRenderer } from '../tool-output/ToolOutputRenderer';
@@ -161,11 +158,6 @@ export function ToolRunAttachments({ call, tools = [call], readOnly }: ToolRunAt
   /* A callback ref also observes a host that first appears when a running
      call settles. An effect keyed only by call.id misses that transition. */
   const [host, setHost] = useState<HTMLDivElement | null>(null);
-  const warmRenderer =
-    !readOnly && call.name === 'render_intelligent_ui' && toolRunStateOf(call) === 'running';
-  useEffect(() => {
-    if (warmRenderer) preloadIntelligentUiBlock();
-  }, [warmRenderer]);
 
   if (call.name === 'render_intelligent_ui') {
     const intelligentUiAttachment = renderIntelligentUiAttachment(call, tools, readOnly);
