@@ -18,6 +18,9 @@ export function fieldExpressions(view: DemonstrationField): DemonstrationValue[]
     view.gamma ?? 0.6,
     view.exposure ?? 1,
     ...(view.vector ?? []),
+    ...(view.colorRange ?? []),
+    ...(view.contours ?? []),
+    ...(view.vectorScale === undefined ? [] : [view.vectorScale]),
   ];
 }
 
@@ -84,21 +87,24 @@ function* sampleGridRow(
   gamma: number,
   exposure: number,
   tint: [number, number, number],
+  colorRange: Domain | undefined,
   onError: (error: unknown) => void,
   onValid: () => void,
 ) {
   for (let x = 0; x < width; x += stride) {
     const offset = y * width + x;
     if (x === 0 || variesX) {
-      let value = 0;
       try {
-        value = runtime.evaluate(view.expression, time, xs[x], worldY);
+        const value = runtime.evaluate(view.expression, time, xs[x], worldY);
+        if (!Number.isFinite(value)) throw Error('Non-finite field sample');
+        const scaled = colorRange ? (value - colorRange[0]) / (colorRange[1] - colorRange[0]) : value;
+        writeColor(pixels, offset * 4, scaled, view.palette, gamma, colorRange ? 1 : exposure, tint);
         onValid();
       } catch (error) {
         if (isDemonstrationBudgetError(error)) throw error;
         onError(error);
+        words[offset] = 0;
       }
-      writeColor(pixels, offset * 4, value, view.palette, gamma, exposure, tint);
     }
     const color = words[variesX ? offset : y * width];
     words.fill(color, offset, y * width + Math.min(width, x + stride));
@@ -129,6 +135,7 @@ function* sampleGrid(
   xDomain: Domain,
   yDomain: Domain,
   stride: number,
+  colorRange?: Domain,
 ) {
   runtime.resetBudget();
   const gamma = Math.max(0.1, Math.min(3, setting(runtime, view.gamma ?? 0.6, time, 0.6)));
@@ -165,6 +172,7 @@ function* sampleGrid(
         gamma,
         exposure,
         tint,
+        colorRange,
         (error) => {
           firstError ||= errorMessage(error);
         },
@@ -190,6 +198,9 @@ function* sampleVectors(
   const arrows: number[] = [];
   if (!view.vector) return arrows;
   runtime.resetBudget();
+  const reference = view.vectorScale === undefined ? undefined : runtime.evaluate(view.vectorScale, time);
+  if (reference !== undefined && (!Number.isFinite(reference) || reference <= 0))
+    throw Error('Vector scale must be positive and finite');
   const width = FIELD_WIDTH,
     height = fieldHeight(view);
   for (let y = 9; y < height; y += 16) {
@@ -200,8 +211,10 @@ function* sampleVectors(
         const vx = runtime.evaluate(view.vector[0], time, worldX, worldY);
         const vy = runtime.evaluate(view.vector[1], time, worldX, worldY);
         const magnitude = Math.hypot(vx, vy);
-        if (Number.isFinite(magnitude) && magnitude >= 1e-9)
-          arrows.push(x, y, (vx / magnitude) * 5, (-vy / magnitude) * 5);
+        if (Number.isFinite(magnitude) && magnitude >= 1e-9) {
+          const length = reference === undefined ? 5 : 5 * Math.min(1, magnitude / reference);
+          arrows.push(x, y, (vx / magnitude) * length, (-vy / magnitude) * length);
+        }
       } catch (error) {
         if (isDemonstrationBudgetError(error)) return arrows;
       }
@@ -209,6 +222,71 @@ function* sampleVectors(
     }
   }
   return arrows;
+}
+
+
+// Marching squares on a bounded, independently sampled grid. Return canvas
+// coordinates in the same physical projection as the field; do not infer
+// contours from colors or connect through singular/non-finite cells.
+function* sampleContours(
+  view: DemonstrationField,
+  runtime: DemonstrationRuntime,
+  time: number,
+  x: Domain,
+  y: Domain,
+  stride: number,
+): Generator<void, { level: number; lines: number[] }[], void> {
+  if (!view.contours?.length) return [];
+  runtime.resetBudget();
+  const levels = view.contours.map((level) => runtime.evaluate(level, time));
+  if (levels.some((level) => !Number.isFinite(level))) throw Error('Contour levels must be finite');
+  const spacing = Math.max(5, stride * 2);
+  const nx = Math.max(2, Math.ceil((FIELD_WIDTH - 1) / spacing) + 1);
+  const height = fieldHeight(view);
+  const ny = Math.max(2, Math.ceil((height - 1) / spacing) + 1);
+  const values = new Float64Array(nx * ny);
+  for (let row = 0; row < ny; row++) {
+    for (let col = 0; col < nx; col++) {
+      try {
+        values[row * nx + col] = runtime.evaluate(view.expression, time,
+          x[0] + (x[1] - x[0]) * col / (nx - 1),
+          y[1] - (y[1] - y[0]) * row / (ny - 1));
+      } catch (error) {
+        if (isDemonstrationBudgetError(error)) throw error;
+        values[row * nx + col] = Number.NaN;
+      }
+    }
+    yield;
+  }
+  const dx = (FIELD_WIDTH - 1) / (nx - 1), dy = (height - 1) / (ny - 1);
+  const output = levels.map((level) => ({ level, lines: [] as number[] }));
+  const offsets = [[0, 0], [1, 0], [1, 1], [0, 1]];
+  for (let row = 0; row < ny - 1; row++) {
+    for (let col = 0; col < nx - 1; col++) {
+      const v = [values[row * nx + col], values[row * nx + col + 1],
+        values[(row + 1) * nx + col + 1], values[(row + 1) * nx + col]];
+      if (!v.every(Number.isFinite)) continue;
+      for (const { level, lines } of output) {
+        const edges: number[][] = [];
+        for (let edge = 0; edge < 4; edge++) {
+          const next = (edge + 1) % 4;
+          if ((v[edge] >= level) === (v[next] >= level)) continue;
+          const u = (level - v[edge]) / (v[next] - v[edge]);
+          const [ax, ay] = offsets[edge], [bx, by] = offsets[next];
+          edges.push([(col + ax + u * (bx - ax)) * dx, (row + ay + u * (by - ay)) * dy]);
+        }
+        if (edges.length === 2) lines.push(...edges[0], ...edges[1]);
+        else if (edges.length === 4) {
+          const center = (v[0] + v[1] + v[2] + v[3]) / 4;
+          if ((center >= level) === (v[0] >= level))
+            lines.push(...edges[0], ...edges[1], ...edges[2], ...edges[3]);
+          else lines.push(...edges[0], ...edges[3], ...edges[1], ...edges[2]);
+        }
+      }
+    }
+    yield;
+  }
+  return output;
 }
 
 export function* sampleField(
@@ -220,11 +298,15 @@ export function* sampleField(
   runtime.resetBudget();
   const x = demonstrationDomain(view.x, runtime, time);
   const y = demonstrationDomain(view.y, runtime, time);
+  const colorRange = view.colorRange?.map((v) => runtime.evaluate(v, time)) as Domain | undefined;
+  if (colorRange && (!colorRange.every(Number.isFinite) || colorRange[0] >= colorRange[1]))
+    throw Error('Color range must be finite and increasing');
   for (const stride of preview ? [4, 8, 1, 2] : [1, 2, 4, 8]) {
     try {
-      const pixels = yield* sampleGrid(view, runtime, time, x, y, stride);
+      const pixels = yield* sampleGrid(view, runtime, time, x, y, stride, colorRange);
       const arrows = yield* sampleVectors(view, runtime, time, x, y);
-      return { pixels: pixels.buffer, arrows };
+      const contours = yield* sampleContours(view, runtime, time, x, y, stride);
+      return { pixels: pixels.buffer, arrows, contours, colorRange };
     } catch (error) {
       if (!isDemonstrationBudgetError(error)) throw error;
     }
