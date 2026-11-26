@@ -627,3 +627,15 @@ test('spectral analysis renders exact-bin stem paths and low-pass slider',async(
   await expect(region.getByRole('slider',{name:'Low-pass cutoff'})).toBeVisible();
   await expectNoGlobalError(page);
 });
+
+test('scalar isosurface uses a camera-controlled sampled triangle mesh',async({page})=>{
+  const ex=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
+  const node={id:'iso',type:'demonstration',title:'Scalar isosurface',program:ex.scalarIsosurface};
+  await prepareChatWorkbench(page,{lang:'en',viewport:{width:390,height:844},messages:[{clientId:node.id,role:'assistant',type:'assistant',rawText:'\x60\x60\x60socrates-ui\n'+JSON.stringify(node)+'\n\x60\x60\x60'}]});
+  const region=page.getByRole('region',{name:'Scalar isosurface',exact:true});
+  await region.scrollIntoViewIfNeeded();
+  await expect(region).toHaveAttribute('data-demo-quality','full');
+  await expect(region.locator('[data-isosurface="1"] polygon').first()).toBeVisible();
+  await expect(region.getByRole('slider',{name:'Isosurface level'})).toBeVisible();
+  await expectNoGlobalError(page);
+});
