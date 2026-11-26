@@ -117,4 +117,3 @@ function* prepareScientificAnalysis(s,runtime,params,compile,compileSource){
 }
 
 export { prepareScientificAnalysis };
-export { scientificAnalysisSpec, lowerScientificAnalysis } from '../models/analysis.js';
