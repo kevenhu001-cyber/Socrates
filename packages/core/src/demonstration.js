@@ -1617,7 +1617,7 @@ function* prepareImplicitGrid(g,params,compile,warnings) {
     const [lo,hi,f]=interval(t);
     return spatial(frames[lo])*(1-f)+spatial(frames[hi])*f;
   }
-  return {duration,value,mean(t){const [lo,hi,f]=interval(t);return means[lo]*(1-f)+means[hi]*f;}};
+  return {duration,diagnostics:{acceptedSteps:frames.length-1,gridNodes:size,storedValues:size*frames.length,minStep:dt,maxStep:dt},value,mean(t){const [lo,hi,f]=interval(t);return means[lo]*(1-f)+means[hi]*f;}};
 }
 
 function lowerSpatialProgram(program) {
@@ -1737,6 +1737,8 @@ export function validateDemonstration(input) {
       (typeof program.resetKey !== 'string' || program.resetKey.length > 80)
     )
       throw located('resetKey', Error('resetKey must be a string of at most 80 characters'));
+    if (program.diagnostics !== undefined && typeof program.diagnostics !== 'boolean')
+      throw located('diagnostics',Error('Diagnostics must be boolean'));
     if (JSON.stringify(program).length > 40000) throw Error('Demonstration is too large');
     program = lowerSpatialProgram(lowerCircuitProgram(lowerStateSpace(lowerImplicitGrid(lowerSparseSystem(lowerLinearAlgebra(program))))));
     const shape = demonstrationShapeIssues(program);
@@ -2315,7 +2317,7 @@ function* integrateAdaptive(dynamics, names, initial, derivative, eventValue, ev
     if (!finite(result)) throw Error('Event expression is not finite');
     return result;
   };
-  let eventCount = 0;
+  let eventCount = 0, rejectedSteps=0, maxLocalError=0;
   const eventTimes = [];
   const disarmed = new Set();
   const rtol = dynamics.rtol ?? 1e-6, atol = dynamics.atol ?? 1e-9;
@@ -2331,7 +2333,7 @@ function* integrateAdaptive(dynamics, names, initial, derivative, eventValue, ev
       let next, err = 0, k0, k1;
       if (implicit) {
         const result = implicit(current, t, h);
-        if (!result) { h *= 0.25; continue; }
+        if (!result) { rejectedSteps++; h *= 0.25; continue; }
         ({ next, err, k0, k1 } = result);
       } else {
       for (let stage = 0; stage < 7; stage++) {
@@ -2357,9 +2359,11 @@ function* integrateAdaptive(dynamics, names, initial, derivative, eventValue, ev
       if (!finite(err)) throw Error('Non-finite integration error');
       const factor = err === 0 ? 5 : Math.max(0.2, Math.min(5, 0.9 * err ** (stiff ? -1 / 3 : -0.2)));
       if (err > 1) {
+        rejectedSteps++;
         h *= Math.min(0.9, factor);
         continue;
       }
+      maxLocalError=Math.max(maxLocalError,err);
       const segment = { t, h, end: t + h, a: current, b: next, k0, k1 };
       const hits = [], rearm = [];
       for (const event of events) {
@@ -2426,6 +2430,8 @@ function* integrateAdaptive(dynamics, names, initial, derivative, eventValue, ev
   return {
     duration: t,
     eventTimes,
+    diagnostics:{acceptedSteps:segments.length,rejectedSteps,events:eventTimes.length,maxLocalError,
+      ...(segments.length?{minStep:segments.reduce((m,s)=>Math.min(m,s.end-s.t),Infinity),maxStep:segments.reduce((m,s)=>Math.max(m,s.end-s.t),0)}:{})},
     stateAt(time) {
       const target = Math.max(0, Math.min(t, finite(time) ? time : 0));
       if (target === t) return toState(current);
@@ -2484,7 +2490,7 @@ function* prepareRuntime(program, definitions, stateNames, compile, dependencies
     evaluateDemonstrationExpression(compile(expression), scope, budget);
   let trajectory = [],
     step = 0;
-  let adaptiveResult;
+  let adaptiveResult, derivativeEvaluations=0;
   const dynamics = program.dynamics;
   let duration = dynamics?.duration ?? program.duration ?? 0;
   const algebraic = dynamics?.algebraic;
@@ -2556,6 +2562,7 @@ function* prepareRuntime(program, definitions, stateNames, compile, dependencies
     const matrix = dynamics.massMatrix ? new Float64Array(names.length ** 2) : undefined;
     const rhs = matrix ? new Float64Array(names.length) : undefined;
     const derivative = (s, t) => {
+      derivativeEvaluations++;
       const scope = scopeAt(t, 0, 0, consistentState(s,t,evalDynamics), evalDynamics);
       if (matrix) {
         const n = names.length;
@@ -2649,6 +2656,9 @@ function* prepareRuntime(program, definitions, stateNames, compile, dependencies
   return {
     duration,
     eventTimes: adaptiveResult?.eventTimes ?? [],
+    diagnostics: sparse ? {method:'PCG',unknowns:sparse.x.length,nonzeros:sparse.nnz,iterations:sparse.iterations,relativeResidual:sparse.error} :
+      grid ? {method:'grid-implicit',...grid.diagnostics} : dynamics ? {method:dynamics.method??'rk4',derivativeEvaluations,
+        ...(adaptiveResult?.diagnostics??{acceptedSteps:Math.max(0,trajectory.length-1),rejectedSteps:0,events:0,minStep:step,maxStep:step})} : undefined,
     parameters: params,
     warnings,
     dependencies,
