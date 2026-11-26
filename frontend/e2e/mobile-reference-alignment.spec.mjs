@@ -145,14 +145,14 @@ for (const mode of ['dark', 'light']) {
     const actualOrder = [...geometry].sort((a, b) => a.y - b.y).map((row) => row.id);
     expect(actualOrder.indexOf('navLibrary')).toBeLessThan(actualOrder.indexOf('navScheduled'));
     expect(actualOrder.indexOf('navScheduled')).toBeLessThan(actualOrder.indexOf('navPlugins'));
-    expect(actualOrder.slice(0, 4)).toEqual([
+    expect(actualOrder.filter((id) => id !== 'navSearch').slice(0, 4)).toEqual([
       'navProjects',
       'navLibrary',
       'navScheduled',
       'navPlugins',
     ]);
     expect(actualOrder).not.toContain('navNew');
-    expect(actualOrder).not.toContain('navSearch');
+    expect(actualOrder).toContain('navSearch');
     expect(actualOrder).not.toContain('navImages');
     expect(actualOrder).toEqual(geometry.map(({ id }) => id));
     const recent = page.locator('.recent-item').filter({ hasText: SESSION.title });
