@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { sampleField } from '../src/react/intelligent-ui/demonstration/sampleField.ts';
+import { samplePlot } from '../src/react/intelligent-ui/demonstration/samplePlot.ts';
 import {
   parseDemonstrationExpression,
   evaluateDemonstrationExpression,
@@ -485,4 +487,51 @@ test('spatial wave equation approximates a fixed-end standing mode', () => {
   });
   assert.deepEqual(runtime.warnings, []);
   assert.ok(Math.abs(runtime.evaluate('gridValue', 0.5, 0.5)) < 0.01);
+});
+
+test('scientific model examples preserve energy and constraint residuals', () => {
+  const scientific = JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json', import.meta.url), 'utf8'));
+  for (const program of Object.values(scientific)) {
+    assert.deepEqual(validateDemonstration(program), { ok: true });
+    assert.deepEqual(createDemonstrationRuntime(program).warnings, []);
+  }
+  const rlc = createDemonstrationRuntime(scientific.rlc);
+  assert.ok(Math.abs(rlc.evaluate('balance', 5)) < 1e-5);
+  const pendulum = createDemonstrationRuntime(scientific.constrainedPendulum);
+  for (let i = 0; i <= 100; i++)
+    assert.ok(Math.abs(pendulum.evaluate('constraint', i * 0.05)) < 1e-5);
+});
+
+function finishGenerator(iterator) {
+  let step = iterator.next();
+  while (!step.done) step = iterator.next();
+  return step.value;
+}
+test('calibrated fields use actual values and computed isolines', () => {
+  const view = {kind: 'field', x: [-1,1], y: [-1,1], expression: 'x',
+    height: 64, palette: 'heat', colorRange: [-1,1], contours: [0],
+    vector: ['x', 0], vectorScale: 2};
+  const runtime = createDemonstrationRuntime({version: 1, views: [view]});
+  const sample = finishGenerator(sampleField(view, runtime, 0, false));
+  assert.deepEqual(sample.colorRange, [-1,1]);
+  const pixels = new Uint8ClampedArray(sample.pixels);
+  assert.deepEqual([...pixels.slice(0,4)], [0,0,0,255]);
+  assert.deepEqual([...pixels.slice(319*4,320*4)], [255,255,255,255]);
+  assert.equal(sample.contours.length, 1);
+  assert.ok(sample.contours[0].lines.length > 0);
+  for (let i=0; i<sample.contours[0].lines.length; i+=2)
+    assert.ok(Math.abs(sample.contours[0].lines[i] - 159.5) < 0.1);
+  assert.ok(sample.arrows.length > 0);
+  for (let i=0; i<sample.arrows.length; i+=4)
+    assert.ok(Math.hypot(sample.arrows[i+2], sample.arrows[i+3]) <= 2.5);
+});
+test('history plots sample state at each plotted time and carry event guides', () => {
+  const view = {kind:'plot', history:true, x:[0,2], y:[0,2], curves:[{expression:'q'}]};
+  const runtime = createDemonstrationRuntime({version:1,dynamics:{
+    method:'rk45', duration:2, step:0.05, initial:{q:0}, derivatives:{q:1},
+    events:[{expression:'q-1', direction:1, terminal:true}]},views:[view]});
+  const sample = finishGenerator(samplePlot(view, runtime, runtime.duration, false, new Map()));
+  assert.ok(sample.paths[0].includes('L'));
+  assert.ok(Math.abs(sample.playhead-1)<1e-8);
+  assert.ok(Math.abs(sample.eventTimes[0]-1)<1e-8);
 });
