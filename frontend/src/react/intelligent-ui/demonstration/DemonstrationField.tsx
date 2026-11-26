@@ -3,6 +3,7 @@ import type { DemonstrationField } from '@socrates/core/demonstration';
 import { i18n } from '../../../ui/legacyI18n.ts';
 import { MathText } from '../../rn/useInlineMath';
 import { DemoIssue } from './DemonstrationIssue';
+import { BlockSkeleton } from '../BlockSkeleton';
 import type { FieldSample } from './sampleField';
 import { FIELD_WIDTH, fieldHeight, isSpatialField } from './fieldCommon';
 import { paintField } from './renderers/fieldCanvas';
@@ -37,7 +38,7 @@ export const DemoField = memo(function DemoField({
         </figcaption>
       ) : null}
       {isSpatialField(view) ? (
-        <Suspense fallback={<div className="demo-note" role="status">{i18n('intui.demo.loading','Loading…')}</div>}>
+        <Suspense fallback={<BlockSkeleton />}>
           <DemoSurface sample={sample?.surface} label={view.label} style={view.surfaceStyle??(view.presentation==='isosurface'?'shaded':undefined)} />
         </Suspense>
       ) : (
