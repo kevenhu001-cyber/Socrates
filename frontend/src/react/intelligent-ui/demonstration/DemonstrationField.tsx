@@ -1,4 +1,5 @@
 import { memo, useEffect, useId, useRef } from 'react';
+import { DemoSurface } from './DemonstrationSurface';
 import type { DemonstrationField } from '@socrates/core/demonstration';
 import { i18n } from '../../../ui/legacyI18n.ts';
 import { MathText } from '../../rn/useInlineMath';
@@ -32,7 +33,7 @@ export const DemoField = memo(function DemoField({
   const scaleId = useId();
   useEffect(() => {
     const context = canvas.current?.getContext('2d');
-    if (!context || !sample) return;
+    if (!context || !sample || sample.surface) return;
     context.putImageData(
       new ImageData(new Uint8ClampedArray(sample.pixels), FIELD_WIDTH, fieldHeight(view)),
       0,
@@ -77,13 +78,12 @@ export const DemoField = memo(function DemoField({
           <MathText text={view.label} />
         </figcaption>
       ) : null}
-      <canvas
-        ref={canvas}
-        width={FIELD_WIDTH}
-        height={fieldHeight(view)}
-        role="img"
-        aria-label={view.label || i18n('intui.surface', 'Interactive result')}
-      />
+      {view.presentation === 'surface' ? (
+        <DemoSurface sample={sample?.surface} label={view.label} />
+      ) : (
+        <canvas ref={canvas} width={FIELD_WIDTH} height={fieldHeight(view)} role="img"
+          aria-label={view.label || i18n('intui.surface', 'Interactive result')} />
+      )}
       {sample?.colorRange ? (
         <div className="demo-legend" aria-label={i18n('intui.demo.colorScale', 'Color scale')}>
           <svg className="demo-color-scale" viewBox="0 0 120 10" aria-hidden="true">
