@@ -59,15 +59,6 @@ function useComposerPhone(): boolean {
   return useSyncExternalStore(subscribePhone, readPhone, () => false);
 }
 
-const FIELD_SHADOWS = {
-  /* RN-9: the lit recipes put a 1px top-edge highlight over the same
-     outward shadow, so the sheet reads as a surface catching light from
-     above instead of a flat cut-out. */
-  field: 'var(--ui-elevation-lit-field)',
-  fieldHover: 'var(--ui-elevation-lit-field-hover)',
-  fieldFocus: 'var(--ui-elevation-lit-field-focus)',
-};
-
 /* On phones, moving from the editor to a control keeps the control in place. */
 function useEditorFocus(keepControlsInPlace: boolean): boolean {
   const [focused, setFocused] = useState(false);
@@ -271,6 +262,17 @@ export function ComposerShell({
   );
   const effort = resolveEffectiveEffort(storedEffort, capabilities);
   const configuration = useChatConfigurationSnapshot();
+  const effortControl = phone && capabilities?.supportsEffort !== false
+    ? {
+        visible: true,
+        caption: i18n('chatconfig.effort', 'Reasoning effort'),
+        value: effortLabel(effort),
+        level: effort,
+        accessibilityLabel: `${i18n('chatconfig.effort', 'Reasoning effort')} · ${effortLabel(effort)}`,
+        expanded: configuration.open && configuration.triggerId === 'effortTrigger',
+        onPress: () => openChatConfiguration(anchor('effortTrigger')),
+      }
+    : undefined;
   /* Dictation owns the microphone while it runs; the primary stays a send
      control and cannot submit a half-transcribed turn. */
   const canSend = !voiceActive && (hasDraft || attachments.length > 0);
@@ -336,7 +338,6 @@ export function ComposerShell({
           compact={phone}
           layout="inline"
           surface="var(--ui-bg-ask)"
-          shadows={FIELD_SHADOWS}
           topVisible={attachments.length > 0}
           top={
             <div className="attachment-chips hidden" id="composerAttachmentChips">
@@ -358,29 +359,22 @@ export function ComposerShell({
               hidden
             />
           }
-          controls={{ ...buildComposerControls({
-            toolsLabel,
-            composerTools,
-            phone,
-            voiceLabel,
-            voicePhase,
-            voiceTimerLabel,
-            voiceUnavailable,
-            streaming,
-            primaryLabel,
-            canSend,
-            sending,
-            handlePrimaryClick,
-          }),
-            effort: phone && capabilities?.supportsEffort !== false ? {
-              visible: true,
-              caption: i18n('chatconfig.effort', 'Reasoning effort'),
-              value: effortLabel(effort),
-              level: effort,
-              accessibilityLabel: `${i18n('chatconfig.effort', 'Reasoning effort')} · ${effortLabel(effort)}`,
-              expanded: configuration.open && configuration.triggerId === 'effortTrigger',
-              onPress: () => openChatConfiguration(anchor('effortTrigger')),
-            } : undefined,
+          controls={{
+            ...buildComposerControls({
+              toolsLabel,
+              composerTools,
+              phone,
+              voiceLabel,
+              voicePhase,
+              voiceTimerLabel,
+              voiceUnavailable,
+              streaming,
+              primaryLabel,
+              canSend,
+              sending,
+              handlePrimaryClick,
+            }),
+            effort: effortControl,
           }}
         />
       </WebUiTheme>
