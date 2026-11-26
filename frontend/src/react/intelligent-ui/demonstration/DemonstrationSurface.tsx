@@ -8,8 +8,8 @@ export function DemoSurface({ sample, label }: { sample?: SurfaceSample; label?:
   const id = useId();
   const a = azimuth * Math.PI / 180, e = elevation * Math.PI / 180;
   const project = (x: number, y: number, z: number) => [
-    260 + 125 * (x*Math.cos(a)-y*Math.sin(a)),
-    135 + 125 * ((x*Math.sin(a)+y*Math.cos(a))*Math.sin(e)-z*Math.cos(e)),
+    260 + 82 * (x*Math.cos(a)-y*Math.sin(a)),
+    135 + 82 * ((x*Math.sin(a)+y*Math.cos(a))*Math.sin(e)-z*Math.cos(e)),
   ];
   const path = (row: boolean, index: number) => {
     if (!sample) return '';
