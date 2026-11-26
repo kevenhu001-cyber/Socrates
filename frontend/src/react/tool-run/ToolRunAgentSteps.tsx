@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react';
 import {
-  agentStepCommand,
   agentStepLabel,
   agentStepMeta,
   formatElapsed,
-  MAX_OUTPUT_CHARS,
   type AgentPlanData,
   type AgentStepData,
 } from '../../legacy/agentSteps.ts';
@@ -80,51 +78,38 @@ function AgentStep({
   const status = !live && step.status === 'running'
     ? state === 'cancelled' ? 'stopped' : 'unknown'
     : step.status;
-  const displayedStep = step;
-  const command = agentStepCommand(displayedStep);
-  const statusLabel = status === 'done' || status === 'failed' ? '' : translate(`tool.status.${status}`);
-  const meta = [agentStepMeta(displayedStep, translate), statusLabel].filter(Boolean).join(' · ');
-  const bodyOutput = String(displayedStep.output || '');
-  const visibleOutput =
-    bodyOutput.length > MAX_OUTPUT_CHARS ? `…${bodyOutput.slice(-MAX_OUTPUT_CHARS)}` : bodyOutput;
-  const paths = displayedStep.diffStat?.paths || [];
-  const flat = !displayedStep.command && paths.length === 0 && !displayedStep.output;
-
-  return (
-    <details
-      className={`agent-step${flat ? ' is-flat' : ''}`}
-      data-step-id={displayedStep.stepId}
-      data-kind={displayedStep.kind}
-      data-state={status}
-    >
-      <summary className="agent-step-head">
-        <StepIcon kind={displayedStep.kind} />
-        <span className="agent-step-label">{agentStepLabel(displayedStep, translate)}</span>
-        <code className="agent-step-cmd" hidden={!command}>
-          {command}
-        </code>
-        <span className="agent-step-meta">{meta}</span>
-      </summary>
+  const statusLabel = status === 'done' ? '' : translate(`tool.status.${status}`);
+  const meta = [agentStepMeta({ ...step, exitCode: undefined }, translate), statusLabel]
+    .filter(Boolean)
+    .join(' · ');
+  const paths = step.diffStat?.paths || [];
+  const heading = (
+    <>
+      <StepIcon kind={step.kind} />
+      <span className="agent-step-label">
+        {agentStepLabel({ ...step, command: undefined, title: '' }, translate)}
+      </span>
+      <span className="agent-step-meta">{meta}</span>
+    </>
+  );
+  const attributes = {
+    'data-step-id': step.stepId,
+    'data-kind': step.kind,
+    'data-state': status,
+  };
+  return paths.length ? (
+    <details className="agent-step" {...attributes}>
+      <summary className="agent-step-head">{heading}</summary>
       <div className="agent-step-body">
-        {displayedStep.command ? (
-          <pre className="agent-step-pre" data-kind="command">
-            {displayedStep.command}
-          </pre>
-        ) : null}
-        {paths.length ? (
-          <ul className="agent-step-paths">
-            {paths.slice(0, 20).map((path) => (
-              <li key={path}>{path}</li>
-            ))}
-          </ul>
-        ) : null}
-        {displayedStep.output ? (
-          <pre className="agent-step-pre" data-kind="output">
-            {visibleOutput}
-          </pre>
-        ) : null}
+        <ul className="agent-step-paths">
+          {paths.slice(0, 20).map((path) => <li key={path}>{path}</li>)}
+        </ul>
       </div>
     </details>
+  ) : (
+    <div className="agent-step is-flat" {...attributes}>
+      <div className="agent-step-head">{heading}</div>
+    </div>
   );
 }
 
