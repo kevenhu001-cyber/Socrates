@@ -1441,6 +1441,13 @@ export function validateDemonstration(input) {
         if (!record(view) || !text(view.label) || !text(view.xLabel) || !text(view.yLabel))
           throw Error('View must be an object with text labels of at most 200 characters');
       });
+      for (const axis of ['x', 'y']) {
+        const scale = view[`${axis}Scale`];
+        if (scale !== undefined && (view.kind !== 'plot' || !['linear', 'log'].includes(scale)))
+          throw located(`${path}.${axis}Scale`, Error('Use linear or log scales on plots only'));
+        if (scale === 'log' && Array.isArray(view[axis]) && view[axis].some((v) => finite(v) && v <= 0))
+          throw located(`${path}.${axis}`, Error('Logarithmic axis needs positive bounds'));
+      }
       if (view.history !== undefined &&
           (view.kind !== 'plot' || typeof view.history !== 'boolean' || (view.history && !dynamics)))
         throw located(`${path}.history`, Error('History requires a plot with dynamics'));
