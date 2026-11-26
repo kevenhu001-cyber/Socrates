@@ -70,7 +70,6 @@ const ORDERED_MANIFESTS = {
   ],
   'polish/index.css': [
     './sidebar.css',
-    './topbar.css',
     './composer.css',
     './transcript.css',
     './overlays.css',
