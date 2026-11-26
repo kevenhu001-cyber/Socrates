@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { compileDemonstrationRuntime } from '@socrates/core/demonstration';
 import { sampleField } from '../src/react/intelligent-ui/demonstration/sampleField.ts';
 import { samplePlot } from '../src/react/intelligent-ui/demonstration/samplePlot.ts';
 import {
@@ -11,7 +12,6 @@ import {
   demonstrationDomain,
   validateDemonstration,
   createDemonstrationRuntime,
-  compileDemonstrationRuntime,
   validateIntelligentUi,
 } from '@socrates/core';
 const examples = JSON.parse(
