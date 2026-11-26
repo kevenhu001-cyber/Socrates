@@ -70,6 +70,41 @@ const arity = { pow: 2, atan2: 2, clamp: 3, sinc: 1, sinratio: 2, besselJ1: 1, a
 /* Extra functions and spellings models commonly write. They are recognised
    only in call position, so they never reserve an identifier that an
    existing program may already use as a parameter name. */
+function solveSmallSystem(matrix, rhs, n) {
+  for (let i = 0; i < n; i++) {
+    let scale = 0;
+    for (let j = 0; j < n; j++) scale = Math.max(scale, Math.abs(matrix[i * n + j]));
+    if (!(scale > 0) || !Number.isFinite(scale)) return false;
+    for (let j = 0; j < n; j++) matrix[i * n + j] /= scale;
+    rhs[i] /= scale;
+  }
+  for (let k = 0; k < n; k++) {
+    let pivot = k;
+    for (let i = k + 1; i < n; i++)
+      if (Math.abs(matrix[i * n + k]) > Math.abs(matrix[pivot * n + k])) pivot = i;
+    if (!(Math.abs(matrix[pivot * n + k]) > 1e-12)) return false;
+    if (pivot !== k) {
+      for (let j = k; j < n; j++) {
+        const value = matrix[k * n + j];
+        matrix[k * n + j] = matrix[pivot * n + j];
+        matrix[pivot * n + j] = value;
+      }
+      const value = rhs[k];
+      rhs[k] = rhs[pivot];
+      rhs[pivot] = value;
+    }
+    for (let i = k + 1; i < n; i++) {
+      const factor = matrix[i * n + k] / matrix[k * n + k];
+      for (let j = k + 1; j < n; j++) matrix[i * n + j] -= factor * matrix[k * n + j];
+      rhs[i] -= factor * rhs[k];
+    }
+  }
+  for (let i = n - 1; i >= 0; i--) {
+    for (let j = i + 1; j < n; j++) rhs[i] -= matrix[i * n + j] * rhs[j];
+    rhs[i] /= matrix[i * n + i];
+  }
+  return rhs.every(Number.isFinite);
+}
 const extraFunctions = {
   log2: Math.log2,
   cbrt: Math.cbrt,
@@ -86,6 +121,12 @@ const extraFunctions = {
   heaviside: (x) => (x >= 0 ? 1 : 0),
   dot2: (a, b, c, d) => a * c + b * d,
   dot3: (a, b, c, d, e, f) => a * d + b * e + c * f,
+  solve3: (index, ...args) => {
+    if (!Number.isInteger(index) || index < 1 || index > 3) return Number.NaN;
+    const rhs = Float64Array.from(args.slice(9));
+    return solveSmallSystem(Float64Array.from(args.slice(0, 9)), rhs, 3)
+      ? rhs[index - 1] : Number.NaN;
+  },
   // A scaled 2x2 solve for coupled accelerations and linear constraints.
   solve2: (index, a, b, c, d, r, s) => {
     const p = Math.max(Math.abs(a), Math.abs(b));
@@ -98,7 +139,7 @@ const extraFunctions = {
     return index === 1 ? (d * r - b * s) / det : (a * s - c * r) / det;
   },
 };
-const extraArity = { mod: 2, dot2: 4, dot3: 6, solve2: 7 };
+const extraArity = { mod: 2, dot2: 4, dot3: 6, solve2: 7, solve3: 13 };
 const aliases = {
   ln: 'log',
   lg: 'log10',
@@ -522,6 +563,10 @@ export function evaluateDemonstrationExpression(ast, scope, budget = { remaining
     }
     return result;
   }
+  if (ast.name === 'solve3') {
+    budget.remaining -= 27;
+    if (budget.remaining < 0) throw budgetError();
+  }
   if (ast.name === 'besselJ1') {
     budget.remaining -= 127;
     if (budget.remaining < 0) throw budgetError();
@@ -904,6 +949,8 @@ export function normalizeDemonstrationProgram(input) {
     for (const key of ['rtol', 'atol']) {
       if (dynamics[key] !== undefined) dynamics[key] = numberLike(dynamics[key]);
     }
+    if (Array.isArray(dynamics.massMatrix))
+      dynamics.massMatrix = dynamics.massMatrix.map((row) => Array.isArray(row) ? row.map(expressionLike) : row);
     if (Array.isArray(dynamics.events))
       dynamics.events = dynamics.events.map((event) =>
         record(event)
@@ -1068,20 +1115,30 @@ function lowerSpatialProgram(program) {
   if (!record(spec) || dynamics.method !== 'rk45' ||
       dynamics.initial !== undefined || dynamics.derivatives !== undefined)
     invalid('Spatial diffusion requires RK45 and replaces initial/derivatives maps');
-  const { nodes, domain, diffusivity, initial, left, right, source = 0 } = spec;
-  if (!Number.isInteger(nodes) || nodes < 3 || nodes > 24 ||
+  const { nodes, domain, diffusivity, initial, left, right, source = 0,
+    equation = 'diffusion', speed, initialVelocity = 0, damping = 0 } = spec;
+  if (!['diffusion', 'wave'].includes(equation)) invalid('Use diffusion or wave');
+  const wave = equation === 'wave';
+  if (!Number.isInteger(nodes) || nodes < 3 || nodes > (wave ? 18 : 24) ||
       !Array.isArray(domain) || domain.length !== 2 ||
       !domain.every((v) => finite(v) && Math.abs(v) <= 1e6) || domain[0] >= domain[1])
     invalid('Use 3–24 nodes and a finite increasing numeric domain');
-  for (const value of [diffusivity, initial, left, right, source])
+  for (const value of [wave ? speed : diffusivity, initial, left, right, source,
+    ...(wave ? [initialVelocity, damping] : [])])
     if (!finite(value) && (typeof value !== 'string' || !value.length || value.length > 1600))
       invalid('Diffusivity, initial profile, left/right boundary and source must be mathematical expressions');
-  if (finite(diffusivity) && diffusivity < 0) invalid('Diffusivity cannot be negative');
+  if (!wave && finite(diffusivity) && diffusivity < 0) invalid('Diffusivity cannot be negative');
+  if (wave && finite(speed) && speed <= 0) invalid('Wave speed must be positive');
+  if (wave && finite(damping) && damping < 0) invalid('Damping must be nonnegative');
+  if (dynamics.massMatrix !== undefined) invalid('Spatial models cannot also declare a mass matrix');
   const dx = (domain[1] - domain[0]) / (nodes - 1);
   if (!finite(dx) || dx < 1e-9) invalid('Grid spacing is too small');
   const stateName = (i) => `grid${i}`;
+  const velocityName = (i) => `gridV${i}`;
   const parts = Array.from({ length: Math.ceil(nodes / 4) }, (_, i) => `gridPart${i}`);
-  const generated = [...Array.from({ length: nodes }, (_, i) => stateName(i)), ...parts, 'gridValue'];
+  const generated = [...Array.from({ length: nodes }, (_, i) => stateName(i)),
+    ...(wave ? Array.from({ length: nodes - 2 }, (_, i) => velocityName(i + 1)) : []),
+    ...parts, 'gridValue'];
   if ((program.parameters !== undefined && !Array.isArray(program.parameters)) ||
       (program.definitions !== undefined && !record(program.definitions)))
     invalid('Parameters and definitions must have their normal program shapes');
@@ -1094,9 +1151,17 @@ function lowerSpatialProgram(program) {
     .replace(/(?<![A-Za-z_])x(?![A-Za-z0-9_])/g, `(${domain[0] + i * dx})`)
     .replace(/(?<![A-Za-z_])u(?![A-Za-z0-9_])/g, allowU ? stateName(i) : 'u');
   for (let i = 1; i < nodes - 1; i++) {
-    const alpha = local(diffusivity, i, true);
     initialStates[stateName(i)] = local(initial, i, false);
-    derivatives[stateName(i)] = `if((${alpha})>=0,(${alpha})*(${stateName(i-1)}-2*${stateName(i)}+${stateName(i+1)})/(${dx})^2+(${local(source, i, true)}),sqrt(-1))`;
+    const laplace = `(${stateName(i-1)}-2*${stateName(i)}+${stateName(i+1)})/(${dx})^2`;
+    if (wave) {
+      const c = local(speed, i, true), damp = local(damping, i, true);
+      initialStates[velocityName(i)] = local(initialVelocity, i, false);
+      derivatives[stateName(i)] = velocityName(i);
+      derivatives[velocityName(i)] = `if((${c})>0&&(${damp})>=0,(${c})^2*(${laplace})-(${damp})*${velocityName(i)}+(${local(source, i, true)}),sqrt(-1))`;
+    } else {
+      const alpha = local(diffusivity, i, true);
+      derivatives[stateName(i)] = `if((${alpha})>=0,(${alpha})*(${laplace})+(${local(source, i, true)}),sqrt(-1))`;
+    }
   }
   for (let part = 0; part < parts.length; part++) {
     const terms = [];
@@ -1243,6 +1308,11 @@ export function validateDemonstration(input) {
             `dynamics.derivatives.${key}`,
             Error('Derivative has no matching initial state'),
           );
+      if (dynamics.massMatrix !== undefined &&
+          (dynamics.method !== 'rk45' || keys.length > 8 ||
+            !Array.isArray(dynamics.massMatrix) || dynamics.massMatrix.length !== keys.length ||
+            dynamics.massMatrix.some((row) => !Array.isArray(row) || row.length !== keys.length)))
+        throw located('dynamics.massMatrix', Error('A square mass matrix of 1–8 states requires RK45'));
       keys.forEach((key) => allowed.add(key));
     }
     // Definitions may appear in any order; reject only genuine cycles.
@@ -1283,6 +1353,9 @@ export function validateDemonstration(input) {
     if (dynamics)
       for (const key of Object.keys(dynamics.initial))
         at(`dynamics.derivatives.${key}`, () => check(dynamics.derivatives[key]));
+    for (const [i, row] of (dynamics?.massMatrix ?? []).entries())
+      for (const [j, value] of row.entries())
+        at(`dynamics.massMatrix[${i}][${j}]`, () => check(value));
     for (const [i, event] of (dynamics?.events ?? []).entries()) {
       at(`dynamics.events[${i}]`, () => {
         if (!record(event) || ![-1, 0, 1].includes(event.direction ?? 0) ||
@@ -1726,8 +1799,8 @@ function* prepareRuntime(program, definitions, stateNames, compile, dependencies
     scope[resolveDefinition] = (name) => {
       if (!definitions.has(name)) return undefined;
       const expression = definitions.get(name);
-      const mask = reusableSample ? dependencies(expression) : 3;
-      const cache = mask === 0 ? constants : mask === 4 ? timeValues : sample;
+      const mask = dependencies(expression);
+      const cache = mask === 0 ? constants : reusableSample && mask === 4 ? timeValues : sample;
       if (!cache.has(name)) cache.set(name, evaluate(expression, scope));
       return cache.get(name);
     };
@@ -1763,8 +1836,23 @@ function* prepareRuntime(program, definitions, stateNames, compile, dependencies
       }),
     );
     trajectory = [{ t: 0, state }];
+    const matrix = dynamics.massMatrix ? new Float64Array(names.length ** 2) : undefined;
+    const rhs = matrix ? new Float64Array(names.length) : undefined;
     const derivative = (s, t) => {
       const scope = scopeAt(t, 0, 0, s, evalDynamics);
+      if (matrix) {
+        const n = names.length;
+        dynamicsBudget.remaining -= n ** 3;
+        if (dynamicsBudget.remaining < 0) throw budgetError();
+        for (let i = 0; i < n; i++) {
+          rhs[i] = evalDynamics(dynamics.derivatives[names[i]], scope);
+          for (let j = 0; j < n; j++)
+            matrix[i * n + j] = evalDynamics(dynamics.massMatrix[i][j], scope);
+        }
+        if (!solveSmallSystem(matrix, rhs, n))
+          throw located('dynamics.massMatrix', Error('Mass matrix is singular or numerically ill-conditioned'));
+        return Object.fromEntries(names.map((key, i) => [key, rhs[i]]));
+      }
       return Object.fromEntries(
         names.map((key) => [key, evalDynamics(dynamics.derivatives[key], scope)]),
       );
