@@ -2554,7 +2554,8 @@
           {
             "expression": "protein",
             "label": "One realization",
-            "color": "blue"
+            "color": "blue",
+            "interpolation": "step"
           },
           {
             "expression": "expected",
