@@ -2335,7 +2335,10 @@ function* integrateAdaptive(dynamics, names, initial, derivative, eventValue, ev
     for (let attempt = 0; t < dynamics.duration; attempt++) {
       if (attempt >= 10000) throw Error('Adaptive integration step budget exceeded');
       if (attempt % 16 === 0) yield;
-      h = Math.min(h, dynamics.duration - t);
+      const remaining=dynamics.duration-t;
+      h=Math.min(h,remaining);
+      // Do not create a spurious sub-ulp tail step from accumulated clock rounding.
+      if(remaining-h<=16*Number.EPSILON*Math.max(1,dynamics.duration))h=remaining;
       if (t + h === t) throw Error('Adaptive step underflow');
       let next, err = 0, k0, k1;
       if (implicit) {
