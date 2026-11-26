@@ -1,7 +1,7 @@
 import { DYNAMICS_BUDGET, budgetError, finite, located, at } from '../foundation.js';
 import { evaluatePreparedExpression } from '../expression/evaluate.js';
 import { solveSmallSystem } from '../numerics/dense.js';
-import { integrateReactionSSA } from '../models/reactions.js';
+import { integrateReactionSSA } from '../numerics/ssa.js';
 import { integrateVerlet } from '../numerics/verlet.js';
 import { integrateAdaptive } from '../numerics/adaptive.js';
 
