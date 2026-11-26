@@ -201,7 +201,16 @@ test('the running tool names itself on its row, and its detail opens inline', as
   // Keyboard: the row is a button that opens the call's detail inline.
   const trigger = toolRowButton(bubble, 'search-inline');
   await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  await expect(row.getByTestId('activity-source-preview')).toBeVisible();
+  await expect(row.locator('.activity-source-title').first()).toHaveText('Source');
+  await expect(row.locator('.activity-source-host').first()).toHaveText('example.test');
+  await page.evaluate(() => {
+    window.open = (url) => { window.__openedSource = url; return null; };
+  });
   await siteIcon.click();
+  expect(await page.evaluate(() => window.__openedSource)).toBe('https://example.test');
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  await trigger.click();
   await expect(trigger).toHaveAttribute('aria-expanded', 'true');
   await expect(page.locator('[data-detail-owner="artifact"]')).toHaveCount(0);
   await trigger.click();
@@ -469,6 +478,7 @@ for (const theme of ['light', 'dark']) {
       await expect(bubble).not.toContainText('private reasoning');
       const burstToggle = bubble.locator('[data-testid="turn-activity-toggle"]');
       await expect(burstToggle).toHaveAttribute('aria-expanded', 'false');
+      expect(await burstToggle.evaluate((el) => Math.abs(el.getBoundingClientRect().width - el.parentElement.getBoundingClientRect().width))).toBeLessThanOrEqual(1);
       await burstToggle.click();
       await expect(bubble.locator(TURN.row)).toHaveCount(3);
       await expect(bubble.locator(TURN.toggle)).toHaveCount(1);
@@ -490,7 +500,7 @@ for (const theme of ['light', 'dark']) {
         images.map((image) => {
           const icon = image.getBoundingClientRect();
           const row = image
-            .closest('[data-testid="tool-row-search-example"]')
+            .closest('.activity-source-row')
             .getBoundingClientRect();
           return Math.abs(icon.top + icon.height / 2 - (row.top + row.height / 2));
         }),
