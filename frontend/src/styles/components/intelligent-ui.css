@@ -23,10 +23,8 @@
 }
 .intui-panel {
   min-width: 0;
-  overflow: hidden;
   padding: 0;
   border: 0;
-  border-radius: var(--ui-radius-lg);
   background: transparent;
 }
 .intui-panel-head {
@@ -47,13 +45,15 @@
 }
 .msg.assistant
   .msg-body.is-declarative
-  :is(.intui-panel-description, .intui-callout-text, .intui-text) {
+  :is(.intui-panel-description, .intui-callout-text) {
   color: var(--ui-text-secondary);
   font-size: var(--ui-font-size-sm);
   line-height: var(--ui-line-height-relaxed);
 }
 .intui-text {
   margin: 0;
+  color: var(--ui-text-primary);
+  line-height: var(--ui-line-height-relaxed);
 }
 /* A display formula inside block copy keeps the answer column's rhythm: the
    global `.katex-display` margin is tuned for prose paragraphs, and the
@@ -93,7 +93,7 @@
 .intui-metric-value {
   overflow-wrap: anywhere;
   color: var(--ui-text-primary);
-  font-size: var(--ui-font-size-xl);
+  font-size: var(--ui-font-size-xxl);
   font-variant-numeric: tabular-nums;
   font-weight: var(--ui-font-weight-semibold);
   letter-spacing: -0.015em;
