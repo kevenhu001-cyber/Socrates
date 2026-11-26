@@ -500,6 +500,7 @@ const diagnosticLabels: [keyof Omit<DemonstrationDiagnostics,'method'>,string,st
   ['iterations','iterations','Iterations'],['relativeResidual','relativeResidual','Relative residual'],
   ['absoluteResidual','absoluteResidual','Absolute residual'],['diffusionCFL','diffusionCFL','Diffusion CFL'],
   ['adColumns','adColumns','Automatic differentiation columns'],['finiteDifferenceColumns','finiteDifferenceColumns','Finite-difference columns'],['projectedGradient','projectedGradient','Projected gradient norm'],['objectiveEvaluations','objectiveEvaluations','Objective evaluations'],
+  ['analysisSamples','analysisSamples','Analysis samples'],['eigenResidual','eigenResidual','Scaled eigen residual'],['eigenOrthogonality','eigenOrthogonality','Orthogonality error'],['eigenIterations','eigenIterations','Eigen rotations'],
 ];
 function SolverDiagnostics({value}:{value:DemonstrationDiagnostics}){
   return <details className="demo-advanced"><summary>{i18n('intui.demo.diagnostics','Solver diagnostics')} · {value.method}</summary>
