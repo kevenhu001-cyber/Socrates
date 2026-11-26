@@ -79,7 +79,7 @@ export const DemoField = memo(function DemoField({
         </figcaption>
       ) : null}
       {view.presentation === 'surface' ? (
-        <DemoSurface sample={sample?.surface} label={view.label} />
+        <DemoSurface sample={sample?.surface} label={view.label} style={view.surfaceStyle} />
       ) : (
         <canvas ref={canvas} width={FIELD_WIDTH} height={fieldHeight(view)} role="img"
           aria-label={view.label || i18n('intui.surface', 'Interactive result')} />
