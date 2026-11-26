@@ -310,7 +310,7 @@ test('code execution streams live output into its row without thinking overlap',
      verb stays put and the stdout chunk shows up as live output instead. */
   await page.evaluate(() => window.__sendCodeProgress());
   const detail = await openToolDetail(page, bubble, 'live-code');
-  await expect(detail.locator('[data-testid="tool-detail-section-live"]')).toContainText('1');
+  await expect(detail.locator('[data-testid="tool-detail-section-live"]')).toHaveCount(0);
   await page.evaluate(() => window.__finishCodeStream());
   await expect(row).toHaveAttribute('data-state', 'done');
   await expect(row.locator(TURN.spinner)).toHaveCount(0);
@@ -527,7 +527,8 @@ test('a failed member keeps its own error row and detail', async ({ page }) => {
   await expect(failed).toHaveAttribute('data-state', 'error');
   await expect(failed).toHaveAttribute('data-error', '1');
   const detail = await openToolDetail(page, bubble, 'fail-b');
-  await expect(detail.locator('[data-testid="tool-detail-section-error"]')).toContainText('boom');
+  await expect(detail.locator('[data-testid="tool-detail-section-error"]')).toHaveCount(0);
+  await expect(detail).not.toContainText('boom');
   await toolRowButton(bubble, 'fail-b').click();
   /* The row that succeeded is not painted as a failure. */
   await expect(toolRow(bubble, 'fail-a')).toHaveAttribute('data-state', 'done');
