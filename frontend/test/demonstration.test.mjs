@@ -459,3 +459,30 @@ test('field annotations are validated without registering a new renderer', () =>
   assert.equal(validateDemonstration({...p, views: [{...p.views[0], contours: Array(7).fill(0)}]}).ok, false);
   assert.equal(validateDemonstration({...p, views: [{...p.views[0], vectorScale: -1}]}).ok, false);
 });
+
+test('nonsingular mass-matrix dynamics solve implicit coupled equations', () => {
+  const program = {
+    version: 1,
+    dynamics: { method: 'rk45', duration: 1, step: 0.1,
+      initial: { q: 0, v: 0 }, derivatives: { q: 5, v: 7 },
+      massMatrix: [[2, 1], [1, 3]] },
+    views: [{ kind: 'metrics', values: [{ expression: 'q' }] }],
+  };
+  const runtime = createDemonstrationRuntime(program);
+  assert.deepEqual(runtime.warnings, []);
+  assert.ok(Math.abs(runtime.stateAt(1).q - 1.6) < 1e-10);
+  assert.ok(Math.abs(runtime.stateAt(1).v - 1.8) < 1e-10);
+  assert.ok(createDemonstrationRuntime({...program, dynamics: {...program.dynamics, massMatrix: [[1, 1], [1, 1]]}}).warnings.length > 0);
+  assert.ok(Math.abs(calc('solve3(3,1,0,0,0,2,0,0,0,3,1,4,9)') - 3) < 1e-12);
+});
+test('spatial wave equation approximates a fixed-end standing mode', () => {
+  const runtime = createDemonstrationRuntime({
+    version: 1,
+    dynamics: { method: 'rk45', duration: 0.5, step: 0.01,
+      spatial: { equation: 'wave', nodes: 15, domain: [0, 1], speed: 1,
+        initial: 'sin(pi*x)', initialVelocity: 0, left: 0, right: 0 } },
+    views: [{ kind: 'plot', x: [0, 1], y: [-1, 1], curves: [{ expression: 'gridValue' }] }],
+  });
+  assert.deepEqual(runtime.warnings, []);
+  assert.ok(Math.abs(runtime.evaluate('gridValue', 0.5, 0.5)) < 0.01);
+});
