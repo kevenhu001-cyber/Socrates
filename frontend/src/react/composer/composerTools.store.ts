@@ -5,6 +5,7 @@ import {
   publishComposerToolsState,
   useComposerToolsState,
 } from './composerTools.state';
+import { openChatConfiguration } from '../chat-configuration/chatConfiguration.bridge';
 import { getLegacyActions } from '../legacy/gateway.ts';
 import { t as legacyT } from '../../ui/legacyI18n.ts';
 import { loadPluginCatalog, normalisePluginId } from '../../composer/pluginCatalog.ts';
@@ -125,6 +126,11 @@ export function useComposerToolsDispatch(): {
       /* Close before opening a native picker. Its synthetic input click must
          never leave the menu open behind the camera or file chooser. */
       closeComposerTools();
+      if (action === 'reasoningEffort') {
+        const trigger = snap.triggerId ? document.getElementById(snap.triggerId) : null;
+        if (trigger) openChatConfiguration(trigger);
+        return;
+      }
       dispatchAction(action, snap.mode);
     },
   };

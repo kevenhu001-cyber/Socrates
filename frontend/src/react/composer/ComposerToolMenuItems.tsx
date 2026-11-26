@@ -12,6 +12,8 @@ import {
   toolDefinitions,
   type MenuItemSpec,
 } from './composerToolsMenuData';
+import { useStoredReasoningEffort } from '../chat-configuration/useChatConfigurationLabels';
+import { effortLabel } from '../chat-configuration/ChatConfigurationPanels';
 import { interfaceIcon } from '../../legacy/icons/interfaceIcons';
 import type { ComposerToolsAction } from './types';
 
@@ -31,6 +33,7 @@ export function ComposerToolMenuItems({
     document.addEventListener('socrates:langchange', refreshLanguage);
     return () => document.removeEventListener('socrates:langchange', refreshLanguage);
   }, []);
+  const effort = useStoredReasoningEffort();
   const definitions = toolDefinitions();
   const findTools = (actions: ReadonlyArray<string>) =>
     actions
@@ -92,6 +95,13 @@ export function ComposerToolMenuItems({
         </div>
         {/* Mobile Rows List: 插件, 技能, 联网搜索, and workflows */}
         <div className="composer-tools-mobile-list">
+          <MobileToolRow
+            action="reasoningEffort"
+            iconHtml={interfaceIcon('analyze', 22)}
+            title={i18n('chatconfig.effort', 'Reasoning effort')}
+            rightText={effortLabel(effort)}
+            onPick={onPick}
+          />
           <MobileToolRow
             action="managePlugins"
             iconHtml={interfaceIcon('plug', 22)}

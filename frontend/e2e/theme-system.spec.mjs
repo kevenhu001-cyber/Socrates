@@ -47,7 +47,7 @@ test('theme selector follows the operating system and persists explicit modes', 
       sidebar: styles.getPropertyValue('--ui-bg-sidebar').trim(),
       raised: styles.getPropertyValue('--ui-bg-raised').trim(),
       surface: styles.getPropertyValue('--ui-bg-surface').trim(),
-      legacyPage: styles.getPropertyValue('--bg-000').trim(),
+      retiredHslPage: styles.getPropertyValue('--bg-000').trim(),
       retiredCg: styles.getPropertyValue('--cg-page').trim(),
       retiredChatgpt: styles.getPropertyValue('--chatgpt-page').trim(),
       retiredConversation: styles.getPropertyValue('--conversation-page').trim(),
@@ -62,7 +62,7 @@ test('theme selector follows the operating system and persists explicit modes', 
   expect(hex6(darkPalette.raised)).toBe('#1f1f1f');
   expect(hex6(darkPalette.surface)).toBe('#292929');
   // Retired compatibility families no longer publish a value.
-  expect(darkPalette.legacyPage).toBe('0 0% 0%');
+  expect(darkPalette.retiredHslPage).toBe('');
   expect(darkPalette.retiredCg).toBe('');
   expect(darkPalette.retiredChatgpt).toBe('');
   expect(darkPalette.retiredConversation).toBe('');

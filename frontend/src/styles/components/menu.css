@@ -1,3 +1,149 @@
+/* Compact action menu used by the + button in both rounded composers. */
+.composer-tools-menu {
+  position: fixed;
+  z-index: calc(var(--ui-z-sheet) - 2);
+  animation: composer-tools-enter 0.22s var(--ease-out);
+  transform-origin: left bottom;
+}
+.composer-tools-menu.hidden {
+  display: none;
+}
+/* ChatGPT-style minimal rows: a bare line icon + label per action. The
+   hint copy stays intentionally small and muted so the menu reads as a
+   scannable list rather than a wall of typographic chrome. Hover state
+   is a subtle 5% white wash + border strengthening 1 step; no colour
+   lift, no scale animation. */
+.composer-tools-item {
+  display: flex;
+  align-items: center;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.composer-tools-item + .composer-tools-item {
+  margin-top: 1px;
+}
+.composer-tools-item:focus-visible {
+  outline: 0;
+  box-shadow: var(--ui-focus-shadow);
+}
+.composer-tools-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  transition: color 0.18s ease;
+}
+.composer-tools-icon svg {
+  width: 16px;
+  height: 16px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.composer-tools-copy {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  line-height: 1.35;
+}
+.composer-tools-copy > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.composer-tools-copy small {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.3;
+}
+
+@keyframes composer-tools-enter {
+  from {
+    opacity: 0;
+    transform: translateY(7px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@media (max-width: 768px) {
+  /* Bottom sheet: the anchored popover read poorly on phones (a transparent
+    list floating over the page). Pin the menu to the bottom edge with a
+    solid surface, grabber, and safe-area padding. JS positions the desktop
+    popover via inline left/top, so those are overridden here. */
+  .composer-tools-menu {
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: 0;
+    width: 100%;
+    max-width: none;
+    max-height: min(72vh, calc(100vh - 72px));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-top: 1px solid color-mix(in srgb, var(--ui-border-default) 35%, transparent);
+    animation: composer-tools-sheet-in 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+    transform-origin: center bottom;
+  }
+  /* Grabber affordance at the top of the sheet. */
+  .composer-tools-menu::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 4px;
+    margin: 4px auto 10px;
+    border-radius: var(--ui-radius-pill);
+    background: color-mix(in srgb, var(--ui-border-default) 90%, transparent);
+  }
+  .composer-tools-item {
+    min-height: 52px;
+    padding: 10px 14px;
+    border-radius: var(--ui-radius-md);
+    gap: 16px;
+    font-size: calc(var(--ui-foundation-font-size-lg) * var(--app-font-scale, 1));
+    font-weight: var(--ui-font-weight-medium);
+  }
+  .composer-tools-item + .composer-tools-item {
+    margin-top: 2px;
+  }
+  .composer-tools-icon svg {
+    width: 24px;
+    height: 24px;
+  }
+  .composer-tools-menu .composer-tools-copy {
+    line-height: 1.2;
+  }
+  /* Scrim behind the sheet; the React menu controller toggles the body class
+    and dismisses the menu when a click lands outside the menu or trigger. */
+  body.composer-tools-open::after {
+    animation: composer-tools-scrim-in 0.25s ease;
+  }
+}
+@keyframes composer-tools-sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes composer-tools-scrim-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 .composer-tools-menu,
 .chat-config-pop,
 .sidebar-more-popover,
@@ -632,4 +778,17 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side='sheet'] {
   width: 16px;
   height: 16px;
   color: var(--ui-text-primary);
+}
+
+#composerToolsMenu {
+  font-family: var(--font-sans);
+}
+
+@media (max-width: 768px) {
+  body #composerToolsMenu.composer-tools-menu,
+  [data-mode='dark'] body #composerToolsMenu.composer-tools-menu {
+    background-color: var(--ui-bg-surface);
+    border-color: var(--ui-border-subtle);
+    box-shadow: var(--ui-shadow-menu);
+  }
 }

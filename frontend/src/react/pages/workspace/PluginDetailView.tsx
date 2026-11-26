@@ -1,4 +1,7 @@
 import { useRef, useState } from 'react';
+import { Icon } from '../../../legacy/Icon';
+import { Button } from '../../ui/shadcn/button';
+import { i18n } from './workspaceUi';
 import { getLegacyActions } from '../../legacy/gateway.ts';
 import { PageFrame } from '../../ui/page/PageFrame';
 import { focusComposer, setComposerMarkdown } from '../../composer-input';
@@ -71,7 +74,10 @@ export function PluginDetailView({
         'expected',
       );
       showToast(
-        detailText('Could not open this app in chat. Please try again.', '无法在对话中打开此插件，请重试。'),
+        detailText(
+          'Could not open this app in chat. Please try again.',
+          '无法在对话中打开此插件，请重试。',
+        ),
         { variant: 'error' },
       );
     } finally {
@@ -85,28 +91,46 @@ export function PluginDetailView({
       className="workspace-surface plugin-detail-view"
       aria-labelledby="plugin-detail-title"
     >
-      <PluginDetailHeader
-        plugin={plugin}
-        connectable={connectable}
-        isConnected={isConnected}
-        canUseInChat={canUseInChat}
-        launching={launching}
-        renderMark={renderMark}
-        onBack={onBack}
-        onConnect={handleConnect}
-        onManage={handleManage}
-        onRefresh={() => dispatch.refreshPlugin(plugin.id)}
-        onUseInChat={() => {
-          void handleUseInChat();
-        }}
-      />
-      <PluginDetailSections
-        plugin={plugin}
-        capabilities={capabilities}
-        connectable={connectable}
-        launching={launching}
-        onUseExample={canUseInChat ? (prompt) => { void handleUseInChat(prompt); } : undefined}
-      />
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="plugin-detail-back-btn"
+        onClick={onBack}
+        aria-label={i18n('plugins.detail.back', 'Back to plugins')}
+      >
+        <Icon name="chevronLeft" size={18} />
+        <span>{i18n('plugins.detail.backLabel', 'Plugins')}</span>
+      </Button>
+      <div className="plugin-detail-card">
+        <PluginDetailHeader
+          plugin={plugin}
+          connectable={connectable}
+          isConnected={isConnected}
+          canUseInChat={canUseInChat}
+          launching={launching}
+          renderMark={renderMark}
+          onConnect={handleConnect}
+          onManage={handleManage}
+          onRefresh={() => dispatch.refreshPlugin(plugin.id)}
+          onUseInChat={() => {
+            void handleUseInChat();
+          }}
+        />
+        <PluginDetailSections
+          plugin={plugin}
+          capabilities={capabilities}
+          connectable={connectable}
+          launching={launching}
+          onUseExample={
+            canUseInChat
+              ? (prompt) => {
+                  void handleUseInChat(prompt);
+                }
+              : undefined
+          }
+        />
+      </div>
     </PageFrame>
   );
 }

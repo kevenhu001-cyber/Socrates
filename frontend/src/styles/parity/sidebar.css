@@ -1,3 +1,567 @@
+.sidebar {
+  width: var(--app-sidebar-width, 18rem);
+  min-width: var(--app-sidebar-width, 18rem);
+  display: flex;
+  flex-direction: column;
+  background: var(--ui-bg-page);
+  border-right: 0.5px solid color-mix(in srgb, var(--ui-border-default) 12%, transparent);
+  overflow: hidden;
+  z-index: var(--ui-z-panel);
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  transform: translateX(0);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+body.sidebar-resizing .sidebar {
+  /* `will-change: width` is not a compositable hint; it only asked the
+     engine to promote a layer that still has to re-lay out every frame.
+     The drag now tracks the pointer directly, with one write per frame. */
+  transition: none !important;
+}
+.sidebar.collapsed {
+  width: var(--app-sidebar-width, 18rem);
+  min-width: var(--app-sidebar-width, 18rem);
+  transform: translateX(-100%);
+  border-right-color: transparent;
+}
+.sidebar-inner {
+  min-width: 0;
+  width: 100%;
+  opacity: 1;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  transition: opacity 0.25s var(--ease-out);
+  position: relative;
+  z-index: 1;
+}
+/* Drag the recent panel's right edge to
+   resize the recents list directly. The handle sits inside the
+   recents-panel (right:0, width:10px), so it only appears when
+   the Recents tab is active. col-resize cursor never bleeds into
+   the chat pane. Visible affordance is a 1px accent hairline on
+   the panel's inner right edge that lights up on hover / drag —
+   no central pill, no floating grip widget. */
+.sidebar-resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 10px;
+  cursor: col-resize;
+  z-index: calc(var(--ui-z-panel) - 1);
+  background: transparent;
+}
+.sidebar-resize-handle::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: transparent;
+  pointer-events: none;
+}
+/* Keyboard users need to see the resize handle when
+   it has focus. The default global focus ring (added for WCAG 2.4.7) is
+   too thick for a 10px-wide column-edge handle, so use a 1px inset ring
+   along the right edge where the cursor sits.
+   2026-10-24 — the indicator now follows the shared double-ring contract (a
+   gap layer plus a ring layer) instead of a single outline, scaled down to
+   1px and drawn inward so it stays inside the 10px column. */
+.sidebar-resize-handle:focus-visible {
+  box-shadow:
+    inset 0 0 0 1px var(--ui-bg-page),
+    inset 0 0 0 2px var(--ui-focus-ring);
+}
+body.sidebar-resizing {
+  cursor: col-resize;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.sidebar.collapsed .sidebar-resize-handle {
+  opacity: 0;
+  pointer-events: none;
+}
+.sidebar.collapsed .sidebar-inner {
+  opacity: 0;
+  transition: opacity 0.1s var(--ease-out);
+}
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 8px 8px 12px;
+  flex-shrink: 0;
+}
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  font-size: calc(var(--ui-foundation-font-size-lg) * var(--sidebar-font-scale));
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+  border-radius: var(--ui-radius-xs);
+  color: var(--ui-text-primary);
+  font-family: var(--font-sans);
+}
+.sidebar-logo img {
+  flex-shrink: 0;
+}
+.sidebar-logo em {
+  font-style: italic;
+  color: var(--ui-ink);
+}
+
+.sidebar-search-row {
+  display: grid;
+  grid-template-rows: 1fr;
+  padding: 2px 8px 6px;
+  flex-shrink: 0;
+}
+.sidebar-search-row-inner {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 0;
+  min-width: 0;
+  overflow: clip;
+  overflow-clip-margin: var(--sidebar-search-clip-margin, 6px);
+}
+.sidebar-search {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 10px;
+  transition:
+    border-color 0.18s var(--ease-out),
+    background 0.18s var(--ease-out);
+}
+.sidebar-search-icon {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  color: var(--ui-text-tertiary);
+  transition: color 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.sidebar-search:focus-within .sidebar-search-icon {
+  color: var(--ui-ink);
+}
+.sidebar-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  outline: none;
+  color: var(--ui-text-primary);
+  font-size: calc(var(--ui-foundation-font-size-sm) * var(--sidebar-font-scale));
+  line-height: 1;
+  padding: 0;
+}
+.sidebar-search input::placeholder {
+  color: var(--ui-text-tertiary);
+}
+
+.recents-panel {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  position: relative;
+}
+.recents-panel.hidden {
+  display: none;
+}
+.recents-header {
+  padding: 8px 12px 6px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+/* UI-align: time-bucket headers inside the session list (Today /
+   Yesterday / Previous 7 days…), mirroring open-webui's grouping. */
+.recents-time-label {
+  padding: 12px 8px 4px;
+  letter-spacing: 0.03em;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.recents-time-label:first-child {
+  padding-top: 4px;
+}
+
+.recent-item-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+  -webkit-box-orient: vertical;
+}
+.recent-item-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 2px;
+}
+.recent-tag-pill {
+  padding: 1px 6px;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-bg-control);
+  color: var(--ui-text-tertiary);
+  font-size: calc(var(--ui-font-size-micro) * var(--sidebar-font-scale));
+  border: 0;
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1.5;
+}
+.recent-tag-pill:hover {
+  background: var(--ui-bg-hover);
+  color: var(--ui-text-primary);
+}
+.recent-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.18s var(--ease-out);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.recent-item:hover .recent-item-actions {
+  opacity: 1;
+}
+.recent-item-tag-btn {
+  width: 22px;
+  height: var(--ui-control-xs);
+  border-radius: var(--ui-space-xs);
+  background: transparent;
+  border: 0;
+  color: var(--ui-text-tertiary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition:
+    background-color 0.18s var(--ease-out),
+    color 0.18s var(--ease-out);
+}
+.recent-item-tag-btn:hover {
+  background: var(--ui-bg-control);
+  color: var(--ui-text-secondary);
+}
+.recent-item-tag-btn svg {
+  width: 12px;
+  height: 12px;
+}
+/* Soft-hide action between tags and hard delete — same quiet icon size. */
+.recent-item-archive {
+  width: 22px;
+  height: 22px;
+  border-radius: var(--ui-space-xs);
+  background: transparent;
+  border: 0;
+  color: var(--ui-text-tertiary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition:
+    background-color 0.18s var(--ease-out),
+    color 0.18s var(--ease-out);
+  flex-shrink: 0;
+}
+.recent-item-archive:hover {
+  background: var(--ui-bg-control);
+  color: var(--ui-text-secondary);
+}
+.recent-item-archive svg {
+  width: 12px;
+  height: 12px;
+}
+.recent-item-del {
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+/* Pin indicator in the recent item title row. */
+.recent-item-title-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.recent-item-pin-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  color: var(--ui-text-secondary);
+}
+.recent-item-pin-icon svg {
+  display: block;
+}
+/* Custom label badge in recent item. */
+.recent-item-label {
+  font-size: calc(var(--ui-font-size-micro) * var(--sidebar-font-scale));
+  padding: 1px 6px;
+  border-radius: var(--ui-space-xs);
+  background: color-mix(in srgb, var(--ui-bg-hover) 25%, transparent);
+  color: var(--ui-text-secondary);
+  font-weight: var(--ui-font-weight-medium);
+  flex-shrink: 0;
+  line-height: 1.4;
+  white-space: nowrap;
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Block pointer events on all recent items while context menu is
+   open. Prevents mobile synthetic clicks from navigating. */
+#sidebar.ctx-menu-block .recent-item {
+  pointer-events: none;
+}
+
+.recents-title {
+  font-size: calc(var(--ui-font-size-caption) * var(--sidebar-font-scale));
+  font-weight: var(--ui-font-weight-medium);
+  color: var(--ui-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.recent-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: var(--ui-radius-row);
+  font-size: calc(var(--ui-foundation-font-size-sm) * var(--sidebar-font-scale));
+  transition:
+    background 0.18s var(--ease-out),
+    color 0.18s var(--ease-out);
+  cursor: pointer;
+  gap: 8px;
+  position: relative;
+  -webkit-touch-callout: none;
+  contain: layout style;
+}
+.recent-item:active {
+  transform: none;
+}
+.recent-item.active {
+  background: var(--ui-bg-control);
+}
+/* Active session — the currently-open chat keeps a persistent accent
+   tint so it stays identifiable while the user hovers other rows
+   (which use the neutral bg-300 hover). Matches ChatGPT/Claude, where
+   the selected conversation is always highlighted. Hovering the active
+   row deepens the tint slightly rather than falling back to grey. */
+.recent-item.active .recent-item-text {
+  font-weight: var(--ui-font-weight-semibold);
+}
+.recent-item.active:hover {
+  background: var(--ui-bg-control);
+}
+.recent-item-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.recent-item-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: var(--ui-font-weight-medium);
+}
+.recent-item-meta {
+  font-size: calc(var(--ui-font-size-caption) * var(--sidebar-font-scale));
+  color: var(--ui-text-tertiary);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.recent-item-meta .dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--ui-text-tertiary) 40%, transparent);
+  display: inline-block;
+}
+/* Mode tag in the recent list — minimal: tiny colored dot + normal-case
+ * label. No background fill, no border, no uppercase letter-spacing.
+ * Two colors are enough to distinguish Chat (cool blue) from Tutor
+ * (warm amber) without dominating the row. */
+/* The colored dot is enough to identify
+ * the row type at a glance; the text label used to eat ~40px of
+ * horizontal space and clip the title. Now the badge is just a 6px
+ * dot. The full text label still ships in `data-mode-label` so the
+ * native title tooltip on hover still shows "Chat" / "Tutor" / "Exam"
+ * for users who want it. */
+.recent-mode-badge {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 6px;
+  flex-shrink: 0;
+  background: var(--ui-text-secondary);
+  display: inline-block;
+  cursor: help;
+  transition: transform 0.12s ease;
+  overflow: hidden;
+  font-size: 0;
+  line-height: 0;
+}
+
+.recent-mode-badge.mode-tutor {
+  background: hsl(0 0% 40%);
+}
+.recent-mode-badge.mode-chat {
+  background: hsl(0 0% 20%);
+}
+.recent-mode-badge.mode-exam {
+  background: hsl(0 0% 55%);
+}
+[data-theme='socrates'][data-mode='dark'] .recent-mode-badge.mode-tutor {
+  background: hsl(0 0% 72%);
+}
+[data-theme='socrates'][data-mode='dark'] .recent-mode-badge.mode-chat {
+  background: hsl(0 0% 88%);
+}
+[data-theme='socrates'][data-mode='dark'] .recent-mode-badge.mode-exam {
+  background: hsl(0 0% 60%);
+}
+.recent-item-del {
+  width: 20px;
+  height: 20px;
+  border-radius: var(--ui-space-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ui-text-tertiary);
+  opacity: 0;
+  transition:
+    opacity 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+    background 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.recent-item:hover .recent-item-del {
+  opacity: 1;
+}
+.recent-item-del:hover {
+  background: color-mix(in srgb, var(--ui-danger) 14%, transparent);
+  color: var(--ui-danger);
+}
+.recent-item-del:active {
+  transform: none;
+}
+.recent-item-del.holding {
+  background: color-mix(in srgb, var(--ui-danger) 14%, transparent);
+  color: var(--ui-danger);
+  opacity: 1;
+}
+.recent-item-del svg {
+  width: 12px;
+  height: 12px;
+}
+/* P4.1 — inline confirm bar shown when the user holds the delete
+   button for 600ms. Replaces the row's normal content with a
+   [Cancel][Delete] pair. */
+
+.recents-empty {
+  text-align: center;
+  color: var(--ui-text-tertiary);
+  font-size: calc(var(--ui-font-size-label) * var(--sidebar-font-scale));
+  padding: 32px 12px;
+  line-height: 1.6;
+}
+
+.sidebar-footer {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  flex-shrink: 0;
+  border-top: 0.5px solid color-mix(in srgb, var(--ui-border-default) 10%, transparent);
+}
+/* The clickable user block takes the main width; the utility icons
+   (theme / display / settings) collapse into a tidy right-aligned
+   cluster instead of being pushed apart with margin-left:auto. */
+.sidebar-footer .user-row {
+  flex: 1;
+  min-width: 0;
+}
+.sidebar-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.user-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-radius: var(--ui-radius-row);
+  transition:
+    background 0.18s var(--ease-out),
+    transform 0.14s var(--ease-out);
+  cursor: pointer;
+  position: relative;
+}
+.user-row:hover {
+  background: var(--ui-bg-control);
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(var(--ui-foundation-font-size-sm) * var(--sidebar-font-scale));
+  font-weight: var(--ui-font-weight-semibold);
+  background: var(--ui-text-secondary);
+  color: var(--ui-bg-sidebar);
+}
+.user-plan {
+  font-size: calc(var(--ui-font-size-caption) * var(--sidebar-font-scale));
+  color: var(--ui-text-tertiary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.tier-badge {
+  font-weight: var(--ui-font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 1px 6px;
+  border-radius: var(--ui-space-xs);
+}
+
+@media (min-width: 769px) {
+  .sidebar.collapsed ~ .main {
+    padding-left: 0;
+  }
+}
+
 /*
  * parity/sidebar.css — the desktop (>= 769px) sidebar, aligned with
  * chatgpt.com (docs/ref/chatgpt-parity.md): 260px column on the page color
@@ -685,7 +1249,8 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
 }
 /* Recents header icons are a phone-drawer affordance; desktop keeps the
    bare "Recents" label. */
-#appShell .recents-header-actions {
+#appShell .recents-header-actions,
+#appShell .recents-filter-toggle {
   display: none;
 }
 
@@ -723,10 +1288,8 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
   margin: 0;
   border-radius: 50%;
   overflow: hidden;
-  background: var(--ui-avatar-bg);
-  /* The initials take the accent's own contrast colour, so the disc flips
-     with the mode instead of keeping a white letter on a white disc. */
-  color: var(--primary-foreground);
+  background: var(--ui-bg-selected);
+  color: var(--ui-text-primary);
   font-size: var(--ui-font-size-xxs);
   font-weight: var(--ui-font-weight-semibold);
   line-height: 1;
@@ -965,6 +1528,7 @@ html[data-detail-open='true'][data-detail-layout='docked'] #appShell .main {
     gap: 8px;
     height: 36px;
     padding: 0 6px;
+    font-size: var(--ui-font-size-xl);
     font-weight: var(--ui-font-weight-semibold);
     line-height: 20px;
     letter-spacing: -0.01em;
@@ -998,7 +1562,7 @@ html[data-detail-open='true'][data-detail-layout='docked'] #appShell .main {
     padding: 2px 8px 8px;
   }
   #appShell #sidebarNav .sidebar-nav-btn {
-    border-radius: var(--ui-radius-sidebar-row);
+    border-radius: var(--ui-radius-row);
     transition:
       background-color var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1),
       color var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1),
@@ -1014,11 +1578,23 @@ html[data-detail-open='true'][data-detail-layout='docked'] #appShell .main {
      control ladder, the 10px --ui-radius-row and the ghost hover now live as
      --ui-* utilities on the shadcn button (ADR 0024). The collapsed rail and
      the phone drawer keep their structural rules below. */
-  /* A quiet inset divider separates destinations and chat history. */
   #appShell #sidebar .sidebar-nav-sep {
-    height: 1px;
-    margin: 8px 16px 10px;
-    background: var(--ui-sidebar-border);
+    display: none;
+  }
+
+  body[data-app-mode='chat'] #appShell #sidebar:not(.search-open) .sidebar-search-row {
+    display: none;
+  }
+
+  body[data-app-mode='chat'] #appShell .recents-header-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--ui-space-xxs);
+  }
+
+  #appShell .recents-filter-toggle {
+    display: inline-flex;
+    color: var(--ui-text-secondary);
   }
 
   #appShell #sidebar .sidebar-search-row {
@@ -1121,7 +1697,7 @@ html[data-detail-open='true'][data-detail-layout='docked'] #appShell .main {
   #appShell #sidebar .recent-item {
     gap: 0;
     padding-inline: 10px;
-    border-radius: var(--ui-radius-control);
+    border-radius: var(--ui-radius-row);
     color: var(--foreground);
     transition:
       background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),

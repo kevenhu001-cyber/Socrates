@@ -2,15 +2,15 @@ import { restingRect } from '../../legacy/pressFeedback.ts';
 
 /* Phone bottom sheet, matching the mobile drawer reference (screenshot 1000038600.jpg):
    it slides up from the bottom of the viewport, spans full width, with rounded top corners. */
-function positionMobileMenu(menu: HTMLElement): void {
+function positionMobileMenu(menu: HTMLElement, viewportHeight: number, bottomInset: number): void {
   menu.style.setProperty('position', 'fixed', 'important');
   menu.style.setProperty('left', '0px', 'important');
   menu.style.setProperty('right', '0px', 'important');
   menu.style.setProperty('width', '100%', 'important');
   menu.style.setProperty('max-width', '100%', 'important');
   menu.style.setProperty('top', 'auto', 'important');
-  menu.style.setProperty('bottom', '0px', 'important');
-  menu.style.setProperty('max-height', '75vh', 'important');
+  menu.style.setProperty('bottom', `${bottomInset}px`, 'important');
+  menu.style.setProperty('max-height', `${viewportHeight * 0.75}px`, 'important');
   menu.style.setProperty('border-radius', '20px 20px 0 0', 'important');
   menu.dataset.menuSide = 'sheet';
 }
@@ -74,7 +74,17 @@ export function positionComposerToolsMenu(
   trigger: HTMLElement,
   _mode: 'topic' | 'chat' | null,
 ): void {
-  for (const prop of ['top', 'bottom', 'left', 'right', 'width', 'max-width', 'max-height'])
+  for (const prop of [
+    'top',
+    'bottom',
+    'left',
+    'right',
+    'width',
+    'max-width',
+    'max-height',
+    'position',
+    'border-radius',
+  ])
     menu.style.removeProperty(prop);
   const rect = restingRect(trigger);
   const viewport = typeof window !== 'undefined' ? window.visualViewport : null;
@@ -89,16 +99,15 @@ export function positionComposerToolsMenu(
     : typeof window !== 'undefined'
       ? window.innerWidth
       : 1024;
-  const menuHeightCap =
-    viewportWidth > 768
-      ? Math.max(120, Math.min(560, (viewportBottom - viewportTop) * 0.62))
-      : Math.max(120, (viewportBottom - viewportTop) / 2);
-
+  const viewportHeight = viewportBottom - viewportTop;
   if (viewportWidth <= 768) {
-    positionMobileMenu(menu);
+    // The keyboard can shrink the visual viewport without resizing the
+    // layout viewport. Keep the sheet inside the visible part of the screen.
+    positionMobileMenu(menu, viewportHeight, Math.max(0, window.innerHeight - viewportBottom));
     return;
   }
 
+  const menuHeightCap = Math.max(120, Math.min(560, viewportHeight * 0.62));
   menu.style.width = '240px';
   menu.style.maxHeight = `${menuHeightCap}px`;
   menu.style.left = '0px';

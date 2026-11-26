@@ -3,8 +3,7 @@
  * scripts/check-attribute-liveness.mjs — every `[data-*]` selector in the
  * canonical stylesheets must have a producer in the first-party source.
  *
- * A class-based liveness check (check-frozen-liveness.mjs) catches dead class
- * rules, but attribute selectors are a second DOM contract: `[data-foo]` can
+ * Attribute selectors are a DOM contract: `[data-foo]` can
  * keep a rule alive for years after the code that wrote `data-foo` is gone.
  * This guard extracts every data attribute used by a canonical stylesheet and
  * proves that one of these producers still writes it:
@@ -17,8 +16,7 @@
  * Vendor attributes owned by Radix/shadcn are allowlisted: the app does not
  * spell them, the primitive does.
  *
- * Both canonical and frozen `legacy/` sheets are in scope. Fixed zero
- * invariant, no baseline.
+ * Fixed zero invariant, no baseline.
  *
  * Usage:
  *   node scripts/check-attribute-liveness.mjs [--verbose]

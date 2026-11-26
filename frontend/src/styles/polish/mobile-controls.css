@@ -138,17 +138,6 @@
      .composer-shell styles (scripts/check-composer-css.mjs). See the
      mobile media block at the bottom of that file. */
 
-  /* ── Hardcoded colour overrides ──
-     Force the legacy dark surfaces onto the --ui-bg-* palette. This layer
-     beats the component fallbacks by living in polish/ Tier 5;
-     theme-contrast.spec.mjs validates the visual diff. */
-  body #composerToolsMenu.composer-tools-menu {
-    background-color: var(--ui-bg-surface); /* was #1f1f1f */
-  }
-  [data-mode='dark'] body #composerToolsMenu.composer-tools-menu {
-    background-color: var(--ui-bg-surface); /* was #1b1b1b */
-  }
-
   /* ── User bubble mobile ──
      The phone bubble's radius, surface and ink all come from the shared
      tokens now (--ui-radius-bubble / --ui-bg-bubble),

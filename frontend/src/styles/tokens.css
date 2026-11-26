@@ -14,11 +14,17 @@
 :root {
   /* Runtime display preferences. displayPrefs.ts writes the real values on
      the root element; these defaults keep the first paint and the no-JS
-     fallback stable. They live here, not in the frozen legacy layer, because
-     canonical CSS reads them. */
+     fallback stable. */
   --app-font-scale: 1;
   --app-width-scale: 1;
   --keyboard-inset: 0px;
+  --chat-motion-duration: 0.34s;
+  --chat-motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --composer-motion-duration: var(--chat-motion-duration);
+  --composer-motion-ease: var(--chat-motion-ease);
+  --app-sidebar-width: 16.25rem; /* Default until sidebarResize.ts restores the stored width. */
+  --sidebar-width: var(--app-sidebar-width);
+  --sidebar-font-scale: calc(var(--app-font-scale, 1) * 0.92);
   --always-white: 0 0% 100%;
   --always-black: 0 0% 0%;
 
@@ -109,7 +115,7 @@
      recents, section titles and the + / account menus 14px, the account plan
      line 13px. (An earlier pass read these as 17 / 15px.) */
   --ui-mobile-font-nav: calc(14px * var(--app-type-scale));
-  --ui-mobile-font-meta: calc(13px * var(--app-type-scale));
+  --ui-mobile-font-meta: calc(var(--ui-font-size-base-small) * var(--app-type-scale));
   /* Drawer account name (reference: 15px, between the nav and body steps). */
   --ui-mobile-font-account: calc(15px * var(--app-type-scale));
   --ui-mobile-font-greeting: calc(21px * var(--app-type-scale));
@@ -130,11 +136,19 @@
   /* Typography — Socrates product scale. Rungs that exactly match Lobe are
      derived from foundation values; 13px/18px remain deliberate product
      density steps. */
+  /* Fixed steps for dense labels and controls. A surface may multiply
+     these by its font-scale when it follows reading preferences. */
+  --ui-font-size-micro: 9px;
+  --ui-font-size-caption: 10px;
+  --ui-font-size-label: 11px;
+  --ui-font-size-base-small: 13px;
+  --ui-font-size-base-medium: 15px;
+  --ui-font-size-base-large: 18px;
   --ui-font-size-xxs: calc(var(--ui-foundation-font-size-sm) * var(--app-type-scale));
-  --ui-font-size-xs: calc(13px * var(--app-type-scale));
+  --ui-font-size-xs: calc(var(--ui-font-size-base-small) * var(--app-type-scale));
   --ui-font-size-sm: calc(var(--ui-foundation-font-size-base) * var(--app-type-scale));
   --ui-font-size-md: calc(var(--ui-foundation-font-size-lg) * var(--app-type-scale));
-  --ui-font-size-lg: calc(18px * var(--app-type-scale));
+  --ui-font-size-lg: calc(var(--ui-font-size-base-large) * var(--app-type-scale));
   --ui-font-size-xl: calc(var(--ui-foundation-font-size-xl) * var(--app-type-scale));
   --ui-font-size-xxl: calc(var(--ui-foundation-font-size-heading-3) * var(--app-type-scale));
 

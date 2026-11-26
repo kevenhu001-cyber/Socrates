@@ -1,3 +1,209 @@
+.msg-body {
+  word-break: break-word;
+}
+.msg-body p {
+  margin-bottom: 8px;
+}
+.msg-body p:last-child {
+  margin-bottom: 0;
+}
+.msg-body strong {
+  font-weight: var(--ui-font-weight-semibold);
+  color: var(--ui-text-primary);
+}
+.msg-body em {
+  font-style: italic;
+}
+.msg-body pre {
+  background: var(--ui-bg-raised);
+  border: 0.5px solid color-mix(in srgb, var(--ui-border-default) 8%, transparent);
+  border-radius: var(--ui-radius-lg);
+  padding: 12px 14px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: calc(var(--ui-foundation-font-size-sm) * var(--app-font-scale, 1));
+  line-height: 1.5;
+  margin: 8px 0;
+  color: var(--ui-text-secondary);
+}
+.msg-body code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: var(--ui-bg-chip);
+  padding: 2px 5px;
+  border-radius: var(--ui-space-xs);
+}
+.msg-body pre code {
+  background: none;
+  padding: 0;
+}
+
+/* Markdown rendered content */
+.msg-body h1 {
+  font-size: 1.4em;
+  font-weight: var(--ui-font-weight-medium);
+  color: var(--ui-text-primary);
+  margin: 16px 0 8px;
+  line-height: 1.3;
+}
+.msg-body h2 {
+  font-size: 1.2em;
+  font-weight: var(--ui-font-weight-medium);
+  color: var(--ui-text-primary);
+  margin: 14px 0 6px;
+  line-height: 1.3;
+}
+/* The previous 1.05em + weight 500 + --text-100 was
+   visually indistinguishable from body text in CJK runs (Chinese chars
+   look almost identical at 1.05em vs 1em, and `--text-100` matches body
+   colour on the dark canvas). Bumping to 1.18em + weight 600 +
+   `--text-000` makes `### 标题` read as a heading without changing the
+   h1/h2/h4–h6 hierarchy. */
+.msg-body h3 {
+  font-size: 1.18em;
+  font-weight: var(--ui-font-weight-semibold);
+  color: var(--ui-text-primary);
+  letter-spacing: -0.005em;
+  margin: 14px 0 6px;
+  line-height: 1.3;
+}
+.msg-body h4,
+.msg-body h5,
+.msg-body h6 {
+  font-size: 1em;
+  font-weight: var(--ui-font-weight-medium);
+  color: var(--ui-text-primary);
+  margin: 10px 0 4px;
+}
+.msg-body ul,
+.msg-body ol {
+  padding-left: 20px;
+  margin: 6px 0 10px;
+}
+.msg-body li {
+  margin-bottom: 3px;
+}
+.msg-body li::marker {
+  color: var(--ui-text-tertiary);
+}
+.msg-body blockquote {
+  border-left: 2px solid color-mix(in srgb, var(--ui-ink) 40%, transparent);
+  padding: 4px 0 4px 14px;
+  margin: 8px 0;
+  color: var(--ui-text-tertiary);
+  font-style: italic;
+}
+.msg-body table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 8px 0;
+  font-size: calc(var(--ui-font-size-base-small) * var(--app-font-scale, 1));
+}
+.msg-body th,
+.msg-body td {
+  border: 0.5px solid
+    color-mix(in srgb, var(--ui-border-default) calc(var(--ui-border-alpha) * 100%), transparent);
+  padding: 8px 12px;
+  text-align: left;
+}
+.msg-body th {
+  background: var(--ui-bg-raised);
+  font-weight: var(--ui-font-weight-semibold);
+  color: var(--ui-text-primary);
+}
+.msg-body td {
+  color: var(--ui-text-secondary);
+}
+.msg-body hr {
+  border: none;
+  border-top: 0.5px solid
+    color-mix(in srgb, var(--ui-border-default) calc(var(--ui-border-alpha) * 100%), transparent);
+  margin: 14px 0;
+}
+.msg-body a {
+  color: var(--ui-ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.msg-body a:hover {
+  color: var(--ui-text-primary);
+}
+.msg-body img:not(.site-link-favicon, [aria-hidden='true'], [aria-hidden='true'] img) {
+  max-width: 100%;
+  max-height: 280px;
+  border-radius: var(--ui-radius-sm);
+  margin: 8px 0;
+  cursor: zoom-in;
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+.msg-body img:not(.site-link-favicon, [aria-hidden='true'], [aria-hidden='true'] img):hover {
+  opacity: 0.92;
+  transform: scale(1.005);
+}
+/* A minimal header bar atop <pre> blocks with
+   the language label + an expand button. Always visible at low opacity,
+   brightens on hover. Reuses the viz-btn visual language. */
+.msg-body .code-block-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 6px 0 12px;
+  margin-bottom: -2px;
+  border: 0.5px solid color-mix(in srgb, var(--ui-border-default) 8%, transparent);
+  border-bottom: none;
+  border-radius: var(--ui-radius-lg) var(--ui-radius-lg) 0 0;
+  font-size: calc(var(--ui-font-size-caption) * var(--app-font-scale, 1));
+  color: var(--ui-text-tertiary);
+  opacity: 0.85;
+  transition: opacity 0.18s ease;
+}
+.msg-body .code-block-header:hover {
+  opacity: 1;
+}
+.msg-body .code-block-header + pre {
+  margin-top: 0;
+  border-top: none;
+}
+.code-block-header-lang {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  text-transform: lowercase;
+}
+.code-block-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+}
+/* In-progress streaming placeholders (table / code block) */
+
+.stream-code-pending {
+  display: block;
+  margin: 10px 0;
+  padding: 10px 14px;
+  border-radius: var(--ui-radius-control);
+}
+.stream-code-pending-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82em;
+  font-family: var(--font-mono, monospace);
+  color: var(--ui-text-secondary);
+}
+.stream-code-badge {
+  padding: 1px 6px;
+  border-radius: var(--ui-radius-xs);
+  font-weight: var(--ui-font-weight-medium);
+}
+
 /*
  * parity/transcript.css — the desktop (>= 769px) conversation column,
  * aligned with chatgpt.com (docs/ref/chatgpt-parity.md): a 768px reading

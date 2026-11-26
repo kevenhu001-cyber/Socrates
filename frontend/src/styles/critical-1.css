@@ -1,4 +1,4 @@
-/* critical-1.css — first-paint slice 1/6 (render-blocking).
+/* critical-1.css — first-paint slice 1/7 (render-blocking).
  *
  * The 955 KB single stylesheet blocked first paint on
  * parse + transfer. It is now delivered as ordered slices: `critical-*`
@@ -8,8 +8,7 @@
  * cascade is byte-identical to the single-file build; check-css-debt.mjs
  * machine-checks that equivalence (see the load-order check there).
  *
- * This slice: structural tokens + legacy foundation + sidebar compat.
+ * This slice: structural tokens and the browser reset.
  * Everything here styles the boot shell / auth gate / app chrome. */
 @import './tokens.css';
-@import './legacy/00-foundations.css';
-@import './legacy/01-sidebar.css';
+@import './foundations/reset.css';

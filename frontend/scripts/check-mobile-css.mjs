@@ -15,7 +15,7 @@ const directories =
  * Mobile sidebar ownership (2026-11-04 pass, docs/plans/2026-11-04-sidebar-ui-consistency.md).
  * Phone-drawer rules for the sidebar surface currently live in three sanctioned
  * files; pass 2 merges them into polish/mobile-sidebar.css and this allowlist
- * shrinks to one. Frozen zones stay out — css-debt tracks them separately.
+ * shrinks to one.
  * The context/exclude regexes mirror check-surface-ownership.mjs so the two
  * guards agree on what "the sidebar surface" is.
  */
@@ -66,12 +66,7 @@ for (const file of walk(styles)) {
             );
         });
       }
-      if (
-        !owner.startsWith('legacy/') &&
-        sidebarCtx.test(selector) &&
-        !sidebarExcl.test(selector) &&
-        !sidebarOwners.has(owner)
-      ) {
+      if (sidebarCtx.test(selector) && !sidebarExcl.test(selector) && !sidebarOwners.has(owner)) {
         errors.push(
           `${owner}:${rule.source.start.line}: mobile sidebar rule outside ${[...sidebarOwners].join(', ')}: ${selector}`,
         );

@@ -1,3 +1,5 @@
+import { flushSync } from 'react-dom';
+import { setSidebarSearchOpen, useSidebarStore } from '../../sidebar/sidebar.store';
 import { Separator as ShadcnSeparator } from '../ui/Separator';
 import { Button } from '../ui/shadcn/button';
 import { Icon } from '../../legacy/Icon';
@@ -8,6 +10,8 @@ import { DeferredMenu } from '../menu/DeferredMenu';
 import { useSessionOrganization, type SessionOrganization } from '../../sidebar/organization.store';
 
 export function RecentsHeader() {
+  const filterOpen = useSidebarStore((state) => state.searchOpen);
+  const filterLabel = i18n('sidebar.filterRecents', 'Filter recent chats');
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
   const { organization, setOrganization } = useSessionOrganization();
@@ -26,6 +30,21 @@ export function RecentsHeader() {
         {i18n('sidebar.recentSessions', 'Recents')}
       </span>
       <span className="recents-header-actions">
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          className="recents-filter-toggle"
+          aria-label={filterLabel}
+          title={filterLabel}
+          aria-expanded={filterOpen}
+          aria-controls="sidebarSearchRow"
+          onClick={() => {
+            flushSync(() => setSidebarSearchOpen(!filterOpen));
+            if (!filterOpen) document.getElementById('sidebarSearch')?.focus();
+          }}
+        >
+          <Icon name="search" />
+        </Button>
         <DeferredMenu
           open={open}
           onOpenChange={setOpen}

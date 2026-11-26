@@ -1,3 +1,54 @@
+.top-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 5;
+}
+.top-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+}
+.top-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.toggle-sidebar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: var(--ui-control-sm);
+  border-radius: var(--ui-radius-xs);
+  color: var(--ui-text-tertiary);
+  transition:
+    color 0.06s,
+    background 0.06s;
+  flex-shrink: 0;
+}
+.toggle-sidebar:hover {
+  color: var(--ui-text-primary);
+  background: var(--ui-bg-control);
+}
+.toggle-sidebar svg {
+  width: 16px;
+  height: calc(var(--ui-control-badge) - 4px);
+}
+
+/* Admin pages do not expose conversation actions. */
+body.admin-active #topModelSwitcher,
+body.admin-active #findBtn,
+body.admin-active #shareBtn {
+  display: none !important;
+}
+
 /*
  * parity/topbar.css — the header's web layout (RN-7).
  *
@@ -5,7 +56,7 @@
  * (packages/ui/src/shell/TopBar.tsx): the model switcher, the 聊天 / 辅导
  * segmented track, the tutor stage and practice capsules, find, share and
  * the phone new-chat action paint themselves from the site tokens. This
- * owner keeps what only the page can do: the 48px bar and scroll fade,
+ * owner keeps what only the page can do: the 48px bar and scroll divider,
  * the left / centre / right groups, the centred mode track, phone
  * placement, and hiding chat chrome on surfaces that are not the chat.
  */
@@ -63,28 +114,15 @@ html[data-main-view='settingsPage'] #appShell .top-bar {
   }
 }
 
-/* A soft canvas-to-transparent edge replaces the hard hairline while
-   transcript content scrolls beneath the fixed header. The transcript
-   mask owns the actual text fade; this layer only blends the chrome edge. */
-#appShell .top-bar::after {
+/* A hairline separates the header only once the transcript has scrolled. */
+body[data-transcript-scrolled='true'] #appShell .top-bar::after {
   content: '';
   position: absolute;
-  z-index: 0;
   inset-inline: 0;
-  bottom: -24px;
-  height: 24px;
-  background: linear-gradient(
-    to bottom,
-    var(--ui-bg-page) 0%,
-    color-mix(in srgb, var(--ui-bg-page) 82%, transparent) 38%,
-    transparent 100%
-  );
-  opacity: 0;
-  transition: opacity var(--ui-duration-normal) var(--ui-ease-out);
+  inset-block-end: 0;
+  height: 1px;
+  background: var(--ui-border-subtle);
   pointer-events: none;
-}
-body[data-transcript-scrolled='true'] #appShell .top-bar::after {
-  opacity: 1;
 }
 
 @media (min-width: 769px) {
@@ -103,10 +141,11 @@ body[data-transcript-scrolled='true'] #appShell .top-bar::after {
     height: 48px;
     min-height: 48px;
     margin: 0;
-    padding: 0 max(var(--ui-space-md), env(safe-area-inset-right, 0px)) 0 max(var(--ui-space-md), env(safe-area-inset-left, 0px));
+    padding: 0 max(var(--ui-space-md), env(safe-area-inset-right, 0px)) 0
+      max(var(--ui-space-md), env(safe-area-inset-left, 0px));
     border: 0;
     /* No standing rule under the header, and no glass: the bar is simply the
-       top of the canvas. The separator is drawn by ::after below, and only
+       top of the canvas. The separator is drawn by ::after, and only
        while there is content to separate. */
     border-bottom: 0;
     background: transparent;

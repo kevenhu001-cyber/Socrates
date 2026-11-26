@@ -23,6 +23,7 @@ interface DisplayPreferences {
   darkBg: string;
   lightBg: string;
   showGrid: boolean;
+  showMath: boolean;
 }
 type ThemePreference = 'system' | 'light' | 'dark';
 type ThemeStyle = 'socrates' | 'philosophy';
@@ -34,6 +35,7 @@ export const displayPrefs: DisplayPreferences = {
   darkBg: '',
   lightBg: '',
   showGrid: false,
+  showMath: true,
 };
 
 let _systemThemeQuery: MediaQueryList | null = null;
@@ -206,6 +208,7 @@ export function loadDisplayPrefs() {
       if (typeof p.width === 'number' && p.width > 0) displayPrefs.width = p.width;
       if (typeof p.darkBg === 'string') displayPrefs.darkBg = p.darkBg;
       if (typeof p.lightBg === 'string') displayPrefs.lightBg = p.lightBg;
+      displayPrefs.showMath = p.showMath !== false;
       if (p.showGrid === true) displayPrefs.showGrid = true;
       else displayPrefs.showGrid = false;
     }
@@ -264,6 +267,7 @@ export function applyDisplayPrefs() {
     removeCustomBg();
   }
   document.documentElement.dataset.showGrid = displayPrefs.showGrid === false ? 'false' : 'true';
+  document.documentElement.dataset.mathPresentation = displayPrefs.showMath ? 'typeset' : 'source';
   /* After font/width change, layout shifts — keep pinned users at bottom */
   scrollToBottomIfPinned();
   syncThemeUI();
@@ -332,6 +336,12 @@ export function resetBackgroundLight() {
 /* ── grid ── */
 export function setGrid(showGrid: boolean): void {
   displayPrefs.showGrid = showGrid;
+  applyDisplayPrefs();
+  saveDisplayPrefs();
+}
+
+export function setShowMath(showMath: boolean): void {
+  displayPrefs.showMath = showMath;
   applyDisplayPrefs();
   saveDisplayPrefs();
 }

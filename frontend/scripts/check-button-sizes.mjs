@@ -18,8 +18,7 @@
  * This check counts literal px `height` / `min-height` / `width` /
  * `min-width` declarations on interactive control selectors across the
  * live stylesheets and compares the total against a baseline. The count
- * may only go DOWN. legacy/ is the frozen historical zone and
- * are exempt, exactly as in check-css-debt.mjs — see FROZEN_DIRS.
+ * may only go down.
  *
  * Shrinking the baseline is an explicit act: run with --update.
  *
@@ -33,9 +32,6 @@ const FRONTEND = fileURLToPath(new URL('..', import.meta.url));
 const STYLES = join(FRONTEND, 'src', 'styles');
 const BASELINE = join(FRONTEND, 'scripts', 'button-sizes.baseline.json');
 const UPDATE = process.argv.includes('--update');
-
-/* Frozen historical zones — same split as check-css-debt.mjs. */
-const FROZEN_DIRS = new Set(['legacy']);
 
 /* The canonical ladder. A literal matching one of these is not debt.
  *
@@ -132,7 +128,6 @@ function walk(dir, out) {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const p = join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (FROZEN_DIRS.has(entry.name)) continue;
       walk(p, out);
     } else if (entry.name.endsWith('.css')) {
       out.push(p);

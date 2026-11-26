@@ -377,7 +377,9 @@ for (const mode of ['dark', 'light']) {
   test(`settings text meets AA contrast on the ${mode} page`, async ({ page }) => {
     await openApp(page, { mode });
     await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
-    const section = page.locator('#settingsPage .settings-pane:visible .settings-section').first();
+    const section = page
+      .locator('#settingsPage .settings-general .settings-preference-fields')
+      .first();
     await expect(section).toBeVisible();
     const colors = await section.evaluate((element) => {
       const style = getComputedStyle(element);

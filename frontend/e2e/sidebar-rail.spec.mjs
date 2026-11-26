@@ -67,7 +67,7 @@ test('open sidebar uses quiet 36px rows, compact chrome and one-line history', a
     };
   });
   expect(rows.navH).toBe(36);
-  expect(rows.navRadius).toBe('10px');
+  expect(rows.navRadius).toBe('8px');
   expect(rows.iconW).toBe(20);
   expect(rows.iconH).toBe(20);
   expect(rows.iconCenterOffset).toBeLessThanOrEqual(1);
@@ -79,7 +79,7 @@ test('open sidebar uses quiet 36px rows, compact chrome and one-line history', a
   expect(rows.sidebarBg).toBe('rgba(0, 0, 0, 0)');
   expect(rows.sidebarBorder.split(' ')[0]).toBe('0px');
   expect(rows.headerH).toBe(52);
-  expect(rows.logoFontSize).toBe('18px');
+  expect(rows.logoFontSize).toBe('20px');
   expect(rows.footerBorderTop).toBe('0px');
   expect(rows.avatarSize).toBe(28);
 
@@ -132,7 +132,7 @@ test('collapsing keeps a 52px icon rail with named buttons and reopens from it',
     expect(n.x).toBe(8);
   }
   // Labels are visually hidden, not removed: icons keep accessible names.
-  await expect(page.getByRole('button', { name: /资料库/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /文件/ })).toBeVisible();
 
   // Each visible nav button exposes its label via `aria-label`, and the
   // CSS rail-tooltip reads that same attribute (`content: attr(aria-label)`).

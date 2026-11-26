@@ -13,7 +13,6 @@ test('mobile composer morphs in place on landing and in a conversation', async (
   const frame = host.locator('[data-composer-frame]');
   const editor = host.locator('.rich-composer-editor');
   const tools = host.locator('#composerToolsBtn');
-  const effort = host.locator('#effortTrigger');
   const mic = host.locator('#composerMicBtn');
   const primary = host.locator('#composerPrimaryBtn');
   const originalEditor = await editor.elementHandle();
@@ -22,7 +21,6 @@ test('mobile composer morphs in place on landing and in a conversation', async (
     await expect(frame).toHaveAttribute('data-expanded', 'false');
     await expect(frame).toHaveCSS('height', '52px');
     await expect(frame).toHaveCSS('border-radius', '26px');
-    await expect(effort).toBeHidden();
     const compact = await frame.boundingBox();
     const hostBox = await host.boundingBox();
     expect(compact.width).toBeLessThanOrEqual(hostBox.width + 1);
@@ -55,7 +53,7 @@ test('mobile composer morphs in place on landing and in a conversation', async (
     return { width, height };
   });
   await expect(editor).toBeFocused();
-  await expect(effort).toBeVisible();
+  await expect(host.locator('[data-composer-control=effort]')).toHaveCount(0);
   await expect(frame).toHaveCSS('height', '92px');
   await expect(frame).toHaveCSS('border-radius', '24px');
   const expanded = await frame.boundingBox();
@@ -64,9 +62,7 @@ test('mobile composer morphs in place on landing and in a conversation', async (
   expect(mid.height).toBeGreaterThan(compact.height);
   expect(mid.height).toBeLessThan(expanded.height);
   const editorBox = await editor.boundingBox();
-  const controls = await Promise.all(
-    [tools, effort, mic, primary].map((control) => control.boundingBox()),
-  );
+  const controls = await Promise.all([tools, mic, primary].map((control) => control.boundingBox()));
   expect(editorBox.y + editorBox.height).toBeLessThan(controls[0].y);
   for (const control of controls) expect(control.y).toBeCloseTo(controls[0].y, 0);
   await page.screenshot({ path: 'test-results/mobile-composer-expanded.png' });
@@ -148,59 +144,36 @@ test('mobile composer keeps model selector and reference controls discoverable',
 
   const composer = page.locator('#composerInputWrap');
   const editor = page.locator('#composerRoot .rich-composer-editor');
-  const effort = composer.locator('[data-composer-control=effort]');
-
-  /* The React Chat/Tutor control is shared with desktop and hidden during a
-     conversation by the body[data-conversation-active] contract. */
+  const tools = composer.locator('#composerToolsBtn');
+  const effort = page.locator('#composerToolsMenu [data-composer-action=reasoningEffort]');
   await expect(page.locator('#mobileMode')).toHaveCount(0);
   await expect(page.locator('#topModeSwitch')).toBeHidden();
   await expect(composer.locator('#composerMicBtn')).toBeVisible();
-  /* Empty composer → the shared primary control is the submit action: it
-     shows the send arrow and stays disabled until a draft exists. The
-     microphone beside it is the one and only dictation control, so a screen
-     reader meets two clearly different buttons. "发送" is the zh rendering
-     of the "Send" label that e2e/voice-input.spec.mjs pins in English. */
   await expect(composer.locator('#composerPrimaryBtn')).toHaveAttribute('aria-label', '发送');
   await expect(composer.locator('#composerPrimaryBtn [data-ui-icon=arrow-up]')).toHaveCount(1);
-  await expect(effort).toBeHidden();
   await editor.click();
   await expect(composer).toHaveClass(/composer-focused/);
-  await expect(effort).toBeVisible();
-  await expect(effort.locator('[data-effort-value]')).toHaveText('中');
-  await page.evaluate(() => {
-    localStorage.setItem('socrates-reasoning-effort', 'high');
-    window.dispatchEvent(
-      new CustomEvent('socrates:chat-preferences', {
-        detail: { effort: 'high', speed: 'standard' },
-      }),
-    );
-  });
-  await expect(effort).toBeVisible();
-  await expect(effort.locator('[data-effort-value]')).toHaveText('高');
+  await expect(composer.locator('[data-composer-control=effort]')).toHaveCount(0);
 
-  await effort.locator('#effortTrigger').click();
+  await tools.click();
+  await expect(effort).toContainText('中');
+  await effort.click();
   const pop = page.locator('.chat-config-pop');
   await expect(pop).toBeVisible();
   await expect(page.locator('#topModelSwitcher')).toBeHidden();
   await expect(pop).toContainText('立即');
-  await expect(pop.locator('input[aria-label="思考强度"]')).toHaveAttribute('aria-valuetext', '高');
-  /* The popover is anchored above the pill, not a sheet/dialog. */
+  const slider = pop.getByRole('slider', { name: '思考强度' });
+  await expect(slider).toHaveAttribute('aria-valuetext', '中');
+
   const popBox = await pop.boundingBox();
-  const triggerBox = await effort.locator('#effortTrigger').boundingBox();
-  expect(popBox?.y ?? 0).toBeLessThan(triggerBox?.y ?? 0);
-  await page.screenshot({
-    path: 'test-results/socrates-mobile-composer-reference.png',
-  });
+  const triggerBox = await tools.boundingBox();
+  expect(popBox.y + popBox.height).toBeLessThan(triggerBox.y);
+  await page.screenshot({ path: 'test-results/socrates-mobile-composer-reference.png' });
   await pop.getByRole('button', { name: /返回模型列表/ }).click();
   await expect(pop.getByRole('option', { name: /5.6 Luna/ })).toBeVisible();
   await page.keyboard.press('Escape');
-  const effortTrigger = effort.locator('#effortTrigger');
+  await expect(pop).toBeHidden();
   await expect(editor).toBeFocused();
-  await editor.evaluate((node) => node.blur());
-  /* A non-default reasoning level stays visible at rest; only the default
-     (medium) pill folds away with the focused composer. */
-  await expect(effortTrigger).toBeVisible();
-  await expect(effort.locator('[data-effort-value]')).toHaveText('高');
 });
 
 test('desktop configuration reuses the same content in an anchored popover', async ({ page }) => {

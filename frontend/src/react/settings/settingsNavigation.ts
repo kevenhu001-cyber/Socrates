@@ -128,8 +128,8 @@ export function getSettingsNavigation(
   const categories: SettingsCategory[] = [
     {
       key: 'general',
-      name: label('通用', 'General'),
-      description: label('主题与语言', 'Theme and language'),
+      name: label('常规', 'General'),
+      description: label('主题、语言与数学公式', 'Theme, language, and math formulas'),
     },
     {
       key: 'display',

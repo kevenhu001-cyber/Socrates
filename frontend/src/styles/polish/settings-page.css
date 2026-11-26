@@ -1,3 +1,9 @@
+.settings-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
 /* Settings page: shared structural, category and preference rules. */
 
 /* ── Settings page ── */
@@ -519,7 +525,6 @@
   }
 }
 
-
 .settings-page .settings-nav-item.active {
   background: var(--ui-fill-hover);
   box-shadow: inset 2px 0 var(--ui-ink);
@@ -529,7 +534,6 @@
     var(--ui-focus-shadow),
     inset 2px 0 var(--ui-ink);
 }
-
 
 /* ── Settings · Account pane ── */
 .settings-account-card {
@@ -603,7 +607,6 @@
   background: var(--ui-bg-surface);
   cursor: pointer;
 }
-
 
 /* ── Settings modal: tone, custom instructions & memory list ── */
 .tone-preset-options {
@@ -758,23 +761,24 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
     height: min(680px, calc(100% - 48px));
     min-height: 0;
     margin: auto;
-    border: 1px solid var(--ui-border-subtle);
+    border: 1px solid var(--ui-account-border);
     border-radius: var(--ui-radius-dialog);
     overflow: hidden;
-    background: var(--ui-bg-page);
+    background: var(--ui-account-panel);
   }
 
   html[data-main-view='settingsPage'] #settingsPage .settings-shell {
-    grid-template-columns: clamp(176px, 25%, 210px) minmax(0, 1fr);
+    grid-template-columns: clamp(176px, 29%, 240px) minmax(0, 1fr);
     min-height: 0;
     flex: 1;
   }
 
   html[data-main-view='settingsPage'] #settingsPage .account-page-header {
-    height: 56px;
-    padding: 0 var(--ui-space-lg);
+    height: 64px;
+    margin-inline: var(--ui-space-lg);
+    padding: 0;
     background: transparent;
-    border-bottom: 1px solid var(--ui-border-subtle);
+    border-bottom: 1px solid var(--ui-account-border);
   }
 
   .settings-page .account-page-header > [data-slot='button'] {
@@ -791,10 +795,10 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
   }
 
   html[data-main-view='settingsPage'] #settingsPage .settings-nav-item {
-    gap: var(--ui-space-sm);
-    min-height: 36px;
+    gap: var(--ui-space-md);
+    min-height: var(--ui-control-md);
     padding: 6px 10px;
-    border-radius: var(--ui-radius-sidebar-row);
+    border-radius: var(--ui-radius-row);
     color: var(--ui-text-primary);
   }
 
@@ -839,6 +843,9 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
   }
   .settings-page .settings-nav-categories {
     gap: var(--ui-space-sm);
+  }
+  html[data-main-view='settingsPage'] #settingsPage .settings-search:not(:focus-within) {
+    border-color: transparent;
   }
   .settings-page .settings-nav-item .settings-category-chevron {
     display: none;
@@ -1244,4 +1251,50 @@ html[data-main-view='settingsPage'] #settingsPage .settings-choice {
     padding-bottom: max(var(--ui-space-xl), env(safe-area-inset-bottom, 0px));
     overscroll-behavior: contain;
   }
+}
+
+.settings-page .settings-general > h2 {
+  border-bottom: 0;
+  padding-bottom: 0;
+  font-size: var(--ui-font-size-xl);
+}
+
+.settings-page .settings-general .settings-choice {
+  min-height: var(--ui-control-touch);
+  border-color: var(--ui-account-border);
+}
+
+.settings-page .settings-general [data-slot='select-trigger'] {
+  min-width: 0;
+  padding-inline: var(--ui-space-sm);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.settings-page .settings-general [data-slot='select-trigger']:focus-visible {
+  box-shadow: var(--ui-focus-shadow);
+}
+
+.settings-page .settings-general [data-slot='select-trigger']:hover {
+  background: var(--ui-bg-hover);
+}
+
+.settings-page .settings-math-switch[aria-checked='true'] {
+  background: var(--ui-toggle-confirmed);
+}
+
+.settings-page .settings-math-switch[aria-checked='true'] [data-slot='switch-thumb'] {
+  background: hsl(var(--always-white));
+}
+
+.settings-general-more {
+  border-top: 1px solid var(--ui-account-border);
+  color: var(--ui-text-secondary);
+}
+
+.settings-general-more summary {
+  min-height: var(--ui-control-touch);
+  align-content: center;
+  cursor: pointer;
+  font-size: var(--ui-font-size-sm);
 }

@@ -27,4 +27,5 @@ export type ComposerToolsAction =
   | 'createSite'
   | 'exam'
   | 'skills'
-  | 'managePlugins';
+  | 'managePlugins'
+  | 'reasoningEffort';

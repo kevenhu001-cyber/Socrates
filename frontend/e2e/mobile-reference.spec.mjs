@@ -25,7 +25,8 @@ test('reference home keeps its bottom composer and phone configuration usable', 
   await expect(page.locator('#topicTitle')).toBeInViewport();
   await expect(page.locator('#topModelSwitcher')).toBeHidden();
   await composer.locator('.rich-composer-editor').focus();
-  await composer.locator('#effortTrigger').click();
+  await page.locator('#composerToolsBtn').click();
+  await page.locator('#composerToolsMenu [data-composer-action=reasoningEffort]').click();
   await expect(page.locator('.chat-config-pop')).toBeVisible();
   await page.keyboard.press('Escape');
   await page.keyboard.press('Escape');

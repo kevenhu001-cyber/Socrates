@@ -1,11 +1,5 @@
-/*
- * parity/ — chatgpt.com-aligned desktop layer (reference values:
- * docs/ref/chatgpt-parity.md). Each file owns one surface on desktop (the
- * composer file owns it at every width); the
- * older rules for that surface were moved behind @media (max-width: 768px)
- * by scripts/migrate-surface-css.mjs, so this layer needs no !important.
- * Sits after the canonical feature layer and before polish/.
- */
+/* Desktop sidebar, topbar and transcript owners. The composer is shared
+ * at all viewport widths. Phone drawer geometry lives in mobile-sidebar.css. */
 @import './sidebar.css';
 @import './topbar.css';
 @import './composer-unified.css';

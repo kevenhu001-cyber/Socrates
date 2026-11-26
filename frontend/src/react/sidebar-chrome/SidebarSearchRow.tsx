@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '../ui/shadcn/button';
-import { openCmdK } from '../../legacy/cmdK.ts';
 import { Input } from '../ui/shadcn/input';
 import { i18n } from '../../ui/legacyI18n.ts';
 import { useAllSessionMistakes } from '../tutor/useAllSessionMistakes';
@@ -85,17 +84,6 @@ export function SidebarSearchRow() {
           }}
           onFocus={showRecents}
         />
-        <Button
-          type="button"
-          variant="ghost"
-          size="xs"
-          className="sidebar-search-kbd"
-          aria-label={i18n('chrome.openSearch', 'Open global search')}
-          title={i18n('chrome.openSearch', 'Open global search')}
-          onClick={() => openCmdK()}
-        >
-          <kbd aria-hidden="true">⌘K</kbd>
-        </Button>
       </div>
       <Button
         id="tabKnowledge"

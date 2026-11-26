@@ -33,10 +33,10 @@ test('sidebar exposes the primary destinations', async ({ page }) => {
   expect(visibleIds).toEqual([
     'navNew',
     'navSearch',
-    'navProjects',
-    'navLibrary',
-    'navScheduled',
     'navPlugins',
+    'navLibrary',
+    'navProjects',
+    'navScheduled',
     'navSites',
     'navMore',
   ]);
@@ -447,6 +447,17 @@ test('sidebar search opens the same global search as the keyboard shortcut', asy
   await expect(trigger).toBeFocused();
   await page.keyboard.press('ControlOrMeta+k');
   await expect(field).toBeFocused();
+});
+
+test('desktop recent filtering stays distinct from global search', async ({ page }) => {
+  const filter = page.locator('#sidebarSearch');
+  const trigger = page.getByRole('button', { name: 'Filter recent chats' });
+  await expect(filter).toBeHidden();
+  await trigger.click();
+  await expect(filter).toBeFocused();
+  await expect(page.locator('#cmdKInput')).toBeHidden();
+  await trigger.click();
+  await expect(filter).toBeHidden();
 });
 
 test('More menu supports keyboard navigation and returns focus on dismissal', async ({ page }) => {

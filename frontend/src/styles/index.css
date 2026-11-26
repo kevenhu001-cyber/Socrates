@@ -1,32 +1,17 @@
-/*
- * styles/index.css — single stylesheet entry and cascade manifest.
- *
- * The bundle is produced by inlining these @imports top to bottom. The old
- * styles remain as a compatibility foundation, while current component rules
- * form the canonical UI. themes.css is applied exactly once at the end so one
- * palette wins across every surface and legacy token family.
- *
- *   Tier 1  structural tokens    — geometry, type, motion and control metrics.
- *   Tier 2  compatibility        — legacy/ rules still required by feature
- *                                  surfaces during selector migration.
- *   Tier 3  canonical UI         — modular component ownership plus parity and
- *                                  polish rules that define the current design.
- *   Tier 4  final theme contract — the only active palette and compatibility
- *                                  token mapping, always imported last.
- */
+/* Canonical cascade. index.html delivers the same order through blocking
+ * slices and deferred feature styles. check-css-debt.mjs checks both entries. */
 
-/* Tier 1 — structural design tokens */
+/* Structural tokens, browser defaults and application shell. */
 @import './tokens.css';
+@import './foundations/reset.css';
 
-/* Tier 2 — compatibility foundation (order-sensitive) */
-@import './legacy/index.css';
-
-/* Tier 3 — canonical component layer */
 @import './foundations/fonts.css';
 @import './foundations/base.css';
 @import './foundations/shadcn.css';
 @import './foundations/collapse.css';
 @import './layout/app-shell.css';
+@import './components/toast.css';
+@import './components/find-in-chat.css';
 @import './components/sidebar.css';
 @import './components/composer.css';
 @import './components/chat.css';
@@ -48,6 +33,9 @@
 @import './features/learn-scaffolds.css';
 @import './features/study.css';
 
+/* Secondary pages load only after the critical shell styles. */
+@import './features/exam.css';
+@import './features/admin.css';
 @import './features/creation.css';
 
 /* Canonical desktop surface owners */
@@ -56,5 +44,5 @@
 /* Canonical cross-surface details and interaction states */
 @import './polish/index.css';
 
-/* Tier 4 — one final palette and legacy-token bridge */
+/* One final palette for every surface. */
 @import './themes.css';

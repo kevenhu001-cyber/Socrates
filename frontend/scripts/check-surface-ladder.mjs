@@ -52,8 +52,6 @@
  * Universal app drift apart the moment one side is touched:
  *
  *   frontend/src/styles/themes.css   the web palette (owner)
- *   frontend/src/styles/themes.css   the legacy HSL channels the frozen
- *                                    legacy/ tree composes with hsl()
  *   packages/theme/src/tokens.ts     the shared HSL source of truth
  *   packages/theme/src/rn.ts          the native hex projection
  *
@@ -64,15 +62,11 @@
  *
  * This check resolves all of it and fails when the parts disagree, when a
  * rung leaves the 1.5%-7% band, when a rung count changes, when pure black
- * appears on the ladder, when a theme is missing from the baseline, or when
- * the chat-surface bridge is only declared for one mode.
+ * appears on the ladder or a theme is missing from the baseline.
  *
  * The expected rungs live in a baseline that only moves through an explicit
  * `--update` run, so a deliberate ladder change is reviewable and an
- * accidental one is not. The baseline also declares which rung each legacy
- * HSL channel carries: the legacy tree's channel order (base → page → raised
- * → hover) is its own convention and does not follow the ladder's role
- * order, so the correspondence is stated rather than assumed.
+ * accidental one is not.
  *
  * PAPER CANVAS (RN-7)
  * -------------------
@@ -199,31 +193,6 @@ const SHARED_RUNGS = {
   },
 };
 
-/* Which ladder rung each legacy HSL channel carries, per mode. The legacy
- * tree composes these channels with hsl(), so a channel that drifted off the
- * ladder paints a tone the palette does not own. The mapping is a bijection
- * over the four rungs — the legacy order (base → page → raised → hover) is
- * its own convention and does not follow the ladder's role order. The
- * baseline overrides it; this is the fallback for a missing baseline.
- *
- * The mapping is the same for every theme: each theme declares its own
- * channels in the same legacy order, so the order-to-rung correspondence
- * holds once and applies everywhere. */
-const DEFAULT_LEGACY_CHANNELS = {
-  dark: {
-    '--bg-000': 'page',
-    '--bg-100': 'rail',
-    '--bg-200': 'panel',
-    '--bg-300': 'elevated',
-  },
-  light: {
-    '--bg-000': 'elevated',
-    '--bg-100': 'page',
-    '--bg-200': 'rail',
-    '--bg-300': 'panel',
-  },
-};
-
 /* Product roles that are not ladder rungs but still have to agree between
  * the web palette and the native projection — otherwise the Universal app
  * paints a different capsule from the one the Web app draws. */
@@ -322,20 +291,6 @@ function lightness(hex) {
   const rgb = hexToRgb(hex);
   if (!rgb) return null;
   return ((0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]) / 255) * 100;
-}
-
-/* HSL lightness as a percentage — (max + min) / 2, which is what
- * `hsl(h s% l%)` actually means. The legacy channels are HSL triplets, so
- * comparing one against a rung has to use the same metric the triplet uses;
- * the weighted-RGB lightness above is a different number for any colour
- * that is not a grey. For a neutral grey the two agree exactly, so a
- * scale-based theme is unaffected by using this one here. */
-function hslLightness(hex) {
-  const rgb = hexToRgb(hex);
-  if (!rgb) return null;
-  const max = Math.max(...rgb);
-  const min = Math.min(...rgb);
-  return ((max + min) / 2 / 255) * 100;
 }
 
 function hslToHex(value) {
@@ -624,42 +579,6 @@ function main() {
           );
         }
       }
-
-      /* The legacy HSL channels have to track the same rungs — the frozen
-       * legacy/ tree composes them with hsl(), so a drifted channel paints a
-       * tone the palette does not own. Which rung each channel carries is
-       * declared in the baseline, because the legacy order (base → page →
-       * raised → hover) is its own convention and does not follow the ladder's
-       * role order in every mode.
-       *
-       * The channel is an HSL triplet, so it is compared against the rung's
-       * HSL lightness — the same metric the triplet is written in. */
-      const mapping = baseline?.legacyChannels?.[mode] ?? DEFAULT_LEGACY_CHANNELS[mode];
-      const tolerance = policy.legacyTolerance ?? 0.05;
-
-      const mapped = Object.values(mapping);
-      if (mapped.length !== RUNGS.length || new Set(mapped).size !== RUNGS.length) {
-        failures.push(
-          `themes.css: ${mode} legacy channel mapping must carry each of the four rungs exactly once (${JSON.stringify(mapping)})`,
-        );
-      }
-
-      for (const [channel, rungName] of Object.entries(mapping)) {
-        const raw = ladder.vars.get(channel);
-        const rung = ladder.rungHex[rungName];
-        if (!raw || !rung) continue;
-        /* The channel is an HSL triplet — `h s% l%` — so the lightness is the
-         * third component, not the first percentage. */
-        const parts = raw.trim().split(/\s+/);
-        const channelLightness = Number.parseFloat(parts[2]);
-        if (!Number.isFinite(channelLightness)) continue;
-        const rungLightness = hslLightness(rung);
-        if (Math.abs(channelLightness - rungLightness) > tolerance) {
-          failures.push(
-            `themes.css: theme "${theme}" ${mode} ${channel} is ${channelLightness}% but --ui-bg-${rungName} (${rung}) is ${rungLightness.toFixed(2)}%`,
-          );
-        }
-      }
     }
   }
 
@@ -756,7 +675,7 @@ function main() {
   if (UPDATE) {
     /* The baseline records the Geist step each rung is cut from, not just
      * its value: the step is the reviewable part of the decision, and the
-     * value follows from it. The scale / shared / tolerance policy is NOT
+     * value follows from it. The scale / shared policy is NOT
      * derived from the stylesheet — it is a decision, so an existing
      * baseline's policy is carried over and a theme the baseline has never
      * seen is recorded with no scale and no shared projection, which the
@@ -767,7 +686,7 @@ function main() {
       const previous = baseline?.themes?.[theme];
       if (!previous) {
         notices.push(
-          `theme "${theme}" is new: recorded with scale: null, shared: false, legacyTolerance: 0.5 — review and edit the baseline by hand if that is wrong`,
+          `theme "${theme}" is new: recorded with scale: null, shared: false — review and edit the baseline by hand if that is wrong`,
         );
       }
       next.themes[theme] = {
@@ -776,7 +695,6 @@ function main() {
         ...(previous?.blackCanvas ? { blackCanvas: true } : {}),
         scale: previous?.scale ?? null,
         shared: previous?.shared ?? false,
-        legacyTolerance: previous?.legacyTolerance ?? 0.5,
       };
       for (const mode of ['dark', 'light']) {
         const scale = GEIST_SURFACES[mode];
@@ -791,10 +709,6 @@ function main() {
         }
       }
     }
-    next.legacyChannels = {
-      dark: { ...DEFAULT_LEGACY_CHANNELS.dark, ...(baseline?.legacyChannels?.dark ?? {}) },
-      light: { ...DEFAULT_LEGACY_CHANNELS.light, ...(baseline?.legacyChannels?.light ?? {}) },
-    };
     next.generatedBy = 'check-surface-ladder.mjs --update';
     writeFileSync(BASELINE, `${JSON.stringify(next, null, 2)}\n`);
     console.log('surface-ladder baseline updated:');

@@ -1,12 +1,11 @@
 /*
- * themes.css — canonical Socrates palette and compatibility bridge.
+ * themes.css — canonical Socrates palette.
  *
  * The neutral palette is projected from the Geist scale (vercel.com/geist):
  * `--geist-background-*` carries the two surface tones, `--geist-gray-*` the
  * ten-step ramp behind text, borders and raised surfaces, and
  * `--geist-gray-alpha-*` the translucent washes that layer over an unknown
- * surface. The stable `--ui-*` API and Lobe aliases keep existing features
- * compatible. Product geometry remains owned by tokens.css / component styles.
+ * surface. The stable `--ui-*` roles drive the product surfaces. Product geometry remains owned by tokens.css / component styles.
  */
 
 /* RN-1 — new UI vocabulary generated from packages/theme/src/ui.ts. */
@@ -17,11 +16,12 @@ html[data-mode] {
   --ui-action: var(--ui-accent-action);
   --ui-connector-tile: var(--ui-bg-surface);
   --ui-account-canvas: var(--ui-bg-page);
-  --ui-account-panel: var(--ui-bg-surface);
+  --ui-account-panel: var(--ui-bg-panel);
   --ui-account-rail: var(--ui-bg-sidebar);
   --ui-account-field: var(--ui-bg-sunken);
   --ui-account-border: var(--ui-border-default);
   --ui-account-selection: var(--ui-bg-selected);
+  --ui-toggle-confirmed: rgb(38 145 87);
 }
 
 html[data-theme='socrates'][data-mode],
@@ -243,6 +243,7 @@ html[data-theme='socrates'][data-mode]:lang(zh) {
 
 [data-mode='light'] {
   color-scheme: light;
+  --ui-border-alpha: 0.6;
 
   /* The light canvas is the paper itself (#ffffff). The rail sits one Geist
      step below it (background-200), so the two regions are separated by tone
@@ -530,23 +531,6 @@ html[data-theme='socrates'][data-mode='dark'] {
   /* Compatibility alias for actionable chrome. */
   --ui-icon-secondary: var(--ui-text-primary);
   --ui-segment-thumb-shadow: none;
-  /* Legacy HSL channels project the same four-step ladder the `--ui-*`
-   * roles use. They stay HSL triplets because the frozen legacy tree
-   * composes them with `hsl(...)`; the values track the ladder exactly so
-   * a legacy surface never drifts onto a tone the palette does not own. */
-  --bg-000: 0 0% 0%; /* L1 — page (geist background-200, pure black) */
-  --bg-100: 0 0% 10.2%; /* L2 — rail (geist gray-100) */
-  --bg-200: 0 0% 12.16%; /* L3 — panel (geist gray-200) */
-  --bg-300: 0 0% 16.08%; /* L4 — elevated (geist gray-300) */
-  --text-000: 0 0% 100%;
-  --text-100: 0 0% 90%;
-  --text-200: 0 0% 71%;
-  --text-300: 0 0% 56%;
-  --text-400: 0 0% 50%;
-  --text-500: 0 0% 42%;
-  --border-100: 0 0% 10%;
-  --border-200: 0 0% 13%;
-  --border-300: 0 0% 18%;
 }
 
 html[data-theme='socrates'][data-mode='light'] {
@@ -560,27 +544,6 @@ html[data-theme='socrates'][data-mode='light'] {
   --ui-hairline-faint: rgb(0 0 0 / 6%);
   --ui-icon-secondary: var(--ui-text-primary);
   --ui-segment-thumb-shadow: var(--ui-elevation-ring);
-  /* Same four-step ladder as dark mode, running the other way.
-   *
-   * The four channels project the four rungs, but not in the ladder's role
-   * order: the legacy tree's own order is base → page → raised → hover, and
-   * in light mode the base is the paper while the page is the canvas. Which
-   * rung each channel carries is declared in
-   * `scripts/surface-ladder.baseline.json`; the values below are the rungs
-   * that mapping points at, so the canvas move left them untouched. */
-  --bg-000: 0 0% 100%; /* the paper (elevated) */
-  --bg-100: 0 0% 100%; /* the canvas (page) — the paper's white */
-  --bg-200: 0 0% 98.04%; /* the rail (geist background-200) */
-  --bg-300: 0 0% 94.9%; /* the panel: controls, chips, wells (geist gray-100) */
-  --text-000: 0 0% 0%;
-  --text-100: 0 0% 12%;
-  --text-200: 0 0% 40%;
-  --text-300: 0 0% 54%;
-  --text-400: 0 0% 43%;
-  --text-500: 0 0% 45%;
-  --border-100: 0 0% 93%;
-  --border-200: 0 0% 89%;
-  --border-300: 0 0% 87%;
 }
 
 /* -------------------------------------------------------------------------
@@ -648,19 +611,6 @@ html[data-theme='philosophy'][data-mode='light'] {
   --ui-accent-strong: var(--primary);
   --ui-on-accent: var(--primary-foreground);
   --ui-brand-accent: rgb(168 88 50);
-  --bg-000: 42 20% 98.6%;
-  --bg-100: 43 25% 95.5%;
-  --bg-200: 43 28% 91.2%;
-  --bg-300: 42 22% 87.5%;
-  --text-000: 36 10% 10%;
-  --text-100: 36 10% 12%;
-  --text-200: 36 10% 36%;
-  --text-300: 36 9% 46%;
-  --text-400: 36 8% 54%;
-  --text-500: 36 8% 62%;
-  --border-100: 36 15% 90%;
-  --border-200: 36 15% 85%;
-  --border-300: 36 15% 80%;
 }
 
 html[data-theme='philosophy'][data-mode='dark'] {
@@ -707,26 +657,11 @@ html[data-theme='philosophy'][data-mode='dark'] {
   --ui-accent-strong: var(--primary);
   --ui-on-accent: var(--primary-foreground);
   --ui-brand-accent: rgb(212 130 85);
-  --bg-000: 30 7% 7.1%;
-  --bg-100: 30 8% 9%;
-  --bg-200: 30 8% 11.8%;
-  --bg-300: 30 8% 14.9%;
-  --text-000: 38 35% 98%;
-  --text-100: 38 35% 92%;
-  --text-200: 38 12% 65%;
-  --text-300: 38 10% 53%;
-  --text-400: 38 10% 43%;
-  --text-500: 38 10% 35%;
-  --border-100: 38 10% 14%;
-  --border-200: 38 10% 18%;
-  --border-300: 38 10% 24%;
 }
 
 /* Web drawer reference palette. */
 :root {
   --ui-sidebar-drawer: rgb(245 245 245);
-  --ui-sidebar-compose: rgb(47 99 233);
-  --ui-sidebar-compose-ink: rgb(255 255 255);
 }
 [data-mode='dark'] {
   --ui-sidebar-drawer: rgb(33 33 33);

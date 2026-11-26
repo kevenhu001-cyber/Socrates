@@ -157,7 +157,7 @@ dynamic import 与退役全局字段；类型 import、注释和字符串不计�
 
 ## 样式、动效和静态资源
 
-- 唯一样式入口 `styles/index.css`：结构 token → legacy 兼容几何 → 当前组件、restore、parity、
+- 唯一样式入口 `styles/index.css`：结构 token → 基础、组件、布局与功能样式 → parity、
   polish → themes。themes.css 只导入一次且最后导入。
 - 页面组合层从 2026-11-23 起是 `frontend/src/react/ui/page/` + `styles/features/page-kit.css`：
   `PageFrame` 负责页面列（1040 / 32 gutter / 42 top），`PageHeader` 是唯一页头与 `h1`，
@@ -194,7 +194,7 @@ dynamic import 与退役全局字段；类型 import、注释和字符串不计�
 |---|---|---|
 | 旧 DOM 与 React | 主页面由 React 接管，静态挂载宿主、未接管时的 DOM fallback、分享只读渲染与认证后的挂载仍在生产链路中。`app/legacyBridge.ts` 继续向 React gateway 和旧入口提供动作。 | 下一项 DOM 宿主工作选附件。盘点 `attachments/render.ts` 的 `socrates:composerready` 与 `DOMContentLoaded` 接线，由 composer 宿主显式绑定和释放对应节点。覆盖宿主重挂载、粘贴、拖放和文件选择。消息另按 live／未挂载／分享三态排查写入者，保留旧消息的 HTML 读取。 |
 | window bridge / 自定义事件 | 侧栏和模型菜单都调用类型化设置服务，`socrates:settings-section` 的两个派发点和监听已移除。`window.stateStore` facade 已于 2026-11-17 退役；认证后的 `__socratesMountReactCompatibility` 仍有生产调用。`app/legacyBridge.ts` 的 17 个浏览器 hook 和 `__socratesTestState.actions` 现在只在 Playwright 注入 `__installSocratesTestState` 时安装，生产页面不再发布。 | 聊天历史与诊断／搜索的状态读取已迁到类型化 store。认证挂载独立提交，保持 auth gate 后加载与 share 的轻量路径，跑 `boot`、`storage-bootstrap`、`mount-recovery`、`message-list-compat` 和 `share-view`。 |
-| `legacy/` / 主题桥 | `restore/` 已于 2026-11-26 删除；`legacy/` 是唯一冻结树。冻结区当前：`!important` 43、硬编码颜色 3、硬编码半径 87、堆叠 ID 0、硬编码字号 156、legacy 通道 435。`--cg-*`、`--chatgpt-*`、`--conversation-*`、`--chat-*` 与 Lobe 桥已删除；`--ui-*` 之外的旧 HSL 通道只服务 `legacy/`。 | 继续逐条迁移 `legacy/` 的活规则；`check-css-dependencies` 禁止 canonical CSS 读取冻结区变量或退役主题族，`check-attribute-liveness` 禁止 canonical CSS 保留没有生产者的 `[data-*]` 选择器。`themes.css` 保持最后导入。 |
+| 样式与主题 | 原兼容样式已迁入对应模块，`styles/legacy/`、`styles/restore/` 和编号 HSL 通道均已移除。CSS 与可视化渲染使用 `--ui-*` 语义色。 | HTML 保持首屏阻塞和非首屏延迟加载，`check-css-debt` 检查 HTML 与 `styles/index.css` 的顺序一致，`themes.css` 最后加载。 |
 | React DOM 迁移签收 | 考试、设置与 study 表面均已签收。设置「对话背景网格」（开关）与「文字大小」、「内容宽度」（分段单选组）使用共享 `@socrates/ui/settings` 组件；诊断、错题本、知识图谱与知识地图改为 DOM，`react-web` importer 已在 2026-11-23 降至 0 并删除 shim 文件。 | 保持 `lint:rn-shim` 为 0；后续只处理宿主几何、焦点与遗留 CSS 收口，不再恢复 RN 形状的组件 API。 |
 
 DOM 体量以第一方 TS/TSX 中字面 `getElementById(` 为抽样指标，当前 282 处、97 个文件（以 `rg` 输出为准）。这个计数包含
@@ -331,7 +331,7 @@ exam 3、think 2、learn 2、study-model 1、home 1、composer 1。Web 宿主适
 `ExamFooter` 与内部 `controls`），SPA 侧只剩 `react/exam/ExamView.tsx` 适配层和
 `src/exam/{screen,copy,adapt}.ts` 纯函数：适配层读 store、把命令转给 `src/exam/*` 的既有
 副作用，共享组件不碰 DOM 与 store。旧 6 个 DOM 组件与 `test/harness-exam.mjs` 已删，
-`styles/legacy/08-exam.css` 只保留页面外壳与滚动偏移，e2e 断言改用 `data-exam-*` 语义钩子。
+`styles/features/exam.css` 管理页面外壳与滚动偏移，e2e 断言改用 `data-exam-*` 语义钩子。
 **脚手架统一（2026-11-06）**：学习脚手架（十种 scaffold）此前有两套实现——SPA 走
 `frontend/src/render/{assistantHtml,scaffoldPipeline}.ts`，Universal App 走自带的
 `packages/ui/src/scaffolds.ts` 与 `MessageContent.tsx` 里的本地卡片，两边的"哪一块变成卡片、

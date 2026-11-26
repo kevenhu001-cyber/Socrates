@@ -1,3 +1,252 @@
+/* Active workflow token. It is a real inline editor node, so the icon and
+   themed label share the same text line as the user's prompt. Kept minimal:
+   a quiet inline badge — no pill chrome, no duplicate hint text (the
+   workflow description stays in the tooltip). */
+.composer-extension-token {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  vertical-align: baseline;
+  max-width: min(100%, 220px);
+  padding: 1px 4px 1px 6px;
+  border-radius: var(--ui-radius-xs);
+  color: var(--ui-ink);
+  font: var(--ui-font-weight-medium) calc(12px * var(--app-font-scale, 1))/1.4 var(--font-sans);
+  white-space: nowrap;
+  -webkit-user-select: none;
+  user-select: none;
+  animation: composer-extension-token-in 0.24s var(--ease-out) both;
+}
+.composer-extension-inline {
+  display: inline-flex;
+  align-items: baseline;
+  max-width: 100%;
+  margin: 0 4px 1px 0;
+  vertical-align: baseline;
+  white-space: nowrap;
+  animation: composer-extension-token-in 0.24s var(--ease-out) both;
+}
+.composer-extension-token-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  color: inherit;
+}
+.composer-extension-token-icon svg {
+  width: 14px;
+  height: 14px;
+}
+.composer-extension-token-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: inherit;
+}
+.composer-extension-token-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--ui-control-badge);
+  height: var(--ui-control-badge);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: color-mix(in srgb, var(--ui-ink) 60%, transparent);
+  cursor: pointer;
+  opacity: 0.7;
+}
+.composer-extension-token-remove svg {
+  width: 11px;
+  height: 11px;
+}
+.composer-extension-token-remove:hover {
+  background: color-mix(in srgb, var(--ui-ink) 14%, transparent);
+  color: var(--ui-ink);
+  opacity: 1;
+}
+.composer-extension-token-remove:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: 1px;
+}
+@keyframes composer-extension-token-in {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* P1.4 — "↓ new reply" pill shown when the user has scrolled up
+   during a stream. Tapping it scrolls back to the bottom and
+   hides itself. Sits over the bottom-right of the message list. */
+.new-reply-pill {
+  position: absolute;
+  right: 20px;
+  /* `--chat-input-bar-height` no longer exists; the
+     composer is now in the flex flow and JS no longer reports its
+     height. Use a generous constant above the (typical ~70-90px) bar
+     plus the keyboard inset, so the pill always floats above the bar
+     on both desktop and mobile. The bar's own padding-bottom
+     contributes the remaining ~30px (18px padding-top + 12px gap). */
+  bottom: calc(96px + env(safe-area-inset-bottom, 0px) + var(--keyboard-inset, 0px) + 16px);
+  padding: 6px 12px;
+  /* UI-align: neutral floating surface (open-webui scroll-down chip)
+     instead of a loud accent pill. */
+  background: var(--ui-bg-page);
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-foundation-font-size-sm);
+  font-weight: var(--ui-font-weight-medium);
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+  box-shadow:
+    0 4px 14px -2px hsl(var(--shadow-color, 0 0% 0%) / 0.25),
+    0 1px 3px hsl(var(--shadow-color, 0 0% 0%) / 0.12);
+  /* `visibility` is not decoration: it is what takes the hidden pill out
+     of the tab order. `opacity: 0` + `pointer-events: none` still left a
+     0-opacity `role="button" tabindex="0"` in the keyboard sequence, so a
+     reader could land on a control they could not see. Delay the hide
+     until the 0.26s transform transition finishes so the exit still
+     fades instead of popping. */
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(8px) scale(0.96);
+  pointer-events: none;
+  /* No `bottom` transition: the value embeds --keyboard-inset, which
+     legacy/keyboard/index.ts already eases — a second easing on top would make
+     the pill trail the composer for the whole lift. */
+  transition:
+    opacity 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.26s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    filter 0.2s ease,
+    visibility 0s linear 0.26s;
+  z-index: var(--ui-z-panel);
+}
+.new-reply-pill.visible {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+  transition-delay: 0s;
+}
+.new-reply-pill:hover {
+  filter: brightness(1.08);
+  transform: translateY(-2px) scale(1);
+  box-shadow:
+    0 6px 20px -2px hsl(var(--shadow-color, 0 0% 0%) / 0.32),
+    0 2px 4px hsl(var(--shadow-color, 0 0% 0%) / 0.14);
+}
+.new-reply-pill:active {
+  transform: translateY(0);
+}
+.new-reply-pill:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+/* Anchor the new-reply pill to the composer's
+   top edge instead of chat-view's top edge. Earlier the pill floated
+   relative to chat-view (the composer + find-bar wrapper), which meant
+   when find-bar opened the pill ended up 40+px above the composer with
+   empty space between them. Anchoring to chat-input-bar (the composer's
+   own row) keeps the pill tracking focus expansion and keyboard inset
+   without depending on find-bar visibility. */
+.chat-input-bar > .new-reply-pill {
+  right: 20px;
+  bottom: calc(100% + 12px);
+}
+
+/* chat-view is a direct child of .main-content (lifted out of
+   .main-inner so the transcript scrollbar can pin to the right edge
+   of the main pane). It hosts only the floating find bar + the
+   chat-input-bar — the chat transcript (#msgList) is its sibling, not
+   its child. The parent flex column gives #msgList the remaining space
+   and lets the in-flow chat-view take only its actual composer height. */
+.chat-view {
+  width: 100%;
+  /* Sit centred horizontally in the main pane with the same
+     reading-column max-width as before, so the composer visually
+     lines up with the centred message text. */
+  max-width: calc(58rem * var(--app-width-scale, 1));
+  /* Keep a small breathing gap below the chat composer so
+     the input sits ~6px above the bottom edge on desktop and mobile.
+     The gap stays CONSTANT through the lift (the keyboard adds travel on
+     top of it via padding-bottom): collapsing it as --keyboard-inset rose
+     stole 6px of travel in the first frame and read as a snap. */
+  margin: 0 auto;
+  margin-bottom: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 0 0 auto;
+  order: 2;
+  position: relative;
+  --composer-motion-duration: 0.34s;
+  --composer-motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  margin-top: 0;
+  /* Keyboard avoidance (Open WebUI model): --keyboard-inset is mirrored
+     1:1 from the visual viewport by legacy/keyboard/index.ts on every geometry
+     event — the value already moves on the keyboard's own animation curve,
+     so it must NOT be transitioned here. A CSS transition would lag each
+     per-frame write by its full duration and read as trailing/jitter.
+     External (non-controller) inset writes land instantly for the same
+     reason; scroll.js re-anchors a pinned reader in the same task. */
+  padding-bottom: var(--keyboard-inset, 0px);
+}
+
+.chat-input-bar {
+  width: 100%;
+  flex-shrink: 0;
+  /* Become the positioning ancestor for the
+     new-reply pill, which was moved inside this bar so it tracks the
+     composer's top edge instead of chat-view's.
+     Composer is now part of the flex column flow.
+     Its height is whatever the chip strip + wrap + footer naturally
+     add up to, so flex-shrink on the sibling `.msg-list` (flex:1 1 auto)
+     leaves the right amount of room. There is no longer a floating
+     overlay to position absolutely, so message length cannot push the
+     composer off-screen and the focus-driven height growth on mobile
+     (`.composer-input-wrap.composer-focused` jumps min-height
+     54→116) cannot race ahead of the last visible message. Keyboard
+     avoidance is handled by `padding-bottom` on `.chat-view` instead. */
+  position: relative;
+  left: auto;
+  right: auto;
+  /* (See the composer-flow note above — `bottom` removed because the bar
+     no longer floats; keyboard inset is applied to `.chat-view`'s
+     `padding-bottom` instead.) */
+  bottom: auto;
+  z-index: var(--ui-z-header);
+}
+
+/* Drag-over visual — the wrap gets a subtle accent border when the
+   user drags files over the input. */
+.chat-input-bar.drag-over-doc {
+  position: relative;
+}
+.chat-input-bar.drag-over-doc::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border: 2px dashed color-mix(in srgb, var(--ui-ink) 40%, transparent);
+  border-radius: var(--ui-radius-lg);
+  pointer-events: none;
+  z-index: var(--ui-z-header);
+}
+
+@media (max-width: 768px) {
+  .chat-input-bar {
+    padding-top: 6px;
+  }
+}
+
 /* Landing and in-session composers share one geometry and one control skin. */
 
 /* Selected connector chips live above the editable prompt inside the rich

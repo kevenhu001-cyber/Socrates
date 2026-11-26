@@ -3,17 +3,13 @@
  *
  * The user can pick a custom dark / light background colour from the
  * `≡` popover. We convert their hex pick to HSL, then derive three
- * additional shades (bg-000 / bg-100 / bg-200 / bg-300) so every
+ * additional surface shades so every
  * card / divider / scrollbar tint stays consistent with the chosen
  * base.  All conversion is done in JS — no Canvas, no CSS variables
  * mutation outside the document root.
  */
 
 const BG_VARS = [
-  '--bg-000',
-  '--bg-100',
-  '--bg-200',
-  '--bg-300',
   '--ui-bg-page',
   '--ui-bg-raised',
   '--ui-bg-surface',
@@ -69,56 +65,52 @@ export function applyCustomBg(hex: string, mode: 'light' | 'dark'): void {
      This kills the historical "跑色" (green/warm cast) while still letting
      users pick how light or dark the page is. */
   const l = p.l;
-  let b000: string, b100: string, b200: string, b300: string;
+  let raised: string, page: string, surface: string, control: string;
   if (mode === 'light') {
-    b100 = _hslStr(0, 0, l);
+    page = _hslStr(0, 0, l);
     /* When the user picks near-white (l >= 95), the standard
        +4/-6/-14 offsets collapse to ~97/94/86 — barely distinguishable
        from a pure-white page. Branch to fixed gaps that always give
        readable contrast. */
     if (l >= 95) {
-      b000 = _hslStr(0, 0, 96);
-      b200 = _hslStr(0, 0, 88);
-      b300 = _hslStr(0, 0, 76);
+      raised = _hslStr(0, 0, 96);
+      surface = _hslStr(0, 0, 88);
+      control = _hslStr(0, 0, 76);
     } else {
-      b000 = _hslStr(0, 0, Math.min(l + 4, 97));
-      b200 = _hslStr(0, 0, Math.max(l - 6, 3));
-      b300 = _hslStr(0, 0, Math.max(l - 14, 0));
+      raised = _hslStr(0, 0, Math.min(l + 4, 97));
+      surface = _hslStr(0, 0, Math.max(l - 6, 3));
+      control = _hslStr(0, 0, Math.max(l - 14, 0));
     }
   } else {
-    b100 = _hslStr(0, 0, l);
+    page = _hslStr(0, 0, l);
     /* Same idea for near-black picks (l <= 5): the standard +3.5/-2.7/-6.7
        offsets clamp so all four surfaces land between 0 and 3.5 — the
        sidebar / raised / hover states are indistinguishable. Branch
        to fixed gaps that always keep the surface tints visible. */
     if (l <= 5) {
-      b000 = _hslStr(0, 0, 8);
-      b200 = _hslStr(0, 0, 14);
-      b300 = _hslStr(0, 0, 22);
+      raised = _hslStr(0, 0, 8);
+      surface = _hslStr(0, 0, 14);
+      control = _hslStr(0, 0, 22);
     } else {
-      b000 = _hslStr(0, 0, Math.min(l + 3.5, 95));
-      b200 = _hslStr(0, 0, Math.max(l - 2.7, 0));
-      b300 = _hslStr(0, 0, Math.max(l - 6.7, 0));
+      raised = _hslStr(0, 0, Math.min(l + 3.5, 95));
+      surface = _hslStr(0, 0, Math.max(l - 2.7, 0));
+      control = _hslStr(0, 0, Math.max(l - 6.7, 0));
     }
   }
   const root = document.documentElement;
-  root.style.setProperty('--bg-000', b000);
-  root.style.setProperty('--bg-100', b100);
-  root.style.setProperty('--bg-200', b200);
-  root.style.setProperty('--bg-300', b300);
-  root.style.setProperty('--ui-bg-page', `hsl(${b100})`);
-  root.style.setProperty('--ui-bg-raised', `hsl(${b000})`);
-  root.style.setProperty('--ui-bg-surface', `hsl(${b200})`);
-  root.style.setProperty('--ui-bg-control', `hsl(${b300})`);
-  root.style.setProperty('--ui-bg-hover', `hsl(${b300})`);
+  root.style.setProperty('--ui-bg-page', `hsl(${page})`);
+  root.style.setProperty('--ui-bg-raised', `hsl(${raised})`);
+  root.style.setProperty('--ui-bg-surface', `hsl(${surface})`);
+  root.style.setProperty('--ui-bg-control', `hsl(${control})`);
+  root.style.setProperty('--ui-bg-hover', `hsl(${control})`);
   /* The composer capsule and user bubble ride the same derived step as the
      control surface; chips and the active segment take the lightest step so
      they stay legible inside the capsule. */
-  root.style.setProperty('--ui-bg-composer', `hsl(${b300})`);
-  root.style.setProperty('--ui-bg-bubble', `hsl(${b300})`);
-  root.style.setProperty('--ui-bg-chip', `hsl(${b000})`);
-  root.style.setProperty('--ui-bg-chip-hover', `hsl(${b000})`);
-  root.style.setProperty('--ui-bg-segment-active', `hsl(${b300})`);
+  root.style.setProperty('--ui-bg-composer', `hsl(${control})`);
+  root.style.setProperty('--ui-bg-bubble', `hsl(${control})`);
+  root.style.setProperty('--ui-bg-chip', `hsl(${raised})`);
+  root.style.setProperty('--ui-bg-chip-hover', `hsl(${raised})`);
+  root.style.setProperty('--ui-bg-segment-active', `hsl(${control})`);
 }
 
 export function removeCustomBg(): void {

@@ -37,7 +37,8 @@ function walk(dir) {
  * or option-row paint. Motion and layout of other descendants are unaffected. */
 const MENU_OWNER = join(STYLES, 'components', 'menu.css');
 const MENU_PAINT = /^(?:background(?:-.+)?|border(?:-.+)?|box-shadow|color|font-family)$/;
-const RETIRED_MENU_SELECTORS = /^(?:body\s+)?#composerToolsMenu(?:\.composer-tools-menu|:not\(\.hidden\))?$|^#composerToolsMenu\s+\.composer-tools-(?:item|plugin-item|check)(?::(?:hover|focus-visible))?$/;
+const RETIRED_MENU_SELECTORS =
+  /^(?:body\s+)?#composerToolsMenu(?:\.composer-tools-menu|:not\(\.hidden\))?$|^#composerToolsMenu\s+\.composer-tools-(?:item|plugin-item|check)(?::(?:hover|focus-visible))?$/;
 
 const problems = [];
 for (const file of walk(STYLES)) {
@@ -50,11 +51,10 @@ for (const file of walk(STYLES)) {
       const where = `${relative(FRONTEND, file)}:${rule.source?.start?.line ?? '?'}`;
       if (
         file !== MENU_OWNER &&
-        /[\\/](?:restore|legacy)[\\/]/.test(file) &&
         RETIRED_MENU_SELECTORS.test(sel.trim()) &&
         rule.nodes?.some((node) => node.type === 'decl' && MENU_PAINT.test(node.prop))
       ) {
-        problems.push(`${where}  historical tools-menu paint outside components/menu.css: ${sel}`);
+        problems.push(`${where}  tools-menu paint outside components/menu.css: ${sel}`);
       }
       if (REMOVED.test(sel)) problems.push(`${where}  removed wrapper class: ${sel}`);
       else if (file !== OWNER && matchesSurface(COMPOSER_SURFACE, sel)) {

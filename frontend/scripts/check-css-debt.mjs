@@ -5,7 +5,7 @@
  * Three machine-checked rules keep the canonical CSS contract stable:
  *
  * 1. Cascade order: styles/index.css must import structural tokens first,
- *    compatibility layers before canonical components, and themes.css exactly
+ *    and themes.css exactly
  *    once at the end. Order-sensitive nested manifests are locked too, because
  *    reordering their slices silently flips ownership or visual winners.
  *
@@ -15,8 +15,7 @@
  * 3. Debt ratchet: for every stylesheet under src/styles we count
  *    `!important`, literal hex colors, literal px border-radius values, and
  *    selectors that repeat one id three or more times (`#appShell#appShell…`).
- *    legacy/ is the frozen historical zone; every other directory
- *    is "live". Counts may only go DOWN — if a metric grows past its baseline
+ *    Counts may only go down. If a metric grows past its baseline,
  *    the check fails. Shrink the baseline with --update after an intentional
  *    reduction.
  *
@@ -32,7 +31,6 @@ const STYLES = join(FRONTEND, 'src', 'styles');
 const BASELINE = join(FRONTEND, 'scripts', 'css-debt.baseline.json');
 const UPDATE = process.argv.includes('--update');
 
-const FROZEN_DIRS = new Set(['legacy']);
 /* Token projections written by scripts/gen-ui-tokens.mjs from packages/theme.
  * Their literals are the shared source's values, not hand-authored debt, and
  * gen-ui-tokens --check keeps them byte-identical to that source. */
@@ -43,18 +41,6 @@ const GENERATED_TOKEN_FILES = new Set(['foundations/tokens.generated.css']);
  * change the cascade unnoticed. Adding or intentionally moving a slice should
  * update both the owning manifest and this reviewed list. */
 const ORDERED_MANIFESTS = {
-  'legacy/index.css': [
-    './00-foundations.css',
-    './01-sidebar.css',
-    './02-modals-library.css',
-    './03-workspace-panels.css',
-    './04-topbar-menus.css',
-    './05-chat-landing.css',
-    './06-chat-transcript.css',
-    './07-composer-settings.css',
-    './08-exam.css',
-    './09-viz-markdown.css',
-  ],
   'parity/index.css': [
     './sidebar.css',
     './topbar.css',
@@ -251,8 +237,7 @@ function themeOwnershipProblems() {
   const problems = [];
   for (const file of walkCss(STYLES)) {
     const rel = relative(STYLES, file).split(sep).join('/');
-    const top = rel.split('/')[0];
-    if (rel === 'themes.css' || rel === 'tokens.css' || FROZEN_DIRS.has(top)) continue;
+    if (rel === 'themes.css' || rel === 'tokens.css') continue;
     const text = stripComments(readFileSync(file, 'utf8'));
     for (const match of [
       ...text.matchAll(paletteDeclaration),
@@ -341,22 +326,6 @@ const METRICS = {
    */
   literalFontSize: /font-size:\s*(?:\d+(?:\.\d+)?px|calc\(\s*\d+(?:\.\d+)?px)/g,
   /*
-   * Reads of a numbered legacy channel.
-   *
-   * themes.css still publishes the historical HSL channels (--text-*, --bg-*,
-   * --border-*, --accent-*, --brand-*, --oncolor-*, --surface-*) because the
-   * frozen legacy/ tree reads them. They are a second palette
-   * running beside --ui-*, and the two do not agree value-for-value (the
-   * legacy text-300 is 54% grey while --ui-text-tertiary is a different
-   * step), so a live file that reads one renders a colour nobody chose in
-   * themes.css and drifts whenever either ramp is re-tuned.
-   *
-   * The live side is zero: every live reader now uses an --ui-* role. The
-   * frozen side stays frozen at its current count — legacy/ is
-   * historical geometry, not something to migrate in this pass.
-   */
-  legacyChannel: /var\(--(?:text|bg|border|accent|brand|oncolor|surface)-\d+/g,
-  /*
    * Reads of the shadcn semantic palette (--foreground, --muted-foreground,
    * --accent, …) in live stylesheets.
    *
@@ -380,7 +349,6 @@ const METRICS = {
  * non-decreasing order. */
 function tierOf(spec) {
   if (spec === './tokens.css') return 1;
-  if (spec.startsWith('./legacy/')) return 2;
   if (
     spec.startsWith('./foundations/') ||
     spec.startsWith('./layout/') ||
@@ -415,8 +383,7 @@ function checkCascadeOrder() {
   const problems = [];
   const tiers = imports.map(tierOf);
   for (let i = 1; i < tiers.length; i += 1) {
-    // Tiers must be non-decreasing EXCEPT that index.css imports one file
-    // per tier (legacy/index.css etc.), which is already handled because the
+    // Tiers must be non-decreasing EXCEPT that index.css imports aggregate manifests, which is already handled because the
     // nested order lives inside those index files. Here we only check the
     // top-level manifest.
     if (tiers[i] < tiers[i - 1]) {
@@ -545,24 +512,16 @@ function checkHtmlLoadOrder() {
 
 /* ---------- 2. debt ratchet ---------- */
 function collectCounts() {
-  const totals = { live: {}, frozen: {} };
-  for (const dir of ['live', 'frozen'])
-    totals[dir] = Object.fromEntries(Object.keys(METRICS).map((k) => [k, 0]));
-  const perFile = {};
+  const totals = Object.fromEntries(Object.keys(METRICS).map((key) => [key, 0]));
   for (const file of walkCss(STYLES)) {
     const rel = relative(STYLES, file).split(sep).join('/');
-    const top = rel.split('/')[0];
     if (GENERATED_TOKEN_FILES.has(rel)) continue;
-    const zone = FROZEN_DIRS.has(top) ? 'frozen' : 'live';
-    const text = stripComments(readFileSync(file, 'utf8'));
-    perFile[rel] = { zone };
-    for (const [name, matcher] of Object.entries(METRICS)) {
-      const n = typeof matcher === 'function' ? matcher(text) : countMetric(matcher, text);
-      totals[zone][name] += n;
-      perFile[rel][name] = n;
+    const css = stripComments(readFileSync(file, 'utf8'));
+    for (const [metric, matcher] of Object.entries(METRICS)) {
+      totals[metric] += typeof matcher === 'function' ? matcher(css) : countMetric(matcher, css);
     }
   }
-  return { totals, perFile };
+  return totals;
 }
 
 /* ---------- 1c. nested @import legality ---------- */
@@ -619,14 +578,8 @@ function writeInitialBaseline(totals) {
 
 function writeShrunkBaseline(totals, baseline) {
   const shrunk = {};
-  for (const zone of Object.keys(totals)) {
-    shrunk[zone] = {};
-    for (const metric of Object.keys(totals[zone])) {
-      const cur = totals[zone][metric];
-      const base = baseline?.totals?.[zone]?.[metric] ?? cur;
-      // ratchet: only ever record the smaller number, never grow the budget
-      shrunk[zone][metric] = Math.min(cur, base);
-    }
+  for (const [metric, count] of Object.entries(totals)) {
+    shrunk[metric] = Math.min(count, baseline.totals[metric] ?? count);
   }
   writeFileSync(
     BASELINE,
@@ -636,19 +589,14 @@ function writeShrunkBaseline(totals, baseline) {
 }
 
 function compareTotals(totals, baseline, failures) {
-  for (const zone of ['live', 'frozen']) {
-    for (const metric of Object.keys(METRICS)) {
-      const cur = totals[zone][metric];
-      const base = baseline?.totals?.[zone]?.[metric];
-      if (base == null) {
-        failures.push(`baseline missing ${zone}.${metric}`);
-        continue;
-      }
-      if (cur > base) {
-        failures.push(
-          `${zone}.${metric}: ${cur} > baseline ${base} (+${cur - base}). Design debt may only shrink — revert the additions or, if intentional, migrate the rule into an existing token/layer.`,
-        );
-      }
+  for (const [metric, count] of Object.entries(totals)) {
+    const limit = baseline?.totals?.[metric];
+    if (limit == null) {
+      failures.push(`baseline missing ${metric}`);
+    } else if (count > limit) {
+      failures.push(
+        `${metric}: ${count} > baseline ${limit} (+${count - limit}). Design debt may only shrink.`,
+      );
     }
   }
 }
@@ -660,7 +608,7 @@ function main() {
     ...checkImportLegality().map((problem) => `import legality: ${problem}`),
     ...themeOwnershipProblems().map((problem) => `theme ownership: ${problem}`),
   ];
-  const { totals } = collectCounts();
+  const totals = collectCounts();
   const baseline = existsSync(BASELINE) ? JSON.parse(readFileSync(BASELINE, 'utf8')) : null;
 
   if (!baseline) {
@@ -678,13 +626,7 @@ function main() {
   } else if (!baseline || UPDATE) {
     // informational paths above already printed; exit 0
   } else {
-    console.log(
-      'css-debt check passed (live:',
-      JSON.stringify(totals.live),
-      '| frozen:',
-      JSON.stringify(totals.frozen),
-      ')',
-    );
+    console.log('css-debt check passed.', JSON.stringify(totals));
   }
 }
 

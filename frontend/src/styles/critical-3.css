@@ -1,17 +1,4 @@
-/* critical-3.css — first-paint slice 3/6 (render-blocking).
- *
- * Viz/markdown, tutor scaffolds, agent/tool surfaces,
- * thinking activity, fonts, base, app shell, chat/composer components,
- * feature surfaces, and the canonical desktop surface owners (parity/*).
- * Transcript bubbles,
- * tool cards, and the composer all paint from this slice.
- * See critical-1.css for the contract. */
-@import './legacy/09-viz-markdown.css';
-@import './foundations/fonts.css';
-@import './foundations/base.css';
-@import './foundations/shadcn.css';
-@import './foundations/collapse.css';
-@import './layout/app-shell.css';
+/* Blocking chat and learning components, including shared spinner keyframes. */
 @import './components/sidebar.css';
 @import './components/composer.css';
 @import './components/chat.css';

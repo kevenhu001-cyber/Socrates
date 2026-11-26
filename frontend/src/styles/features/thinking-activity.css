@@ -1,3 +1,98 @@
+/* Loading animations — rotating ring spinner.
+   Uses a simple border-based ring (no mask) for reliable rendering
+   across all browsers. The inner spans (from the old 3-dot pattern)
+   are hidden; no markup changes needed. */
+.loading {
+  display: block;
+  width: 16px;
+  height: 16px;
+  position: relative;
+  margin: 0 auto;
+}
+.loading span {
+  display: none;
+}
+.loading::before {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--ui-border-default) 20%, transparent);
+  border-top-color: var(--ui-ink);
+  animation: loadingSpin var(--ui-duration-spin) cubic-bezier(0.65, 0, 0.35, 1) infinite;
+  box-sizing: border-box;
+}
+
+/* Concentric ring rotation — new "thinking" animation system.
+   Replaces the old flashing/pulsing dot with smooth rotating rings.
+   Usage: <span class="thinking-ring"></span> or add .thinking-ring to any inline element. */
+.thinking-ring {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  position: relative;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+.thinking-ring::before,
+.thinking-ring::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  box-sizing: border-box;
+}
+.thinking-ring::before {
+  border-top-color: var(--ui-ink);
+  border-right-color: color-mix(in srgb, var(--ui-ink) 60%, transparent);
+  animation: ringSpin 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+.thinking-ring::after {
+  inset: 3px;
+  border-top-color: color-mix(in srgb, var(--ui-ink) 70%, transparent);
+  border-left-color: color-mix(in srgb, var(--ui-ink) 40%, transparent);
+  animation: ringSpin 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite reverse;
+}
+@keyframes ringSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Smaller variant for inline thinking pills and summaries */
+.thinking-ring-sm {
+  width: 12px;
+  height: 12px;
+}
+.thinking-ring-sm::before {
+  border-width: 1.5px;
+}
+.thinking-ring-sm::after {
+  inset: 2px;
+  border-width: 1.5px;
+}
+
+/* Tiny variant for very compact spaces */
+
+@keyframes loadingSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* ==========================================================================
  * styles/features/thinking-activity.css — agent/thinking activity surface
  * (zero-debt sections extracted from legacy/15-thinking-activity.css).
@@ -209,9 +304,8 @@
    Only the public current-action caption animates, never the whole turn. */
 @media (prefers-reduced-motion: no-preference) and (forced-colors: none) {
   [data-turn-surface-part='activity'][data-live='true'] [data-testid='turn-activity-label'] {
-    background: currentcolor linear-gradient(
-      to left, currentcolor, var(--ui-text-primary) 50%, currentcolor
-    );
+    background: currentcolor
+      linear-gradient(to left, currentcolor, var(--ui-text-primary) 50%, currentcolor);
     background-clip: text;
     background-position: -100% top;
     background-repeat: no-repeat;
@@ -221,8 +315,13 @@
   }
 }
 @keyframes socrates-caption-shimmer {
-  0% { background-position: -100% top; }
-  70%, 100% { background-position: 250% top; }
+  0% {
+    background-position: -100% top;
+  }
+  70%,
+  100% {
+    background-position: 250% top;
+  }
 }
 @media (forced-colors: active) {
   [data-turn-surface-part='activity'] [data-testid='turn-activity-label'] {
@@ -380,7 +479,7 @@
 .agent-run {
   display: block;
   margin: 6px 0 10px;
-  
+
   padding: 0;
   color: var(--ui-text-secondary);
   font-size: var(--ui-font-size-xs);
@@ -440,7 +539,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  
+
   padding: 6px 0 0;
 }
 .agent-step {
@@ -613,7 +712,6 @@
   color: var(--ui-text-tertiary);
 }
 .agent-plan-item[data-status='done'] .agent-plan-text {
-  
   text-decoration: none;
   color: var(--ui-text-secondary);
 }
@@ -658,7 +756,6 @@
   animation: neutralTextWave var(--ui-duration-shimmer) linear infinite;
 }
 @keyframes neutralTextWave {
-  
   0% {
     background-position: 100% 0;
   }

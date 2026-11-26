@@ -1,7 +1,7 @@
-import { Icon } from '../../../legacy/Icon';
 import { Button } from '../../ui/shadcn/button';
 import { PageHeader } from '../../ui/page/PageHeader';
 import { i18n } from './workspaceUi';
+import { detailText } from './pluginDetailContent';
 import type { WorkspacePluginBasic } from './pluginDetail.types';
 
 interface PluginDetailHeaderProps {
@@ -11,7 +11,6 @@ interface PluginDetailHeaderProps {
   canUseInChat: boolean;
   launching: boolean;
   renderMark: (id: string, name: string) => React.ReactNode;
-  onBack: () => void;
   onConnect: () => void;
   onManage: () => void;
   onRefresh: () => void;
@@ -25,7 +24,6 @@ export function PluginDetailHeader({
   canUseInChat,
   launching,
   renderMark,
-  onBack,
   onConnect,
   onManage,
   onRefresh,
@@ -51,30 +49,19 @@ export function PluginDetailHeader({
       title={plugin.name}
       titleTabIndex={-1}
       leading={
-        <>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="plugin-detail-back-btn"
-            onClick={onBack}
-            aria-label={i18n('plugins.detail.back', 'Back to plugins')}
-          >
-            <Icon name="chevronLeft" size={18} />
-            <span>{i18n('plugins.detail.backLabel', 'Plugins')}</span>
-          </Button>
-          <div className={'plugin-detail-logo-tile connector-icon connector-' + plugin.id}>
-            {renderMark(plugin.id, plugin.name)}
-          </div>
-        </>
+        <div className={'plugin-detail-logo-tile connector-icon connector-' + plugin.id}>
+          {renderMark(plugin.id, plugin.name)}
+        </div>
       }
       description={
         <span className="plugin-detail-status-row">
-          <span className={'plugin-detail-status-pill' + (isConnected ? ' connected' : '')}>
-            {status}
-          </span>
-          {plugin.connection?.displayName ? (
-            <span className="plugin-detail-status-pill">{plugin.connection.displayName}</span>
+          {plugin.id === 'github' ? (
+            <span>
+              {detailText('Code repositories and pull requests', '代码仓库与 Pull Request')}
+            </span>
+          ) : null}
+          {plugin.id !== 'github' || isConnected || pending || failed || !connectable ? (
+            <span className="plugin-detail-status-pill">{status}</span>
           ) : null}
         </span>
       }
@@ -117,12 +104,12 @@ export function PluginDetailHeader({
             type="button"
             variant="default"
             size="lg"
-            className="plugin-detail-btn-primary w-full rounded-full"
+            className="plugin-detail-btn-primary plugin-detail-connect w-full rounded-full"
             disabled={!connectable}
             onClick={onConnect}
           >
             {connectable
-              ? i18n('plugins.detail.connect', 'Install & connect')
+              ? i18n('plugins.detail.connect', 'Connect')
               : i18n('plugins.detail.unavailable', 'Unavailable')}
           </Button>
         )

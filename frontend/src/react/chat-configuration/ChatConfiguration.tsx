@@ -27,7 +27,11 @@ type View = 'main' | 'effort' | 'speed';
 /* Measure the live trigger and the current panel in the same layout pass.
  * Fixed positioning uses layout-viewport coordinates, including the visual
  * viewport offset on mobile when the keyboard or browser chrome moves. */
-function popoverStyle(anchor: ChatConfigurationAnchor, triggerId: string | null, menu: HTMLElement): CSSProperties {
+function popoverStyle(
+  anchor: ChatConfigurationAnchor,
+  triggerId: string | null,
+  menu: HTMLElement,
+): CSSProperties {
   const viewport = window.visualViewport;
   const x = viewport?.offsetLeft ?? 0;
   const y = viewport?.offsetTop ?? 0;
@@ -37,13 +41,17 @@ function popoverStyle(anchor: ChatConfigurationAnchor, triggerId: string | null,
   const width = Math.max(0, Math.min(264, w - 2 * gap));
   const above = Math.max(0, anchor.top - y - 2 * gap);
   const below = Math.max(0, y + h - anchor.bottom - 2 * gap);
-  const composer = triggerId === 'effortTrigger';
+  const composer = triggerId === 'composerToolsBtn';
   const naturalHeight = menu.scrollHeight + menu.offsetHeight - menu.clientHeight;
-  const opensAbove = composer ? above >= Math.min(naturalHeight, 120) || above >= below
+  const opensAbove = composer
+    ? above >= Math.min(naturalHeight, 120) || above >= below
     : below < naturalHeight && above > below;
   const maxHeight = Math.min(420, opensAbove ? above : below);
   const height = Math.min(naturalHeight, maxHeight);
-  const left = Math.max(x + gap, Math.min(composer ? anchor.right - width : anchor.left, x + w - width - gap));
+  const left = Math.max(
+    x + gap,
+    Math.min(composer ? anchor.right - width : anchor.left, x + w - width - gap),
+  );
   const top = opensAbove ? anchor.top - gap - height : anchor.bottom + gap;
   return { left, top: Math.max(y + gap, top), bottom: 'auto', width, maxHeight };
 }
@@ -66,7 +74,13 @@ export function ChatConfiguration() {
       const anchor = trigger?.getClientRects().length ? restingRect(trigger) : snapshot.anchorRect;
       if (!anchor) return;
       const next = popoverStyle(anchor, snapshot.triggerId, menu);
-      setPosition((previous) => Object.keys(next).every((key) => previous[key as keyof CSSProperties] === next[key as keyof CSSProperties]) && previous.visibility !== 'hidden' ? previous : next);
+      setPosition((previous) =>
+        Object.keys(next).every(
+          (key) => previous[key as keyof CSSProperties] === next[key as keyof CSSProperties],
+        ) && previous.visibility !== 'hidden'
+          ? previous
+          : next,
+      );
     };
     const schedule = () => {
       cancelAnimationFrame(frame);
@@ -112,10 +126,7 @@ export function ChatConfiguration() {
 
   useEffect(() => {
     if (!snapshot.open) return;
-    /* The composer's effort pill opens straight onto the effort slider, as the
-       reference's "Medium ⌄" does; its "中 ›" row leads on to the model list.
-       The header's model chip keeps opening the model list. */
-    setView(snapshot.triggerId === 'effortTrigger' ? 'effort' : 'main');
+    setView(snapshot.triggerId === 'composerToolsBtn' ? 'effort' : 'main');
     setEffort(effectiveEffort);
     setSpeed(snapshot.speed);
   }, [snapshot.open, snapshot.revision, snapshot.triggerId, effectiveEffort, snapshot.speed]);

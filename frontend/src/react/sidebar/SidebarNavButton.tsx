@@ -65,8 +65,6 @@ export function SidebarNavButton({
       iconStrokeWidth={1.5}
       label={label}
       i18nKey={item.i18nKey}
-      badge={item.badgeKey ? i18n(item.badgeKey, 'New') : undefined}
-      badgeI18nKey={item.badgeKey}
       active={active}
       menu={
         item.key === 'more'
@@ -76,7 +74,6 @@ export function SidebarNavButton({
       activeShadow="none"
       backgroundVar="--sidebar-nav-bg"
       hostStyle={webClass('sidebar-nav-btn', active && 'active')}
-      badgeStyle={webClass('nav-new-badge')}
       labelStyle={LABEL_STYLE}
       onPress={onClick}
     />

@@ -133,7 +133,6 @@ function describe(page, sel) {
             }
           : null,
         plus: box(wrap.querySelector('#composerToolsBtn')),
-        effort: box(wrap.querySelector('#effortTrigger')),
         mic: box(wrap.querySelector('#composerMicBtn')),
         primary: box(wrap.querySelector('#composerPrimaryBtn')),
       };
@@ -181,7 +180,6 @@ for (const vp of VIEWPORTS) {
       const { shape: chatShape, ...chatRest } = chat;
       expect.soft(chatShape, 'same DOM shape and class vocabulary').toEqual(topicShape);
       expect.soft(diff(topicRest, chatRest), 'computed style differences').toEqual([]);
-      expect(chat.effort.visible, 'the resting composer keeps the effort pill hidden').toBe(false);
     });
   }
 }

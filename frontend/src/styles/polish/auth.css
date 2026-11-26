@@ -1,3 +1,70 @@
+/* Auth gate */
+.auth-gate {
+  position: fixed;
+  inset: 0;
+  z-index: var(--ui-z-popover);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+}
+.auth-gate.hidden {
+  display: none;
+}
+/* P0.6 — pre-boot hidden state. When <html data-boot-state="checking">
+   neither the auth gate nor the app shell is shown, so the user never
+   sees a flash of the wrong view during the async /api/auth/me call.
+   The boot IIFE flips data-boot-state to "auth" or "app" once /me
+   resolves, which then reveals the correct view via these rules. */
+html[data-boot-state='checking'] #authGate,
+html[data-boot-state='checking'] #appShell {
+  display: none !important;
+}
+html[data-boot-state='app'] #authGate {
+  display: none !important;
+}
+html[data-boot-state='auth'] #appShell {
+  display: none !important;
+}
+/* Pre-boot loading shell uses the same flat page color as auth. */
+.boot-loading {
+  position: fixed;
+  inset: 0;
+  z-index: var(--ui-z-backdrop);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: var(--ui-bg-page);
+  opacity: 1;
+  transition: opacity 0.25s var(--ease-out);
+}
+html[data-boot-state='app'] .boot-loading,
+html[data-boot-state='auth'] .boot-loading {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  transition:
+    opacity 0.25s var(--ease-out),
+    visibility 0s linear 0.25s;
+}
+.boot-loading-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ui-text-primary);
+  font-weight: var(--ui-font-weight-semibold);
+  font-size: calc(var(--ui-font-size-base-medium) * var(--app-font-scale, 1));
+  letter-spacing: -0.02em;
+}
+.boot-loading-logo svg,
+.boot-loading-logo img {
+  flex-shrink: 0;
+  color: var(--ui-text-primary);
+}
+
 /* Authentication is a focused, flat page. All form states share this owner;
  * legacy grid, accent buttons and boxed-card skins have been retired. */
 .auth-gate {

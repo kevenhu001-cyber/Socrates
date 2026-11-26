@@ -1,0 +1,69 @@
+/* Exam page shell, including the independently scrolling question area. */
+
+/* Exam view (standalone page within the SPA) */
+.exam-view {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+.exam-view.hidden {
+  display: none;
+}
+.exam-view-root {
+  display: contents;
+}
+.exam-title-bar {
+  font-size: calc(var(--ui-font-size-base-small) * var(--app-font-scale, 1));
+  color: var(--ui-text-secondary);
+  font-weight: var(--ui-font-weight-medium);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.exam-view-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--ui-page-gutter) var(--ui-space-xl) var(--ui-space-xl);
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+/* Full-width scroll container (scrollbar hugs the window edge); content
+   centers itself in a max-width column instead. */
+.exam-view-body > :not(.exam-root-slot),
+.exam-view-body > .exam-root-slot > * {
+  width: 100%;
+  max-width: var(--ui-page-reading-width);
+}
+.exam-view-body > .exam-root-slot,
+.exam-view-footer > .exam-root-slot {
+  display: contents;
+}
+@media (max-width: 720px) {
+  .exam-view-body {
+    padding: 20px 16px 16px;
+  }
+}
+.exam-view-footer {
+  flex-shrink: 0;
+  padding: 14px 24px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--ui-bg-page);
+  border-top: 1px solid var(--ui-border-subtle);
+}
+
+/* `examNavJump` scrolls a card to `block: 'start'`; keep it clear of the
+   sticky top bar. */
+#examViewBody [data-exam-q] {
+  scroll-margin-top: 80px;
+}

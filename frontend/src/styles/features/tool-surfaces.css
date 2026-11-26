@@ -1,3 +1,220 @@
+/* ── Inline tool row tokens ────────────────
+   Borderless row language: a bare line icon plus one muted text line.
+   Live rows and serialized history rows read from the same tokens so
+   old message HTML re-renders in the same visual language. */
+:root {
+  --inline-row-height: 24px;
+  --inline-row-gap: 6px;
+  --inline-icon-size: 16px;
+  --inline-icon-glyph: 14px;
+  --inline-chevron-size: 14px;
+  --inline-detail-indent: 22px;
+  --inline-radius: 6px;
+  --inline-sunken-bg: hsla(0, 0%, 100%, 0.045);
+  --inline-hover-bg: hsla(0, 0%, 100%, 0.06);
+  --shimmer-duration: 2.4s;
+  --crossfade-duration: 0.22s;
+}
+[data-theme='socrates'][data-mode='light'] {
+  --inline-sunken-bg: hsla(222, 10%, 16%, 0.04);
+  --inline-hover-bg: hsla(222, 10%, 16%, 0.06);
+}
+
+/* P5.8 — Slash-command palette (Spotlight-style). Anchored
+   above the chat input bar; the active row is highlighted
+   and the kbd hints sit at the bottom. */
+.slash-command-palette {
+  position: fixed;
+  left: 50%;
+  bottom: 120px;
+  transform: translateX(-50%) translateY(8px);
+  width: min(520px, 92vw);
+  max-height: 60vh;
+  display: none;
+  flex-direction: column;
+  z-index: calc(var(--ui-z-sheet) - 4);
+  opacity: 0;
+  transition:
+    opacity 0.16s var(--ease-out),
+    transform 0.16s var(--ease-out);
+}
+.slash-command-palette.visible {
+  display: flex;
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+.slash-command-head {
+  font-size: var(--ui-font-size-label);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.slash-command-empty {
+  padding: 20px 14px;
+  text-align: center;
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-foundation-font-size-sm);
+}
+.slash-command-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+.slash-command-icon {
+  font-size: var(--ui-font-size-base-large);
+  line-height: 1;
+  flex-shrink: 0;
+  width: 24px;
+  text-align: center;
+}
+.slash-command-icon svg {
+  width: 18px;
+  height: 18px;
+  vertical-align: middle;
+}
+/* Section label separating connected apps from prompt templates. */
+.slash-command-group {
+  padding: 8px 14px 4px;
+  font-size: var(--ui-font-size-caption);
+  font-weight: var(--ui-font-weight-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ui-text-tertiary);
+}
+.slash-command-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.slash-command-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.slash-command-desc {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.slash-command-foot {
+  display: flex;
+  gap: 14px;
+  padding: 6px 14px;
+  font-size: var(--ui-font-size-caption);
+  color: var(--ui-text-tertiary);
+}
+.slash-command-foot kbd {
+  font-family: var(--font-mono);
+  font-size: var(--ui-font-size-caption);
+  padding: 1px 4px;
+  border: 0.5px solid color-mix(in srgb, var(--ui-border-default) 40%, transparent);
+  border-radius: var(--ui-space-xs);
+  background: transparent;
+  margin-right: 3px;
+}
+
+/* P5.8 — Prompt templates manager + editor */
+.prompt-templates-modal {
+  width: min(620px, 92vw);
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+.prompt-templates-body {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+.prompt-templates-section-label {
+  font-size: var(--ui-font-size-label);
+  font-weight: var(--ui-font-weight-medium);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ui-text-tertiary);
+  padding: 4px 0 2px;
+}
+.prompt-templates-custom-label {
+  margin-top: 14px;
+}
+.prompt-templates-intro {
+  margin: 0 0 4px;
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-foundation-font-size-sm);
+  line-height: 1.45;
+}
+.prompt-templates-empty {
+  padding: 14px;
+  border: 0.5px dashed color-mix(in srgb, var(--ui-border-default) 30%, transparent);
+  border-radius: var(--ui-radius-row);
+  text-align: center;
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-foundation-font-size-sm);
+}
+.prompt-row {
+  display: flex;
+  align-items: center;
+}
+.prompt-row-icon {
+  line-height: 1;
+  text-align: center;
+  flex-shrink: 0;
+}
+.prompt-row-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.prompt-row-title {
+  display: flex;
+  align-items: center;
+}
+.prompt-row-shortcut {
+  font-family: var(--font-mono);
+}
+.prompt-row-desc {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.prompt-row-actions {
+  display: flex;
+  flex-shrink: 0;
+}
+.prompt-templates-new {
+  margin-top: 6px;
+}
+.prompt-editor-grid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.prompt-editor-label {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+.prompt-editor-label .group\/native-select {
+  width: 100%;
+}
+.prompt-editor-shortcut {
+  width: 160px;
+  font-family: var(--font-mono);
+}
+.prompt-editor-icon {
+  width: 60px;
+  text-align: center;
+}
+.prompt-editor-textarea {
+  min-height: 100px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
 /* ==========================================================================
  * styles/features/tool-surfaces.css — tool-card visual system + surfaces
  * extracted from legacy/14-tool-surfaces.css (zero-debt sections).
@@ -625,10 +842,6 @@
   cursor: pointer;
   padding: 0;
 }
-@media (prefers-reduced-motion: reduce) override
-   below shortens the duration to effectively zero while still
-   keeping the keyframe accessible to cleanup. */
-
 @media (prefers-reduced-motion: reduce) {
   .tool-inline-tool-icon.is-settling svg {
     animation: none;
@@ -673,7 +886,7 @@
   border-radius: var(--ui-radius-lg);
   background: var(--ui-bg-surface);
   box-shadow: none;
-  
+
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
   -webkit-user-select: none;

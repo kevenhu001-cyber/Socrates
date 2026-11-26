@@ -45,7 +45,7 @@ export function usesSpecializedRenderer(template: string) {
 
 function cssColor(name: string, fallback: string) {
   const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-  return value ? `hsl(${value})` : fallback;
+  return value || fallback;
 }
 
 /* Charts bake theme colours into their SVG at mount time. Without a
@@ -83,10 +83,10 @@ function plotlyColors() {
     typeof document !== 'undefined' &&
     document.documentElement.getAttribute('data-mode') === 'dark';
   return {
-    text: cssColor('--text-100', isDark ? '#ededed' : '#1c2637'),
-    muted: cssColor('--text-300', isDark ? '#a1a1a1' : '#68748a'),
+    text: cssColor('--ui-text-primary', isDark ? '#ededed' : '#1c2637'),
+    muted: cssColor('--ui-text-tertiary', isDark ? '#a1a1a1' : '#68748a'),
     grid: isDark ? 'rgba(255, 255, 255, 0.08)' : '#edf1f5',
-    primary: cssColor('--accent-500', isDark ? '#3b82f6' : '#2563eb'),
+    primary: isDark ? '#3b82f6' : '#2563eb',
     secondary: isDark ? '#2dd4bf' : '#0d9488',
     comparison: isDark ? '#a78bfa' : '#7c3aed',
     highlight: isDark ? '#fbbf24' : '#f59e0b',

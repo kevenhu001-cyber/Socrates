@@ -1,3 +1,165 @@
+.sidebar-view-btn {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: var(--ui-text-secondary);
+  cursor: pointer;
+  transition:
+    color 0.18s var(--ease-out),
+    background 0.18s var(--ease-out),
+    transform 0.14s var(--ease-out);
+}
+.sidebar-view-btn svg {
+  width: 17px;
+  height: 17px;
+}
+.sidebar-view-btn:hover {
+  color: var(--ui-text-primary);
+  background: var(--ui-bg-control);
+}
+
+.sidebar-view-btn.active {
+  color: var(--ui-text-primary);
+  background: var(--ui-bg-control);
+}
+.sidebar-view-btn .tab-badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  margin: 0;
+}
+.knowledge-panel {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  opacity: 1;
+  transition: opacity 0.15s ease;
+}
+.knowledge-panel.hidden {
+  display: none;
+}
+
+/* Markdown tables inside the diagnostic question text. The card itself is the
+   React `DiagnosticView`, so only the injected prose needs a skin. */
+.diag-text td {
+  border: 1px solid var(--ui-border-default);
+  padding: 6px 10px;
+  text-align: left;
+  color: var(--ui-text-secondary);
+}
+.diag-text th {
+  background: var(--ui-bg-sunken);
+  font-weight: var(--ui-font-weight-semibold);
+  color: var(--ui-text-primary);
+}
+.diag-text a {
+  color: var(--ui-ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+/* Task 3.4 — teaching-plan view in the Knowledge sidebar. Kept
+   minimal and consistent with the .diag-* / .kb-* styles: same
+   font-scale pattern, same colour tokens, text markers (no emoji). */
+.teaching-plan {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 4px 10px;
+  margin-bottom: 6px;
+  border-bottom: 0.5px solid color-mix(in srgb, var(--ui-border-default) 12%, transparent);
+}
+.teaching-plan-title {
+  font-size: calc(var(--ui-font-size-caption) * var(--sidebar-font-scale));
+  font-weight: var(--ui-font-weight-semibold);
+  color: var(--ui-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 4px 8px 6px;
+}
+.teaching-plan-subtopic {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: var(--ui-radius-row);
+  font-size: calc(var(--ui-foundation-font-size-sm) * var(--sidebar-font-scale));
+  color: var(--ui-text-tertiary);
+  transition: background 0.06s;
+}
+.teaching-plan-subtopic.current {
+  background: color-mix(in srgb, var(--ui-ink) 8%, transparent);
+  color: var(--ui-text-primary);
+}
+.teaching-plan-subtopic.done {
+  color: var(--ui-text-tertiary);
+}
+.teaching-plan-marker {
+  flex-shrink: 0;
+  width: 38px;
+  font-size: calc(var(--ui-font-size-caption) * var(--sidebar-font-scale));
+  font-weight: var(--ui-font-weight-semibold);
+  color: var(--ui-text-tertiary);
+  font-family: var(--font-mono);
+}
+.teaching-plan-subtopic.current .teaching-plan-marker {
+  color: var(--ui-ink);
+}
+.teaching-plan-subtopic.done .teaching-plan-marker {
+  color: var(--ui-ink);
+}
+.teaching-plan-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.teaching-plan-stage {
+  font-size: calc(var(--ui-font-size-micro) * var(--sidebar-font-scale));
+  font-weight: var(--ui-font-weight-semibold);
+  color: var(--ui-ink);
+  background: color-mix(in srgb, var(--ui-ink) 12%, transparent);
+  padding: 2px 7px;
+  border-radius: var(--ui-radius-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+/* U-M1 — substantive-answer depth counter (n/3) next to the stage pill. */
+.teaching-plan-depth {
+  font-size: calc(var(--ui-font-size-micro) * var(--sidebar-font-scale));
+  font-weight: var(--ui-font-weight-semibold);
+  color: var(--ui-text-secondary);
+  background: color-mix(in srgb, var(--ui-bg-control) 80%, transparent);
+  padding: 2px 6px;
+  border-radius: var(--ui-radius-xs);
+  letter-spacing: 0.03em;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  cursor: default;
+}
+.teaching-plan-status {
+  font-size: calc(var(--ui-font-size-micro) * var(--sidebar-font-scale));
+  color: var(--ui-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+.quick-opts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
 /* Study surfaces shared by the diagnostic panel, knowledge map and
    mistake book. Geometry lives here; the components own colour and type. */
 .diag-card {

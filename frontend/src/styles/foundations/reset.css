@@ -1,0 +1,165 @@
+/* Browser reset, keyboard focus defaults and root view transitions. */
+
+/* Author reset stays below component utilities. An unlayered universal
+   padding:0 otherwise defeats every shadcn Card/Field padding utility. */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+}
+html,
+body {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* ─── View Transition — cross-browser consistent ── */
+::view-transition-old(root) {
+  animation: 0.3s ease-out vt-fade-out;
+  z-index: 1;
+}
+::view-transition-new(root) {
+  animation: 0.3s ease-out vt-fade-in;
+  z-index: 2;
+}
+/* Scoped single-element swaps (withElementSwapTransition): while the html
+   element carries .vt-scoped-swap, the root snapshot must NOT cross-fade —
+   only the named element (a message row finishing its stream) morphs.
+   The group rule also shrinks the default UA morph duration so the
+   collapse of streaming-only chrome reads as a quick settle, not a wipe. */
+@keyframes vt-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes vt-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Native defaults sit below component variants and retained surface owners. */
+@layer base {
+  button,
+  input,
+  textarea {
+    font-size: inherit;
+    letter-spacing: inherit;
+  }
+  button {
+    border: none;
+    background: none;
+    cursor: pointer;
+    outline: none;
+    font-weight: inherit;
+  }
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+}
+/* Global keyboard focus ring. The default `button{outline:none}` removes
+   the focus indicator for mouse users but ALSO for keyboard users — a
+   WCAG 2.4.7 violation. We restore a visible ring only for keyboard
+   navigation via `:focus-visible`, so mouse clicks stay clean. This rule
+   intentionally sits below per-element `:focus-visible` overrides so
+   they win for components that already have a custom ring.
+   2026-10-24 — the ring itself is no longer painted here. The visible
+   indicator is the two-layer box-shadow in --ui-focus-shadow (a page-coloured
+   gap plus a ring), and one outline on top of it would read as a third,
+   uneven ring. This rule keeps the transparent outline so the per-element
+   overrides below still win, and so forced-colours mode has a fallback. */
+@layer base {
+  button:focus-visible,
+  a:focus-visible {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    border-radius: var(--ui-space-xs);
+  }
+}
+::selection {
+  background: color-mix(in srgb, var(--ui-ink) 30%, transparent);
+  color: var(--ui-text-primary);
+}
+
+/* Honour the OS-level "reduce motion" preference.
+   Scope: animations, transitions, view transitions. Layout-affecting
+   transforms (sidebar drag) are kept so resize still feels responsive.
+   Unlike the blanket approach, we preserve color/opacity/box-shadow
+   transitions since those convey state without being "motion" in the
+   accessibility sense. Only animating transforms and layout properties
+   are suppressed. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.01ms !important;
+  }
+}
+/* ─── Scrollbar — cross-browser ── */
+/* The thumb comes from a mode-aware token (themes.css): a fixed white alpha
+   painted an invisible thumb on every light surface. */
+/* WebKit (Chrome, Edge, Safari) */
+/* Firefox — supported since FF 64. WebKit fallback above. */
+@supports (scrollbar-width: thin) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--ui-scrollbar-thumb) transparent;
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: var(--ui-control-sm);
+  border-radius: var(--ui-radius-xs);
+  color: var(--ui-text-tertiary);
+  transition:
+    color 0.18s var(--ease-out),
+    background 0.18s var(--ease-out),
+    transform 0.14s var(--ease-out);
+  cursor: pointer;
+  border: none;
+  background: transparent;
+}
+.icon-btn:hover {
+  color: var(--ui-text-primary);
+  background: var(--ui-bg-control);
+}
+
+.icon-btn svg {
+  width: 16px;
+  height: calc(var(--ui-control-badge) - 4px);
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}

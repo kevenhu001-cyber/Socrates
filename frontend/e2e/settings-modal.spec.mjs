@@ -312,7 +312,9 @@ test('all settings categories render their own pane and mobile search reaches hi
     'background-color',
     'rgba(0, 0, 0, 0)',
   );
-  await expect(overlay.locator('.settings-index-group .settings-category-description').first()).toBeHidden();
+  await expect(
+    overlay.locator('.settings-index-group .settings-category-description').first(),
+  ).toBeHidden();
   await accountTab.click();
   await expect(overlay.locator('.settings-pane:visible h2')).toHaveText('Account');
   await overlay.locator('#settingsMobileBack').click();
@@ -574,6 +576,7 @@ test('general and model preferences update the app and sync supported account fi
   await overlay.locator('#settings-appearance').click();
   await page.getByRole('option', { name: 'Dark', exact: true }).click();
   await expect(page.locator('html')).toHaveAttribute('data-mode', 'dark');
+  await overlay.locator('.settings-general-more summary').click();
   await overlay.locator('#settings-theme-style').click();
   await page.getByRole('option', { name: 'Philosophy', exact: true }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'philosophy');
@@ -1107,16 +1110,22 @@ test('wide settings keeps a readable form width and announces one empty search s
   await expect(pane).toHaveCount(0);
 });
 
-test('redesigned settings navigation and preference rows fit desktop and phone', async ({ page }) => {
+test('redesigned settings navigation and preference rows fit desktop and phone', async ({
+  page,
+}) => {
   const overlay = page.locator('#settingsPage');
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
   await expect(overlay.locator('.settings-index-group-label')).toHaveCount(3);
   await expect(overlay.locator('.settings-nav [data-section="general"]')).toHaveAttribute(
-    'aria-current', 'page',
+    'aria-current',
+    'page',
   );
   await expect(overlay.locator('.settings-pane:visible h2')).toBeVisible();
-  await page.screenshot({ path: 'test-results/settings-redesign-desktop.png', animations: 'disabled' });
+  await page.screenshot({
+    path: 'test-results/settings-redesign-desktop.png',
+    animations: 'disabled',
+  });
   await page.setViewportSize({ width: 360, height: 780 });
   const back = overlay.locator('#settingsMobileBack');
   if (await back.isVisible()) await back.click();
@@ -1143,10 +1152,15 @@ test('redesigned settings navigation and preference rows fit desktop and phone',
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
   );
   expect(overflow).toBeLessThanOrEqual(1);
-  await page.screenshot({ path: 'test-results/settings-redesign-mobile.png', animations: 'disabled' });
+  await page.screenshot({
+    path: 'test-results/settings-redesign-mobile.png',
+    animations: 'disabled',
+  });
 });
 
-test('settings preference controls use capsule selects and reachable switches', async ({ page }) => {
+test('settings preference controls use capsule selects and reachable switches', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
   const overlay = page.locator('#settingsPage');
@@ -1172,8 +1186,9 @@ test('settings preference controls use capsule selects and reachable switches', 
   expect(thumbRect.x + thumbRect.width).toBeLessThanOrEqual(trackRect.x + trackRect.width);
 });
 
-
-test('desktop settings has a compact neutral panel with aligned category glyphs', async ({ page }) => {
+test('desktop settings has a compact neutral panel with aligned category glyphs', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
   const panel = page.locator('#settingsPage .settings-page');
@@ -1207,5 +1222,27 @@ test('settings follows the shell breakpoint at 768 and 769 pixels', async ({ pag
   await expect(nav).toBeVisible();
   await expect(body).toBeVisible();
   await expect(overlay.locator('#settingsMobileBack')).toBeHidden();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    ),
+  ).toBeLessThanOrEqual(1);
+});
+
+test('General settings switches conversation formulas to source and remembers the preference', async ({
+  page,
+}) => {
+  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
+  const toggle = page.getByRole('switch', { name: 'Show math formulas' });
+  await expect(toggle).toBeChecked();
+  await expect(toggle).toHaveCSS('background-color', 'rgb(38, 145, 87)');
+  await toggle.click();
+  await expect(page.locator('html')).toHaveAttribute('data-math-presentation', 'source');
+  await expect(toggle).not.toBeChecked();
+  await gotoAndSettle(page, '/');
+  await expect(page.locator('html')).toHaveAttribute('data-math-presentation', 'source');
+  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
+  await expect(toggle).not.toBeChecked();
+  await toggle.click();
+  await expect(page.locator('html')).toHaveAttribute('data-math-presentation', 'typeset');
 });

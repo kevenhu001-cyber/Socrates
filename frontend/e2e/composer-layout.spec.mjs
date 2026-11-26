@@ -35,9 +35,7 @@ function measure(page, wrapSel) {
       };
     };
     const controls = [
-      ...wrap.querySelectorAll(
-        '#composerToolsBtn, #effortTrigger, #composerMicBtn, #composerPrimaryBtn',
-      ),
+      ...wrap.querySelectorAll('#composerToolsBtn, #composerMicBtn, #composerPrimaryBtn'),
     ].filter((n) => n.getClientRects().length);
     const range = document.createRange();
     const lineCount = (n) => {

@@ -3,7 +3,6 @@
     "philosophy": {
       "scale": null,
       "shared": false,
-      "legacyTolerance": 0.5,
       "dark": {
         "page": {
           "step": null,
@@ -46,7 +45,6 @@
       "blackCanvas": true,
       "scale": "geist",
       "shared": true,
-      "legacyTolerance": 0.05,
       "dark": {
         "page": {
           "step": "background-200",
@@ -83,20 +81,6 @@
           "value": "#ffffff"
         }
       }
-    }
-  },
-  "legacyChannels": {
-    "dark": {
-      "--bg-000": "page",
-      "--bg-100": "rail",
-      "--bg-200": "panel",
-      "--bg-300": "elevated"
-    },
-    "light": {
-      "--bg-000": "elevated",
-      "--bg-100": "page",
-      "--bg-200": "rail",
-      "--bg-300": "panel"
     }
   },
   "generatedBy": "check-surface-ladder.mjs --update"

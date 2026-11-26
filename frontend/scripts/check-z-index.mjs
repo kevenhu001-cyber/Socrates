@@ -21,8 +21,6 @@
  * numbers — `1500` for a toast, `1600` for a tool card, `2400` for a tutor
  * overlay — and two surfaces silently fight for the top.
  *
- * legacy/ is the frozen historical zone and is exempt, exactly
- * as in check-css-debt.mjs and check-button-sizes.mjs — see FROZEN_DIRS.
  *
  * Shrinking the baseline is an explicit act: run with --update.
  *
@@ -36,9 +34,6 @@ const FRONTEND = fileURLToPath(new URL('..', import.meta.url));
 const STYLES = join(FRONTEND, 'src', 'styles');
 const BASELINE = join(FRONTEND, 'scripts', 'z-index.baseline.json');
 const UPDATE = process.argv.includes('--update');
-
-/* Frozen historical zones — same split as check-css-debt.mjs. */
-const FROZEN_DIRS = new Set(['legacy']);
 
 /* A z-index of 0–9 is local stacking inside one component and needs no
  * token. 10 and above reaches across components and must use a --ui-z-* rung. */
@@ -54,7 +49,6 @@ function walk(dir, out) {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const p = join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (FROZEN_DIRS.has(entry.name)) continue;
       walk(p, out);
     } else if (entry.name.endsWith('.css')) {
       out.push(p);

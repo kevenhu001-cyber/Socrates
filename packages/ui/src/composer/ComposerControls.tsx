@@ -78,7 +78,7 @@ export interface ComposerPrimaryControl {
 
 export interface ComposerControlsProps {
   tools: ComposerToolsControl;
-  effort: ComposerEffortControl;
+  effort?: ComposerEffortControl;
   mic: ComposerMicControl;
   primary: ComposerPrimaryControl;
   /** Phone rail: compact effort control. */
@@ -213,73 +213,77 @@ export function ComposerControls({
 
       {trailing ? (
         <>
-          <div
-            {...dataAttributes({
-              composerControl: 'effort',
-              effort: effort.level,
-              visible: effort.visible ? 'true' : 'false',
-            })}
-            style={{ display: effort.visible ? 'flex' : 'none', flexDirection: 'row' }}
-          >
-            <button
-              type="button"
-              id="effortTrigger"
-              aria-label={effort.accessibilityLabel}
-              aria-haspopup="dialog"
-              aria-expanded={effort.expanded}
-              onClick={effort.onPress}
-              {...effortPress.handlers}
-              {...dataAttributes({ chatConfigTrigger: '' })}
-              style={{
-                display: 'flex',
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: compact ? 4 : 6,
-                height: COMPOSER_CONTROL_SIZE,
-                margin: 0,
-                paddingTop: 0,
-                paddingBottom: 0,
-                paddingLeft: compact ? 10 : 12,
-                paddingRight: 10,
-                borderRadius: uiRadius.pill,
-                borderWidth: compact ? 0 : 1,
-                borderStyle: 'solid',
-                borderColor:
-                  effortPress.hovered || effort.expanded ? colors.hairlineStrong : colors.hairline,
-                backgroundColor: effortPress.pressed
-                  ? colors.fillPressed
-                  : effortPress.hovered || effort.expanded
-                    ? colors.fillHover
-                    : compact
-                      ? 'transparent'
-                      : colors.fill,
-                color: 'inherit',
-                font: 'inherit',
-                cursor: 'pointer',
-                transitionProperty: 'background-color, border-color',
-                transitionDuration: '150ms',
-              }}
+          {effort?.visible ? (
+            <div
+              {...dataAttributes({
+                composerControl: 'effort',
+                effort: effort.level,
+                visible: 'true',
+              })}
+              style={{ display: 'flex', flexDirection: 'row' }}
             >
-              {compact ? null : (
-                <UiText variant="labelSm" tone="secondary" numberOfLines={1}>
-                  {effort.caption}
-                </UiText>
-              )}
-              {effort.value ? (
-                <UiText
-                  variant={compact ? 'body' : 'labelSm'}
-                  tone={compact ? 'tertiary' : 'ink'}
-                  numberOfLines={1}
-                  style={compact ? { lineHeight: '20px' } : undefined}
-                  aria-hidden
-                  {...dataAttributes({ effortValue: '' })}
-                >
-                  {effort.value}
-                </UiText>
-              ) : null}
-              <UiIcon name="chevron-down" size={compact ? 14 : 16} color={colors.inkTertiary} />
-            </button>
-          </div>
+              <button
+                type="button"
+                id="effortTrigger"
+                aria-label={effort.accessibilityLabel}
+                aria-haspopup="dialog"
+                aria-expanded={effort.expanded}
+                onClick={effort.onPress}
+                {...effortPress.handlers}
+                {...dataAttributes({ chatConfigTrigger: '' })}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: compact ? 4 : 6,
+                  height: COMPOSER_CONTROL_SIZE,
+                  margin: 0,
+                  paddingTop: 0,
+                  paddingBottom: 0,
+                  paddingLeft: compact ? 10 : 12,
+                  paddingRight: 10,
+                  borderRadius: uiRadius.pill,
+                  borderWidth: compact ? 0 : 1,
+                  borderStyle: 'solid',
+                  borderColor:
+                    effortPress.hovered || effort.expanded
+                      ? colors.hairlineStrong
+                      : colors.hairline,
+                  backgroundColor: effortPress.pressed
+                    ? colors.fillPressed
+                    : effortPress.hovered || effort.expanded
+                      ? colors.fillHover
+                      : compact
+                        ? 'transparent'
+                        : colors.fill,
+                  color: 'inherit',
+                  font: 'inherit',
+                  cursor: 'pointer',
+                  transitionProperty: 'background-color, border-color',
+                  transitionDuration: '150ms',
+                }}
+              >
+                {compact ? null : (
+                  <UiText variant="labelSm" tone="secondary" numberOfLines={1}>
+                    {effort.caption}
+                  </UiText>
+                )}
+                {effort.value ? (
+                  <UiText
+                    variant={compact ? 'body' : 'labelSm'}
+                    tone={compact ? 'tertiary' : 'ink'}
+                    numberOfLines={1}
+                    style={compact ? { lineHeight: '20px' } : undefined}
+                    aria-hidden
+                    {...dataAttributes({ effortValue: '' })}
+                  >
+                    {effort.value}
+                  </UiText>
+                ) : null}
+                <UiIcon name="chevron-down" size={compact ? 14 : 16} color={colors.inkTertiary} />
+              </button>
+            </div>
+          ) : null}
 
           {mic.phase === 'recording' && mic.showTimer && mic.timerLabel ? (
             <UiText
@@ -358,7 +362,7 @@ export function ComposerControls({
               color: 'inherit',
               cursor: enabled ? 'pointer' : 'default',
               opacity: !enabled
-                ? 0.5
+                ? 'var(--composer-disabled-send-opacity, 0.5)'
                 : primaryPress.pressed || primary.sending
                   ? 0.78
                   : primaryPress.hovered

@@ -56,19 +56,14 @@ tracks remaining raw React buttons and only allows its baseline to shrink.
 implementation:
 
 1. `tokens.css` defines theme-independent geometry, typography and motion.
-2. `legacy/index.css` loads order-sensitive compatibility styles.
-3. `foundations/`, `layout/`, `components/`, and `features/` contain modular
-   styles for actively maintained surfaces.
-4. `restore/index.css` supplies compatibility rules; `parity/index.css` owns
-   the current desktop surfaces, followed by shared `polish/` details.
-5. `themes.css` loads exactly once, last, and owns the palette and legacy
-   token mappings.
+2. Foundations, components, layout and feature styles define default surfaces.
+3. `parity/` owns the sidebar, topbar, composer and transcript.
+4. `polish/` holds overlays, responsive layouts and feature details.
+5. `themes.css` loads exactly once, last, and owns the palette.
 
-This is a transition architecture: compatibility selectors remain for surfaces
-not yet migrated. When changing a surface, trace its cascade in `styles/index.css`
-and its imports, and use the designated owner for the four desktop surfaces.
-Move or delete a legacy rule only after checking the affected desktop/mobile
-and light/dark views. Keep `index.css` as the only entry point.
+Trace the cascade through `styles/index.css` and use each surface's owner.
+Keep the HTML stylesheet links in the same order as the manifest. Check the
+affected desktop and mobile layouts in both light and dark modes.
 
 ## Checks
 

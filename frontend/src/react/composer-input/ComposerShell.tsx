@@ -12,15 +12,6 @@ import { WebUiTheme } from '../rn/WebUiTheme';
 import { i18n } from '../../ui/legacyI18n.ts';
 import { ComposerAttachmentChips } from '../attachments/AttachmentChipsRow';
 import { useAttachments } from '../attachments/attachments.store';
-import {
-  useChatConfigurationSnapshot,
-  openChatConfiguration,
-} from '../chat-configuration/chatConfiguration.bridge';
-import {
-  useActiveModelLabel,
-  useStoredReasoningEffort,
-} from '../chat-configuration/useChatConfigurationLabels';
-import { effortLabel } from '../chat-configuration/ChatConfigurationPanels';
 import { RichComposer } from './RichComposer';
 import { useComposerSurface } from './useComposerSurface';
 import { readComposerSurface } from '../../composer/controller.ts';
@@ -80,11 +71,7 @@ function useEditorFocus(keepControlsInPlace: boolean): boolean {
     if (!host) return undefined;
     const onFocusIn = (event: FocusEvent) => {
       const target = event.target;
-      if (
-        target instanceof Element &&
-        (target.matches('.rich-composer-editor') ||
-          (keepControlsInPlace && target.id === 'effortTrigger'))
-      ) {
+      if (target instanceof Element && target.matches('.rich-composer-editor')) {
         setFocused(true);
       }
     };
@@ -118,16 +105,15 @@ function controlLabels(streaming: boolean): { primaryLabel: string; toolsLabel: 
  * react-native-web 不转发 `title`，提问框的图标按钮由宿主补上悬停提示，
  * 与 aria-label 用同一份已翻译文案（RN-7 前每个按钮都有 title）。
  */
-function useControlTitles(tools: string, effort: string, voice: string, primary: string): void {
+function useControlTitles(tools: string, voice: string, primary: string): void {
   useLayoutEffect(() => {
     const titles: ReadonlyArray<readonly [string, string]> = [
       ['composerToolsBtn', tools],
-      ['effortTrigger', effort],
       ['composerMicBtn', voice],
       ['composerPrimaryBtn', primary],
     ];
     for (const [id, title] of titles) anchor(id)?.setAttribute('title', title);
-  }, [tools, effort, voice, primary]);
+  }, [tools, voice, primary]);
 }
 
 function useComposerVoiceState() {
@@ -195,10 +181,6 @@ function buildComposerControls(opts: {
   toolsLabel: string;
   composerTools: { isOpen: boolean; triggerId: string | null };
   phone: boolean;
-  effortValue: string;
-  effort: string;
-  effortAccessibleLabel: string;
-  configuration: { open: boolean; triggerId: string | null };
   voiceLabel: string;
   voicePhase: 'idle' | 'recording' | 'transcribing';
   voiceTimerLabel: string;
@@ -217,18 +199,6 @@ function buildComposerControls(opts: {
       onPress: () => {
         const trigger = anchor('composerToolsBtn');
         if (trigger) toggleComposerTools(trigger, readComposerSurface());
-      },
-    },
-    effort: {
-      visible: opts.phone,
-      caption: i18n('effort.label', 'Effort'),
-      value: opts.effortValue,
-      level: opts.effort,
-      accessibilityLabel: opts.effortAccessibleLabel,
-      expanded: opts.configuration.open && opts.configuration.triggerId === 'effortTrigger',
-      onPress: () => {
-        const trigger = anchor('effortTrigger');
-        if (trigger) openChatConfiguration(trigger);
       },
     },
     mic: {
@@ -288,13 +258,7 @@ export function ComposerShell({
   } = useComposerVoiceState();
   const phone = useComposerPhone();
   const focused = useEditorFocus(phone);
-  const configuration = useChatConfigurationSnapshot();
-  const effortOpen = configuration.open && configuration.triggerId === 'effortTrigger';
-  const expanded = focused || hasDraft || attachments.length > 0 || voiceActive || effortOpen;
-  const modelLabel = useActiveModelLabel();
-  const effort = useStoredReasoningEffort();
-  const effortValue = effortLabel(effort);
-  const effortAccessibleLabel = `${modelLabel ? `${modelLabel} · ` : ''}${i18n('chatconfig.effort', 'Reasoning effort')} · ${effortValue}`;
+  const expanded = focused || hasDraft || attachments.length > 0 || voiceActive;
   /* Dictation owns the microphone while it runs; the primary stays a send
      control and cannot submit a half-transcribed turn. */
   const canSend = !voiceActive && (hasDraft || attachments.length > 0);
@@ -324,7 +288,7 @@ export function ComposerShell({
     else host.removeAttribute('data-voice-recording');
   }, [voiceRecording]);
 
-  useControlTitles(toolsLabel, effortAccessibleLabel, voiceLabel, primaryLabel);
+  useControlTitles(toolsLabel, voiceLabel, primaryLabel);
 
   /* The React composer exposes readiness as `data-ready` on the disc, but two
      older contracts still read the DOM classes: chat/turn/composer.ts uses
@@ -359,7 +323,7 @@ export function ComposerShell({
           expanded={expanded}
           compact={phone}
           layout="inline"
-          surface="var(--ui-bg-ask)"
+          surface={phone ? 'var(--ui-bg-field, var(--ui-bg-composer))' : 'var(--ui-bg-ask)'}
           shadows={FIELD_SHADOWS}
           topVisible={attachments.length > 0}
           top={
@@ -386,10 +350,6 @@ export function ComposerShell({
             toolsLabel,
             composerTools,
             phone,
-            effortValue,
-            effort,
-            effortAccessibleLabel,
-            configuration,
             voiceLabel,
             voicePhase,
             voiceTimerLabel,

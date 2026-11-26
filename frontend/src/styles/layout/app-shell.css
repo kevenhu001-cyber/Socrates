@@ -1,3 +1,122 @@
+#appShell {
+  font-family: var(--font-sans);
+}
+
+.app {
+  display: flex;
+  height: 100dvh;
+  /* The dynamic viewport is allowed to follow the browser's native resize.
+     legacy/keyboard/index.ts adds only the measured overlay inset when a browser
+     keeps the layout viewport unchanged. */
+  overflow: hidden;
+  overscroll-behavior: none;
+  position: relative;
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  position: relative;
+}
+body.sidebar-resizing .main {
+  transition: none !important;
+}
+
+/* The grid is a static backdrop: no clip mask, no pinned
+   compositor layer. The previous clip-path:circle(150%) clipped nothing
+   (a 150% radius covers the whole box) while forcing a mask layer, and
+   the permanent will-change:transform + translateZ(0) pinned a
+   full-viewport GPU surface that had to be re-rasterized on every .main
+   relayout (sidebar collapse, keyboard inset, composer growth) without
+   ever moving. Plain absolute positioning paints once and stays cached. */
+.main-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-color: var(--ui-bg-sidebar);
+  background-image:
+    linear-gradient(to right, var(--ui-bg-raised) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--ui-bg-raised) 1px, transparent 1px);
+  background-size: 32px 32px;
+  opacity: 0.5;
+}
+html[data-show-grid='false'] .main-bg {
+  background-image: none;
+}
+
+.main-content {
+  flex: 1 1 0%;
+  min-height: 0;
+  position: relative;
+  z-index: 1;
+  /* Chat mode owns one vertical flex column: the transcript consumes
+     the remaining height and the composer follows it in normal flow. */
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.main-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* Tight top padding so the chat header sits close to the top
+   * bar. The topic-setup view carries its own padding-top (10vh)
+   * so this only affects the chat / exam views. */
+  padding: 0 16px;
+  /* UI-align: widened from 720px to 58rem (928px) to match the
+   * open-webui reading column. --app-width-scale still applies. */
+  margin: 0 auto;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+}
+
+.chat-view.hidden,
+.chat-view-lifted.hidden {
+  display: none;
+}
+.main-inner.hidden {
+  display: none;
+}
+
+/* #chatPage is the structural owner of the chat surface: transcript +
+   composer live under it. display:contents keeps its children flattened
+   into the main-content flex column, so every rule below behaves exactly
+   as if they were still direct children of #mainContent. .hidden beats
+   display:contents and switches the whole surface synchronously — the
+   former chatView~msgList sibling gate is no longer needed. */
+.chat-page {
+  display: contents;
+}
+.chat-page.hidden {
+  display: none;
+}
+
+/* No ancestor-level :has() here: it made every DOM
+   insertion under the shell re-style the whole app (see
+   legacy/layoutStateMirror.ts). `:not(#_n):not(._n)` never excludes anything; it
+   only keeps the specificity identical to the :has() form it replaced. */
+:where(:root[data-chat-view-open], :root[data-routed-session='true'])
+  #mainContent:not(#_n):not(._n)
+  > #mainInner {
+  display: none;
+}
+:where(:root[data-routed-session='true']) #topicSetup {
+  display: none !important;
+}
+:where(:root[data-routed-session='true']:not([data-main-view='examView'])) #chatPage {
+  display: contents !important;
+}
+:where(:root[data-routed-session='true']:not([data-main-view='examView'])) #chatView {
+  display: flex !important;
+}
+:where(:root[data-routed-session='true'][data-main-view='examView']) #examView {
+  display: flex !important;
+}
+
 #appShell,
 #appShell .main,
 #appShell .main-bg,

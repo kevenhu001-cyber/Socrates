@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { FieldGroup } from '../ui/shadcn/field';
+import { Label } from '../ui/shadcn/label';
+import { Switch } from '../ui/shadcn/switch';
 import { PreferenceSelect } from './PreferenceSelect';
 import { settingsPreferenceActions, useSettingsPreferencesStore } from './settings.store';
 import {
@@ -28,30 +30,51 @@ export function GeneralSettingsPane({
 }) {
   const appearance = useSettingsPreferencesStore((state) => state.theme);
   const style = useSettingsPreferencesStore((state) => state.themeStyle);
+  const showMath = useSettingsPreferencesStore((state) => state.showMath);
+  const mathLabel = label('显示数学公式', 'Show math formulas');
   const [replyLanguage, setReplyLanguageState] = useState<ReplyLanguage>(getReplyLanguage);
   return (
-    <section className="settings-pane" hidden={hidden}>
-      <h2>{label('通用', 'General')}</h2>
-      <section className="settings-section" aria-label={label('主题与语言', 'Theme & language')}>
-        <div className="settings-section-head">
-          <h3>{label('外观与语言', 'Appearance & language')}</h3>
-          <p>{label('调整界面显示和回答语言。', 'Choose how the interface looks and which language replies use.')}</p>
-        </div>
-        <FieldGroup className="settings-preference-fields">
-          <PreferenceSelect
-            id="settings-appearance"
-            label={label('外观', 'Appearance')}
-            value={appearance}
-            options={[
-              { value: 'system', label: label('跟随系统', 'System') },
-              { value: 'light', label: label('浅色', 'Light') },
-              { value: 'dark', label: label('深色', 'Dark') },
-            ]}
-            onValueChange={(theme) => {
-              settingsPreferenceActions.setTheme(theme);
-              void savePreference({ theme });
-            }}
+    <section className="settings-pane settings-general" hidden={hidden}>
+      <h2>{label('常规', 'General')}</h2>
+      <FieldGroup className="settings-preference-fields">
+        <PreferenceSelect
+          id="settings-appearance"
+          label={label('主题', 'Theme')}
+          value={appearance}
+          options={[
+            { value: 'system', label: label('系统', 'System') },
+            { value: 'light', label: label('浅色', 'Light') },
+            { value: 'dark', label: label('深色', 'Dark') },
+          ]}
+          onValueChange={(theme) => {
+            settingsPreferenceActions.setTheme(theme);
+            void savePreference({ theme });
+          }}
+        />
+        <PreferenceSelect
+          id="settings-language"
+          label={label('语言', 'Language')}
+          value={language}
+          options={[
+            { value: 'zh', label: '中文' },
+            { value: 'en', label: 'English' },
+          ]}
+          onValueChange={onLanguageChange}
+        />
+        <div className="settings-choice settings-choice--switch">
+          <Label htmlFor="settings-show-math">{mathLabel}</Label>
+          <Switch
+            id="settings-show-math"
+            className="settings-math-switch"
+            aria-label={mathLabel}
+            checked={showMath}
+            onCheckedChange={settingsPreferenceActions.setShowMath}
           />
+        </div>
+      </FieldGroup>
+      <details className="settings-general-more">
+        <summary>{label('更多外观与语言选项', 'More appearance and language options')}</summary>
+        <FieldGroup className="settings-preference-fields">
           <PreferenceSelect
             id="settings-theme-style"
             label={label('主题风格', 'Theme style')}
@@ -60,19 +83,7 @@ export function GeneralSettingsPane({
               { value: 'socrates', label: label('现代科技', 'Modern') },
               { value: 'philosophy', label: label('古典哲学', 'Philosophy') },
             ]}
-            onValueChange={(next) => {
-              settingsPreferenceActions.setThemeStyle(next);
-            }}
-          />
-          <PreferenceSelect
-            id="settings-language"
-            label={label('语言', 'Language')}
-            value={language}
-            options={[
-              { value: 'zh', label: '中文' },
-              { value: 'en', label: 'English' },
-            ]}
-            onValueChange={onLanguageChange}
+            onValueChange={settingsPreferenceActions.setThemeStyle}
           />
           <PreferenceSelect
             id="settings-reply-language"
@@ -89,7 +100,7 @@ export function GeneralSettingsPane({
             }}
           />
         </FieldGroup>
-      </section>
+      </details>
     </section>
   );
 }

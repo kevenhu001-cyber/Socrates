@@ -1,0 +1,41 @@
+/* Transient notifications from the chat and application actions. */
+
+/* minimal transient toast used by showToast() in legacy/toast.ts, whose
+   error variant marks session save failures. Lives in the bottom-right at
+   z-index 1500 — above all modals (max 1300) so the user always sees
+   the notification, but below the alert container (2000) so queued
+   alert() notifications can still stack on top. Without this block
+   the toasts inherit no styles and the div renders as an unstyled
+   transparent box — users get "no feedback" for action confirmations. */
+.msg-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: calc(var(--ui-z-sheet) - 1);
+  max-width: 400px;
+  padding: 11px 14px;
+  border: 1px solid color-mix(in srgb, var(--ui-border-default) 35%, transparent);
+  font-size: calc(var(--ui-font-size-base-small) * var(--app-font-scale, 1));
+  line-height: 1.45;
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity 0.18s var(--ease-out),
+    transform 0.18s var(--ease-out);
+  pointer-events: none;
+  word-break: break-word;
+}
+.msg-toast.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.msg-toast-error {
+  background: hsl(0 75% 50%/0.12);
+  border-color: hsl(0 75% 50%/0.45);
+  color: hsl(0 70% 40%);
+}
+[data-mode='dark'] .msg-toast-error {
+  background: hsl(0 60% 28%/0.55);
+  border-color: hsl(0 60% 50%/0.45);
+  color: hsl(0 70% 75%);
+}

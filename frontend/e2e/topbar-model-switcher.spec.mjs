@@ -112,13 +112,19 @@ test('phones switch models from the composer and keep the mode tabs centred', as
   expect(tabs.x + tabs.width / 2).toBeCloseTo(195, 0);
 
   await page.locator('#composerRoot .rich-composer-editor').focus();
-  const effort = page.locator('#effortTrigger');
-  await effort.click();
+  await page.locator('#composerToolsBtn').click();
+  await page.locator('#composerToolsMenu [data-composer-action=reasoningEffort]').click();
   const pop = page.locator('.chat-config-pop');
   await pop.getByRole('button', { name: /返回模型列表/ }).click();
   await pop.getByRole('option', { name: /Second model/ }).click();
   await expect(pop).toBeHidden();
-  await expect(effort).toHaveAccessibleName(/Second model/);
+  await page.locator('#composerToolsBtn').click();
+  await page.locator('#composerToolsMenu [data-composer-action=reasoningEffort]').click();
+  await pop.getByRole('button', { name: /返回模型列表/ }).click();
+  await expect(pop.getByRole('option', { name: /Second model/ })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
 });
 
 test('switcher exposes the React model label and composer effort stays in sync', async ({
@@ -142,32 +148,31 @@ test('switcher exposes the React model label and composer effort stays in sync',
   await expect(pop).toHaveCount(0);
 
   await page.setViewportSize({ width: 390, height: 844 });
-  const effort = page.locator('#composerInputWrap [data-composer-control=effort]');
-  await expect(effort).toHaveAttribute('data-effort', 'high');
-  await page.locator('#composerRoot .rich-composer-editor').focus();
-  await expect(effort).toBeVisible();
-  await expect(effort.locator('[data-effort-value]')).not.toBeEmpty();
+  await expect(page.locator('#composerInputWrap [data-composer-control=effort]')).toHaveCount(0);
   expect(await page.evaluate(() => typeof window.syncEffortUI)).toBe('undefined');
-  await effort.locator('#effortTrigger').click();
-  await expect(pop).toBeVisible();
-  await expect(effort.locator('#effortTrigger')).toHaveAttribute('aria-expanded', 'true');
+  await page.locator('#composerToolsBtn').click();
+  await page.locator('#composerToolsMenu [data-composer-action=reasoningEffort]').click();
+  await expect(pop.getByRole('slider')).toHaveAttribute('aria-valuetext', /高|High/);
 });
-
 
 test('phone model menu stays above the composer after a viewport resize', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.locator('#composerRoot .rich-composer-editor').focus();
-  const trigger = page.locator('#effortTrigger');
+  const trigger = page.locator('#composerToolsBtn');
   await trigger.click();
+  await page.locator('#composerToolsMenu [data-composer-action=reasoningEffort]').click();
   const pop = page.locator('.chat-config-pop');
   await pop.getByRole('button', { name: /返回模型列表/ }).click();
   for (const height of [844, 600, 500]) {
     await page.setViewportSize({ width: 390, height });
-    await expect.poll(async () => {
-      const [a, b] = await Promise.all([trigger.boundingBox(), pop.boundingBox()]);
-      if (!a || !b) return false;
-      return b.y >= 0 && b.x >= 0 && b.x + b.width <= 391 &&
-        Math.abs(a.y - b.y - b.height - 8) <= 2;
-    }).toBe(true);
+    await expect
+      .poll(async () => {
+        const [a, b] = await Promise.all([trigger.boundingBox(), pop.boundingBox()]);
+        if (!a || !b) return false;
+        return (
+          b.y >= 0 && b.x >= 0 && b.x + b.width <= 391 && Math.abs(a.y - b.y - b.height - 8) <= 2
+        );
+      })
+      .toBe(true);
   }
 });

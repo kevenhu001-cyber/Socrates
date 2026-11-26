@@ -7,17 +7,47 @@ export function detailText(en: string, zh: string): string {
 
 /** Examples for the exact reviewed actions, never for an entire provider API. */
 const examples: Record<string, readonly [string, string]> = {
-  'github.get_current_user': ['Which GitHub account am I connected to?', '我当前连接的是哪个 GitHub 账户？'],
-  'gitlab.get_current_user': ['Which GitLab account am I connected to?', '我当前连接的是哪个 GitLab 账户？'],
-  'gmail.search_threads': ['Find email threads about my upcoming exam.', '查找与即将到来的考试有关的邮件。'],
-  'qq_mail.search_threads': ['Find email threads about my upcoming exam.', '查找与即将到来的考试有关的邮件。'],
+  'github.search_repositories': [
+    'Find repositories relevant to my project.',
+    '查找与我的项目相关的仓库。',
+  ],
+  'github.list_pull_requests': [
+    'Show open pull requests in my repository.',
+    '查看仓库中尚未合并的 Pull Request。',
+  ],
+  'github.list_workflow_runs': [
+    'Check the latest CI runs in my repository.',
+    '检查仓库最近的 CI 运行结果。',
+  ],
+  'github.get_current_user': [
+    'Which GitHub account am I connected to?',
+    '我当前连接的是哪个 GitHub 账户？',
+  ],
+  'gitlab.get_current_user': [
+    'Which GitLab account am I connected to?',
+    '我当前连接的是哪个 GitLab 账户？',
+  ],
+  'gmail.search_threads': [
+    'Find email threads about my upcoming exam.',
+    '查找与即将到来的考试有关的邮件。',
+  ],
+  'qq_mail.search_threads': [
+    'Find email threads about my upcoming exam.',
+    '查找与即将到来的考试有关的邮件。',
+  ],
   'google_calendar.list_events': ['What is on my calendar today?', '查看我今天的日程。'],
   'todoist.list_tasks': ['List my Todoist tasks for today.', '列出我今天的 Todoist 待办事项。'],
   'amap.search_places': ['Find cafés near a place I specify.', '帮我查找指定地点附近的咖啡馆。'],
-  'googlecalendar.find_event': ['Find calendar events about my research project.', '查找与科研项目相关的日程。'],
+  'googlecalendar.find_event': [
+    'Find calendar events about my research project.',
+    '查找与科研项目相关的日程。',
+  ],
 };
 
 const localizedActions: Record<string, readonly [string, string]> = {
+  'github.search_repositories': ['搜索仓库', '按关键词查找 GitHub 仓库。'],
+  'github.list_pull_requests': ['查看 Pull Request', '查看指定仓库的 Pull Request。'],
+  'github.list_workflow_runs': ['检查 CI 运行', '查看指定仓库的 GitHub Actions 运行记录。'],
   'github.get_current_user': ['获取账户信息', '查看当前连接的 GitHub 账户身份。'],
   'gitlab.get_current_user': ['获取账户信息', '查看当前连接的 GitLab 账户身份。'],
   'gmail.search_threads': ['搜索邮件', '根据关键词搜索授权 Gmail 账户中的相关邮件会话。'],
@@ -45,9 +75,15 @@ export function actionTitle(name: string): string {
 }
 
 export function pluginDescription(plugin: PluginItem): string {
-  if (!plugin.chatActions) return plugin.description || detailText('Connect this app to Socrates.', '将此插件连接到 Socrates。');
+  if (!plugin.chatActions)
+    return (
+      plugin.description || detailText('Connect this app to Socrates.', '将此插件连接到 Socrates。')
+    );
   if (plugin.chatActions.length === 0) {
-    return detailText('No chat actions are currently registered for this app.', '此插件暂未注册可在聊天中使用的操作。');
+    return detailText(
+      'No chat actions are currently registered for this app.',
+      '此插件暂未注册可在聊天中使用的操作。',
+    );
   }
   const action = plugin.chatActions[0];
   if (plugin.chatActions.length === 1) return actionDescription(action);
@@ -57,7 +93,10 @@ export function pluginDescription(plugin: PluginItem): string {
   );
 }
 
-export function pluginExample(plugin: PluginItem, action: { name: string; description: string }): string {
+export function pluginExample(
+  plugin: PluginItem,
+  action: { name: string; description: string },
+): string {
   const example = examples[action.name];
   if (example) return detailText(example[0], example[1]);
   // Keep the original reviewed action name. A request with missing identifiers

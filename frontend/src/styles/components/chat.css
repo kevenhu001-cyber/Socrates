@@ -1,3 +1,141 @@
+/* Chat transcript — full-width vertical scroll container anchored to
+   the right edge of the main pane (page right minus sidebar). The
+   message column is centred with horizontal padding that mirrors
+   the original reading column width, so the scrollbar stays on the
+   page-right edge while the bubble text stays where the user
+   expects. */
+
+#msgList,
+.msg-list {
+  /* The transcript is a real flex child. Its bottom edge is the composer's
+     top edge, so changes to attachments, focus expansion, and keyboard
+     inset resize the viewport without a measured/fixed reserve. */
+  position: relative;
+  order: 1;
+  min-height: 0;
+  padding-top: 12px;
+  padding-bottom: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+  scroll-padding-bottom: 12px;
+  /* Smooth scroll is disabled by default. JS uses the browser-native
+     Element.scrollTo({behavior:'smooth'}) pipeline (see
+     legacy/scroll.js#smoothScrollToBottom) when the reader needs to be
+     re-pinned, so no class toggle is needed and the platform owns the
+     easing curve. A class-based toggle on scroll-behavior raced the
+     first paint and produced a visible snap on send / keyboard open. */
+  scroll-behavior: auto;
+  /* Centre the message column. The horizontal padding fills any
+     leftover space on either side, and the vertical scrollbar sits
+     at the right edge of the main pane because the scroll
+     container itself spans the full main pane width. */
+  padding-inline: max(16px, calc((100% - 58rem * var(--app-width-scale, 1)) / 2));
+  /* box-sizing so padding-top/bottom shrink the scroll viewport
+     instead of overflowing it. */
+  box-sizing: border-box;
+}
+
+.chat-page > #msgList {
+  display: flex;
+}
+
+@supports (scrollbar-width: thin) {
+  .msg-list {
+    scrollbar-width: thin;
+  }
+}
+@supports (scrollbar-color: transparent transparent) {
+  .msg-list {
+    scrollbar-color: transparent transparent;
+  }
+}
+@supports (scrollbar-color: auto) {
+  .msg-list.scrollbar-visible {
+    scrollbar-color: color-mix(in srgb, var(--ui-text-tertiary) 25%, transparent) transparent;
+  }
+}
+.msg-list::-webkit-scrollbar {
+  width: 5px;
+}
+.msg-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.msg-list::-webkit-scrollbar-thumb {
+  border-radius: var(--ui-space-xs);
+  background: transparent;
+  transition: background 0.25s;
+}
+.msg-list.scrollbar-visible::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--ui-text-tertiary) 25%, transparent);
+}
+
+.msg-list {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow-anchor: none;
+}
+.msg {
+  animation: none;
+  padding: 6px 0;
+}
+/* Row entrances are owned by parity/transcript.css (`#appShell .msg.user[…]`
+   and `#appShell .msg.assistant:not([data-stream-settled])`). This file used
+   to define its own msgIn / msgUserIn with different opacity ramps, so the
+   physics of "how a row arrives" depended on cascade order. Removed. */
+.msg.user {
+  animation: none;
+  opacity: 1;
+  transform: none;
+}
+.msg.turn-viewport-anchor {
+  box-sizing: border-box;
+}
+/* Transcript geometry is owned by components/chat.css. The blanket
+   `content-visibility: visible` that used to live here was overridden by
+   that file for every row it covered, so it never decided anything: the
+   settled-row rules there carry `contain-intrinsic-size: auto <size>`,
+   which records the real height once a row has been rendered, so the
+   height estimate that used to change scrollHeight mid-gesture is gone.
+   Live, newest and anchored rows are simply never matched and stay
+   visible by default. */
+/* The send-time turn anchor already moves the transcript as one continuous
+   unit. A second translate animation on each newly mounted row used a
+   compositor-only coordinate system while turnAnchor measured layout
+   coordinates, exposing the prompt at one position for a frame before the
+   scroll glide took ownership. Keep the gentle reveal, but leave all spatial
+   motion to the single scroll owner so a new prompt never flashes or appears
+   to teleport. Starting partially visible also avoids a blank frame between
+   clearing the composer and painting the submitted bubble. */
+/* User bubbles right-align. The toolbar lives BELOW the bubble
+ * (flex-direction:column + align-items:flex-end), not next to it on
+ * the right edge. This keeps the bubble flush-right while putting
+ * the action row in a clean horizontal strip under the text. */
+.msg.user {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+/* User bubbles fill the chat column, no manual width cap.
+ * Previously capped at max-width:75%, which created visible asymmetry with
+ * assistant bubbles (max-width:100% at line 855). The column itself is
+ * bounded by .main-inner, which the user can adjust via --app-width-scale. */
+/* UI-align: open-webui-style pill bubble — full 24px radius, no
+ * border/tail, capped at 90% of the column so long prompts don't
+ * span edge-to-edge. Surface color stays on the brand token. */
+.msg.user .msg-body {
+  border-radius: var(--ui-radius-2xl);
+  max-width: 90%;
+}
+/* Attachment chip strip inside a user bubble. Sits
+   below the text body, same horizontal padding so it lines up. */
+.msg.assistant[data-stream-settled] .stream-cursor {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
 /* Fallback geometry for standalone and shared transcript hosts. */
 .msg-list {
   gap: 20px;
@@ -451,7 +589,9 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
 /* 消息工具栏的所有图标（复制、编辑、重新生成、赞/踩、分享、分支、朗读、换个角度、「更多」、版本切换箭头）
    统一画成屏幕上的 1.5px 线：non-scaling-stroke 让线宽按渲染像素算，
    不随 18px（桌面）/16px（手机）的缩放或 2.5 的箭头描边变化。 */
-.msg-toolbar-btn svg:not([data-icon-source='openai-apps-sdk']) :is(path, line, polyline, polygon, rect, circle, ellipse) {
+.msg-toolbar-btn
+  svg:not([data-icon-source='openai-apps-sdk'])
+  :is(path, line, polyline, polygon, rect, circle, ellipse) {
   vector-effect: non-scaling-stroke;
   stroke-width: 1.5px;
 }
@@ -1134,4 +1274,24 @@ a.has-site-favicon {
   .msg.user .msg-body {
     font-size: var(--ui-font-size-sm);
   }
+}
+
+/* The saved reading preference switches the presentation of the same formula. */
+.chat-math-source {
+  display: none;
+}
+
+html[data-math-presentation='source']
+  :is(.katex, .katex-display, .katex-error):has(+ .chat-math-source) {
+  display: none;
+}
+
+html[data-math-presentation='source'] .chat-math-source {
+  display: inline;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+html[data-math-presentation='source'] .chat-math-source-block {
+  display: block;
 }

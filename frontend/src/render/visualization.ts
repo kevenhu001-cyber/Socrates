@@ -153,9 +153,7 @@ function esc(value: unknown) {
 function token(name: string, fallback: string) {
   if (typeof document === 'undefined') return fallback;
   const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-  if (!value) return fallback;
-  if (value.startsWith('#') || value.startsWith('rgb') || value.startsWith('hsl')) return value;
-  return 'hsl(' + value + ')';
+  return value || fallback;
 }
 
 function palette(): VizColors {
@@ -163,12 +161,12 @@ function palette(): VizColors {
     typeof document !== 'undefined' &&
     document.documentElement.getAttribute('data-mode') === 'dark';
   return {
-    text: token('--text-100', isDark ? '#ededed' : '#1c2637'),
-    muted: token('--text-300', isDark ? '#a1a1a1' : '#68748a'),
-    line: token('--border-200', isDark ? '#2e2e2e' : '#dbe2ea'),
+    text: token('--ui-text-primary', isDark ? '#ededed' : '#1c2637'),
+    muted: token('--ui-text-tertiary', isDark ? '#a1a1a1' : '#68748a'),
+    line: token('--ui-border-default', isDark ? '#2e2e2e' : '#dbe2ea'),
     grid: isDark ? 'rgba(255, 255, 255, 0.08)' : '#edf1f5',
-    surface: token('--card', isDark ? '#141414' : '#ffffff'),
-    primary: token('--accent-500', isDark ? '#3b82f6' : '#2563eb'),
+    surface: token('--ui-bg-panel', isDark ? '#141414' : '#ffffff'),
+    primary: isDark ? '#3b82f6' : '#2563eb',
     secondary: isDark ? '#2dd4bf' : '#0d9488',
     comparison: isDark ? '#a78bfa' : '#7c3aed',
     highlight: isDark ? '#fbbf24' : '#f59e0b',

@@ -1,0 +1,106 @@
+/* Find controls and match highlights within the current conversation. */
+
+/* P0.2 — in-session find bar. Floats at the top-right of the viewport:
+   .chat-view only spans the composer's height now, so anchoring there
+   would drop the bar next to the input instead of the transcript's top
+   edge. Distinct from the full-screen Cmd-K overlay: it never dims the
+   page and leaves the conversation usable. */
+.find-bar {
+  position: fixed;
+  top: 10px;
+  right: 14px;
+  z-index: var(--ui-z-menu);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: var(--ui-bg-sidebar);
+  border: 0.5px solid color-mix(in srgb, var(--ui-border-default) 35%, transparent);
+  border-radius: var(--ui-radius-sm);
+  box-shadow: 0 8px 24px hsl(var(--always-black) / 0.28);
+}
+.find-bar.hidden {
+  display: none;
+}
+.find-bar-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--ui-text-secondary);
+  flex-shrink: 0;
+}
+.find-bar input {
+  width: 200px;
+  max-width: 46vw;
+  background: transparent;
+  border: 0;
+  outline: none;
+  font: inherit;
+  font-size: var(--ui-foundation-font-size-base);
+  color: var(--ui-text-primary);
+}
+.find-bar input::placeholder {
+  color: var(--ui-text-tertiary);
+}
+.find-count {
+  min-width: 34px;
+  text-align: right;
+  font-size: var(--ui-foundation-font-size-sm);
+  color: var(--ui-text-tertiary);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+.find-nav-btn,
+.find-close-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: var(--ui-control-xs);
+  padding: 0;
+  border: 0;
+  border-radius: var(--ui-radius-xs);
+  background: transparent;
+  color: var(--ui-text-secondary);
+  cursor: pointer;
+  transition:
+    background-color 0.1s,
+    color 0.1s;
+  flex-shrink: 0;
+}
+.find-nav-btn:hover,
+.find-close-btn:hover {
+  background: var(--ui-bg-control);
+  color: var(--ui-text-primary);
+}
+.find-nav-btn svg,
+.find-close-btn svg {
+  width: 16px;
+  height: calc(var(--ui-control-badge) - 4px);
+  stroke: currentColor;
+}
+/* Match highlight marks injected into .msg-body by findInSession.js. */
+mark.find-hl {
+  background: var(--ui-fill-pressed);
+  color: inherit;
+  border-radius: var(--ui-space-xxs);
+  padding: 0 1px;
+  box-shadow: inset 0 -1px 0 var(--ui-ink-tertiary);
+}
+mark.find-hl.find-hl-active {
+  background: var(--ui-ink);
+  color: var(--ui-on-ink);
+  box-shadow: 0 0 0 1px var(--ui-ink);
+}
+@media (max-width: 768px) {
+  .find-bar {
+    top: 8px;
+    right: 8px;
+    left: 8px;
+    justify-content: flex-start;
+  }
+  .find-bar input {
+    flex: 1;
+    width: auto;
+    max-width: none;
+  }
+}

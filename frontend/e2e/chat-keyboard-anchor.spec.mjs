@@ -913,18 +913,22 @@ test('native height hint is a floor, not an override', async ({ page }) => {
   expect(closed.inset).toBeLessThanOrEqual(4);
 });
 
-
-test('blank taps and model picker retain the open keyboard until geometry restores', async ({ page }) => {
+test('blank taps and model picker retain the open keyboard until geometry restores', async ({
+  page,
+}) => {
   await seedChat(page, 4);
   const editor = page.locator('#composerRoot .rich-composer-editor').first();
   const composer = page.locator('#chatInputBar');
   await editor.focus();
   await page.evaluate(() => window.__fakeViewport.__resize({ height: 510 }));
   await expect(page.locator('html')).toHaveAttribute('data-keyboard-phase', 'open');
+  // Sample the composer after its focus expansion and keyboard lift settle.
+  await expect(composer.locator('[data-composer-frame]')).toHaveCSS('height', '92px');
   const before = await composer.boundingBox();
   await page.locator('#msgList').click({ position: { x: 4, y: 4 } });
   await expect(editor).toBeFocused();
-  await page.locator('#effortTrigger').click();
+  await page.locator('#composerToolsBtn').click();
+  await page.locator('#composerToolsMenu [data-composer-action=reasoningEffort]').click();
   const pop = page.locator('.chat-config-pop');
   await expect(pop).toBeVisible();
   await expect(editor).toBeFocused();
@@ -944,7 +948,9 @@ test('blank taps and model picker retain the open keyboard until geometry restor
   await expect.poll(async () => (await transcriptState(page)).inset).toBe('0px');
 });
 
-test('even a deliberate focus transfer cannot release a still-covered viewport', async ({ page }) => {
+test('even a deliberate focus transfer cannot release a still-covered viewport', async ({
+  page,
+}) => {
   await seedChat(page, 4);
   const editor = page.locator('#composerRoot .rich-composer-editor').first();
   await editor.focus();

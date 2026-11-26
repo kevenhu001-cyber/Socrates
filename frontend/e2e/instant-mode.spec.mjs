@@ -45,7 +45,8 @@ for (const [label, model, viewport, lang] of [
           .click();
       } else {
         await page.locator('#composerRoot .rich-composer-editor').focus();
-        await page.locator('#effortTrigger').click();
+        await page.locator('#composerToolsBtn').click();
+        await page.locator('#composerToolsMenu [data-composer-action=reasoningEffort]').click();
         await expect(pop.getByRole('slider')).toBeVisible();
       }
       return pop;

@@ -20,11 +20,4 @@
 
   /* Nav rows / recents: radius is owned by mobile-controls.css (10px row
      radius, chatgpt-aligned). This file no longer redefines it. */
-
-  /* Mobile tools sheet: fixes.css's open-state rule uses the shared popover
-     radius; these tokens define the mobile tools menu finish. */
-  body #composerToolsMenu.composer-tools-menu {
-    border-color: var(--ui-border-subtle);
-    box-shadow: var(--ui-shadow-menu);
-  }
 }

@@ -1,3 +1,712 @@
+/* Shared modal chrome — head/title/close/foot/spacer/cancel/save.
+   Originally the project editor modal's CSS, now used by every
+   command-palette modal (storage / cheatsheet / prompt templates)
+   after the project feature was removed. */
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 0.5px solid color-mix(in srgb, var(--ui-border-default) 18%, transparent);
+}
+.modal-title {
+  font-size: var(--ui-font-size-base-medium);
+  font-weight: var(--ui-font-weight-semibold);
+}
+.modal-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  border-top: 0.5px solid color-mix(in srgb, var(--ui-border-default) 18%, transparent);
+  background: var(--ui-bg-raised);
+}
+.modal-spacer {
+  flex: 1;
+}
+
+/* P5.6 — shortcut cheatsheet modal */
+.cheatsheet {
+  max-height: 75vh;
+  width: min(520px, 92vw);
+  display: flex;
+  flex-direction: column;
+}
+
+/* P2.3 — Storage modal */
+.storage-modal {
+  width: min(560px, 92vw);
+  max-height: 75vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.storage-modal-body {
+  padding: 14px 18px 18px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.storage-modal-desc {
+  font-size: var(--ui-foundation-font-size-sm);
+  color: var(--ui-text-secondary);
+  line-height: 1.5;
+}
+.storage-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.storage-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.storage-row-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.storage-row-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.storage-row-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.storage-btn-restore,
+.storage-btn-delete {
+  padding: 4px 10px;
+  border-radius: var(--ui-radius-xs);
+  font-size: var(--ui-foundation-font-size-sm);
+  cursor: pointer;
+  border: 0.5px solid transparent;
+  font-weight: var(--ui-font-weight-medium);
+  font-family: inherit;
+}
+.storage-btn-restore {
+  background: var(--ui-ink);
+  color: hsl(var(--always-white));
+}
+.storage-btn-restore:hover {
+  filter: brightness(1.1);
+}
+.storage-btn-delete {
+  background: transparent;
+  color: hsl(0 60% 70%);
+  border-color: hsl(0 60% 30%/0.4);
+}
+.storage-btn-delete:hover {
+  background: hsl(0 60% 30%/0.4);
+  color: hsl(0 60% 80%);
+}
+.storage-empty {
+  text-align: center;
+  padding: 32px 12px;
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-base-small);
+}
+.cheatsheet-body {
+  padding: 0 6px 12px;
+  overflow-y: auto;
+}
+.cheatsheet-section {
+  padding: 8px 12px;
+}
+.cheatsheet-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+}
+.cheatsheet-kbd {
+  font-family: var(--font-mono);
+  font-size: var(--ui-font-size-caption);
+  padding: 2px 6px;
+  min-width: 18px;
+  text-align: center;
+  border: 0.5px solid color-mix(in srgb, var(--ui-border-default) 40%, transparent);
+  border-radius: var(--ui-space-xs);
+  background: var(--ui-bg-page);
+  color: var(--ui-text-secondary);
+}
+.cheatsheet-desc {
+  margin-left: 8px;
+  font-size: var(--ui-font-size-base-small);
+  color: var(--ui-text-secondary);
+}
+
+/* Display / reading preferences (font size + content width) */
+.display-prefs-popover {
+  position: fixed;
+  min-width: 240px;
+  max-width: 280px;
+  padding: 10px 12px;
+  z-index: var(--ui-z-backdrop);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.display-prefs-popover.hidden {
+  display: none;
+}
+
+.display-prefs-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.display-prefs-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: calc(var(--ui-font-size-label) * var(--app-font-scale, 1));
+  font-weight: var(--ui-font-weight-medium);
+  color: var(--ui-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.display-prefs-label .value {
+  color: var(--ui-text-secondary);
+  font-weight: var(--ui-font-weight-semibold);
+  text-transform: none;
+  letter-spacing: 0;
+}
+/* Text-size & content-width segmented controls inside the display
+   prefs popover. Both have N buttons (font: 4, width: 4) and share
+   the same .display-prefs-segs chrome. The active segment is
+   highlighted by a single sliding ::before indicator; JS sets
+   --seg-x / --seg-w on the wrapper after measuring the .on button
+   so the indicator tracks layout changes (gap, padding) without
+   needing fragile calc()-based math here. */
+.display-prefs-segs {
+  position: relative;
+  display: flex;
+  gap: 2px;
+  background: var(--ui-bg-control);
+  border-radius: var(--ui-radius-xs);
+  padding: 2px;
+  isolation: isolate;
+}
+.display-prefs-segs::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: var(--seg-x, 0px);
+  width: var(--seg-w, 0px);
+  border-radius: var(--ui-space-xs);
+  background: var(--ui-bg-sidebar);
+  box-shadow: 0 0 0 0.5px color-mix(in srgb, var(--ui-border-default) 60%, transparent);
+  transition:
+    left 0.26s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.26s cubic-bezier(0.4, 0, 0.2, 1),
+    background-color 0.26s ease;
+  pointer-events: none;
+  z-index: -1;
+}
+.display-prefs-seg {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 4px 6px;
+  border-radius: var(--ui-space-xs);
+  border: 0;
+  background: transparent;
+  color: var(--ui-text-secondary);
+  font-size: calc(var(--ui-font-size-label) * var(--app-font-scale, 1));
+  cursor: pointer;
+  transition:
+    color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.12s ease;
+  font-family: inherit;
+  white-space: nowrap;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+.display-prefs-seg:hover {
+  color: var(--ui-text-secondary);
+}
+
+.display-prefs-seg.on {
+  color: var(--ui-text-primary);
+}
+/* The theme selector has three options and uses a compact active fill;
+   React renders its checked state, so it does not need the measured
+   sliding indicator used by the font and width sliders. */
+.display-theme-segs::before {
+  display: none;
+}
+.display-theme-segs .display-prefs-seg.on {
+  background: var(--ui-bg-sidebar);
+  box-shadow: 0 0 0 0.5px color-mix(in srgb, var(--ui-border-default) 60%, transparent);
+}
+
+.shared-banner.hidden {
+  display: none;
+}
+
+/* P1.3 — Custom Instructions textareas inside the profile modal */
+.profile-instructions {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.profile-instructions-label {
+  font-size: var(--ui-foundation-font-size-sm);
+  color: var(--ui-text-tertiary);
+  font-weight: var(--ui-font-weight-medium);
+  letter-spacing: 0.01em;
+}
+.profile-instructions-foot {
+  margin-top: 4px;
+  display: flex;
+  justify-content: flex-end;
+}
+.profile-instructions-state {
+  font-size: var(--ui-font-size-label);
+  color: var(--ui-text-tertiary);
+  font-style: italic;
+}
+.profile-instructions-state.saved {
+  color: var(--ui-ink);
+}
+.profile-instructions-state.pending {
+  color: var(--ui-text-tertiary);
+}
+/* The dim and the blur both come from tokens now (features/surfaces.css sets
+   the backdrop, polish/overlays.css clears the blur). The legacy literals
+   55% + blur(4px) could still win on desktop because the polish owner rides
+   a lazy chunk — so they are removed here rather than overridden there. */
+.cmd-k-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--ui-z-sheet) - 3);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: min(18vh, 140px);
+}
+.cmd-k-overlay.hidden {
+  display: none;
+}
+
+.cmd-k-modal {
+  width: min(640px, 92vw);
+  max-height: 60vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.cmd-k-input-row {
+  display: flex;
+  align-items: center;
+}
+.cmd-k-input-row .cmd-k-icon {
+  flex-shrink: 0;
+}
+.cmd-k-input-row input {
+  flex: 1;
+  background: transparent;
+  border: 0;
+  outline: none;
+  font: inherit;
+}
+.cmd-k-results {
+  flex: 1;
+  overflow-y: auto;
+}
+.cmd-k-section-label {
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.cmd-k-row {
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transition: background 0.1s;
+}
+.cmd-k-row-title {
+  font-weight: var(--ui-font-weight-medium);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cmd-k-row-snippet {
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.cmd-k-row-meta {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 2px;
+}
+.cmd-k-empty {
+  padding: 32px 16px;
+  text-align: center;
+}
+.cmd-k-empty kbd {
+  margin: 0 2px;
+}
+.cmd-k-foot {
+  display: flex;
+  gap: 18px;
+  padding: 8px 16px;
+}
+
+/* The confirm scrim used to be a 65% literal — the darkest of every dialog.
+   Converged on the shared token so all dialogs dim by the same amount. */
+.confirm-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: var(--ui-z-popover);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.confirm-dialog.hidden {
+  display: none;
+}
+.confirm-box {
+  background: var(--ui-bg-page);
+  width: 90%;
+  max-width: 320px;
+  padding: 24px 20px 16px;
+}
+.confirm-title {
+  font-size: calc(var(--ui-font-size-base-medium) * var(--app-font-scale, 1));
+  font-weight: var(--ui-font-weight-semibold);
+  color: var(--ui-text-primary);
+  margin-bottom: 8px;
+  text-align: center;
+}
+.confirm-msg {
+  font-size: calc(var(--ui-font-size-base-small) * var(--app-font-scale, 1));
+  color: var(--ui-text-secondary);
+  line-height: 1.5;
+  margin-bottom: 16px;
+  text-align: center;
+}
+.confirm-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+/* Usage modal — heatmap */
+.usage-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--ui-z-modal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.usage-overlay.hidden {
+  display: none;
+}
+.usage-modal {
+  background: var(--ui-bg-page);
+  width: min(720px, 94vw);
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+}
+.usage-close {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+  color: var(--ui-text-tertiary);
+  padding: 4px;
+  border-radius: var(--ui-radius-xs);
+  transition:
+    background-color 0.1s,
+    color 0.1s;
+}
+.usage-close:hover {
+  background: var(--ui-bg-control);
+  color: var(--ui-text-primary);
+}
+.usage-body {
+  padding: 18px 22px 22px;
+  overflow-y: auto;
+  flex: 1;
+}
+.usage-summary {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.usage-stat {
+  background: var(--ui-bg-sidebar);
+  border-radius: var(--ui-radius-sm);
+  padding: 12px 16px;
+  flex: 1;
+  min-width: 100px;
+}
+.usage-stat-val {
+  font-size: calc(var(--ui-foundation-font-size-xl) * var(--app-font-scale, 1));
+  font-weight: var(--ui-font-weight-bold);
+  color: var(--ui-text-primary);
+}
+.usage-stat-lbl {
+  font-size: calc(var(--ui-font-size-label) * var(--app-font-scale, 1));
+  color: var(--ui-text-tertiary);
+  margin-top: 2px;
+}
+.usage-section-title {
+  font-size: calc(var(--ui-foundation-font-size-sm) * var(--app-font-scale, 1));
+  font-weight: var(--ui-font-weight-semibold);
+  color: var(--ui-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+}
+.usage-period-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+.usage-calendar-wrap {
+  overflow-x: auto;
+  padding: 4px 0 8px;
+}
+.usage-calendar {
+  display: grid;
+  grid-template-columns: auto repeat(53, 1fr);
+  gap: 2px;
+  font-size: calc(var(--ui-font-size-caption) * var(--app-font-scale, 1));
+  min-width: 560px;
+}
+
+.usage-cal-day {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: var(--ui-space-xxs);
+  min-width: 10px;
+  min-height: 10px;
+  position: relative;
+}
+.usage-cal-day:hover {
+  outline: 2px solid var(--ui-ink);
+  outline-offset: -1px;
+  z-index: 1;
+}
+.usage-cal-day-lbl {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  font-size: calc(var(--ui-font-size-micro) * var(--app-font-scale, 1));
+  color: var(--ui-text-tertiary);
+  padding-right: 4px;
+}
+.usage-legend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: flex-end;
+  margin-top: 6px;
+  font-size: calc(var(--ui-font-size-caption) * var(--app-font-scale, 1));
+  color: var(--ui-text-tertiary);
+}
+.usage-legend-cell {
+  width: 12px;
+  height: 12px;
+  border-radius: var(--ui-space-xxs);
+}
+.usage-tooltip {
+  position: fixed;
+  background: var(--ui-bg-sidebar);
+  border: 0.5px solid color-mix(in srgb, var(--ui-border-default) 15%, transparent);
+  border-radius: var(--ui-radius-xs);
+  padding: 5px 8px;
+  font-size: calc(var(--ui-font-size-label) * var(--app-font-scale, 1));
+  color: var(--ui-text-primary);
+  pointer-events: none;
+  z-index: var(--ui-z-popover);
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  display: none;
+}
+.usage-breakdown {
+  margin-top: 18px;
+  border-top: 0.5px solid color-mix(in srgb, var(--ui-border-default) 8%, transparent);
+  padding-top: 14px;
+}
+.usage-breakdown table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: calc(var(--ui-foundation-font-size-sm) * var(--app-font-scale, 1));
+}
+.usage-breakdown th {
+  border-bottom: 0.5px solid color-mix(in srgb, var(--ui-border-default) 10%, transparent);
+  padding: 5px 8px;
+  text-align: left;
+  font-weight: var(--ui-font-weight-semibold);
+  color: var(--ui-text-secondary);
+  font-size: calc(var(--ui-font-size-caption) * var(--app-font-scale, 1));
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.usage-breakdown td {
+  padding: 5px 8px;
+  border-bottom: 0.5px solid color-mix(in srgb, var(--ui-border-default) 5%, transparent);
+  color: var(--ui-text-secondary);
+}
+.usage-breakdown td:last-child {
+  text-align: right;
+  font-weight: var(--ui-font-weight-medium);
+}
+.usage-breakdown tr:hover td {
+  background: var(--ui-bg-sidebar);
+}
+.usage-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: var(--ui-text-secondary);
+  font-size: calc(var(--ui-font-size-base-small) * var(--app-font-scale, 1));
+  gap: 8px;
+}
+
+/* Share modal */
+.share-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--ui-z-modal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.share-overlay.hidden {
+  display: none;
+}
+.share-modal {
+  background: var(--ui-bg-raised);
+  color: var(--ui-text-primary);
+  width: 90%;
+  max-width: 400px;
+  padding: 24px 20px 20px;
+}
+.share-close {
+  width: var(--ui-control-sm);
+  height: var(--ui-control-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  color: var(--ui-text-secondary);
+  cursor: pointer;
+  transition:
+    color 0.1s,
+    background 0.1s;
+}
+.share-close:hover {
+  color: var(--ui-text-primary);
+  background: var(--ui-bg-sunken);
+}
+.share-link-area {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  align-items: center;
+}
+.share-link-input {
+  flex: 1;
+  min-height: var(--ui-control-desktop);
+  padding: 0 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--ui-border-default);
+  background: transparent;
+  color: var(--ui-text-primary);
+  font-size: var(--ui-font-size-sm);
+  font-family: var(--font-mono);
+  outline: none;
+}
+.share-link-input:focus {
+  border-color: var(--ui-focus-ring);
+  box-shadow: var(--ui-focus-shadow);
+}
+.share-copy-btn {
+  min-height: var(--ui-control-desktop);
+  padding: 0 10px;
+  border: 1px solid transparent;
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-medium);
+  background: var(--ui-ink);
+  color: var(--ui-on-ink);
+  cursor: pointer;
+  transition: background-color 0.1s;
+  white-space: nowrap;
+}
+.share-copy-btn:hover {
+  background: color-mix(in oklab, var(--ui-ink), transparent 20%);
+}
+.share-copy-btn.copied {
+  background: var(--ui-ink-hover);
+  border-color: var(--ui-ink-hover);
+}
+.share-revoke {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  font-size: var(--ui-font-size-sm);
+  color: var(--ui-danger);
+  cursor: pointer;
+  transition: color 0.1s;
+  padding: 4px 0;
+}
+.share-revoke:hover {
+  color: color-mix(in oklab, var(--ui-danger), var(--ui-text-primary) 25%);
+}
+/* .share-btn is defined in the top-bar section above */
+.share-error {
+  font-size: var(--ui-font-size-sm);
+  color: var(--ui-danger);
+  margin-top: 8px;
+  text-align: center;
+}
+.share-status {
+  font-size: var(--ui-font-size-sm);
+  color: var(--ui-text-secondary);
+  margin-top: 8px;
+  text-align: center;
+}
+/* Shared read-only banner */
+.shared-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--ui-bg-hover);
+  border-bottom: 1px solid var(--ui-border-default);
+  font-size: var(--ui-font-size-sm);
+  color: var(--ui-text-primary);
+  flex-shrink: 0;
+}
+.shared-banner svg {
+  flex-shrink: 0;
+}
+
 /*
  * polish/overlays.css — one contract for every floating surface:
  * hairline border, shared popover/dialog radii, two-layer shadows,
@@ -209,7 +918,6 @@ body.composer-tools-open.composer-tools-open::after {
 .display-prefs-popover {
   transform-origin: top left;
 }
-
 
 /* Their scrims share the clock: the dim holds while the card leaves, then
    both flip to `display: none` together. */
@@ -804,7 +1512,15 @@ body.composer-tools-open.composer-tools-open::after {
 
 /* Do not blur mobile scrims. Keep the underlying page inexpensive to composite. */
 @media (max-width: 768px) {
-  body :is(.cmd-k-overlay, .usage-overlay, .share-overlay, .workspace-dialog, .tutor-explore-overlay, .viz-modal-backdrop),
+  body
+    :is(
+      .cmd-k-overlay,
+      .usage-overlay,
+      .share-overlay,
+      .workspace-dialog,
+      .tutor-explore-overlay,
+      .viz-modal-backdrop
+    ),
   body.composer-tools-open::after {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;

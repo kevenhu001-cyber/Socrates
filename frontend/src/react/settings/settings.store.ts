@@ -13,6 +13,7 @@ import {
   setThemePreference,
   setThemeStyle,
   setGrid,
+  setShowMath,
 } from '../../displayPrefs.ts';
 import { getCurrentLanguage, type AppLanguage } from '../../i18n/languageState.ts';
 
@@ -34,6 +35,7 @@ export interface SettingsPreferencesState {
   font: number;
   width: number;
   showGrid: boolean;
+  showMath: boolean;
   darkBg: string;
   lightBg: string;
 }
@@ -45,6 +47,7 @@ function readPreferences(): SettingsPreferencesState {
     font: displayPrefs.font,
     width: displayPrefs.width,
     showGrid: displayPrefs.showGrid !== false,
+    showMath: displayPrefs.showMath,
     darkBg: displayPrefs.darkBg || '',
     lightBg: displayPrefs.lightBg || '',
   };
@@ -101,6 +104,10 @@ export const settingsPreferenceActions = {
   },
   setGrid(show: boolean): void {
     setGrid(show);
+    sync();
+  },
+  setShowMath(show: boolean): void {
+    setShowMath(show);
     sync();
   },
   setDarkBackground(hex: string): void {

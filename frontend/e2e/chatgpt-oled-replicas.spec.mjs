@@ -369,7 +369,7 @@ test('capture all 5 reference replica screens on mobile OLED', async ({ page }) 
   await page.screenshot({ path: 'test-results/replica-4-mobile-plugin-detail-gmail.png' });
 
   // Scroll down in detail view to see prompts and permissions
-  await page.locator('.plugin-detail-security-card').scrollIntoViewIfNeeded();
+  await page.locator('.plugin-detail-permissions').scrollIntoViewIfNeeded();
   await page.waitForTimeout(200);
   await page.screenshot({ path: 'test-results/replica-4-mobile-plugin-detail-gmail-scroll.png' });
 

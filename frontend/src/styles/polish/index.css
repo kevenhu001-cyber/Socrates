@@ -9,7 +9,7 @@
  *
  * Cascade position is the mechanism: this file is @imported after parity/,
  * so equal-specificity rules win by order. Prefer a scoped selector over a
- * new `!important`; the frozen compatibility layer is legacy/ only.
+ * new `!important`.
  *
  * Component map:
  *   sidebar.css     — shared sidebar affordances; desktop geometry in parity/sidebar.css

@@ -1,3 +1,134 @@
+.recents-filter-chips {
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+@supports (scrollbar-width: thin) {
+  .recents-filter-chips {
+    scrollbar-width: thin;
+  }
+}
+.recents-filter-chips-sep {
+  width: 1px;
+  height: 12px;
+  background: color-mix(in srgb, var(--ui-border-default) 25%, transparent);
+  flex-shrink: 0;
+  margin: 0 4px;
+}
+.recents-filter-chip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: var(--ui-radius-xs);
+  background: transparent;
+  border: 0;
+  color: var(--ui-text-secondary);
+  font-size: calc(var(--ui-font-size-caption) * var(--sidebar-font-scale));
+  cursor: pointer;
+  flex-shrink: 0;
+  line-height: 1.3;
+  transition:
+    color 0.18s var(--ease-out),
+    background 0.18s var(--ease-out);
+  font-family: inherit;
+  position: relative;
+}
+.recents-filter-chip-btn:hover {
+  background: var(--ui-bg-raised);
+  color: var(--ui-text-primary);
+}
+.recents-filter-chip-btn.active {
+  background: var(--ui-bg-raised);
+  color: var(--ui-text-primary);
+}
+.recents-filter-chip-btn.active::after {
+  content: '';
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 1px;
+  height: 1.5px;
+  border-radius: var(--ui-space-xxs);
+  background: var(--ui-text-primary);
+  opacity: 0.85;
+}
+.recents-filter-chip-icon {
+  font-size: var(--ui-font-size-micro);
+  line-height: 1;
+  opacity: 0.7;
+}
+/* Drag state for recent items. */
+.recent-item.dragging {
+  opacity: 0.4;
+}
+
+.sidebar-more-popover {
+  position: fixed;
+  min-width: 220px;
+  max-width: 260px;
+  z-index: var(--ui-z-menu);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.sidebar-more-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 10px;
+  background: transparent;
+  border: none;
+  color: var(--ui-text-secondary);
+  font-size: inherit;
+  font-family: var(--font-sans);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 0.18s var(--ease-out),
+    color 0.18s var(--ease-out);
+}
+.sidebar-more-item:hover {
+  background: var(--ui-bg-control);
+  color: var(--ui-text-primary);
+}
+
+.sidebar-more-item svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: var(--ui-text-secondary);
+}
+.sidebar-more-item:hover svg {
+  color: var(--ui-text-secondary);
+}
+.sidebar-more-item-danger {
+  color: var(--ui-text-secondary);
+}
+.sidebar-more-item-danger:hover {
+  background: hsl(0 60% 30% / 0.25);
+  color: hsl(0 70% 80%);
+}
+.sidebar-more-item-danger:hover svg {
+  color: hsl(0 70% 80%);
+}
+
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: var(--ui-backdrop);
+  z-index: var(--ui-z-backdrop);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  animation: fadeIn 0.15s forwards;
+}
+.sidebar-backdrop.show {
+  display: block;
+}
+
 #appShell .cg-sidebar-caret {
   display: none;
 }

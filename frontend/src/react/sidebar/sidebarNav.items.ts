@@ -10,27 +10,30 @@ export interface NavButtonSpec {
   label: string;
   i18nKey: string;
   icon: string;
-  /** Trailing badge next to the Sites label. */
-  badgeKey?: string;
 }
 
 export const BUTTONS: NavButtonSpec[] = [
   { key: 'new', label: 'New chat', i18nKey: 'sidebar.nav.new', icon: sidebarIcons.newChat },
-  { key: 'search', label: 'Search', i18nKey: 'sidebar.nav.search', icon: sidebarIcons.search },
+  {
+    key: 'search',
+    label: 'Search chats',
+    i18nKey: 'sidebar.nav.search',
+    icon: sidebarIcons.search,
+  },
+  { key: 'plugins', label: 'Plugins', i18nKey: 'sidebar.nav.plugins', icon: sidebarIcons.plugins },
+  { key: 'library', label: 'Library', i18nKey: 'sidebar.nav.library', icon: sidebarIcons.library },
   {
     key: 'projects',
     label: 'Projects',
     i18nKey: 'sidebar.nav.projects',
     icon: sidebarIcons.projects,
   },
-  { key: 'library', label: 'Library', i18nKey: 'sidebar.nav.library', icon: sidebarIcons.library },
   {
     key: 'scheduled',
     label: 'Scheduled',
     i18nKey: 'sidebar.nav.scheduled',
     icon: sidebarIcons.scheduled,
   },
-  { key: 'plugins', label: 'Plugins', i18nKey: 'sidebar.nav.plugins', icon: sidebarIcons.plugins },
   { key: 'images', label: 'Images', i18nKey: 'sidebar.nav.images', icon: sidebarIcons.images },
   {
     key: 'assistants',
@@ -43,7 +46,6 @@ export const BUTTONS: NavButtonSpec[] = [
     label: 'Sites',
     i18nKey: 'sidebar.nav.sites',
     icon: sidebarIcons.sites,
-    badgeKey: 'sidebar.nav.newBadge',
   },
   { key: 'exam', label: 'Exam', i18nKey: 'sidebar.nav.exam', icon: sidebarIcons.exam },
   { key: 'more', label: 'More', i18nKey: 'sidebar.nav.more', icon: sidebarIcons.more },

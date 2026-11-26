@@ -10,7 +10,7 @@
  *   - `frontend/src/react/lib/boot/indicatorComponents.tsx` (send / stop)
  *   - `frontend/index.html` (topbar, footer, composer controls)
  * Stroke widths are the *effective* ones: `styles/parity/sidebar.css`
- * forces 1.75px on nav glyphs and `styles/legacy/06-chat-transcript.css`
+ * forces 1.75px on nav glyphs and `styles/parity/transcript.css`
  * forces 1.7px on toolbar glyphs, so those are used here.
  *
  * Shape tuples: p=path, c=circle(cx,cy,r), r=rect(x,y,w,h,rx),

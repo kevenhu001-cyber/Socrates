@@ -190,7 +190,7 @@ export function hasMobileComposerFocus(): boolean {
     isEditableWithin(document.activeElement, [root]) &&
     (document.documentElement.dataset.keyboardOpen === 'true' ||
       window.matchMedia('(max-width: 768px)').matches ||
-      window.matchMedia('(pointer: coarse)').matches)
+      window.matchMedia('(pointer: coarse)').matches),
   );
 }
 
@@ -198,8 +198,18 @@ export function hasMobileComposerFocus(): boolean {
  * Links, fields, message actions and native range controls keep normal focus. */
 export function retainsComposerFocus(target: EventTarget | null): boolean {
   if (!(target instanceof Element)) return false;
-  if (target.closest('#topModelSwitcher, #effortTrigger, [data-chat-config-trigger]')) return true;
+  if (
+    target.closest(
+      '#topModelSwitcher, #composerToolsBtn, [data-chat-config-trigger], [data-composer-action="reasoningEffort"]',
+    )
+  )
+    return true;
   if (target.closest('.chat-config-pop button')) return true;
-  if (target.closest('button, a, input, textarea, select, [contenteditable], [role="button"], [role="link"], [tabindex], label, summary, video, audio')) return false;
+  if (
+    target.closest(
+      'button, a, input, textarea, select, [contenteditable], [role="button"], [role="link"], [tabindex]:not([tabindex="-1"]), label, summary, video, audio',
+    )
+  )
+    return false;
   return Boolean(target.closest('#msgList, #chatView, #topicSetup, #composerInputWrap'));
 }

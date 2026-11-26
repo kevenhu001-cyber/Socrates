@@ -139,7 +139,7 @@ for (const file of walk(STYLES)) {
       }
     }
   });
-  if (rel.startsWith('legacy/') || rel === 'themes.css' || rel === 'tokens.css') continue;
+  if (rel === 'themes.css' || rel === 'tokens.css') continue;
   const root = postcss.parse(readFileSync(file, 'utf8'), { from: file });
   root.walkRules((rule) => {
     if (insideKeyframes(rule)) return;
@@ -234,7 +234,7 @@ const lastSimple = (selector) => {
 const ownerOf = new Map();
 for (const file of walk(STYLES)) {
   const rel = relative(STYLES, file).replaceAll('\\', '/');
-  if (rel.startsWith('legacy/') || rel === 'themes.css' || rel === 'tokens.css') continue;
+  if (rel === 'themes.css' || rel === 'tokens.css') continue;
   const root = postcss.parse(readFileSync(file, 'utf8'), { from: file });
   root.walkRules((rule) => {
     if (!appliesOnDesktop(rule)) return;

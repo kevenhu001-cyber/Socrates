@@ -283,6 +283,7 @@ test('100 real session switches retain bounded resources and correct history', a
       });
     }
   }
+  await page.getByRole('button', { name: 'Filter recent chats' }).click();
   await page.locator('#sidebarSearch').fill('Performance session 5');
   await expect(page.locator('.recent-item')).toHaveCount(1);
   await expect(page.locator('.recent-item')).toContainText('Performance session 5');
@@ -347,6 +348,7 @@ test('windowed history reaches the last row and retains rename, menu and drag st
   await scrollTo(true);
   await expect(first).toHaveCount(1);
   await first.dispatchEvent('dragend');
+  await page.getByRole('button', { name: 'Filter recent chats' }).click();
   await page.locator('#sidebarSearch').fill('Performance session 1999');
   await expect(page.locator('.recent-item')).toHaveCount(1);
   await expect(page.locator('.recent-item')).toContainText('Performance session 1999');

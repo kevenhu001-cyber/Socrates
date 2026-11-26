@@ -44,7 +44,7 @@ export function SidebarHeader() {
         name="Socrates"
         logo={LOGO}
         compact={isMobile}
-        hideLogo={isMobile}
+        hideLogo
         /* The desktop rail folds to 52px: the wordmark has nowhere to go and
            would be clipped mid-word inside the rail. Phones keep it — the
            drawer is 260px even when `isOpen` is false (it is off-canvas). */

@@ -1,5 +1,6 @@
 /* KaTeX heuristics and tolerant render helpers shared by Markdown passes. */
 import { KATEX_MACROS, _looksLikeLatex } from './latex.ts';
+import { esc } from './text.ts';
 import { ensureKatex } from '../vendor/lazy.ts';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
@@ -428,14 +429,15 @@ export function renderStreamMath(
     (displayMode ? 'D' : 'i') + (unclosed ? 'U' : 'C') + '\x00' + String(math).trim();
   const hit = _mathHtmlCache.get(cacheKey);
   if (hit !== undefined) return hit;
-  const html = _renderStreamMath(math, displayMode, unclosed);
-  if (html !== null) {
-    if (_mathHtmlCache.size >= MATH_HTML_CACHE_MAX) {
-      const oldest = _mathHtmlCache.keys().next();
-      if (!oldest.done) _mathHtmlCache.delete(oldest.value);
-    }
-    _mathHtmlCache.set(cacheKey, html);
+  const rendered = _renderStreamMath(math, displayMode, unclosed);
+  if (rendered === null) return null;
+  const sourceClass = displayMode ? 'chat-math-source chat-math-source-block' : 'chat-math-source';
+  const html = `${rendered}<code class="${sourceClass}">${esc(math.trim())}</code>`;
+  if (_mathHtmlCache.size >= MATH_HTML_CACHE_MAX) {
+    const oldest = _mathHtmlCache.keys().next();
+    if (!oldest.done) _mathHtmlCache.delete(oldest.value);
   }
+  _mathHtmlCache.set(cacheKey, html);
   return html;
 }
 

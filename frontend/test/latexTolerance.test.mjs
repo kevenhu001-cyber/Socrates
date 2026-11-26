@@ -72,7 +72,11 @@ test('eqnarray reaches KaTeX as aligned instead of the unsupported environment',
   withKatex(katex, () => {
     const html = renderStreamMath(String.raw`\begin{eqnarray}x&=&1\end{eqnarray}`, true, false);
     assert.match(html, /class="katex"/);
-    assert.doesNotMatch(html, /eqnarray/);
+    assert.match(html, /class="katex">\\begin\{aligned\}/);
+    assert.match(
+      html,
+      /class="chat-math-source chat-math-source-block">\\begin\{eqnarray\}x&amp;=&amp;1/,
+    );
   });
 
   assert.ok(seen.every((source) => !source.includes('eqnarray')));
