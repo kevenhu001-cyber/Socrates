@@ -264,6 +264,8 @@ export default defineConfig({
       '@socrates/contracts': fileURLToPath(
         new URL('../packages/contracts/src/index.ts', import.meta.url),
       ),
+      '@socrates/core/demonstrationLight': fileURLToPath(new URL('../packages/core/src/demonstrationLight.js', import.meta.url)),
+      '@socrates/core/demonstrationAsync': fileURLToPath(new URL('../packages/core/src/demonstrationAsync.js', import.meta.url)),
       '@socrates/core/demonstration': fileURLToPath(
         new URL('../packages/core/src/demonstration.js', import.meta.url),
       ),
