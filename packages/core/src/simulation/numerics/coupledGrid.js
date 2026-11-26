@@ -82,4 +82,3 @@ function* prepareCoupledGrid(g,params,compile,warnings){
 }
 
 export { prepareCoupledGrid };
-export { coupledGridSpec, lowerCoupledGrid } from '../models/coupledGrid.js';
