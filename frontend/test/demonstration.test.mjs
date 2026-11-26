@@ -4,6 +4,9 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { compileDemonstrationRuntime } from '@socrates/core/demonstration';
+import { compileDemonstrationRuntimeAsync } from '@socrates/core/demonstrationAsync';
+import { inspectCompilation } from '../../packages/core/src/simulation/compiler/factory.js';
+import { requiredAlgorithms } from '../../packages/core/src/simulation/compiler/lazy.js';
 import { sampleField } from '../src/react/intelligent-ui/demonstration/sampleField.ts';
 import { samplePlot } from '../src/react/intelligent-ui/demonstration/samplePlot.ts';
 import { extractIsosurface } from '../src/react/intelligent-ui/demonstration/geometry/marchingTetrahedra.ts';
@@ -1081,4 +1084,44 @@ test('plot projection is standalone for both linear and logarithmic axes',()=>{
   assert.equal((line.match(/M/g)||[]).length,2);
   assert.equal((step.match(/H/g)||[]).length,2);
   assert.equal((pathFor(points,p.sx,p.sy,'stem',p.sy(1)).match(/V/g)||[]).length,4);
+});
+
+test('asynchronous compilation selects only the required numerical algorithms',async()=>{
+  const analytic={version:1,views:[{kind:'plot',x:[0,1],y:[0,1],curves:[{expression:'x^2'}]}]};
+  const ex=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
+  assert.deepEqual(requiredAlgorithms(inspectCompilation(analytic)),[]);
+  assert.deepEqual(requiredAlgorithms(inspectCompilation(ex.finiteElementPoisson)),['solveFiniteElement']);
+  assert.deepEqual(requiredAlgorithms(inspectCompilation(ex.scalarIsosurface)),[]);
+  assert.deepEqual(requiredAlgorithms(inspectCompilation(ex.verletOscillator)),['integrateVerlet']);
+  assert.deepEqual(requiredAlgorithms(inspectCompilation(ex.fftOscillator)),['prepareScientificAnalysis','integrateAdaptive']);
+  const factory=await compileDemonstrationRuntimeAsync(analytic);
+  assert.equal(finishGenerator(factory()).evaluate('x^2',0,.5),.25);
+  await assert.rejects(compileDemonstrationRuntimeAsync({version:1,views:[]}));
+});
+test('async loader and synchronous facade preserve numerical results across all examples',async()=>{
+  for(const file of ['algorithmic-demonstrations.json','intelligent-ui-physics.json','scientific-simulation.json']){
+    const fixtures=JSON.parse(readFileSync(new URL('../../docs/examples/'+file,import.meta.url),'utf8'));
+    for(const [id,p] of Object.entries(fixtures)){
+      const lazy=await compileDemonstrationRuntimeAsync(p);
+      const sync=compileDemonstrationRuntime(p);
+      for(const values of [{},Object.fromEntries((p.parameters??[]).map(q=>[q.id,q.min+.25*(q.max-q.min)]))]){
+        let a,b;
+        try{a=finishGenerator(sync(values));}catch(error){assert.throws(()=>finishGenerator(lazy(values)),e=>String(e)===String(error),id);continue;}
+        b=finishGenerator(lazy(values));
+        assert.equal(b.duration,a.duration,id);
+        assert.deepEqual(b.diagnostics,a.diagnostics,id);
+        assert.deepEqual(b.warnings,a.warnings,id);
+        assert.deepEqual(b.eventTimes,a.eventTimes,id);
+        for(const t of [0,a.duration/2,a.duration]){
+          assert.deepEqual(b.stateAt(t),a.stateAt(t),id);
+          for(const expr of [...Object.keys(p.definitions??{}),...p.views.flatMap(v=>[v.expression,...(v.curves??[]).map(c=>c.expression),...(v.values??[]).map(c=>c.expression)].filter(x=>x!==undefined))]){
+            a.resetBudget();b.resetBudget();
+            let x;
+            try{x=a.evaluate(expr,t,.25,.3);}catch(error){assert.throws(()=>b.evaluate(expr,t,.25,.3),e=>String(e)===String(error),id);continue;}
+            assert.equal(b.evaluate(expr,t,.25,.3),x,id+' '+expr);
+          }
+        }
+      }
+    }
+  }
 });
