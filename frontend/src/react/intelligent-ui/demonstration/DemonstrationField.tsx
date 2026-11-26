@@ -53,6 +53,14 @@ export const DemoField = memo(function DemoField({
       context.lineWidth = 0.9;
       context.stroke();
     }
+    if(sample.streamlines?.length){
+      context.beginPath();
+      for(const line of sample.streamlines){
+        context.moveTo(line[0],line[1]);for(let i=2;i<line.length;i+=2)context.lineTo(line[i],line[i+1]);
+      }
+      context.strokeStyle='rgba(0,0,0,.55)';context.lineWidth=1.8;context.stroke();
+      context.strokeStyle='rgba(255,255,255,.8)';context.lineWidth=.8;context.stroke();
+    }
     if (!sample.arrows.length) return;
     context.strokeStyle = 'rgba(255,255,255,.72)';
     context.lineWidth = 0.7;
