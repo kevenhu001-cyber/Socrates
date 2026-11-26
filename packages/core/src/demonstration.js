@@ -81,6 +81,9 @@ const extraFunctions = {
   csc: (x) => 1 / Math.sin(x),
   cot: (x) => Math.cos(x) / Math.sin(x),
   mod: (a, b) => ((a % b) + b) % b,
+  expm1: Math.expm1,
+  log1p: Math.log1p,
+  heaviside: (x) => (x >= 0 ? 1 : 0),
 };
 const extraArity = { mod: 2 };
 const aliases = {
@@ -877,10 +880,22 @@ export function normalizeDemonstrationProgram(input) {
     );
     let duration = numberLike(dynamics.duration),
       step = numberLike(dynamics.step);
-    if (finite(duration) && duration > 30) duration = 30;
-    if (finite(step)) step = Math.max(0.002, Math.min(0.05, step));
-    if (finite(duration) && finite(step) && duration > 0 && Math.ceil(duration / step) > 10000)
-      step = Math.min(0.05, duration / 10000);
+    if (dynamics.method !== 'rk45') {
+      if (finite(duration) && duration > 30) duration = 30;
+      if (finite(step)) step = Math.max(0.002, Math.min(0.05, step));
+      if (finite(duration) && finite(step) && duration > 0 && Math.ceil(duration / step) > 10000)
+        step = Math.min(0.05, duration / 10000);
+    }
+    for (const key of ['rtol', 'atol']) {
+      if (dynamics[key] !== undefined) dynamics[key] = numberLike(dynamics[key]);
+    }
+    if (Array.isArray(dynamics.events))
+      dynamics.events = dynamics.events.map((event) =>
+        record(event)
+          ? { ...event, expression: expressionLike(event.expression),
+              ...(record(event.reset) ? { reset: mapValues(event.reset, expressionLike) } : {}) }
+          : event,
+      );
     dynamics.duration = duration;
     dynamics.step = step;
     out.dynamics = dynamics;
@@ -1120,20 +1135,30 @@ export function validateDemonstration(input) {
       at('dynamics', () => {
         if (!record(dynamics) || !record(dynamics.initial) || !record(dynamics.derivatives))
           throw Error('Dynamics needs initial and derivatives maps');
+        const adaptive = dynamics.method === 'rk45';
+        if (dynamics.method !== undefined && !['rk4', 'rk45'].includes(dynamics.method))
+          throw Error('Unknown dynamics method; use rk4 or rk45');
         if (
-          !finite(dynamics.duration) ||
-          dynamics.duration <= 0 ||
-          dynamics.duration > 30 ||
-          !finite(dynamics.step) ||
-          dynamics.step < 0.002 ||
-          dynamics.step > 0.05 ||
+          !finite(dynamics.duration) || dynamics.duration <= 0 ||
+          dynamics.duration > (adaptive ? 300 : 30) ||
+          !finite(dynamics.step) || dynamics.step < (adaptive ? 1e-6 : 0.002) ||
+          dynamics.step > (adaptive ? 1 : 0.05) ||
           Math.ceil(dynamics.duration / dynamics.step) > 10000
         )
-          throw Error('Dynamics needs duration ≤30 s, step 0.002–0.05 s and ≤10000 steps');
+          throw Error('Dynamics duration and maximum step exceed the solver resource limits');
+        for (const key of ['rtol', 'atol']) {
+          if (dynamics[key] !== undefined &&
+              (!adaptive || !finite(dynamics[key]) || dynamics[key] < 1e-10 || dynamics[key] > 0.01))
+            throw Error('RK45 tolerances must be between 1e-10 and 0.01');
+        }
+        if (dynamics.events !== undefined &&
+            (!adaptive || !Array.isArray(dynamics.events) || dynamics.events.length > 8))
+          throw Error('Events require RK45 and at most eight event definitions');
       });
       const keys = Object.keys(dynamics.initial);
-      if (!keys.length || keys.length > 6)
-        throw located('dynamics.initial', Error('Dynamics supports 1–6 states'));
+      const maxStates = dynamics.method === 'rk45' ? 32 : 6;
+      if (!keys.length || keys.length > maxStates)
+        throw located('dynamics.initial', Error(`Dynamics supports 1–${maxStates} states`));
       for (const key of keys) {
         at(`dynamics.initial.${key}`, () => {
           if (!name(key) || allowed.has(key))
@@ -1189,6 +1214,22 @@ export function validateDemonstration(input) {
     if (dynamics)
       for (const key of Object.keys(dynamics.initial))
         at(`dynamics.derivatives.${key}`, () => check(dynamics.derivatives[key]));
+    for (const [i, event] of (dynamics?.events ?? []).entries()) {
+      at(`dynamics.events[${i}]`, () => {
+        if (!record(event) || ![-1, 0, 1].includes(event.direction ?? 0) ||
+            (event.terminal !== undefined && typeof event.terminal !== 'boolean'))
+          throw Error('Event needs expression, direction -1/0/1 and optional boolean terminal');
+        check(event.expression);
+        if (event.reset !== undefined && !record(event.reset))
+          throw Error('Event reset must be a map of state expressions');
+        if (!event.terminal && !Object.keys(event.reset ?? {}).length)
+          throw Error('Event must stop the simulation or reset at least one state');
+        for (const [key, expression] of Object.entries(event.reset ?? {})) {
+          if (!Object.hasOwn(dynamics.initial, key)) throw Error('Event reset must target a state');
+          check(expression);
+        }
+      });
+    }
     const views = program.views;
     if (!Array.isArray(views) || !views.length || views.length > 8)
       throw located('views', Error('Demonstration requires 1–8 views'));
@@ -1452,7 +1493,130 @@ export function compileDemonstrationRuntime(input) {
     prepareRuntime(program, definitions, stateNames, compile, dependencies, values);
 }
 
-/** Yield between batches of the unchanged RK4 integration so a host can cancel it. */
+
+// Dormand–Prince 5(4) embedded pair. Keep a bounded trajectory of accepted
+// segments, separate from the rendering clock. All arithmetic is app-owned.
+const DP_A = [
+  [], [1 / 5], [3 / 40, 9 / 40], [44 / 45, -56 / 15, 32 / 9],
+  [19372 / 6561, -25360 / 2187, 64448 / 6561, -212 / 729],
+  [9017 / 3168, -355 / 33, 46732 / 5247, 49 / 176, -5103 / 18656],
+  [35 / 384, 0, 500 / 1113, 125 / 192, -2187 / 6784, 11 / 84],
+];
+const DP_C = [0, 1 / 5, 3 / 10, 4 / 5, 8 / 9, 1, 1];
+const DP_B4 = [5179 / 57600, 0, 7571 / 16695, 393 / 640, -92097 / 339200, 187 / 2100, 1 / 40];
+
+function* integrateAdaptive(dynamics, names, initial, derivative, eventValue, eventReset, warnings) {
+  const n = names.length;
+  const stages = Array.from({ length: 7 }, () => new Float64Array(n));
+  const work = new Float64Array(n);
+  const segments = [];
+  let t = 0, h = Math.min(dynamics.step, dynamics.duration);
+  let current = Float64Array.from(names, (name) => initial[name]);
+  const toState = (v) => Object.fromEntries(names.map((name, i) => [name, v[i]]));
+  const checked = (v) => {
+    if (!v.every((x) => finite(x) && Math.abs(x) <= 1e12))
+      throw Error('Non-finite or divergent state');
+    return v;
+  };
+  const interpolate = (segment, time) => {
+    const u = Math.max(0, Math.min(1, (time - segment.t) / segment.h));
+    const u2 = u * u, u3 = u2 * u;
+    return segment.a.map((x, i) =>
+      (2 * u3 - 3 * u2 + 1) * x + (u3 - 2 * u2 + u) * segment.h * segment.k0[i] +
+      (-2 * u3 + 3 * u2) * segment.b[i] + (u3 - u2) * segment.h * segment.k1[i],
+    );
+  };
+  const events = dynamics.events ?? [];
+  const readEvent = (event, time, value) => {
+    const result = eventValue(event, time, toState(value));
+    if (!finite(result)) throw Error('Event expression is not finite');
+    return result;
+  };
+  let eventCount = 0;
+  const rtol = dynamics.rtol ?? 1e-6, atol = dynamics.atol ?? 1e-9;
+  try {
+    for (let attempt = 0; t < dynamics.duration; attempt++) {
+      if (attempt >= 10000) throw Error('Adaptive integration step budget exceeded');
+      if (attempt % 16 === 0) yield;
+      h = Math.min(h, dynamics.duration - t);
+      if (t + h === t) throw Error('Adaptive step underflow');
+      for (let stage = 0; stage < 7; stage++) {
+        for (let i = 0; i < n; i++) {
+          let value = current[i];
+          for (let j = 0; j < stage; j++) value += h * DP_A[stage][j] * stages[j][i];
+          work[i] = value;
+        }
+        checked(work);
+        const k = derivative(toState(work), t + DP_C[stage] * h);
+        for (let i = 0; i < n; i++) stages[stage][i] = k[names[i]];
+        checked(stages[stage]);
+      }
+      const next = work.slice();
+      let err = 0;
+      for (let i = 0; i < n; i++) {
+        let low = current[i];
+        for (let j = 0; j < 7; j++) low += h * DP_B4[j] * stages[j][i];
+        err = Math.max(err, Math.abs(next[i] - low) / (atol + rtol * Math.max(Math.abs(current[i]), Math.abs(next[i]))));
+      }
+      if (!finite(err)) throw Error('Non-finite integration error');
+      const factor = err === 0 ? 5 : Math.max(0.2, Math.min(5, 0.9 * err ** -0.2));
+      if (err > 1) {
+        h *= Math.min(0.9, factor);
+        continue;
+      }
+      const segment = { t, h, end: t + h, a: current, b: next, k0: stages[0].slice(), k1: stages[6].slice() };
+      let hit;
+      for (const event of events) {
+        const a = readEvent(event, t, current), b = readEvent(event, t + h, next);
+        const direction = event.direction ?? 0;
+        if (!((direction <= 0 && a > 0 && b <= 0) || (direction >= 0 && a < 0 && b >= 0))) continue;
+        let lo = t, hi = t + h;
+        for (let i = 0; i < 40 && hi - lo > Math.max(1e-12, h * 1e-9); i++) {
+          const mid = (lo + hi) / 2;
+          const m = readEvent(event, mid, interpolate(segment, mid));
+          if ((m > 0) === (a > 0) && m !== 0) lo = mid;
+          else hi = mid;
+        }
+        if (!hit || hi < hit.time) hit = { event, time: hi };
+      }
+      if (hit) {
+        if (++eventCount > 128) throw Error('Event budget exceeded; possible chattering or repeated contact');
+        const before = interpolate(segment, hit.time);
+        const reset = eventReset(hit.event, hit.time, toState(before));
+        const after = checked(Float64Array.from(names, (name) => reset[name]));
+        segments.push({ ...segment, end: hit.time });
+        t = hit.time;
+        current = after;
+        if (hit.event.terminal) break;
+        // Move forward from a reset rather than replaying the remainder of a pre-event step.
+        h = Math.min(dynamics.step, Math.max(h * 0.25, 1e-9));
+      } else {
+        segments.push(segment);
+        current = next;
+        t += h;
+        h = Math.min(dynamics.step, h * factor);
+      }
+    }
+  } catch (error) {
+    warnings.push({ path: 'dynamics', time: t, message: `Adaptive dynamics stopped at t = ${t}: ${error instanceof Error ? error.message : String(error)}` });
+  }
+  return {
+    duration: t,
+    stateAt(time) {
+      const target = Math.max(0, Math.min(t, finite(time) ? time : 0));
+      if (target === t) return toState(current);
+      let lo = 0, hi = segments.length - 1;
+      while (lo < hi) {
+        const mid = (lo + hi) >>> 1;
+        if (segments[mid].end <= target) lo = mid + 1;
+        else hi = mid;
+      }
+      return toState(segments.length ? interpolate(segments[lo], target) : current);
+    },
+  };
+}
+
+/** Yield between integration batches so a host can cancel them. */
 function* prepareRuntime(program, definitions, stateNames, compile, dependencies, values) {
   const budget = { remaining: BUDGET };
   const warnings = [];
@@ -1484,6 +1648,7 @@ function* prepareRuntime(program, definitions, stateNames, compile, dependencies
     evaluateDemonstrationExpression(compile(expression), scope, budget);
   let trajectory = [],
     step = 0;
+  let adaptiveResult;
   const dynamics = program.dynamics;
   let duration = dynamics?.duration ?? program.duration ?? 0;
   if (dynamics) {
@@ -1517,6 +1682,18 @@ function* prepareRuntime(program, definitions, stateNames, compile, dependencies
     };
     const add = (s, k, factor) =>
       Object.fromEntries(names.map((key) => [key, s[key] + factor * k[key]]));
+    if (dynamics.method === 'rk45') {
+      const eventValue = (event, t, s) =>
+        evalDynamics(event.expression, scopeAt(t, 0, 0, s, evalDynamics));
+      const eventReset = (event, t, s) => {
+        const scope = scopeAt(t, 0, 0, s, evalDynamics);
+        return { ...s, ...Object.fromEntries(Object.entries(event.reset ?? {}).map(
+          ([key, expression]) => [key, evalDynamics(expression, scope)],
+        )) };
+      };
+      adaptiveResult = yield* integrateAdaptive(dynamics, names, state, derivative, eventValue, eventReset, warnings);
+      duration = adaptiveResult.duration;
+    } else {
     let current = state;
     try {
       for (let i = 1; i <= count; i++) {
@@ -1555,8 +1732,10 @@ function* prepareRuntime(program, definitions, stateNames, compile, dependencies
     // Keep the valid part of the history; animations stop where it ends.
     const reached = (trajectory.length - 1) * step;
     if (reached < dynamics.duration) duration = reached;
+    }
   }
   const stateAt = (time) => {
+    if (adaptiveResult) return adaptiveResult.stateAt(time);
     if (!trajectory.length) return {};
     const index = Math.max(
         0,
