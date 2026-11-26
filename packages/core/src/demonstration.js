@@ -862,6 +862,7 @@ function normalizeView(raw) {
     for (const key of ['gamma', 'exposure', 'vectorScale'])
       if (view[key] !== undefined) view[key] = expressionLike(view[key]);
     if (view.colorRange !== undefined) view.colorRange = rangeLike(view.colorRange);
+    if (view.zRange !== undefined) view.zRange = rangeLike(view.zRange);
     if (Array.isArray(view.contours)) view.contours = view.contours.map(expressionLike);
     const vector = asArray(view.vector);
     if (Array.isArray(vector)) view.vector = vector.map(expressionLike);
@@ -1667,6 +1668,14 @@ export function validateDemonstration(input) {
         });
       } else if (view.kind === 'field') {
         fields++;
+        if (view.presentation !== undefined && !['map', 'surface'].includes(view.presentation))
+          throw located(`${path}.presentation`, Error('Field presentation must be map or surface'));
+        if (view.presentation === 'surface') {
+          if (!range(view.zRange)) throw located(`${path}.zRange`, Error('Surface needs increasing z bounds'));
+          view.zRange.forEach((v) => check(v));
+          if (view.vector !== undefined || view.contours !== undefined || view.colorRange !== undefined)
+            throw located(path, Error('Surface is a wireframe view; use a separate map for contours, vectors or color calibration'));
+        } else if (view.zRange !== undefined) throw located(`${path}.zRange`, Error('zRange requires surface presentation'));
         at(`${path}.expression`, () => check(view.expression));
         for (const key of ['gamma', 'exposure', 'vectorScale'])
           if (view[key] !== undefined) at(`${path}.${key}`, () => check(view[key]));
