@@ -67,5 +67,3 @@ function compileDemonstrationRuntime(input) {
 }
 
 export { createDemonstrationRuntime, compileDemonstrationRuntime };
-
-export { validateDemonstration } from './validate.js';
