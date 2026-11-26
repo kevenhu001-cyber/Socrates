@@ -152,6 +152,21 @@ async function recordLegacyArtifactAppender(page) {
   });
 }
 
+async function expectFullWidthOutput(body, output) {
+  const bodyWidth = await body.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return element.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+  });
+  const host = output.locator(
+    'xpath=ancestor::*[contains(concat(" ", normalize-space(@class), " "), " tool-inline-attachments ")][1]',
+  );
+  await expect
+    .poll(async () => (await host.boundingBox())?.width ?? 0)
+    .toBeGreaterThanOrEqual(bodyWidth - 2);
+  // A small inset is fine; a fixed narrow column is not.
+  expect((await output.boundingBox()).width).toBeGreaterThanOrEqual(bodyWidth * 0.88);
+}
+
 /* ── visibility under a collapsed run ─────────────────────────────────── */
 
 test('a settled visualization beside visible tool activities stays on screen', async ({ page }) => {
@@ -567,6 +582,8 @@ test('HTML artifacts render in React with a sandboxed preview action', async ({ 
     'allow-scripts allow-forms allow-modals allow-popups',
   );
   await expect(body.locator('[data-artifact-id="html-report"]')).toHaveCount(1);
+  await expectFullWidthOutput(body, frame);
+  expect((await frame.boundingBox()).height).toBeGreaterThanOrEqual(320);
   await body.locator('.exec-artifact-open').click();
   await expect(page.locator('[data-detail-owner="artifact"]')).toBeVisible();
   expect(await page.evaluate(() => window.__legacyArtifactAppenderPresent)).toBe(false);
@@ -652,6 +669,7 @@ test('visible activities with a real chart do not overflow a 390px viewport', as
   const card = body.locator('.visualization-card');
   await expect(card).toBeVisible();
   await expect(card.locator('svg path')).not.toHaveCount(0);
+  await expectFullWidthOutput(body, card);
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
   );
