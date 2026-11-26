@@ -13,7 +13,8 @@ export interface DemonstrationParameter {
   advanced?: boolean;
 }
 export interface DemonstrationCurve {
-  interpolation?: 'linear' | 'step';
+  interpolation?: 'linear' | 'step' | 'points' | 'stem';
+  samples?: number;
   label?: string;
   expression: DemonstrationValue;
   color?: string;
@@ -130,6 +131,7 @@ export interface DemonstrationProgram {
   resetKey?: string;
   parameters?: DemonstrationParameter[];
   definitions?: Record<string, DemonstrationValue>;
+  analysis?: {kind:'fft';expression:DemonstrationValue;timeRange:[number,number];samples?:number;window?:'rectangular'|'hann';removeMean?:boolean;lowpass?:DemonstrationValue} | {kind:'eigen';matrix:DemonstrationValue[][]} | {kind:'sweep';parameter:string;range:[number,number];samples?:number;expression:DemonstrationValue;time?:number};
   optimization?: {variables:{id:string;initial:DemonstrationValue;min:number;max:number}[];objective:DemonstrationValue;goal?:'min'|'max';tolerance?:number;maxIterations?:number};
   nonlinearSystem?: {guess:Record<string,DemonstrationValue>;residuals:Record<string,DemonstrationValue>;tolerance?:number;maxIterations?:number};
   sparseSystem?: {method?:'pcg'|'bicgstab';size:number;entries:[number,number,DemonstrationValue][];rhs:DemonstrationValue[];tolerance?:number;maxIterations?:number};
@@ -219,6 +221,10 @@ export interface DemonstrationDiagnostics {
   finiteDifferenceColumns?: number;
   projectedGradient?: number;
   objectiveEvaluations?: number;
+  analysisSamples?: number;
+  eigenResidual?: number;
+  eigenOrthogonality?: number;
+  eigenIterations?: number;
 }
 export interface DemonstrationRuntime {
   duration: number;
