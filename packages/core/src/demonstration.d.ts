@@ -168,7 +168,7 @@ export interface DemonstrationProgram {
     algebraic?: { guess: Record<string, DemonstrationValue>; residuals: Record<string, DemonstrationValue>; tolerance?: number };
     rtol?: number;
     atol?: number;
-    events?: { expression: DemonstrationValue; direction?: -1 | 0 | 1; terminal?: boolean; reset?: Record<string, DemonstrationValue> }[];
+    events?: { expression: DemonstrationValue; direction?: -1 | 0 | 1; rearmTolerance?: number; terminal?: boolean; reset?: Record<string, DemonstrationValue> }[];
   };
   duration?: number;
   views: DemonstrationView[];
