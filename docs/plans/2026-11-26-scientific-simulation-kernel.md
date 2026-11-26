@@ -267,6 +267,49 @@ pending; previous Agent, Security, Server and Image checks passed,
 other lanes were cancelled when superseded. Earlier unrelated streaming
 math failure is not claimed fixed.
 
+## Stage eight: calculus, optimization and parametric geometry
+
+- Bounded forward-mode scalar automatic differentiation for smooth explicit
+  ASTs; diff(local, point, expression), with inline local-variable
+  dependence. Unsupported/non-differentiable calls fail for user-facing
+  diff. Standalone Newton uses AD Jacobian columns where supported and
+  finite differences otherwise. This is not symbolic algebra, reverse AD
+  or differentiation through arbitrary solver trajectories/definitions.
+- integral(local, lower, upper, expression) uses 128-subinterval composite
+  Simpson quadrature, including reversed bounds; finite smooth integrands
+  only. No adaptive singular-integral guarantee.
+- Standalone box-constrained smooth optimization, 1–8 unknowns, min/max,
+  normalized variables, projected BFGS with backtracking and bounded
+  iterations. AD gradient or finite-difference fallback; report actual
+  objective, projected gradient, iteration/evaluation counts. Explicit
+  failure on nonconvergence. Local stationary result only; not arbitrary
+  constrained or global optimization.
+- Parametric 3D surfaces with independent u/v bounds and physical x/y/z
+  bounds, 17x17 or 33x33 sampled coordinate triples, wireframe/shaded
+  camera renderer. Fixed painter order, invalid samples become gaps.
+  Scalar field markers expose computed coordinates, useful for optimum
+  or equilibrium points. No adaptive mesh, volume raycasting or GPU
+  renderer.
+- CSP-safe bounded arithmetic instruction tape for straight-line ASTs,
+  reusable Float64 stack, no dynamic code generation, same per-node
+  operation budget, reentrant fallback. Lazy branches and unsupported
+  functions remain interpreted; bounded loop bodies can use the tape.
+- Fixed incomplete streamed math copy source: preserve closed formula copy
+  text, omit unstable raw copy source while the delimiter is open. This
+  addresses the prior unrelated CI test failure without altering its assertion.
+
+Direct checks: derivative matches analytic result exactly in tested case;
+Simpson integral of sin over [0,pi] error 4.032e-9; Newton root residual
+zero with 10 AD columns. Rosenbrock local optimum objective 1.050e-20
+in 32 iterations; projected normalized gradient 5.262e-9, 66 AD columns;
+boundary optimum reached. Parametric torus 1089 vertices, implicit
+surface residual 5.274e-16. Arithmetic tape/interpreter identical on
+1000 inputs; one isolated 50,000-evaluation microbenchmark 392 ms vs
+199 ms (same operation count), not an application or device speed claim.
+All 36 scientific plus 15 historical cases validated and executed without
+warnings. Added unit and E2E regressions. Latest full CI/browser/device
+verification pending.
+
 ## Deliberate limits / next steps
 
 This is a bounded educational engine, not an industrial multiphysics solver.
