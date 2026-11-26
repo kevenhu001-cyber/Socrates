@@ -66,6 +66,8 @@ test('Cmd-K React mode opens from the keyboard and React renders the modal', asy
   const result = page.locator('.cmd-k-row[data-id="cmdk-e2e-result"]');
   await expect(result).toBeVisible();
   await expect(result).toHaveClass(/selected/);
+  await result.hover();
+  await expect(overlay).not.toHaveClass(/hidden/);
 
   // Escape closes the palette through the typed cmdK action, which still
   // toggles the overlay's hidden class.
@@ -84,4 +86,20 @@ test('Cmd-K React mode always loads (no ?react=1 flag needed)', async ({ page })
 
   const retired = await page.evaluate(() => !('__socratesCmdK' in window));
   expect(retired).toBe(true);
+});
+
+
+test('phone drawer exposes global conversation search without filtering only recents', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockAuthedApp(page);
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+  await page.locator('#sidebarOpenBtn').click();
+  const search = page.locator('#navSearch');
+  await expect(search).toBeVisible();
+  await search.click();
+  await expect(page.locator('#cmdKOverlay')).not.toHaveClass(/hidden/);
+  await expect(page.locator('#cmdKInput')).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#cmdKOverlay')).toHaveClass(/hidden/);
 });
