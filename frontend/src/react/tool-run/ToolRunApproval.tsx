@@ -3,10 +3,11 @@
  *
  * Renders from `call.approval`; the runtime keeps `approval.ui` current while
  * the POST is in flight, so the status line ("Saving your decision…",
- * "Approved") arrives as data. RN-2 draws it with the shared RN card and pill
- * buttons; the DOM wrapper keeps the region semantics and data hooks.
+ * "Approved") arrives as data. The web surface keeps the action and its
+ * destination legible without duplicating the activity summary.
  */
-import { ToolApprovalCard, type ApprovalDecisionView } from '@socrates/ui/turn';
+import type { ApprovalDecisionView } from '@socrates/ui/turn';
+import { UiButton } from '@socrates/ui/primitives';
 import { getLegacyActions } from '../legacy/gateway.ts';
 import { i18n } from '../../ui/legacyI18n.ts';
 import { WebUiTheme } from '../rn/WebUiTheme';
@@ -64,18 +65,44 @@ export function ToolRunApproval({ view, messageId, toolCallId, readOnly }: ToolR
       aria-busy={view.disabled && view.state === 'pending' ? 'true' : undefined}
     >
       <WebUiTheme>
-        <ToolApprovalCard
-          title={view.title}
-          badge={i18n('tool.status.awaiting', 'Needs approval')}
-          description={i18n('tool.codexApprovalCopy', 'Review the action before it continues.')}
-          facts={view.facts}
-          status={view.status}
-          decisions={decisions}
-          showControls={!readOnly && !view.disabled && view.state === 'pending'}
-          onDecide={(id) => {
-            void decide(id as ApprovalDecision);
-          }}
-        />
+        <div className="tool-approval-card" data-testid="tool-approval">
+          <div className="tool-approval-heading" data-testid="tool-approval-title">{view.title}</div>
+          {view.state === 'pending' ? (
+            <p className="tool-approval-description">
+              {i18n('tool.codexApprovalCopy', 'Review the action before it continues.')}
+            </p>
+          ) : null}
+          {view.facts.length ? (
+            <dl className="tool-approval-facts">
+              {view.facts.map((fact) => (
+                <div key={fact.label}>
+                  <dt>{fact.label}</dt>
+                  <dd>{fact.value}</dd>
+                </div>
+              ))}
+            </dl>
+          ) : null}
+          {view.status ? (
+            <div className="tool-approval-status" data-testid="tool-approval-status" role="status" aria-live="polite">
+              {view.status}
+            </div>
+          ) : null}
+          {!readOnly && !view.disabled && view.state === 'pending' ? (
+            <div className="tool-approval-decisions">
+              {decisions.map((decision) => (
+                <UiButton
+                  key={decision.id}
+                  testID={`tool-approval-${decision.id}`}
+                  label={decision.label}
+                  variant={decision.variant}
+                  size="sm"
+                  onPress={() => void decide(decision.id)}
+                  dataSet={{ approvalAction: decision.id }}
+                />
+              ))}
+            </div>
+          ) : null}
+        </div>
       </WebUiTheme>
     </div>
   );
