@@ -56,7 +56,7 @@ html[data-theme='socrates'][data-mode]:lang(zh) {
   --popover: var(--geist-gray-300);
   --popover-foreground: var(--foreground);
   --primary: var(--geist-gray-1000);
-  --primary-foreground: #000000;
+  --primary-foreground: rgb(0 0 0);
   --secondary: var(--geist-gray-400);
   --secondary-foreground: var(--foreground);
   --muted: var(--geist-gray-100);
@@ -147,7 +147,7 @@ html[data-theme='socrates'][data-mode]:lang(zh) {
   --ui-bg-control: var(--secondary);
   --ui-bg-hover: var(--accent);
   --ui-bg-selected: var(--ui-bg-control);
-  --ui-bg-bubble: #183e76;
+  --ui-bg-bubble: rgb(24 62 118);
   --ui-bg-pill-selected: var(--geist-gray-500);
   --ui-bg-hover-ghost: var(--ui-bg-hover);
   /* Geist hairline: the rail's edge is the default border (gray-400), the
@@ -340,7 +340,7 @@ html[data-theme='socrates'][data-mode]:lang(zh) {
   --ui-bg-control: var(--secondary);
   --ui-bg-hover: var(--accent);
   --ui-bg-selected: var(--ui-bg-control);
-  --ui-bg-bubble: #e3edff;
+  --ui-bg-bubble: rgb(227 237 255);
   --ui-bg-pill-selected: var(--geist-gray-300);
   --ui-bg-hover-ghost: var(--ui-bg-hover);
   /* Geist hairline — see the dark-mode note above. */
