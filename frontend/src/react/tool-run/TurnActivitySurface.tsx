@@ -217,6 +217,30 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
       : latestStep
         ? 'thinking'
         : 'complete';
+  // Keep the mounted timeline stable during elapsed-time ticks. Nested tool
+  // detail disclosures already mount their expensive output only when opened.
+  const overviewTitle = i18n('think.taskOverview', 'Task overview');
+  const history = useMemo(
+    () => (
+      <>
+        {intent ? (
+          <SummaryStep
+            step={{
+              id: 'intent',
+              title: overviewTitle,
+              summary: intent,
+            }}
+          />
+        ) : null}
+        {timeline.flatMap((entry) =>
+          entry.kind === 'step'
+            ? [<SummaryStep key={`summary-${entry.step.id}`} step={entry.step} />]
+            : toolActivityRows(entry.tools, messageId, readOnly, live),
+        )}
+      </>
+    ),
+    [intent, timeline, messageId, readOnly, live, overviewTitle],
+  );
   if (!live && !expandable && !props.reasoningDurationSec) return null;
   const durationLabel =
     working && elapsedSec
@@ -256,20 +280,7 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
               className="activity-timeline"
               data-testid="thinking-timeline"
             >
-              {intent ? (
-                <SummaryStep
-                  step={{
-                    id: 'intent',
-                    title: i18n('think.taskOverview', 'Task overview'),
-                    summary: intent,
-                  }}
-                />
-              ) : null}
-              {timeline.flatMap((entry) =>
-                entry.kind === 'step'
-                  ? [<SummaryStep key={`summary-${entry.step.id}`} step={entry.step} />]
-                  : toolActivityRows(entry.tools, messageId, readOnly, live),
-              )}
+              {history}
             </div>
           </div>
         </ThinkingSurface>

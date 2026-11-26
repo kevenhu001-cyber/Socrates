@@ -42,12 +42,6 @@ html:not([data-main-view='settingsPage']) #appShell .main-page .ui-page-frame.pl
   margin-bottom: var(--ui-space-lg);
 }
 
-#appShell .ui-page-search {
-  flex: 1 1 320px;
-  max-width: none;
-  min-width: 0;
-}
-
 /* Projects keeps a compact search field beside its filter rail instead of
  * stretching the field across the whole page column. */
 #appShell .projects-directory .ui-page-search {
@@ -261,7 +255,6 @@ html:not([data-main-view='settingsPage']) #appShell .main-page .ui-page-frame.pl
 
 #appShell .project-card {
   align-items: flex-start;
-  min-height: 96px;
 }
 
 /* `.project-row` stays on the card for the mobile reference and the API
@@ -547,7 +540,7 @@ body.workspace-active #appShell .ui-page-card.project-card {
   padding: var(--ui-space-lg);
   border: 1px solid var(--ui-border-subtle);
   border-radius: var(--ui-radius-xl);
-  background: var(--ui-bg-raised);
+  background: transparent;
   color: var(--ui-text-primary);
   text-align: left;
   cursor: pointer;
@@ -555,7 +548,7 @@ body.workspace-active #appShell .ui-page-card.project-card {
 
 #appShell .scheduled-recommendation:hover {
   border-color: var(--ui-border-default);
-  background: color-mix(in srgb, var(--ui-bg-raised), var(--ui-text-primary) 4%);
+  background: var(--ui-bg-hover);
 }
 
 #appShell .scheduled-recommendation-icon {
@@ -565,10 +558,10 @@ body.workspace-active #appShell .ui-page-card.project-card {
   width: 40px;
   height: 40px;
   padding: 7px;
-  border: 1px solid var(--ui-border-subtle);
+  border: 0;
   border-radius: var(--ui-radius-md);
-  background: var(--ui-bg-surface);
-  color: var(--ui-text-secondary);
+  background: transparent;
+  color: var(--ui-text-primary);
 }
 #appShell .scheduled-recommendation-icon svg {
   width: 24px;
@@ -645,7 +638,7 @@ body.workspace-active #appShell .ui-page-card.project-card {
 }
 
 #appShell .scheduled-task-list .task-row:hover {
-  background: color-mix(in srgb, var(--ui-bg-raised), var(--ui-text-primary) 4%);
+  background: var(--ui-bg-hover);
 }
 
 #appShell .scheduled-task-list .task-row .workspace-row-icon {
@@ -801,25 +794,6 @@ body.workspace-active #appShell .ui-page-card.project-card {
   border-radius: var(--ui-radius-xl);
 }
 
-/* ── Empty states ───────────────────────────────────────────────────── */
-
-#appShell .ui-page-empty[data-slot='empty'] {
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 220px;
-  padding: var(--ui-space-xxl) var(--ui-space-lg);
-  border: 0;
-  background: transparent;
-}
-
-#appShell .ui-page-empty [data-slot='empty-title'] {
-  color: var(--ui-text-primary);
-  font-size: var(--ui-font-size-md);
-  font-weight: var(--ui-font-weight-medium);
-}
-
 /* ── Phone ──────────────────────────────────────────────────────────── */
 
 @media (max-width: 768px) {
@@ -935,6 +909,7 @@ body.workspace-active #appShell .ui-page-card.project-card {
 
   #appShell .scheduled-task-list .task-row {
     flex-wrap: nowrap;
+    min-height: 70px;
     gap: var(--ui-space-sm);
     padding: var(--ui-space-sm) 0;
   }
@@ -982,13 +957,6 @@ body.workspace-active #appShell .ui-page-card.project-card {
 
   #appShell .creation-gallery {
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 160px), 1fr));
-  }
-}
-
-@media (max-width: 768px) {
-  /* Retired restore/fixes.css eight-pixel lift above the shared 68px row. */
-  #appShell .scheduled-task-list .task-row {
-    min-height: 70px;
   }
 }
 

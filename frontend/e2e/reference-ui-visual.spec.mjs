@@ -436,9 +436,9 @@ test('Create image waits for a user prompt before submitting the image-generatio
 /* Audit screenshots are evidence, not auto-accepted pixel baselines.
    Use actual page navigation, then assert the viewport and capture each surface. */
 for (const theme of ['light', 'dark']) {
-  for (const width of [360, 768, 1440]) {
+  for (const width of [360, 768, 1024, 1440]) {
     test(`non-chat surface audit: ${theme} ${width}px`, async ({ page }) => {
-      const lang = width === 360 ? 'zh' : 'en';
+      const lang = (width === 360 || width === 1024) === (theme === 'light') ? 'zh' : 'en';
       await page.addInitScript((value) => localStorage.setItem('socrates-theme', value), theme);
       await page.setViewportSize({ width, height: 900 });
       await mockAuthedApp(page, { lang });
@@ -451,13 +451,31 @@ for (const theme of ['light', 'dark']) {
           () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
         );
         expect(overflow).toBeLessThanOrEqual(1);
-        await page.screenshot({
+        const screenshot = await page.screenshot({
           path: `test-results/page-audit-${encodeURIComponent(name)}-${encodeURIComponent(theme)}-${encodeURIComponent(width)}-${encodeURIComponent(lang)}.png`,
           animations: 'disabled',
         });
+        await test.info().attach(name, { body: screenshot, contentType: 'image/png' });
       };
       await openSidebar(page);
       await capture('sidebar', '#sidebar');
+      if (width > 768) {
+        await capture('home', '#topicSetup');
+        const model = page.locator('#topModelSwitcher');
+        const mode = page.locator('#topModeSwitch');
+        await expect(model).toBeVisible();
+        await expect(mode).toBeVisible();
+        const modelBox = await model.boundingBox();
+        const modeBox = await mode.boundingBox();
+        expect(modelBox.x + modelBox.width).toBeLessThanOrEqual(modeBox.x + 1);
+        await model.click();
+        const picker = page.locator('.chat-config-pop');
+        await expect(picker).toBeVisible();
+        await expect(picker).toBeInViewport();
+        await capture('model-picker', '.chat-config-pop');
+        await page.keyboard.press('Escape');
+        await expect(picker).toBeHidden();
+      }
       for (const [nav, selector, name] of [
         ['navPlugins', '.plugin-directory', 'plugins'],
         ['navLibrary', '.library-directory', 'library'],
@@ -466,6 +484,13 @@ for (const theme of ['light', 'dark']) {
       ]) {
         await page.evaluate((id) => document.getElementById(id)?.click(), nav);
         await capture(name, selector);
+        if (name === 'scheduled') {
+          const recommendation = page.locator('.scheduled-recommendation').first();
+          await expect(recommendation).toBeVisible();
+          await expect(recommendation.locator('.scheduled-recommendation-icon')).toHaveCSS(
+            'border-top-width', '0px',
+          );
+        }
         const title = page.locator(selector).locator('[data-page-title]').first();
         await expect(title).toBeVisible();
         await expect(title).toHaveCSS(
@@ -486,8 +511,19 @@ for (const theme of ['light', 'dark']) {
       await page.evaluate((id) => document.getElementById(id)?.click(), 'navPlugins');
       await page.locator('[data-connector-id="github"] .plugin-directory-card-main').click();
       await capture('plugin-detail', '.plugin-detail-view');
+      if (width > 768) {
+        const header = page.locator('.plugin-detail-page-header');
+        const actions = header.locator('.account-page-actions');
+        const headerBox = await header.boundingBox();
+        const actionsBox = await actions.boundingBox();
+        expect(actionsBox.width).toBeLessThanOrEqual(headerBox.width * 0.42 + 1);
+      }
       await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
       await capture('settings', '#settingsPage');
+      if (width > 768) {
+        await expect(page.locator('#settingsPage .account-page-header')).toHaveCSS('border-bottom-width', '1px');
+        await expect(page.locator('#settingsPage .settings-category-description').first()).toBeHidden();
+      }
       await page.locator('#settingsPage .settings-nav [data-section="models"]').click();
       await capture('models', '#settingsPage .settings-body');
       await expect(page.locator('#addProviderBtn')).toBeVisible();
@@ -498,6 +534,12 @@ for (const theme of ['light', 'dark']) {
         'color',
         theme === 'dark' ? 'rgb(255, 255, 255)' : 'rgb(0, 0, 0)',
       );
+      await page.evaluate(() => {
+        window.__socratesTestState.actions.showGate();
+        window.__socratesTestState.actions.showAuthSignin();
+      });
+      await capture('login', '#authGate');
+      await expect(page.locator('#authSigninEmail')).toBeVisible();
     });
   }
 }

@@ -115,3 +115,7 @@
     white-space: normal;
   }
 }
+
+:where(:root[data-topic-setup-open]) .main:not(#_n):not(._n) .main-bg {
+  opacity: 0.1;
+}

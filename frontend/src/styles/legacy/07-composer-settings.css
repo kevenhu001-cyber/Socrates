@@ -12,7 +12,7 @@
    the footer controls differ between the two surfaces.
 
    The three caps below are declared on this
-   element because 13-composer-rich.css and 16-final-contract.css read them
+   element because 13-composer-rich.css reads them
    from it (`.rich-composer[data-surface="chat"] .tiptap` max-height, and the
    focused wrap min-height). They were dropped from this rule when the
    pre-split src/styles.css was re-skinned, which left every consumer

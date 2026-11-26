@@ -196,14 +196,82 @@ body #composerToolsMenu.composer-tools-menu {
   overflow-y: auto;
   width: min(254px, calc(100vw - 32px));
   max-height: min(60dvh, 420px);
-  padding: 8px;
+  padding: var(--ui-menu-gutter);
+  transform-origin: top left;
+  background: var(--popover);
   border-radius: var(--ui-radius-popover);
 }
 .chat-config-pop button {
-  border-radius: var(--ui-radius-control);
+  border-radius: var(--ui-radius-row);
 }
 .chat-config-pop input[type='range'] {
   accent-color: var(--ui-link);
+}
+
+/* Generation-config popover — converge on the same density as the "+"
+   tools menu: 14px type, 40px rows, quiet hairline divider. The card
+   anchors to a 36px pill; 46px rows at 15px read oversized beside it.
+   Surface: a raised card like the other menus, with the ghost wash for
+   rows. */
+.chat-config-row {
+  min-height: 40px;
+  padding: var(--ui-menu-item-padding);
+  gap: var(--ui-menu-item-gap);
+  font-size: var(--ui-font-size-sm);
+  color: var(--ui-text-primary);
+}
+.chat-config-row:hover,
+.chat-config-row:focus-visible {
+  background: var(--ui-bg-hover-ghost);
+}
+/* A control the active model cannot honour
+   (Instant on a model that always reasons) is shown, but not offered. */
+.chat-config-row:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.chat-config-row:disabled:hover {
+  background: transparent;
+}
+.chat-config-row small,
+.chat-config-value {
+  color: var(--ui-text-tertiary);
+}
+.chat-config-divider {
+  margin: 3px 8px;
+  background: var(--ui-border-default);
+}
+.chat-config-row strong {
+  font-size: var(--ui-font-size-sm);
+}
+.chat-config-row small {
+  font-size: var(--ui-font-size-xxs);
+}
+.chat-config-row > svg {
+  width: 17px;
+  height: 17px;
+}
+.chat-config-value svg {
+  width: 15px;
+  height: 15px;
+}
+.chat-config-empty {
+  padding: 16px 12px;
+  font-size: var(--ui-font-size-xs);
+}
+.chat-config-slider {
+  padding: 4px 6px 10px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .chat-config-pop {
+    transition: opacity var(--ui-duration-fast) var(--ui-ease-out);
+  }
+  @starting-style {
+    .chat-config-pop {
+      opacity: 0;
+    }
+  }
 }
 
 .composer-tools-backdrop {
@@ -551,4 +619,17 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side='sheet'] {
   color: var(--ui-text-muted);
   font-size: var(--ui-font-size-xs);
   text-align: center;
+}
+
+#composerToolsMenu .composer-tools-item {
+  position: relative;
+}
+#composerToolsMenu .composer-tools-item.is-active {
+  color: var(--ui-text-primary);
+}
+#composerToolsMenu .composer-tools-active-check {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  color: var(--ui-text-primary);
 }

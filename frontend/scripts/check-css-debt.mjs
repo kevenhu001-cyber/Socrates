@@ -54,13 +54,6 @@ const ORDERED_MANIFESTS = {
     './07-composer-settings.css',
     './08-exam.css',
     './09-viz-markdown.css',
-    './10-tutor-scaffolds.css',
-    './11-agent-tools.css',
-    './12-tutor-inline-tools.css',
-    './13-composer-rich.css',
-    './14-tool-surfaces.css',
-    './15-thinking-activity.css',
-    './16-final-contract.css',
   ],
   'parity/index.css': [
     './sidebar.css',
@@ -70,9 +63,7 @@ const ORDERED_MANIFESTS = {
   ],
   'polish/index.css': [
     './sidebar.css',
-    './topbar.css',
     './composer.css',
-    './transcript.css',
     './overlays.css',
     './workspace.css',
     './auth.css',

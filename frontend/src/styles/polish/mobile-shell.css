@@ -5,7 +5,7 @@
     position: relative;
     height: calc(var(--ui-mobile-header) + env(safe-area-inset-top, 0px));
     min-height: calc(var(--ui-mobile-header) + env(safe-area-inset-top, 0px));
-    padding: env(safe-area-inset-top, 0px) 8px 0;
+    padding: env(safe-area-inset-top, 0px) max(8px, env(safe-area-inset-right, 0px)) 0 max(8px, env(safe-area-inset-left, 0px));
     gap: 8px;
     border: 0;
     background: var(--background);
@@ -196,13 +196,6 @@
   }
 }
 
-@media (max-width: 359px) {
-  /* 320px leaves a 76px gutter beside the mode switch: the caret goes first
-     so the model name still fits. The selector repeats the state prefix so it
-     outranks the base chip rule, which carries the same two ids plus an
-     attribute. */
-}
-
 @media (max-width: 768px) {
   [data-mode='dark'] #appShell,
   [data-mode='dark'] #appShell :is(.main-content, .main-bg) {
@@ -211,10 +204,14 @@
   [data-mode='dark'] #appShell .top-bar {
     background: var(--ui-phone-header-bg, var(--ui-bg-page));
   }
+
+  #appShell :is(.main, .main-content, .main-bg) {
+    background-color: var(--ui-bg-page);
+  }
 }
 
 @media (max-width: 768px) {
-  #appShell :is(.main, .main-content, .main-bg) {
-    background-color: var(--ui-bg-page);
+  :root:is([data-keyboard-open='true'], [data-keyboard-phase='opening'], [data-keyboard-phase='open'], [data-keyboard-phase='closing']) .topic-setup {
+    scroll-padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
   }
 }

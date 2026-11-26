@@ -71,6 +71,7 @@
   gap: 10px;
   width: 100%;
   max-width: 100%;
+  max-height: 132px;
   /* The frame's top slot already owns the inset that lines the row up with
      the editor. A second horizontal padding here pushed the first card 12px
      to the right of the text it belongs to. */
@@ -386,5 +387,17 @@
     #chatInputBar {
     padding-inline: 0;
     background: transparent;
+  }
+}
+
+@media (max-width: 768px) {
+  #appShell #composerAttachmentChips {
+    max-height: 96px;
+  }
+}
+
+@media (max-width: 768px) {
+  #appShell .composer-input-wrap.composer-focused #composerAttachmentChips {
+    max-height: 64px;
   }
 }

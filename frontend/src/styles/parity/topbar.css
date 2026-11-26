@@ -1,11 +1,11 @@
 /*
  * parity/topbar.css — the header's web layout (RN-7).
  *
- * The controls are the shared React Native shell parts
+ * The controls are the shared React DOM shell parts
  * (packages/ui/src/shell/TopBar.tsx): the model switcher, the 聊天 / 辅导
  * segmented track, the tutor stage and practice capsules, find, share and
  * the phone new-chat action paint themselves from the site tokens. This
- * owner keeps what only the page can do: the 52px bar with its hairline,
+ * owner keeps what only the page can do: the 48px bar and scroll fade,
  * the left / centre / right groups, the centred mode track, phone
  * placement, and hiding chat chrome on surfaces that are not the chat.
  */
@@ -103,7 +103,7 @@ body[data-transcript-scrolled='true'] #appShell .top-bar::after {
     height: 48px;
     min-height: 48px;
     margin: 0;
-    padding: 0 var(--ui-space-md);
+    padding: 0 max(var(--ui-space-md), env(safe-area-inset-right, 0px)) 0 max(var(--ui-space-md), env(safe-area-inset-left, 0px));
     border: 0;
     /* No standing rule under the header, and no glass: the bar is simply the
        top of the canvas. The separator is drawn by ::after below, and only
@@ -159,6 +159,14 @@ body[data-transcript-scrolled='true'] #appShell .top-bar::after {
   @container app-topbar (max-width: 64rem) {
     #appShell .top-bar-left {
       flex: 1 1 0;
+      min-width: 0;
+    }
+    #appShell .top-bar-left #topModelSwitcher {
+      min-width: 0;
+      max-width: 100%;
+    }
+    #appShell .top-bar-left #topModelSwitcher > svg {
+      flex-shrink: 0;
     }
     #appShell .top-mode-switch {
       position: relative;
@@ -267,4 +275,32 @@ html[data-main-view$='Panel'] #appShell .mobile-newchat-btn {
   stroke-width: 1.5px;
 }
 
-
+/* Shared header control paint and phone interaction states. */
+#appShell .top-bar .toggle-sidebar {
+  color: var(--ui-text-primary);
+  transition:
+    background-color var(--ui-duration-fast) var(--ui-ease-out),
+    color var(--ui-duration-fast) var(--ui-ease-out);
+}
+#appShell .top-bar .toggle-sidebar:hover {
+  background: var(--ui-bg-hover);
+  color: var(--ui-text-primary);
+}
+@media (max-width: 768px) {
+  #appShell .top-bar :is(.toggle-sidebar, .mobile-newchat-btn, .icon-btn) {
+    transition:
+      background-color var(--ui-duration-fast) var(--ui-ease-out),
+      color var(--ui-duration-fast) var(--ui-ease-out),
+      opacity var(--ui-duration-fast) var(--ui-ease-out);
+  }
+  #appShell .top-bar :is(.toggle-sidebar, .mobile-newchat-btn, .icon-btn):active {
+    opacity: var(--press-opacity, var(--ui-press-opacity-sm, 0.72));
+  }
+  #appShell .top-bar .icon-btn {
+    color: var(--ui-text-primary);
+  }
+  #appShell .top-bar .icon-btn:hover {
+    background: var(--ui-bg-hover);
+    color: var(--ui-text-primary);
+  }
+}

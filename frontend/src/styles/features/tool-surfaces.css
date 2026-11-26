@@ -219,8 +219,7 @@
    Only an actual tool result gets a contained card. The previous activity
    treatment wrapped the entire answer in a panel, which made normal prose
    look like a user bubble and broke the visual hierarchy of the page. */
-.msg.assistant .msg-body:has(.agent-run-host),
-.msg.assistant .msg-body:has(.agent-tool-card) {
+.msg.assistant .msg-body:has(.agent-run-host) {
   margin: 0;
   padding: 0;
   border: 0;
@@ -229,22 +228,6 @@
   box-shadow: none;
   color: var(--foreground);
 }
-/* Embedded editors own their text palette; prose colors stop at that boundary. */
-.msg.assistant .msg-body:has(.agent-tool-card) p:not(:where(.tl-container *)),
-.msg.assistant .msg-body:has(.agent-tool-card) li:not(:where(.tl-container *)) {
-  color: var(--foreground);
-}
-.msg.assistant .msg-body:has(.agent-tool-card) strong:not(:where(.tl-container *)) {
-  color: var(--primary);
-}
-.msg.assistant .msg-body:has(.agent-tool-card) a:not(:where(.tl-container *)) {
-  color: var(--foreground);
-  text-decoration-color: var(--muted-foreground);
-}
-.msg.assistant .msg-body:has(.agent-tool-card) a:not(:where(.tl-container *)):hover {
-  color: var(--primary);
-}
-
 /* Tool charts and their status states sit in the answer flow, not inside a
    second dashboard card. Their data, controls, and chart grid remain intact.
    A chart the tutor writes as an ```openui fence in the prose follows the
@@ -604,5 +587,381 @@
   }
   .rn-tool-row[data-state='awaiting'] .tool-run-trigger {
     flex-wrap: wrap;
+  }
+}
+
+/* Shared icon footprint and failed output affordance. */
+.tool-inline-tool-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: var(--ui-space-lg);
+  flex: 0 0 auto;
+  transition: color var(--ui-duration-fast) ease;
+}
+.tool-inline-tool-icon svg {
+  width: 14px;
+  height: var(--ui-font-size-sm);
+  display: block;
+}
+.tool-output-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+  padding: 8px 10px;
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-row);
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-xs);
+}
+.tool-output-error button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
+@media (prefers-reduced-motion: reduce) override
+   below shortens the duration to effectively zero while still
+   keeping the keyframe accessible to cleanup. */
+
+@media (prefers-reduced-motion: reduce) {
+  .tool-inline-tool-icon.is-settling svg {
+    animation: none;
+  }
+}
+
+/* Workflow stage indicator and editable Canvas surface. */
+#workflowLayerReactRoot {
+  width: 100%;
+  flex: 0 0 auto;
+  min-width: 0;
+}
+.workflow-layer {
+  width: min(760px, calc(100% - 24px));
+  margin: 8px auto 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: opacity 0.35s var(--ui-ease-out);
+}
+.workflow-layer-done {
+  opacity: 0.55;
+}
+.workflow-layer-done .agent-stepper {
+  animation: workflow-layer-fade 1.2s ease forwards;
+}
+@keyframes workflow-layer-fade {
+  to {
+    opacity: 0;
+  }
+}
+
+.agent-stepper {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 12px;
+  padding: 10px 12px 9px;
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-xxs);
+  line-height: 1.45;
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-bg-surface);
+  box-shadow: none;
+  
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.agent-stepper-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  grid-column: 1 / -1;
+}
+.agent-stepper-status {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-text-primary);
+  box-shadow: 0 0 0 3px var(--ui-bg-selected);
+  animation: ui-status-dot-pulse var(--ui-duration-pulse) ease-in-out infinite;
+}
+.agent-stepper-done .agent-stepper-status,
+.agent-stepper-failed .agent-stepper-status {
+  animation: none;
+}
+.agent-stepper-done .agent-stepper-status {
+  background: var(--ui-ink);
+  box-shadow: none;
+}
+.agent-stepper-failed .agent-stepper-status {
+  background: var(--ui-danger);
+  box-shadow: none;
+}
+.agent-stepper-title {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  min-width: 0;
+  overflow: hidden;
+}
+.agent-stepper-kicker {
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xxs);
+  font-weight: var(--ui-font-weight-medium);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.agent-stepper-title > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ui-text-primary);
+  font-weight: var(--ui-font-weight-semibold);
+}
+.agent-stepper-done .agent-stepper-title > span,
+.agent-stepper-failed .agent-stepper-title > span {
+  color: var(--ui-text-secondary);
+}
+.agent-stepper-workflow {
+  margin-left: auto;
+  flex: 0 0 auto;
+  color: var(--ui-text-tertiary);
+  font: var(--ui-font-size-xxs) var(--font-mono);
+  text-transform: capitalize;
+}
+.agent-stepper-progress {
+  grid-column: 1 / -1;
+  height: 3px;
+  overflow: hidden;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-bg-control);
+}
+.agent-stepper-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--ui-text-primary);
+  transition: width 0.3s var(--ui-ease-out);
+}
+.agent-stepper-stages {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.agent-stepper-stage {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xxs);
+}
+.agent-stepper-stage + .agent-stepper-stage::before {
+  content: '';
+  flex: 1;
+  height: 1px;
+  margin: 0 6px;
+  background: var(--ui-border-subtle);
+}
+.agent-stepper-dot {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-border-strong);
+}
+.agent-stepper-stage-active {
+  color: var(--ui-text-primary);
+}
+.agent-stepper-stage-active .agent-stepper-dot {
+  background: var(--ui-text-primary);
+  box-shadow: 0 0 0 3px var(--ui-bg-selected);
+}
+.agent-stepper-stage-past .agent-stepper-dot,
+.agent-stepper-stage-done .agent-stepper-dot {
+  background: var(--ui-success);
+}
+.agent-stepper-stage-failed .agent-stepper-dot {
+  background: var(--ui-danger);
+}
+
+.canvas-block {
+  margin: 8px 0 12px;
+  background: color-mix(in srgb, var(--ui-bg-hover) 35%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ui-border-subtle) 45%, transparent);
+  border-radius: var(--ui-radius-md);
+  color: var(--ui-text-primary);
+  font-size: var(--ui-font-size-sm);
+  line-height: 1.6;
+  overflow: hidden;
+  box-shadow: none;
+  transition:
+    border-color var(--ui-duration-fast) ease,
+    background-color var(--ui-duration-fast) ease;
+}
+.canvas-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px 4px 12px;
+  border-bottom: 0;
+  background: transparent;
+  flex-wrap: wrap;
+}
+.canvas-block-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 6px;
+  border-radius: var(--ui-radius-pill);
+  background: transparent;
+  border: 0;
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-font-weight-medium);
+  color: var(--ui-text-primary);
+  min-width: 0;
+}
+.canvas-block-chip-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: var(--ui-text-secondary);
+  flex-shrink: 0;
+}
+.canvas-block-chip-icon svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+.canvas-block-chip-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+.canvas-block-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.canvas-btn {
+  border: 0;
+  background: transparent;
+  color: var(--ui-text-secondary);
+  padding: 4px 8px;
+  border-radius: var(--ui-radius-xs);
+  font-size: var(--ui-font-size-xs);
+  line-height: 1.4;
+  cursor: pointer;
+  font-family: inherit;
+  transition:
+    background-color 0.14s ease,
+    color 0.14s ease;
+}
+.canvas-btn:hover,
+.canvas-btn:focus-visible {
+  background: var(--ui-bg-hover);
+  color: var(--ui-text-primary);
+  outline: 0;
+}
+.canvas-btn:focus-visible {
+  box-shadow: var(--ui-focus-shadow);
+}
+.canvas-btn[aria-pressed='true'] {
+  background: var(--ui-bg-hover);
+  color: var(--ui-text-primary);
+}
+.canvas-block-body {
+  padding: 8px 14px 14px 14px;
+  outline: none;
+  min-height: 48px;
+  word-break: break-word;
+}
+.canvas-block-body.is-editing {
+  box-shadow: inset 0 0 0 1.5px var(--ui-border-strong);
+  border-radius: var(--ui-radius-xs);
+  outline: 0;
+  caret-color: var(--ui-text-primary);
+}
+.canvas-block-original {
+  margin: 0;
+  padding: 12px 14px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: var(--ui-font-size-xs);
+  color: var(--ui-text-secondary);
+  white-space: pre-wrap;
+  background: var(--ui-bg-control);
+  border-radius: var(--ui-radius-xs);
+  max-height: 480px;
+  overflow: auto;
+}
+.canvas-block-edited-badge {
+  display: inline-block;
+  margin: 0 12px 6px;
+  padding: 2px 8px;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-bg-selected);
+  color: var(--ui-text-primary);
+  font-size: var(--ui-font-size-xxs);
+  font-weight: var(--ui-font-weight-medium);
+  border: 0;
+}
+.canvas-block.is-fullscreen {
+  position: fixed;
+  inset: 24px;
+  z-index: var(--ui-z-modal);
+  background: var(--ui-bg-surface);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-lg);
+  box-shadow: var(--ui-shadow-dialog);
+  display: flex;
+  flex-direction: column;
+}
+.canvas-block.is-fullscreen .canvas-block-body {
+  flex: 1;
+  overflow: auto;
+  max-height: none;
+}
+
+@media (max-width: 640px) {
+  .canvas-block-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .canvas-block-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  .canvas-block-chip {
+    align-self: flex-start;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .workflow-layer-done .agent-stepper,
+  .agent-stepper-status {
+    animation: none;
+  }
+  .agent-stepper-progress span {
+    transition: none;
   }
 }

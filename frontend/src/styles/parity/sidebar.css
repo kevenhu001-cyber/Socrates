@@ -214,6 +214,8 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
        between them (docs/ref/chatgpt-parity.md, captured over CDP at
        1440×900). The spacing scale has no 6px step, so the gap is literal. */
     gap: 6px;
+    height: var(--sidebar-row);
+    min-height: var(--sidebar-row);
     box-sizing: border-box;
     width: 100%;
     margin: 0;
@@ -222,8 +224,7 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
        doubled to the baseline's 6px. */
     padding: 6px 10px;
     border: 0;
-    /* The baseline's 10px row radius — the token that was written for it. */
-    border-radius: var(--ui-radius-row);
+    border-radius: var(--ui-radius-sidebar-row);
     background: transparent;
     /* The reference sets its destination labels in the primary ink, not a
        secondary grey: the rail is a list of places to go, and the rail's
@@ -382,14 +383,6 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     padding-top: 0;
   }
 
-  /* ChatGPT parity (docs/ref/chatgpt-parity.md): single-line 36px history rows.
-     Clean, compact, with titles truncated and meta hidden at rest so the list
-     is calm, readable, and perfectly matches the reference design. */
-  #appShell #sidebar .recent-item {
-    gap: 6px;
-    height: var(--sidebar-row);
-    min-height: var(--sidebar-row);
-  }
   #appShell #sidebar .recent-item-glyph {
     display: none;
   }
@@ -1015,7 +1008,7 @@ html[data-detail-open='true'][data-detail-layout='docked'] #appShell .main {
     background: var(--ui-fill);
   }
   #appShell #sidebarNav .sidebar-nav-btn:active {
-    --sidebar-nav-bg: var(--ui-bg-active);
+    --sidebar-nav-bg: var(--ui-bg-selected);
   }
   /* The desktop row look moved into react/sidebar/SidebarNavButton.tsx: the
      control ladder, the 10px --ui-radius-row and the ghost hover now live as
@@ -1265,4 +1258,41 @@ html[data-detail-open='true'][data-detail-layout='docked'] #appShell .main {
   #appShell #sidebar.collapsed #sidebarFooter {
     padding-block: 8px;
   }
+}
+
+/* Tutor count badges share the same sidebar typography and palette. */
+.tab-badge {
+  display: inline-block;
+  min-width: 16px;
+  height: 16px;
+  line-height: 14px;
+  padding: 0 4px;
+  margin-left: 4px;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-ink);
+  color: var(--ui-on-ink);
+  font-size: var(--ui-font-size-xxs);
+  font-weight: var(--ui-font-weight-semibold);
+  text-align: center;
+  vertical-align: middle;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+.tab-badge:empty {
+  display: none;
+}
+
+/* Shared sidebar host geometry. */
+.sidebar-nav {
+  flex-shrink: 0;
+}
+.sidebar-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-xxs);
+}
+.logo-img {
+  border-radius: var(--ui-radius-xs);
+  flex-shrink: 0;
 }

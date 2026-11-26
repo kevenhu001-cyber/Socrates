@@ -98,8 +98,9 @@
 }
 
 #appShell .plugin-detail-page-header .account-page-actions {
-  flex: 0 1 42%;
-  min-width: 200px;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 42%;
 }
 
 #appShell .plugin-detail-back-btn {
@@ -203,7 +204,7 @@
 #appShell .plugin-detail-prompts-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0;
   padding: 0;
   margin: 0;
   list-style: none;
@@ -216,14 +217,20 @@
   gap: 12px;
   width: 100%;
   box-sizing: border-box;
-  padding: 12px 14px;
+  min-height: 52px;
+  padding: 12px 0;
   background: transparent;
-  border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-lg);
+  border: 0;
+  border-bottom: 1px solid var(--ui-border-subtle);
+  border-radius: 0;
   color: var(--ui-text-primary);
   text-align: start;
   white-space: normal;
   overflow-wrap: anywhere;
+}
+
+#appShell .plugin-detail-prompts-list li:last-child .plugin-detail-prompt-card {
+  border-bottom: 0;
 }
 
 #appShell .plugin-detail-prompt-card > svg {
@@ -673,6 +680,7 @@
   #appShell .plugin-detail-page-header .account-page-actions {
     flex: 1 0 100%;
     min-width: 0;
+    max-width: none;
     margin-inline-start: 0;
   }
 
@@ -772,4 +780,175 @@ body.workspace-active #appShell .main-page:not(.creation-panel) {
     z-index: var(--ui-z-panel);
     overflow: visible;
   }
+}
+
+/* Project run history and reviewable execution details. */
+.project-run-history {
+  margin-top: 16px;
+  padding-top: 13px;
+  border-top: 0.5px solid var(--ui-border-subtle);
+}
+.project-runtime-heading {
+  margin-bottom: 7px;
+  color: var(--ui-text-primary);
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-font-weight-semibold);
+}
+.project-run-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 0;
+  border-bottom: 0.5px solid var(--ui-border-subtle);
+}
+.project-run-row:last-child {
+  border-bottom: 0;
+}
+.project-run-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+}
+.project-run-copy strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ui-text-primary);
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-font-weight-semibold);
+}
+.project-run-copy span {
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xxs);
+}
+.project-run-open {
+  opacity: 1;
+  flex: 0 0 auto;
+}
+.agent-run-details {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.agent-run-details-summary {
+  margin: 0;
+  color: var(--ui-text-primary);
+  font-size: var(--ui-font-size-xs);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.agent-run-details-status {
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xxs);
+}
+.agent-run-details-section-title {
+  margin-top: 4px;
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-xxs);
+}
+.agent-run-artifacts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding-left: 18px;
+  color: var(--ui-text-primary);
+  font: var(--ui-font-size-xxs) var(--font-mono);
+}
+.agent-run-details-activity {
+  margin-top: 3px;
+  border-top: 0.5px solid var(--ui-border-subtle);
+  padding-top: 8px;
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-xxs);
+}
+.agent-run-details-activity summary {
+  cursor: pointer;
+  color: var(--ui-text-secondary);
+  font-weight: var(--ui-font-weight-semibold);
+}
+.agent-run-details-activity ol {
+  display: flex;
+  max-height: 220px;
+  flex-direction: column;
+  gap: 5px;
+  overflow: auto;
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-family: var(--font-mono);
+  font-size: var(--ui-font-size-xxs);
+  line-height: 1.45;
+}
+@media (max-width: 480px) {
+  .project-run-row {
+    align-items: flex-start;
+  }
+  .project-run-open {
+    padding-inline: 4px;
+  }
+  .agent-run-details-activity ol {
+    max-height: 180px;
+  }
+}
+
+/* Connector marks remain owned by the plugin surface; branded SVG ink is inherited. */
+.connector-row .connector-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-bg-surface);
+  border: 1px solid var(--ui-border-subtle);
+  box-shadow: none;
+  color: var(--ui-text-secondary);
+  overflow: hidden;
+}
+.connector-row .connector-icon svg {
+  width: 18px;
+  height: 18px;
+  color: inherit;
+}
+.connector-row .connector-icon span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: var(--ui-font-size-xxs);
+  font-weight: var(--ui-font-weight-semibold);
+  color: inherit;
+}
+.connector-row .connector-icon .connector-logo {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  display: block;
+}
+.connector-row .connector-icon .connector-logo-fallback {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: var(--ui-font-size-xxs);
+  font-weight: var(--ui-font-weight-semibold);
+  color: inherit;
+}
+.connector-row .workspace-row-copy {
+  gap: 4px;
+}
+.connector-row .workspace-row-copy strong {
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-semibold);
+  color: var(--ui-text-primary);
+}
+.connector-row .workspace-row-copy > span {
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-font-weight-regular);
+  color: var(--ui-text-secondary);
+}
+.connector-row .workspace-note {
+  display: none;
 }

@@ -37,3 +37,137 @@
 /* ── Approval ──────────────────────────────────────────────────────────
    The one surface in the transcript that is genuinely a decision, so it
    is the one surface that keeps a border and a fill. */
+
+/* Inline artifacts remain in the answer when activity is collapsed. */
+.tool-inline-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  min-width: 0;
+  gap: var(--ui-space-sm);
+  margin: var(--ui-space-sm) 0 var(--ui-space-xxs) 26px;
+}
+.tool-inline-attachments:empty {
+  display: none;
+}
+.exec-artifact {
+  box-sizing: border-box;
+  display: block;
+  position: relative;
+  min-width: 0;
+  width: min(100%, 440px);
+  margin: var(--ui-space-sm) 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-bg-surface);
+}
+.exec-artifact-html {
+  width: min(100%, 560px);
+}
+.exec-artifact-html-frame {
+  display: block;
+  width: 100%;
+  height: 300px;
+  border: 0;
+  /* Generated HTML has its own palette, independent of the host theme. */
+  background: white;
+}
+.exec-artifact-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-sm);
+  min-height: 38px;
+  padding: var(--ui-space-xs) var(--ui-space-sm);
+  border-top: 1px solid var(--ui-border-subtle);
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-xs);
+}
+.exec-artifact-meta-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.exec-artifact-open {
+  flex: 0 0 auto;
+}
+.exec-artifact-link {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  min-height: var(--ui-control-md);
+  padding: var(--ui-space-xs) var(--ui-space-sm);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-row);
+  background: transparent;
+  color: var(--ui-text-primary);
+  font-size: var(--ui-font-size-sm);
+  overflow-wrap: anywhere;
+}
+.exec-artifact-link:is(:hover, :focus-visible) {
+  background: var(--ui-bg-hover);
+}
+
+/* Unavailable downloads keep their retry and diagnostics in the same row. */
+.artifact-error {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--ui-space-sm);
+  min-width: 0;
+  max-width: 100%;
+  margin: var(--ui-space-xs) 0;
+  padding: var(--ui-space-sm);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-md);
+  background: transparent;
+  color: var(--ui-text-primary);
+  font-size: var(--ui-font-size-sm);
+  line-height: 1.45;
+}
+.artifact-error-icon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  color: var(--ui-danger);
+}
+.artifact-error-text {
+  flex: 1 1 10rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.artifact-error-retry-host {
+  margin-inline-start: auto;
+  flex-shrink: 0;
+}
+.artifact-error-open {
+  color: var(--ui-text-primary);
+  text-decoration: underline;
+}
+.artifact-error-detail {
+  width: 100%;
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-xs);
+}
+.artifact-error-detail code {
+  display: block;
+  margin-top: var(--ui-space-xs);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: inherit;
+}
+
+@media (max-width: 768px) {
+  .tool-inline-attachments {
+    margin-inline-start: 0;
+  }
+  .exec-artifact {
+    width: 100%;
+  }
+  .exec-artifact-html-frame {
+    height: 240px;
+  }
+}

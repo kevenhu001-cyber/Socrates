@@ -211,7 +211,7 @@ test('new owner modules use the ui token namespace', async () => {
 });
 
 test('converged surfaces keep their canonical stylesheet ownership', async () => {
-  const [sidebar, sharedSidebar, menu, composer, settings, overlays, preview, legacyActivity] =
+  const [sidebar, sharedSidebar, menu, composer, settings, overlays, preview] =
     await Promise.all([
       read('src/styles/parity/sidebar.css'),
       read('src/styles/polish/sidebar.css'),
@@ -220,7 +220,6 @@ test('converged surfaces keep their canonical stylesheet ownership', async () =>
       read('src/styles/polish/settings-page.css'),
       read('src/styles/polish/overlays.css'),
       read('src/styles/components/docPreview.css'),
-      read('src/styles/legacy/15-thinking-activity.css'),
     ]);
   assert.match(sidebar, /#appShell #sidebarHeader/);
   assert.doesNotMatch(sharedSidebar, /@media\s*\(min-width:\s*769px\)/);
@@ -235,22 +234,39 @@ test('converged surfaces keep their canonical stylesheet ownership', async () =>
   assert.match(settings, /\.settings-memory-list/);
   assert.doesNotMatch(overlays, /\.settings-page|\.settings-memory-list|\.tone-preset-options/);
   assert.match(preview, /\.library-file-preview-card/);
-  assert.doesNotMatch(legacyActivity, /\.library-file-preview-card/);
+  await assert.rejects(access(new URL('src/styles/legacy/15-thinking-activity.css', root)));
+  await assert.rejects(access(new URL('src/styles/legacy/16-final-contract.css', root)));
+});
+
+test('sidebar history geometry and drawer paint stay in their canonical owners', async () => {
+  const [desktop, phone] = await Promise.all([
+    read('src/styles/parity/sidebar.css'),
+    read('src/styles/polish/mobile-sidebar.css'),
+  ]);
+  const historyGeometry = desktop.match(/#appShell #sidebar \.recent-item\s*\{[^}]*height: var\(--sidebar-row\);[^}]*\}/g) || [];
+  assert.equal(historyGeometry.length, 1);
+  assert.match(historyGeometry[0], /border-radius: var\(--ui-radius-sidebar-row\)/);
+  const drawerPaint = phone.slice(phone.indexOf('/* Phone navigation uses the same semantic'));
+  assert.match(drawerPaint, /--sidebar-nav-bg: var\(--ui-bg-hover\)/);
+  assert.match(drawerPaint, /--sidebar-nav-bg: var\(--ui-bg-selected\)/);
+  assert.doesNotMatch(drawerPaint, /--sidebar-nav-bg: rgb\(/);
+  assert.doesNotMatch(desktop + phone, /var\(--ui-bg-active\)/);
 });
 
 test('header and transcript fades keep one paint recipe per surface', async () => {
-  const [topbar, phoneTopbar, transcript, details, chat] = await Promise.all([
+  const [topbar, transcript, chat] = await Promise.all([
     read('src/styles/parity/topbar.css'),
-    read('src/styles/polish/topbar.css'),
     read('src/styles/parity/transcript.css'),
-    read('src/styles/polish/transcript.css'),
     read('src/styles/components/chat.css'),
   ]);
   assert.equal((topbar.match(/background: linear-gradient\(/g) || []).length, 1);
-  assert.doesNotMatch(phoneTopbar, /#pluginWorkspaceTabs\s*\{/);
+  assert.doesNotMatch(topbar, /#pluginWorkspaceTabs\s*\{/);
+  assert.match(topbar, /\.top-bar \.toggle-sidebar:hover\s*\{/);
+  assert.doesNotMatch(await read('src/styles/polish/index.css'), /\.\/(?:topbar|transcript)\.css/);
+  await assert.rejects(access(new URL('src/styles/polish/transcript.css', root)));
   for (const [css, token] of [
     [transcript, '--transcript-edge-mask'],
-    [details, '--stream-tail-mask'],
+    [transcript, '--stream-tail-mask'],
     [chat, '--phone-transcript-mask'],
   ]) {
     assert.ok(css.includes(`${token}: linear-gradient(`));
@@ -279,6 +295,108 @@ test('Page Kit owns shared section, collection and card defaults', async () => {
     // Responsive rules are allowed to specialize defaults, not redeclare
     // a second unscoped desktop base at the top level.
     assert.ok(!pages.split('\n').some((line) => line === rule), `Duplicate base: ${selector}`);
+  }
+});
+
+test('Page Kit and menu component own their shared base presentation', async () => {
+  const [kit, pages, menu, overlays] = await Promise.all([
+    read('src/styles/features/page-kit.css'),
+    read('src/styles/polish/app-pages.css'),
+    read('src/styles/components/menu.css'),
+    read('src/styles/polish/overlays.css'),
+  ]);
+  for (const selector of [
+    '#appShell .ui-page-search {',
+    "#appShell .ui-page-empty[data-slot='empty'] {",
+    "#appShell .ui-page-empty [data-slot='empty-title'] {",
+  ]) {
+    assert.ok(kit.includes(selector), `Missing Page Kit owner: ${selector}`);
+    assert.ok(!pages.split('\n').includes(selector), `Duplicate desktop base: ${selector}`);
+  }
+  assert.match(menu, /\.chat-config-pop\s*\{/);
+  assert.match(menu, /\.chat-config-row\s*\{/);
+  assert.doesNotMatch(overlays, /\.chat-config-pop\s*\{|\.chat-config-row\s*\{/);
+});
+
+test('formula scrolling uses canonical theme tokens and one geometry owner', async () => {
+  const [chat, legacy, scaffolds, interactive] = await Promise.all([
+    read('src/styles/components/chat.css'),
+    read('src/styles/legacy/09-viz-markdown.css'),
+    read('src/styles/features/learn-scaffolds.css'),
+    read('src/styles/components/intelligent-ui.css'),
+  ]);
+  assert.doesNotMatch(legacy, /\.katex(?:-display)?\s*\{|\.math-stream-pending\s*\{/);
+  assert.match(chat, /\.katex-display > \.katex\s*\{[^}]*width: max-content;/);
+  assert.match(chat, /scrollbar-color: var\(--ui-scrollbar-thumb-hover\) transparent/);
+  assert.match(chat, /\.math-stream-pending\s*\{[^}]*var\(--ui-text-tertiary\)/);
+  assert.doesNotMatch(scaffolds, /\.sc-rich \.katex-display\s*\{[^}]*overflow-x:/);
+  assert.doesNotMatch(interactive, /\.katex-display > \.katex\s*\{[^}]*font-size:/);
+});
+
+test('external link favicons stay with chat and final compatibility slice is retired', async () => {
+  const chat = await read('src/styles/components/chat.css');
+  assert.match(chat, /a\.has-site-favicon\s*\{/);
+  assert.match(chat, /\.site-link-favicon\.is-unavailable\s*\{/);
+  await assert.rejects(access(new URL('src/styles/legacy/16-final-contract.css', root)));
+});
+
+test('retired imperative tool cards retain history cleanup but no visual skin', async () => {
+  const paths = [
+    'src/styles/features/tool-surfaces.css',
+  ];
+  for (const path of paths) {
+    const css = (await read(path)).replace(/\/\*[\s\S]*?\*\//g, '');
+    assert.doesNotMatch(css, /\.agent-tool-(?:card|stream)\b/);
+  }
+  assert.match(await read('src/react/tool-run/toolRunLegacyHtml.ts'), /\.agent-tool-card/);
+});
+
+test('learning and project execution legacy slices stay retired', async () => {
+  for (const file of ['10-tutor-scaffolds.css', '11-agent-tools.css']) {
+    await assert.rejects(access(new URL('src/styles/legacy/' + file, root)));
+  }
+  const [learning, activity, workspace, chat] = await Promise.all([
+    read('src/styles/features/learn-scaffolds.css'),
+    read('src/styles/features/thinking-activity.css'),
+    read('src/styles/polish/workspace.css'),
+    read('src/styles/components/chat.css'),
+  ]);
+  assert.match(learning, /\.inline-quiz-feedback\s*\{/);
+  assert.match(activity, /\.shimmer-text\s*\{/);
+  assert.match(workspace, /\.project-run-history\s*\{/);
+  assert.match(chat, /\.link-card\s*\{/);
+});
+
+test('learning, formatting and workflow styles no longer import retired slices', async () => {
+  for (const file of [
+    '12-tutor-inline-tools.css',
+    '13-composer-rich.css',
+    '14-tool-surfaces.css',
+  ]) {
+    await assert.rejects(access(new URL('src/styles/legacy/' + file, root)));
+  }
+  assert.match(await read('src/styles/features/study.css'), /\.tutor-explore-dialog\s*\{/);
+  assert.match(await read('src/styles/components/composer.css'), /\.rich-composer-tool\s*\{/);
+  const tools = await read('src/styles/features/tool-surfaces.css');
+  assert.match(tools, /\.agent-stepper\s*\{/);
+  assert.match(tools, /\.canvas-block\s*\{/);
+});
+
+test('artifact preview, download and retry use one stylesheet owner', async () => {
+  const [owner, ...legacy] = await Promise.all([
+    read('src/styles/components/tool-card.css'),
+    read('src/styles/features/tool-surfaces.css'),
+    read('src/styles/components/chat.css'),
+  ]);
+  for (const selector of [
+    '.exec-artifact {',
+    '.exec-artifact-html-frame {',
+    '.exec-artifact-link {',
+    '.artifact-error {',
+    '.tool-inline-attachments:empty {',
+  ]) {
+    assert.ok(owner.includes(selector), `Missing artifact owner: ${selector}`);
+    assert.ok(legacy.every((css) => !css.includes(selector)), `Duplicate artifact style: ${selector}`);
   }
 });
 

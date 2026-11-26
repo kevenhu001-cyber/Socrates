@@ -317,3 +317,24 @@
     animation: none;
   }
 }
+
+/* Archived search-result links retain the current source-link treatment. */
+.wsr-title {
+  display: block;
+  font-family: var(--font-sans, system-ui);
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-font-weight-semibold);
+  color: var(--ui-text-primary);
+  text-decoration: none;
+  line-height: 1.36;
+  overflow-wrap: anywhere;
+}
+.wsr-title:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  color: var(--ui-text-secondary);
+}
+.wsr-title.is-disabled {
+  color: var(--ui-text-tertiary);
+  pointer-events: none;
+}

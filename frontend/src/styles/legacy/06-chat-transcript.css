@@ -189,7 +189,7 @@ body.admin-active #shareBtn {
   animation: none;
   padding: 6px 0;
 }
-/* Row entrances are owned by polish/transcript.css (`#appShell .msg.user[…]`
+/* Row entrances are owned by parity/transcript.css (`#appShell .msg.user[…]`
    and `#appShell .msg.assistant:not([data-stream-settled])`). This file used
    to define its own msgIn / msgUserIn with different opacity ramps, so the
    physics of "how a row arrives" depended on cascade order. Removed. */
