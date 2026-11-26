@@ -115,7 +115,11 @@ export interface DemonstrationProgram {
     spatial?: {
       nodes: number;
       domain: [number, number];
-      diffusivity: DemonstrationValue;
+      equation?: 'diffusion' | 'wave';
+      diffusivity?: DemonstrationValue;
+      speed?: DemonstrationValue;
+      initialVelocity?: DemonstrationValue;
+      damping?: DemonstrationValue;
       initial: DemonstrationValue;
       left: DemonstrationValue;
       right: DemonstrationValue;
@@ -124,6 +128,8 @@ export interface DemonstrationProgram {
     duration: number;
     step: number;
     method?: 'rk4' | 'rk45';
+    /** Nonsingular M in M*state'=derivatives; rows/columns follow initial-state key order. */
+    massMatrix?: DemonstrationValue[][];
     rtol?: number;
     atol?: number;
     events?: { expression: DemonstrationValue; direction?: -1 | 0 | 1; terminal?: boolean; reset?: Record<string, DemonstrationValue> }[];
