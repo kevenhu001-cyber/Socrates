@@ -6,15 +6,8 @@ import {
   type PlotView as View,
   type PlotSample as Sampled,
   type Issue,
-  type AxisScale,
-  WIDTH,
-  HEIGHT,
-  LEFT,
-  RIGHT,
-  TOP,
-  BOTTOM,
-  plotProjection,
 } from './samplePlot';
+import { WIDTH, HEIGHT, LEFT, RIGHT, TOP, BOTTOM, plotProjection, type AxisScale } from './geometry/plotProjection';
 import { demoAxisLabel } from './mathLabels';
 import { DemoIssue } from './DemonstrationIssue';
 export const demoColors: Record<string, string> = {
