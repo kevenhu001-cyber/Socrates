@@ -19,3 +19,13 @@ Run frontend lint/typecheck/build/unit tests, CSS owner and palette guards, requ
 
 ## Implementation status
 PR #233 implements palette, typography, mobile composer, greeting, header fade, drawer density, prose/tables, source avatars, settings and plugin detail changes and revises affected assertions. Existing components and CSS owners are reused. Full official-icon migration, remaining CSS/route audit, complete visual snapshots and real-device validation are not yet demonstrated. Local checkout/build is unavailable in the current connector-only environment; CI results must be reviewed before readiness or merge.
+
+## Follow-up refinement
+- Fixed the three extra literal-hex definitions reported by the frontend lint job, retaining the sampled colours in the existing theme owner using its RGB declaration convention. No debt baseline was raised.
+- Reused the registry for command search, sidebar filter and study glyphs; normalized mobile drawer icon footprint to 20px while preserving touch targets.
+- Exposed the existing global conversation search on the mobile drawer, without replacing the local recents filter. Removed activation on hover; guard IME composition from Enter/Escape navigation. Added regression tests for discovery and hover.
+- Consolidated activity/source favicon rendering, including loading and failure monograms. Extracted the activity timeline and composer effort hooks without replacing the existing state owners.
+- Removed redundant mobile top-bar capsule backgrounds and the phone-specific bubble-radius override; the user bubble now uses the 24px shared Web token and up to 85% of the reading column. Keep real Find and Share actions; do not simulate unimplemented product features.
+- Refined Intelligent UI typography and removed nonfunctional panel clipping. All changes in this follow-up are under frontend/ except this document.
+
+The earlier CI run reached TypeScript successfully, then stopped at CSS debt. New checks have not yet established a passing build or browser result. This document records implementation intent, not a claim of runtime parity.
