@@ -821,13 +821,9 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side='sheet'] {
    action is a 46px row (glyph · label · inline grey hint), the quick tiles
    included, so the sheet reads as one list. */
 @media (max-width: 768px) {
+  /* Placement (12px side margins, 8px above the question box) is set by
+     react/composer/composerTools.position.ts; this rule only paints. */
   body #composerToolsMenu.composer-tools-menu {
-    left: var(--ui-step-100);
-    right: var(--ui-step-100);
-    bottom: calc(112px + env(safe-area-inset-bottom, 0px));
-    width: auto;
-    max-width: none;
-    max-height: min(64dvh, 560px);
     padding: var(--ui-step-75);
     border: 0;
     border-radius: var(--ui-radius-composer-desktop);
