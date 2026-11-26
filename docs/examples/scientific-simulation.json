@@ -863,6 +863,93 @@
     },
     "views": [
       {
+        "kind": "scene",
+        "label": "RC network",
+        "x": [
+          -1,
+          5
+        ],
+        "y": [
+          -1.2,
+          3
+        ],
+        "objects": [
+          {
+            "kind": "voltageSource",
+            "from": [
+              0,
+              2
+            ],
+            "to": [
+              0,
+              0
+            ],
+            "label": "5 V"
+          },
+          {
+            "kind": "resistor",
+            "from": [
+              0,
+              2
+            ],
+            "to": [
+              4,
+              2
+            ],
+            "label": "R"
+          },
+          {
+            "kind": "capacitor",
+            "from": [
+              4,
+              2
+            ],
+            "to": [
+              4,
+              0
+            ],
+            "label": "C"
+          },
+          {
+            "kind": "path",
+            "points": [
+              [
+                0,
+                0
+              ],
+              [
+                4,
+                0
+              ]
+            ]
+          },
+          {
+            "kind": "ground",
+            "from": [
+              2,
+              0
+            ],
+            "to": [
+              2,
+              -0.7
+            ]
+          },
+          {
+            "kind": "vector",
+            "from": [
+              0.7,
+              2.6
+            ],
+            "to": [
+              ".7+current_resistor",
+              2.6
+            ],
+            "color": "blue",
+            "label": "i"
+          }
+        ]
+      },
+      {
         "kind": "plot",
         "history": true,
         "x": [
@@ -907,6 +994,180 @@
       },
       {
         "kind": "controls"
+      }
+    ]
+  },
+  "surface3D": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "decay",
+        "label": "Decay",
+        "value": 1,
+        "min": 0.2,
+        "max": 2
+      }
+    ],
+    "views": [
+      {
+        "kind": "field",
+        "label": "Radially damped surface",
+        "presentation": "surface",
+        "x": [
+          -2,
+          2
+        ],
+        "y": [
+          -2,
+          2
+        ],
+        "zRange": [
+          -1,
+          1
+        ],
+        "expression": "cos(4*hypot(x,y))*exp(-decay*(x^2+y^2))"
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "stateSpace": {
+    "version": 1,
+    "dynamics": {
+      "method": "rk45",
+      "duration": 2,
+      "step": 0.02,
+      "stateSpace": {
+        "states": [
+          "q",
+          "v"
+        ],
+        "initial": [
+          0,
+          0
+        ],
+        "A": [
+          [
+            0,
+            1
+          ],
+          [
+            -1,
+            -2
+          ]
+        ],
+        "B": [
+          [
+            0
+          ],
+          [
+            1
+          ]
+        ],
+        "inputs": [
+          1
+        ],
+        "C": [
+          [
+            1,
+            0
+          ]
+        ],
+        "D": [
+          [
+            0
+          ]
+        ],
+        "outputs": [
+          "response"
+        ]
+      }
+    },
+    "views": [
+      {
+        "kind": "plot",
+        "history": true,
+        "x": [
+          0,
+          2
+        ],
+        "y": [
+          0,
+          1
+        ],
+        "curves": [
+          {
+            "expression": "response",
+            "label": "State-space response",
+            "color": "blue"
+          },
+          {
+            "expression": "1-(1+t)*exp(-t)",
+            "label": "Exact",
+            "color": "muted",
+            "dashed": true
+          }
+        ]
+      }
+    ]
+  },
+  "indexOneDAE": {
+    "version": 1,
+    "dynamics": {
+      "method": "rk45",
+      "duration": 1,
+      "step": 0.05,
+      "initial": {
+        "q": 1
+      },
+      "derivatives": {
+        "q": "-aux"
+      },
+      "algebraic": {
+        "guess": {
+          "aux": 1
+        },
+        "residuals": {
+          "aux": "aux^2-q"
+        },
+        "tolerance": 1e-10
+      }
+    },
+    "views": [
+      {
+        "kind": "plot",
+        "history": true,
+        "x": [
+          0,
+          1
+        ],
+        "y": [
+          0,
+          1.1
+        ],
+        "curves": [
+          {
+            "expression": "q",
+            "label": "Differential state",
+            "color": "blue"
+          },
+          {
+            "expression": "aux",
+            "label": "Algebraic state",
+            "color": "orange"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "Algebraic residual",
+            "expression": "aux^2-q",
+            "digits": 5
+          }
+        ]
       }
     ]
   }
