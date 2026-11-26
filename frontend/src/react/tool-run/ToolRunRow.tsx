@@ -50,16 +50,23 @@ export const ToolRunRow = memo(function ToolRunRow({
   const search = isInlineSearchTool(call.name);
   const seenHosts = new Set<string>();
   const sources = search
-    ? normalizeSources(call.results).filter((source) => {
-        if (!source.url || seenHosts.has(source.host)) return false;
-        seenHosts.add(source.host);
-        return true;
-      }).slice(0, 2)
+    ? normalizeSources(call.results)
+        .filter((source) => {
+          if (!source.url || seenHosts.has(source.host)) return false;
+          seenHosts.add(source.host);
+          return true;
+        })
+        .slice(0, 2)
     : [];
   const rowContent = (
     <>
       {running && search ? (
-        <Icon name="activitySpinner" size={18} className="activity-step-glyph socrates-step-spinner" data-testid="thinking-step-spinner" />
+        <Icon
+          name="activitySpinner"
+          size={18}
+          className="activity-step-glyph socrates-step-spinner"
+          data-testid="thinking-step-spinner"
+        />
       ) : search ? (
         <Icon name="search" size={18} className="activity-step-glyph" />
       ) : (
@@ -74,7 +81,12 @@ export const ToolRunRow = memo(function ToolRunRow({
         </span>
       ) : null}
       {running && !search ? (
-        <Icon name="activitySpinner" size={16} className="activity-step-glyph socrates-step-spinner" data-testid="thinking-step-spinner" />
+        <Icon
+          name="activitySpinner"
+          size={16}
+          className="activity-step-glyph socrates-step-spinner"
+          data-testid="thinking-step-spinner"
+        />
       ) : null}
       {expandable ? <Chevron open={disclosure.open} size={6} /> : null}
     </>
@@ -111,8 +123,19 @@ export const ToolRunRow = memo(function ToolRunRow({
         {sources.length > 0 && !disclosure.open ? (
           <div className="activity-source-preview" data-testid="activity-source-preview">
             {sources.map((source) => (
-              <button key={source.url} type="button" className="activity-source-row" onClick={() => openExternal(source.url)}>
-                <SourceAvatar url={source.url} host={source.host} className="tool-site-mark" testId="tool-site-mark" loadingFallback />
+              <button
+                key={source.url}
+                type="button"
+                className="activity-source-row"
+                onClick={() => openExternal(source.url)}
+              >
+                <SourceAvatar
+                  url={source.url}
+                  host={source.host}
+                  className="tool-site-mark"
+                  testId="tool-site-mark"
+                  loadingFallback
+                />
                 <span className="activity-source-copy">
                   <span className="activity-source-title">{source.title || source.url}</span>
                   <span className="activity-source-host">{source.host}</span>
