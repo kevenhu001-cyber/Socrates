@@ -1,5 +1,4 @@
-import { memo, useEffect, useId, useRef } from 'react';
-import { DemoSurface } from './DemonstrationSurface';
+import { lazy, Suspense, memo, useEffect, useId, useRef } from 'react';
 import type { DemonstrationField } from '@socrates/core/demonstration';
 import { i18n } from '../../../ui/legacyI18n.ts';
 import { MathText } from '../../rn/useInlineMath';
@@ -7,6 +6,8 @@ import { DemoIssue } from './DemonstrationIssue';
 import type { FieldSample } from './sampleField';
 import { FIELD_WIDTH, fieldHeight, isSpatialField } from './fieldCommon';
 import { paintField } from './renderers/fieldCanvas';
+
+const DemoSurface=lazy(()=>import('./DemonstrationSurface').then(m=>({default:m.DemoSurface})));
 
 export const DemoField = memo(function DemoField({
   view,
@@ -36,7 +37,9 @@ export const DemoField = memo(function DemoField({
         </figcaption>
       ) : null}
       {isSpatialField(view) ? (
-        <DemoSurface sample={sample?.surface} label={view.label} style={view.surfaceStyle??(view.presentation==='isosurface'?'shaded':undefined)} />
+        <Suspense fallback={<div className="demo-note" role="status">{i18n('intui.demo.loading','Loading…')}</div>}>
+          <DemoSurface sample={sample?.surface} label={view.label} style={view.surfaceStyle??(view.presentation==='isosurface'?'shaded':undefined)} />
+        </Suspense>
       ) : (
         <canvas ref={canvas} width={FIELD_WIDTH} height={fieldHeight(view)} role="img"
           aria-label={view.label || i18n('intui.surface', 'Interactive result')} />
