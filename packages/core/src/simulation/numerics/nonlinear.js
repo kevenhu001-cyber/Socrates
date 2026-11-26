@@ -43,4 +43,3 @@ function* solveNonlinearSystem(s,params,compile){
 }
 
 export { solveNonlinearSystem };
-export { nonlinearSpec, lowerNonlinearSystem } from '../models/nonlinear.js';
