@@ -4,7 +4,7 @@ import { solveSmallSystem } from '../numerics/dense.js';
 import { selectIntegrator } from './integrators.js';
 
 /** Time integration returns one trajectory interface for all integrators. */
-export function* prepareDynamics(dynamics,stateNames,params,compile,scopeAt,consistentState,solver,warnings,hasSpaceZ) {
+export function* prepareDynamics(dynamics,stateNames,params,compile,scopeAt,consistentState,solver,warnings,hasSpaceZ,algorithms) {
   const {reactionModel}=solver;
   const names=stateNames;
   let derivativeEvaluations=0;
@@ -57,7 +57,7 @@ export function* prepareDynamics(dynamics,stateNames,params,compile,scopeAt,cons
           ([key, expression]) => [key, evalDynamics(expression, scope)],
         )) };
       };
-  const {method,integrate}=selectIntegrator(dynamics,solver);
+  const {method,integrate}=selectIntegrator(dynamics,solver,algorithms);
   const result=yield* integrate({dynamics,names,state,derivative,eventValue,eventReset,warnings,solver,readRate:expr=>evalDynamics(expr,base)});
   return {...result,diagnostics:{method,derivativeEvaluations,...result.diagnostics}};
 }
