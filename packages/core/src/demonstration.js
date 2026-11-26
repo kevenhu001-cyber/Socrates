@@ -2503,7 +2503,10 @@ function lowerVerlet(program){
   return {...program,dynamics:{...d,method:'rk45',initial,derivatives}};
 }
 function* integrateVerlet(d,s,state,derivative,warnings){
-  const count=Math.ceil(d.duration/d.step),h=d.duration/count,coords=s.coordinates,frames=[state];
+  const count=Math.ceil(d.duration/d.step),h=d.duration/count,coords=s.coordinates,names=Object.keys(state),n=names.length;
+  const frames=new Float64Array((count+1)*n);let completed=0;
+  const store=(i,q)=>{for(let j=0;j<n;j++)frames[i*n+j]=q[names[j]];};
+  store(0,state);
   const valid=v=>Object.values(v).every(q=>finite(q)&&Math.abs(q)<=1e12);
   let current=state;
   try{
@@ -2515,13 +2518,13 @@ function* integrateVerlet(d,s,state,derivative,warnings){
       const b=derivative(next,i*h);
       for(const q of coords)next[q.velocity]+=h*b[q.velocity]/2;
       if(!valid(next))throw Error('Nonfinite Verlet step');
-      frames.push(next);current=next;a=b;if(i%32===0)yield;
+      store(i,next);completed=i;current=next;a=b;if(i%32===0)yield;
     }
-  }catch(error){warnings.push({path:'dynamics.mechanics',time:(frames.length-1)*h,message:String(error)});}
-  const duration=frames.length===count+1?d.duration:(frames.length-1)*h;
-  return {duration,eventTimes:[],diagnostics:{acceptedSteps:frames.length-1,rejectedSteps:0,events:0,minStep:h,maxStep:h},
-    stateAt(t){const u=Math.max(0,Math.min(frames.length-1,(finite(t)?t:0)/h)),i=Math.floor(u),f=u-i,a=frames[i],b=frames[Math.min(i+1,frames.length-1)];
-      return Object.fromEntries(Object.keys(a).map(k=>[k,a[k]+f*(b[k]-a[k])]));}};
+  }catch(error){warnings.push({path:'dynamics.mechanics',time:completed*h,message:String(error)});}
+  const duration=completed===count?d.duration:completed*h;
+  return {duration,eventTimes:[],diagnostics:{acceptedSteps:completed,rejectedSteps:0,events:0,minStep:h,maxStep:h,storedValues:frames.length},
+    stateAt(t){const u=Math.max(0,Math.min(completed,(finite(t)?t:0)/h)),i=Math.floor(u),f=u-i,a=i*n,b=Math.min(i+1,completed)*n;
+      return Object.fromEntries(names.map((k,j)=>[k,frames[a+j]+f*(frames[b+j]-frames[a+j])]));}};
 }
 
 // Piecewise-linear 1D Galerkin finite elements on a user-supplied mesh.
@@ -2563,6 +2566,7 @@ function* solveFiniteElement(s,params,compile){
     if(i%16===0)yield;
   }
   rhs[1]-=off[0]*u[0];rhs[n-2]-=off[n-2]*u[n-1];
+  if(!diag.every(finite)||!off.every(finite)||!rhs.every(finite))fail('Nonfinite assembled finite element coefficients');
   const d=diag.slice(),b=rhs.slice();
   for(let i=1;i<n-1;i++){
     if(i>1){const q=off[i-1]/d[i-1];d[i]-=q*off[i-1];b[i]-=q*b[i-1];}
@@ -2576,6 +2580,7 @@ function* solveFiniteElement(s,params,compile){
     residual=Math.max(residual,Math.abs(a+l+r-rhs[i]));scale=Math.max(scale,Math.abs(a)+Math.abs(l)+Math.abs(r)+Math.abs(rhs[i]));
   }
   residual/=Math.max(scale,Number.MIN_VALUE);
+  if(!finite(residual))fail('Nonfinite finite element residual');
   const locate=x=>{let lo=0,hi=n-1;while(hi-lo>1){const m=(lo+hi)>>1;if(nodes[m]<=x)lo=m;else hi=m;}return lo;};
   return {read(name,x){if(name==='femResidual')return residual;if(name==='femNodes')return n;
     if(!finite(x)||x<nodes[0]||x>nodes[n-1])return Number.NaN;const i=locate(x),h=nodes[i+1]-nodes[i],slope=(u[i+1]-u[i])/h;
