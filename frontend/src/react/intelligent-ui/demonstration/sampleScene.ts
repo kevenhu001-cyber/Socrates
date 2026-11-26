@@ -10,6 +10,8 @@ function objectExpressions(object: DemonstrationObject): DemonstrationValue[] {
   switch (object.kind) {
     case 'path':
       return object.points.flat();
+    case 'atom':
+    case 'cell':
     case 'body':
       return [...object.center, object.radius];
     case 'block':
