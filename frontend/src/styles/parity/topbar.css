@@ -285,9 +285,10 @@ html[data-main-view$='Panel'] #appShell .mobile-newchat-btn {
   #appShell .top-bar {
     z-index: var(--ui-z-header);
   }
-  #appShell .top-bar::after {
-    bottom: -20px;
+  body[data-transcript-scrolled='true'] #appShell .top-bar::after {
+    inset-block-end: -20px;
     height: 20px;
+    background: linear-gradient(to bottom, var(--ui-bg-page), transparent);
   }
   #appShell .top-bar-left,
   #appShell .top-bar-right {
