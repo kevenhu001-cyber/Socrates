@@ -1429,6 +1429,92 @@ function lowerLinearAlgebra(program) {
   return {...rest,definitions};
 }
 
+
+// Symmetric sparse systems use upper-triangle coordinate entries, compiled
+// to CSR and solved with Jacobi-preconditioned conjugate gradients.
+function sparseSystemSpec(program) {
+  const s=program.sparseSystem;
+  if(s===undefined)return null;
+  const fail=message=>{throw located('sparseSystem',Error(message));};
+  if(!record(s)||!Number.isInteger(s.size)||s.size<1||s.size>1024||
+      !Array.isArray(s.entries)||s.entries.length<1||s.entries.length>8192||
+      !Array.isArray(s.rhs)||s.rhs.length!==s.size)fail('Sparse system needs 1–1024 unknowns, 1–8192 upper-triangle entries and matching rhs');
+  if(program.dynamics!==undefined||program.duration!==undefined)fail('Sparse system is a standalone stationary model');
+  if(program.parameters!==undefined&&!Array.isArray(program.parameters))fail('Invalid parameters');
+  if(program.definitions!==undefined&&!record(program.definitions))fail('Invalid definitions');
+  const scope=new Set((program.parameters??[]).map(p=>p?.id));
+  const reserved=['sparseValue','sparseResidual','sparseIterations'];
+  if([...scope,...Object.keys(program.definitions??{})].some(id=>reserved.includes(id)))fail('Sparse result names are reserved');
+  const check=v=>{try{expressionNames(parseDemonstrationExpression(v),scope);}catch(e){fail(String(e));}};
+  const seen=new Set(),diag=new Set();
+  for(const entry of s.entries){
+    if(!Array.isArray(entry)||entry.length!==3)fail('Entry must be [row,column,value], zero-based upper triangle');
+    const [i,j,v]=entry;
+    if(!Number.isInteger(i)||!Number.isInteger(j)||i<0||j<i||j>=s.size||seen.has(i*s.size+j))
+      fail('Duplicate or invalid upper triangle coordinate');
+    seen.add(i*s.size+j);if(i===j)diag.add(i);check(v);
+  }
+  if(diag.size!==s.size)fail('Every row needs an explicit diagonal');
+  s.rhs.forEach(check);
+  const tolerance=s.tolerance??1e-8,maxIterations=s.maxIterations??Math.min(1024,s.size*2);
+  if(!finite(tolerance)||tolerance<1e-12||tolerance>1e-3||
+      !Number.isInteger(maxIterations)||maxIterations<1||maxIterations>1024||
+      s.entries.length*2*maxIterations>8000000)fail('Sparse tolerance or iteration budget out of range');
+  return {...s,tolerance,maxIterations};
+}
+function lowerSparseSystem(program){
+  if(!sparseSystemSpec(program))return program;
+  return {...program,definitions:{...program.definitions,sparseValue:'0*x',sparseResidual:0,sparseIterations:0}};
+}
+function* solveSparseSystem(spec,params,compile){
+  const n=spec.size,budget={remaining:DYNAMICS_BUDGET};
+  const scope=Object.assign(Object.create(null),params);
+  const read=expr=>{
+    const v=evaluateDemonstrationExpression(compile(expr),scope,budget);
+    if(!finite(v)||Math.abs(v)>1e12)throw located('sparseSystem',Error('Nonfinite sparse coefficient'));
+    return v;
+  };
+  const counts=new Int32Array(n+1),diagonal=new Float64Array(n);
+  for(const [i,j] of spec.entries){counts[i+1]++;if(i!==j)counts[j+1]++;}
+  for(let i=1;i<=n;i++)counts[i]+=counts[i-1];
+  const cursor=counts.slice(),cols=new Int32Array(counts[n]),values=new Float64Array(counts[n]);
+  for(const [i,j,expr] of spec.entries){
+    const v=read(expr),k=cursor[i]++;cols[k]=j;values[k]=v;
+    if(i===j)diagonal[i]=v;else{const l=cursor[j]++;cols[l]=i;values[l]=v;}
+  }
+  if(!diagonal.every(v=>v>0))throw located('sparseSystem',Error('CG requires positive diagonal and a symmetric positive-definite matrix'));
+  const b=Float64Array.from(spec.rhs,read),x=new Float64Array(n),r=b.slice(),z=new Float64Array(n),p=new Float64Array(n),ap=new Float64Array(n);
+  const dot=(a,b)=>{let sum=0;for(let i=0;i<n;i++)sum+=a[i]*b[i];return sum;};
+  const multiply=(v,out)=>{for(let i=0;i<n;i++){let a=0;for(let k=counts[i];k<counts[i+1];k++)a+=values[k]*v[cols[k]];out[i]=a;}};
+  const scale=Math.sqrt(dot(b,b))||1;
+  const residual=()=>{multiply(x,ap);let sum=0;for(let i=0;i<n;i++){r[i]=b[i]-ap[i];sum+=r[i]*r[i];}return Math.sqrt(sum)/scale;};
+  for(let i=0;i<n;i++)p[i]=z[i]=r[i]/diagonal[i];
+  let rho=dot(r,z),error=Math.sqrt(dot(r,r))/scale,iterations=0;
+  while(error>spec.tolerance&&iterations<spec.maxIterations){
+    multiply(p,ap);
+    const curvature=dot(p,ap);
+    if(!(curvature>0)||!finite(curvature)||!finite(rho))throw located('sparseSystem',Error('CG breakdown: matrix may not be positive definite'));
+    const alpha=rho/curvature;
+    for(let i=0;i<n;i++){x[i]+=alpha*p[i];r[i]-=alpha*ap[i];}
+    iterations++;
+    error=Math.sqrt(dot(r,r))/scale;
+    // Recompute the actual residual before declaring convergence; restart
+    // periodically to control loss of orthogonality from round-off.
+    const restart=error<=spec.tolerance||iterations%64===0;
+    if(restart)error=residual();
+    if(!finite(error)||!x.every(finite))throw located('sparseSystem',Error('Sparse iteration diverged'));
+    if(error<=spec.tolerance)break;
+    for(let i=0;i<n;i++)z[i]=r[i]/diagonal[i];
+    const next=dot(r,z),beta=restart?0:next/rho;
+    for(let i=0;i<n;i++)p[i]=z[i]+beta*p[i];
+    rho=next;
+    yield;
+  }
+  error=residual();
+  if(error>spec.tolerance)throw located('sparseSystem',Error('CG failed to converge within the iteration budget; relative residual '+error));
+  return {x,error,iterations,nnz:values.length};
+}
+
 function lowerImplicitGrid(program) {
   const grid=implicitGridSpec(program);
   if(!grid)return program;
@@ -1649,7 +1735,7 @@ export function validateDemonstration(input) {
     )
       throw located('resetKey', Error('resetKey must be a string of at most 80 characters'));
     if (JSON.stringify(program).length > 40000) throw Error('Demonstration is too large');
-    program = lowerSpatialProgram(lowerCircuitProgram(lowerStateSpace(lowerImplicitGrid(lowerLinearAlgebra(program)))));
+    program = lowerSpatialProgram(lowerCircuitProgram(lowerStateSpace(lowerImplicitGrid(lowerSparseSystem(lowerLinearAlgebra(program))))));
     const shape = demonstrationShapeIssues(program);
     if (shape.length) {
       const issues = shape.slice(0, SHAPE_ISSUE_LIMIT);
@@ -2076,7 +2162,8 @@ export function compileDemonstrationRuntime(input) {
     throw error;
   }
   const implicitGrid = implicitGridSpec(lowerLinearAlgebra(program));
-  program = lowerSpatialProgram(lowerCircuitProgram(lowerStateSpace(lowerImplicitGrid(lowerLinearAlgebra(program)))));
+  const sparseSpec = sparseSystemSpec(lowerLinearAlgebra(program));
+  program = lowerSpatialProgram(lowerCircuitProgram(lowerStateSpace(lowerImplicitGrid(lowerSparseSystem(lowerLinearAlgebra(program))))));
   const compiled = new Map();
   const compile = (expression) => {
     const key = typeof expression === 'number' ? `#${expression}` : String(expression);
@@ -2117,7 +2204,7 @@ export function compileDemonstrationRuntime(input) {
   }
 
   return (values = {}) =>
-    prepareRuntime(program, definitions, stateNames, compile, dependencies, values, implicitGrid);
+    prepareRuntime(program, definitions, stateNames, compile, dependencies, values, implicitGrid, sparseSpec);
 }
 
 
@@ -2332,7 +2419,7 @@ function* integrateAdaptive(dynamics, names, initial, derivative, eventValue, ev
 }
 
 /** Yield between integration batches so a host can cancel them. */
-function* prepareRuntime(program, definitions, stateNames, compile, dependencies, values, implicitGrid) {
+function* prepareRuntime(program, definitions, stateNames, compile, dependencies, values, implicitGrid, sparseSpec) {
   const budget = { remaining: BUDGET };
   const warnings = [];
   const params = Object.fromEntries(
@@ -2344,6 +2431,7 @@ function* prepareRuntime(program, definitions, stateNames, compile, dependencies
   const base = Object.assign(Object.create(null), params);
   const constants = new Map();
   let grid;
+  const sparse = sparseSpec ? yield* solveSparseSystem(sparseSpec,params,compile) : null;
   let previousTime;
   const timeValues = new Map();
   const scopeAt = (t, x, y, state, evaluate, reusableSample) => {
@@ -2351,6 +2439,13 @@ function* prepareRuntime(program, definitions, stateNames, compile, dependencies
     if (!definitions.size) return scope;
     const sample = reusableSample ?? new Map();
     scope[resolveDefinition] = (name) => {
+      if (sparse && name === 'sparseValue') {
+        const u=scope.x;
+        if(!finite(u)||u<0||u>sparse.x.length-1)return Number.NaN;
+        const i=Math.floor(u),j=Math.min(i+1,sparse.x.length-1);return sparse.x[i]+(u-i)*(sparse.x[j]-sparse.x[i]);
+      }
+      if (sparse && name === 'sparseResidual') return sparse.error;
+      if (sparse && name === 'sparseIterations') return sparse.iterations;
       if (grid && name === 'gridValue') return grid.value(scope.t,scope.x,scope.y);
       if (grid && name === 'gridMean') return grid.mean(scope.t);
       if (!definitions.has(name)) return undefined;
