@@ -550,3 +550,19 @@ test('large heat grid renders shaded surface and physical cross section', async 
   await expect(demo.getByRole('img',{name:'Temperature surface'})).toBeVisible();
   await expectNoGlobalError(page);
 });
+
+test('spatial vector field and sparse diagnostics use native scientific views',async({page})=>{
+  const scientific=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
+  const nodes=[{id:'space-vector',type:'demonstration',title:'Spatial vector field',program:scientific.vectorField3D},{id:'sparse-chain',type:'demonstration',title:'Sparse chain',program:scientific.sparseChain}];
+  await prepareChatWorkbench(page,{lang:'en',viewport:{width:390,height:844},messages:nodes.map(node=>({clientId:node.id,role:'assistant',type:'assistant',rawText:'\x60\x60\x60socrates-ui\n'+JSON.stringify(node)+'\n\x60\x60\x60'}))});
+  const vector=page.getByRole('region',{name:'Spatial vector field',exact:true});
+  await vector.scrollIntoViewIfNeeded();
+  await expect(vector).toHaveAttribute('data-demo-quality','full');
+  await expect(vector.locator('[data-space-vectors="1"] path').first()).toBeVisible();
+  const sparse=page.getByRole('region',{name:'Sparse chain',exact:true});
+  await sparse.scrollIntoViewIfNeeded();
+  await expect(sparse).toHaveAttribute('data-demo-quality','full');
+  await sparse.getByText('Solver diagnostics · PCG',{exact:true}).click();
+  await expect(sparse.getByText('Matrix nonzero entries',{exact:true})).toBeVisible();
+  await expectNoGlobalError(page);
+});
