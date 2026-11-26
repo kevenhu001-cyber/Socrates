@@ -1942,6 +1942,8 @@ export function validateDemonstration(input) {
         fields++;
         if (view.presentation !== undefined && !['map', 'surface'].includes(view.presentation))
           throw located(`${path}.presentation`, Error('Field presentation must be map or surface'));
+        if (view.surfaceStyle !== undefined && (view.presentation !== 'surface' || !['wireframe','shaded'].includes(view.surfaceStyle)))
+          throw located(`${path}.surfaceStyle`, Error('Surface style must be wireframe or shaded on a surface'));
         if (view.presentation === 'surface') {
           if (!range(view.zRange)) throw located(`${path}.zRange`, Error('Surface needs increasing z bounds'));
           view.zRange.forEach((v) => check(v));
