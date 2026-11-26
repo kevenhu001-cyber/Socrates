@@ -20,6 +20,7 @@ export function fieldExpressions(view: DemonstrationField): DemonstrationValue[]
     ...(view.vector ?? []),
     ...(view.colorRange ?? []),
     ...(view.zRange ?? []),
+    ...(view.isoLevel===undefined?[]:[view.isoLevel]),
     ...(view.slicePlane ? [view.slicePlane.at] : []),
     ...(view.curve3d ?? []),
     ...(view.vector3d ?? []),
@@ -340,6 +341,8 @@ export interface SurfaceSample {
   size: number;
   values: number[];
   vertices?: (Point3 | null)[];
+  triangles?: [Point3,Point3,Point3][];
+  isoLevel?: number;
   curve?: (Point3 | null)[];
   arrows3d?: {from:Point3;to:Point3;magnitude:number}[];
   reference?: number;
@@ -369,6 +372,56 @@ function* sampleSurface(view: DemonstrationField, runtime: DemonstrationRuntime,
   }
   if (!values.some(Number.isFinite)) throw Error('No finite surface samples in z range');
   return {size, values, x, y, z};
+}
+
+
+function* sampleIsosurface(view:DemonstrationField,runtime:DemonstrationRuntime,time:number,x:Domain,y:Domain,preview:boolean):Generator<void,SurfaceSample,void>{
+  if(!view.zRange||view.isoLevel===undefined)throw Error('Isosurface requires bounds and level');
+  const z=demonstrationDomain(view.zRange,runtime,time),level=runtime.evaluate(view.isoLevel,time);
+  if(!Number.isFinite(level))throw Error('Isosurface level must be finite');
+  const ranges=[x,y,z],size=preview?11:17,values=new Float64Array(size**3);
+  const at=(i:number,j:number,k:number)=>(k*size+j)*size+i;
+  for(let k=0;k<size;k++)for(let j=0;j<size;j++){
+    for(let i=0;i<size;i++){
+      try{const p=[i,j,k].map((v,d)=>ranges[d][0]+(ranges[d][1]-ranges[d][0])*v/(size-1)) as Point3;
+        values[at(i,j,k)]=runtime.evaluate(view.expression,time,...p);
+      }catch(error){if(isDemonstrationBudgetError(error))throw error;values[at(i,j,k)]=Number.NaN;}
+    }
+    yield;
+  }
+  const corners=[[0,0,0],[1,0,0],[1,1,0],[0,1,0],[0,0,1],[1,0,1],[1,1,1],[0,1,1]];
+  // The same body diagonal in every cube yields compatible face diagonals.
+  const tetrahedra=[[0,5,1,6],[0,1,2,6],[0,2,3,6],[0,3,7,6],[0,7,4,6],[0,4,5,6]];
+  const triangles:[Point3,Point3,Point3][]=[];
+  const add=(a:Point3,b:Point3,c:Point3)=>{
+    const u=b.map((v,i)=>v-a[i]),v=c.map((v,i)=>v-a[i]);
+    if(Math.hypot(u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0])<1e-12)return;
+    if(triangles.length>=6000)throw Error('Isosurface triangle budget exceeded; narrow bounds or simplify field');
+    triangles.push([a,b,c]);
+  };
+  for(let k=0;k<size-1;k++)for(let j=0;j<size-1;j++){
+    for(let i=0;i<size-1;i++){
+      const v=corners.map(([a,b,c])=>values[at(i+a,j+b,k+c)]);
+      if(!v.every(Number.isFinite)||v.every(q=>q>=level)||v.every(q=>q<level))continue;
+      const p=corners.map(([a,b,c])=>[i+a,j+b,k+c].map(q=>2*q/(size-1)-1) as Point3);
+      const cross=(a:number,b:number):Point3=>{
+        const w=(level-v[a])/(v[b]-v[a]);return p[a].map((q,d)=>q+w*(p[b][d]-q)) as Point3;
+      };
+      for(const t of tetrahedra){
+        const inside=t.filter(i=>v[i]>=level),outside=t.filter(i=>v[i]<level);
+        if(!inside.length||!outside.length)continue;
+        if(inside.length===1)add(cross(inside[0],outside[0]),cross(inside[0],outside[1]),cross(inside[0],outside[2]));
+        else if(outside.length===1)add(cross(outside[0],inside[0]),cross(outside[0],inside[1]),cross(outside[0],inside[2]));
+        else{
+          const a=cross(inside[0],outside[0]),b=cross(inside[0],outside[1]),c=cross(inside[1],outside[0]),d=cross(inside[1],outside[1]);
+          add(a,b,c);add(b,d,c);
+        }
+      }
+    }
+    yield;
+  }
+  if(!triangles.length)throw Error('No isosurface intersects the sampled volume at this level');
+  return {size:0,values:[],x,y,z,triangles,isoLevel:level};
 }
 
 function* sampleSpace(view: DemonstrationField,runtime:DemonstrationRuntime,time:number,x:Domain,y:Domain,preview:boolean): Generator<void,SurfaceSample,void> {
@@ -449,6 +502,10 @@ export function* sampleField(
   runtime.resetBudget();
   const x = demonstrationDomain(view.x, runtime, time);
   const y = demonstrationDomain(view.y, runtime, time);
+  if(view.presentation==='isosurface'){
+    const surface=yield* sampleIsosurface(view,runtime,time,x,y,preview);
+    return {pixels:new ArrayBuffer(0),arrows:[],contours:[],colorRange:undefined,surface,slice:undefined,streamlines:[] as number[][],markers:[]};
+  }
   if (view.presentation === 'curve3d' || view.presentation === 'vectors3d' || view.presentation==='parametricSurface') {
     const surface=yield* sampleSpace(view,runtime,time,x,y,preview);
     return {pixels:new ArrayBuffer(0),arrows:[],contours:[],colorRange:undefined,surface,slice:undefined,streamlines:[] as number[][],markers:[] };
