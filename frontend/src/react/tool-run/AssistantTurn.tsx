@@ -20,6 +20,7 @@ import { ToolRunDisclosureProvider } from './ToolRunDisclosure';
 import { TurnStatus } from './TurnStatus.js';
 import { TurnSegmentContent } from './TurnSegmentContent';
 import { ToolRunAttachments } from './ToolRunAttachments';
+import { preloadIntelligentUiBlock } from '../intelligent-ui/LazyIntelligentUiBlock';
 import { ToolRunApproval } from './ToolRunApproval';
 import { useProseRenderer, useScaffoldTurnProse } from './proseRenderer';
 import { useLocaleRefresh } from '../rn/WebUiTheme';
@@ -245,6 +246,15 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
     () => callsForMessage(message, rawText.length, isLive),
     [message, rawText.length, isLive],
   );
+  const preparingRichOutput =
+    isLive &&
+    !readOnly &&
+    calls.some(
+      (call) => call.name === 'render_intelligent_ui' && toolRunStateOf(call) === 'running',
+    );
+  useEffect(() => {
+    if (preparingRichOutput) preloadIntelligentUiBlock();
+  }, [preparingRichOutput]);
   const storedHtml = typeof html === 'string' ? html : '';
   const isSettling = useStreamSettling(isLive);
 
