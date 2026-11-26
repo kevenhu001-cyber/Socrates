@@ -97,7 +97,7 @@ test('mobile conversation home matches the compact dark reference layout', async
   expect(geometry.left?.height).toBe(44);
   expect(geometry.composer?.width).toBeGreaterThanOrEqual(320);
   /* The current phone target is a stable two-row frame, including idle. */
-  expect(geometry.composer?.height).toBe(92);
+  expect(geometry.composer?.height).toBe(86);
   expect(geometry.composer?.bottom).toBeLessThanOrEqual((geometry.viewportHeight ?? 844) - 16);
   /* The empty-state capsule pins to the bottom action band: its foot rests
      on the safe-area inset above the viewport bottom, not in the old
