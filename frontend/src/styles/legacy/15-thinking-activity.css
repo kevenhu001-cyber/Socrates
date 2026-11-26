@@ -156,18 +156,6 @@
     font-size: 12px;
   }
 }
-/* Detailed/history rows use the same anatomy as live rows. The body still
-   contains the existing Input/Output sections, but those sections now feel
-   like an indented execution trace instead of a nested dashboard card. */
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-card {
-  display: block;
-  margin: 6px 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  overflow: visible;
-}
 /* ── Codex agent step stream ────────────────────────────────────────
    A workspace-agent turn is a sequence of small actions (ran a command,
    edited files, read files, updated the plan). They belong in the reading
