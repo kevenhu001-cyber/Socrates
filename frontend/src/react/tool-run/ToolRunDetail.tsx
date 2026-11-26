@@ -81,7 +81,7 @@ function ResultSection({ section, entryKey }: { section: Section; entryKey: stri
     return (
       <DetailSection title={section.title} kind="sources">
         <div className="tool-source-results" data-testid="tool-sources">
-          {sourceCardsOf(section.items).map((source) => (
+          {sourceCardsOf(section.items).map((source, index) => (
             <button
               key={source.key}
               type="button"
@@ -89,7 +89,7 @@ function ResultSection({ section, entryKey }: { section: Section; entryKey: stri
               data-testid="tool-source"
               role={source.url ? 'link' : undefined}
               disabled={!source.url}
-              aria-label={[source.title, source.host].filter(Boolean).join(' · ')}
+              aria-label={[section.items[index]?.title || source.title, source.host].filter(Boolean).join(' · ')}
               onClick={() => source.url && openExternal(source.url)}
             >
               <SourceAvatar
@@ -100,7 +100,7 @@ function ResultSection({ section, entryKey }: { section: Section; entryKey: stri
               />
               <span className="tool-source-content">
                 <span className="tool-source-name" data-testid="tool-source-title">
-                  {source.title}
+                  {section.items[index]?.title || source.title}
                 </span>
                 {source.host ? (
                   <span className="tool-source-domain" data-testid="tool-source-host">
@@ -182,7 +182,7 @@ function LiveOutputSection({ view }: LiveOutputSectionProps) {
       {view.liveOutput ? (
         <CodeBlock
           testID="tool-live-output"
-          maxHeight={200}
+          maxHeight={320}
           text={view.liveOutput}
           {...copyLabels()}
         />
