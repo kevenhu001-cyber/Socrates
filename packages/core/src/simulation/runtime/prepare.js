@@ -6,7 +6,7 @@ import { prepareDynamics } from './dynamics.js';
 import { createResultStore, prepareStationary, prepareSpatial, prepareAnalysis } from './providers.js';
 
 /** Common runtime: parameter revisions, evaluation scope, caches and lifecycle. */
-function* prepareRuntime(program, definitions, stateNames, compile, dependencies, values, solver, compileSource) {
+function* prepareRuntime(program, definitions, stateNames, compile, dependencies, values, solver, compileSource, algorithms) {
   const budget = { remaining: BUDGET };
   const warnings = [];
   const params = Object.fromEntries(
@@ -19,7 +19,7 @@ function* prepareRuntime(program, definitions, stateNames, compile, dependencies
   const base = Object.assign(Object.create(null), params,hasSpaceZ?{spaceZ:0}:{});
   const constants = new Map();
   const results=createResultStore();
-  const stationaryDiagnostics=yield* prepareStationary(solver,params,compile,results);
+  const stationaryDiagnostics=yield* prepareStationary(solver,params,compile,results,algorithms);
   let previousTime;
   const timeValues = new Map();
   const scopeAt = (t, x, y, state, evaluate, reusableSample, spaceZ=0) => {
@@ -42,8 +42,8 @@ function* prepareRuntime(program, definitions, stateNames, compile, dependencies
     evaluatePreparedExpression(compile(expression), scope, budget);
   const dynamics=program.dynamics;
   const consistentState=createConsistentState(dynamics,base,scopeAt,evalRaw);
-  const spatial=yield* prepareSpatial(solver,params,compile,warnings,results);
-  const evolution=spatial??(dynamics?yield* prepareDynamics(dynamics,stateNames,params,compile,scopeAt,consistentState,solver,warnings,hasSpaceZ):undefined);
+  const spatial=yield* prepareSpatial(solver,params,compile,warnings,results,algorithms);
+  const evolution=spatial??(dynamics?yield* prepareDynamics(dynamics,stateNames,params,compile,scopeAt,consistentState,solver,warnings,hasSpaceZ,algorithms):undefined);
   const duration=evolution?.duration??program.duration??0;
   const stateAt = (time) => consistentState(evolution?.stateAt(time)??{}, Math.max(0,Math.min(duration,finite(time)?time:0)), evalRaw);
   let sampleScope, sampleHasState;
@@ -81,37 +81,10 @@ function* prepareRuntime(program, definitions, stateNames, compile, dependencies
     stateAt,
   };
   if(solver.analysisSpec){
-    yield* prepareAnalysis(solver.analysisSpec,runtime,params,compile,compileSource,results);
+    yield* prepareAnalysis(solver.analysisSpec,runtime,params,compile,compileSource,results,algorithms);
     constants.clear();timeValues.clear();sampleValues.clear();sampleScope=undefined;runtime.resetBudget();
   }
   return runtime;
 }
 
-/** Axis bounds can follow parameter/state-dependent expressions. Reversed
- * bounds are swapped and equal bounds widened; a non-finite bound uses the
- * fallback when one is given (for example a range fitted to the samples). */
-function demonstrationDomain(bounds, runtime, time = 0, fallback) {
-  let problem = '';
-  const values = bounds.map((value) => {
-    try {
-      return runtime.evaluate(value, time);
-    } catch (error) {
-      problem ||= error instanceof Error ? error.message : String(error);
-      return Number.NaN;
-    }
-  });
-  if (values.some((value) => !Number.isFinite(value) || Math.abs(value) > 1e6)) {
-    if (fallback) return fallback;
-    throw Error(`Axis bounds must be finite and within ±1e6${problem ? ` (${problem})` : ''}`);
-  }
-  let [a, b] = values;
-  if (a > b) [a, b] = [b, a];
-  if (a === b) {
-    const pad = a === 0 ? 1 : Math.abs(a) * 0.1;
-    a -= pad;
-    b += pad;
-  }
-  return [a, b];
-}
-
-export { prepareRuntime, demonstrationDomain };
+export { prepareRuntime };
