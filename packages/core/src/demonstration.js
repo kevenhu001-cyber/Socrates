@@ -84,8 +84,21 @@ const extraFunctions = {
   expm1: Math.expm1,
   log1p: Math.log1p,
   heaviside: (x) => (x >= 0 ? 1 : 0),
+  dot2: (a, b, c, d) => a * c + b * d,
+  dot3: (a, b, c, d, e, f) => a * d + b * e + c * f,
+  // A scaled 2x2 solve for coupled accelerations and linear constraints.
+  solve2: (index, a, b, c, d, r, s) => {
+    const p = Math.max(Math.abs(a), Math.abs(b));
+    const q = Math.max(Math.abs(c), Math.abs(d));
+    if (!(p > 0 && q > 0) || (index !== 1 && index !== 2)) return Number.NaN;
+    a /= p; b /= p; r /= p;
+    c /= q; d /= q; s /= q;
+    const det = a * d - b * c;
+    if (Math.abs(det) < 1e-12) return Number.NaN;
+    return index === 1 ? (d * r - b * s) / det : (a * s - c * r) / det;
+  },
 };
-const extraArity = { mod: 2 };
+const extraArity = { mod: 2, dot2: 4, dot3: 6, solve2: 7 };
 const aliases = {
   ln: 'log',
   lg: 'log10',
@@ -1041,6 +1054,59 @@ function demonstrationShapeIssues(program) {
   return issues;
 }
 
+
+// A deliberately bounded method-of-lines frontend for 1D diffusion/reaction.
+// Lower to the same state variables, expression validation and Worker solver;
+// no parallel simulation protocol or arbitrary user code.
+function lowerSpatialProgram(program) {
+  const dynamics = program.dynamics;
+  if (!record(dynamics) || dynamics.spatial === undefined) return program;
+  const spec = dynamics.spatial;
+  const invalid = (message) => { throw located('dynamics.spatial', Error(message)); };
+  if (!record(spec) || dynamics.method !== 'rk45' ||
+      dynamics.initial !== undefined || dynamics.derivatives !== undefined)
+    invalid('Spatial diffusion requires RK45 and replaces initial/derivatives maps');
+  const { nodes, domain, diffusivity, initial, left, right, source = 0 } = spec;
+  if (!Number.isInteger(nodes) || nodes < 3 || nodes > 24 ||
+      !Array.isArray(domain) || domain.length !== 2 ||
+      !domain.every((v) => finite(v) && Math.abs(v) <= 1e6) || domain[0] >= domain[1])
+    invalid('Use 3–24 nodes and a finite increasing numeric domain');
+  for (const value of [diffusivity, initial, left, right, source])
+    if (!finite(value) && (typeof value !== 'string' || !value.length || value.length > 1600))
+      invalid('Diffusivity, initial profile, left/right boundary and source must be mathematical expressions');
+  if (finite(diffusivity) && diffusivity < 0) invalid('Diffusivity cannot be negative');
+  const dx = (domain[1] - domain[0]) / (nodes - 1);
+  if (!finite(dx) || dx < 1e-9) invalid('Grid spacing is too small');
+  const stateName = (i) => `grid${i}`;
+  const parts = Array.from({ length: Math.ceil(nodes / 4) }, (_, i) => `gridPart${i}`);
+  const generated = [...Array.from({ length: nodes }, (_, i) => stateName(i)), ...parts, 'gridValue'];
+  if ((program.parameters !== undefined && !Array.isArray(program.parameters)) ||
+      (program.definitions !== undefined && !record(program.definitions)))
+    invalid('Parameters and definitions must have their normal program shapes');
+  const used = new Set([...(program.parameters ?? []).map((p) => p?.id), ...Object.keys(program.definitions ?? {})]);
+  if (generated.some((id) => used.has(id))) invalid('grid names are reserved inside spatial models');
+  const definitions = { ...program.definitions, grid0: left, [stateName(nodes - 1)]: right };
+  const initialStates = {}, derivatives = {};
+  // Explicit variable tokens only; the parser will validate every lowered expression.
+  const local = (expression, i, allowU) => String(normalizeDemonstrationExpression(expression))
+    .replace(/(?<![A-Za-z_])x(?![A-Za-z0-9_])/g, `(${domain[0] + i * dx})`)
+    .replace(/(?<![A-Za-z_])u(?![A-Za-z0-9_])/g, allowU ? stateName(i) : 'u');
+  for (let i = 1; i < nodes - 1; i++) {
+    const alpha = local(diffusivity, i, true);
+    initialStates[stateName(i)] = local(initial, i, false);
+    derivatives[stateName(i)] = `if((${alpha})>=0,(${alpha})*(${stateName(i-1)}-2*${stateName(i)}+${stateName(i+1)})/(${dx})^2+(${local(source, i, true)}),sqrt(-1))`;
+  }
+  for (let part = 0; part < parts.length; part++) {
+    const terms = [];
+    for (let i = part * 4; i < Math.min(nodes, (part + 1) * 4); i++)
+      terms.push(`${stateName(i)}*max(0,1-abs((x-(${domain[0]}))/(${dx})-${i}))`);
+    definitions[parts[part]] = terms.join('+');
+  }
+  definitions.gridValue = `if(x>=${domain[0]}&&x<=${domain[1]},${parts.join('+')},sqrt(-1))`;
+  const { spatial: _spatial, ...rest } = dynamics;
+  return { ...program, definitions, dynamics: { ...rest, initial: initialStates, derivatives } };
+}
+
 /* ---------- Validation ---------- */
 const name = (value) =>
   typeof value === 'string' &&
@@ -1076,7 +1142,7 @@ export function validateDemonstration(input) {
       throw Error(
         'Demonstration requires a program object: {version:1, parameters, definitions, views}',
       );
-    const program = normalizeDemonstrationProgram(input);
+    let program = normalizeDemonstrationProgram(input);
     if (!record(program))
       throw Error(
         'Demonstration requires a program object: {version:1, parameters, definitions, views}',
@@ -1089,6 +1155,7 @@ export function validateDemonstration(input) {
     )
       throw located('resetKey', Error('resetKey must be a string of at most 80 characters'));
     if (JSON.stringify(program).length > 40000) throw Error('Demonstration is too large');
+    program = lowerSpatialProgram(program);
     const shape = demonstrationShapeIssues(program);
     if (shape.length) {
       const issues = shape.slice(0, SHAPE_ISSUE_LIMIT);
@@ -1242,6 +1309,9 @@ export function validateDemonstration(input) {
         if (!record(view) || !text(view.label) || !text(view.xLabel) || !text(view.yLabel))
           throw Error('View must be an object with text labels of at most 200 characters');
       });
+      if (view.history !== undefined &&
+          (view.kind !== 'plot' || typeof view.history !== 'boolean' || (view.history && !dynamics)))
+        throw located(`${path}.history`, Error('History requires a plot with dynamics'));
       if (view.kind === 'controls') {
         controls++;
         return;
@@ -1443,13 +1513,14 @@ export function createDemonstrationRuntime(input, values = {}) {
 
 /** Share validation, expression compilation and dependency analysis across parameter changes. */
 export function compileDemonstrationRuntime(input) {
-  const program = normalizeDemonstrationProgram(input);
+  let program = normalizeDemonstrationProgram(input);
   const validation = validateDemonstration(program);
   if (!validation.ok) {
     const error = Error(validation.error);
     if (validation.path) error.path = validation.path;
     throw error;
   }
+  program = lowerSpatialProgram(program);
   const compiled = new Map();
   const compile = (expression) => {
     const key = typeof expression === 'number' ? `#${expression}` : String(expression);
@@ -1533,6 +1604,7 @@ function* integrateAdaptive(dynamics, names, initial, derivative, eventValue, ev
     return result;
   };
   let eventCount = 0;
+  const eventTimes = [];
   const rtol = dynamics.rtol ?? 1e-6, atol = dynamics.atol ?? 1e-9;
   try {
     for (let attempt = 0; t < dynamics.duration; attempt++) {
@@ -1586,6 +1658,7 @@ function* integrateAdaptive(dynamics, names, initial, derivative, eventValue, ev
         const after = checked(Float64Array.from(names, (name) => reset[name]));
         segments.push({ ...segment, end: hit.time });
         t = hit.time;
+        eventTimes.push(t);
         current = after;
         if (hit.event.terminal) break;
         // Move forward from a reset rather than replaying the remainder of a pre-event step.
@@ -1602,6 +1675,7 @@ function* integrateAdaptive(dynamics, names, initial, derivative, eventValue, ev
   }
   return {
     duration: t,
+    eventTimes,
     stateAt(time) {
       const target = Math.max(0, Math.min(t, finite(time) ? time : 0));
       if (target === t) return toState(current);
@@ -1752,6 +1826,7 @@ function* prepareRuntime(program, definitions, stateNames, compile, dependencies
   const emptyState = Object.create(null);
   return {
     duration,
+    eventTimes: adaptiveResult?.eventTimes ?? [],
     parameters: params,
     warnings,
     dependencies,
