@@ -21,7 +21,7 @@ test('sign-in centers the form with consent above it on desktop and phones', asy
     'font-family',
     /^"Geist Sans", "Noto Sans SC",/,
   );
-  await expect(gate).toHaveCSS('background-color', 'rgb(0, 0, 0)');
+  await expect(gate).toHaveCSS('background-color', 'rgb(14, 14, 14)');
   await expect(gate).toHaveCSS('background-image', 'none');
   await expect(card).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
   await expect(card).toHaveCSS('border-width', '0px');
