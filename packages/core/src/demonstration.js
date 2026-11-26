@@ -2450,6 +2450,8 @@ export function validateDemonstration(input) {
             throw located(`${path}.contours`, Error('Use 1–6 contour levels'));
           view.contours.forEach((value) => check(value));
         }
+        if(view.streamlines!==undefined&&(typeof view.streamlines!=='boolean'||!view.vector||view.slicePlane!==undefined||![undefined,'map'].includes(view.presentation)))
+          throw located(path,Error('Streamlines require a planar vector map'));
         if (view.vectorScale !== undefined && (!(view.vector||view.vector3d) || (finite(view.vectorScale) && view.vectorScale <= 0)))
           throw located(`${path}.vectorScale`, Error('Vector scale requires a vector and positive reference magnitude'));
         if (view.vector !== undefined)
