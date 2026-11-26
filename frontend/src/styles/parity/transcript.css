@@ -1349,16 +1349,6 @@ html[data-mode='dark'] #appShell .msg-body .hljs :is(.hljs-comment, .hljs-quote)
 #appShell #msgList .msg-body hr {
   border-top-color: var(--ui-border-subtle);
 }
-#appShell #msgList .turn-evidence a[href^='#socrates-citation-'] {
-  min-width: 22px;
-  height: 22px;
-  padding: 0 8px;
-  border: 0;
-  background: var(--ui-bg-elevated);
-  color: var(--ui-text-secondary);
-  font-size: var(--ui-font-size-xxs);
-  top: -0.05em;
-}
 #appShell .new-reply-pill {
   border-color: var(--ui-border-strong);
   background: var(--ui-bg-page);

@@ -1341,6 +1341,8 @@ export const zh = {
   'citation.sources': '来源',
   'citation.sourcesCount': '来源，{n} 条',
   'citation.preview': '来源预览',
+  'citation.chip': '来源：{host}',
+  'citation.chipMore': '来源：{host}，另有 {n} 个',
   'think.summary': '活动摘要',
   'think.summaryTools': '使用了 {n} 个工具。',
   'think.rn.elapsed': '{sec} 秒',

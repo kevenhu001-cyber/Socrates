@@ -1401,6 +1401,8 @@ export const en = {
   'citation.sources': 'Sources',
   'citation.sourcesCount': 'Sources, {n}',
   'citation.preview': 'Source preview',
+  'citation.chip': 'Source: {host}',
+  'citation.chipMore': 'Source: {host}, and {n} more',
   'think.summary': 'Activity summary',
   'think.summaryTools': 'Tools used: {n}.',
   'think.rn.elapsed': '{sec}s',
