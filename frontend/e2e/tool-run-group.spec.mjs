@@ -345,6 +345,8 @@ test('narrow viewports keep the inline panel inside the transcript column', asyn
   }));
   expect(panel.scrollWidth).toBeLessThanOrEqual(panel.clientWidth + 1);
   await expect(detail.getByTestId('tool-source')).toHaveCount(2);
+  await expect(detail.locator('.tool-source-result').first()).toHaveCSS('border-top-width', '0px');
+  await expect(detail.locator('.tool-source-name').first()).toHaveCSS('overflow-wrap', 'anywhere');
   await body.getByTestId('tool-row-s1').click();
   await expect(page.getByTestId('tool-detail')).toHaveCount(0);
   await expect(body.getByTestId('tool-row-s2')).toBeVisible();
@@ -651,6 +653,8 @@ test('a pending approval stays visible in the transcript with pill decisions', a
   await expect(row.getByTestId('thinking-step-spinner')).toHaveCount(0);
   await expect(prompt).toBeVisible();
   await expect(prompt).toHaveAttribute('role', 'region');
+  await expect(prompt.locator('.tool-approval-facts')).toBeVisible();
+  await expect(prompt.locator('.tool-approval-decisions')).toBeVisible();
   await expect(page.getByTestId('tool-detail')).toHaveCount(0);
   await expect(prompt.getByRole('button', { name: 'Allow once' })).toBeVisible();
   await expect(prompt.getByRole('button', { name: 'Decline' })).toBeVisible();
@@ -659,6 +663,7 @@ test('a pending approval stays visible in the transcript with pill decisions', a
 
   await prompt.locator('[data-approval-action="accept"]').click();
   await expect(prompt.getByTestId('tool-approval-status')).toHaveText('Approved');
+  await expect(prompt.locator('.tool-approval-decisions')).toHaveCount(0);
   expect(decisions).toEqual([{ method: 'POST', body: { decision: 'accept' } }]);
 });
 
