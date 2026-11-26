@@ -91,6 +91,8 @@ export const zh = {
   'intui.demo.failedView': '这个视图无法计算',
   'intui.demo.curve': '曲线 {n}',
   'intui.demo.marker': '标记 {n}',
+  'intui.demo.colorScale': '物理量色标',
+  'intui.demo.contourLevels': '等值线',
   'intui.demo.dynamicsStopped': '模拟在 t = {t} s 处停止',
   'intui.simSpeed': '初速度',
   'intui.simAngle': '发射角度',
