@@ -424,3 +424,38 @@ test('terminal event limits playback to a root, not the next output sample', () 
   assert.ok(Math.abs(runtime.duration-1) < 1e-8);
   assert.ok(Math.abs(runtime.stateAt(5).q) < 1e-8);
 });
+
+test('spatial diffusion uses the same runtime and agrees with a heat-equation mode', () => {
+  const program = {
+    version: 1,
+    dynamics: {
+      method: 'rk45', duration: 1, step: 0.01,
+      spatial: { nodes: 11, domain: [0, 1], diffusivity: 0.1,
+        initial: 'sin(pi*x)', left: 0, right: 0 },
+    },
+    views: [{ kind: 'plot', x: [0, 1], y: [0, 1], curves: [{ expression: 'gridValue' }] }],
+  };
+  assert.deepEqual(validateDemonstration(program), { ok: true });
+  const runtime = createDemonstrationRuntime(program);
+  assert.deepEqual(runtime.warnings, []);
+  assert.ok(Math.abs(runtime.evaluate('gridValue', 1, 0.5) - Math.exp(-0.1*Math.PI**2)) < 0.005);
+  assert.equal(runtime.evaluate('gridValue', 1, 0), 0);
+  assert.ok(Math.abs(runtime.evaluate('gridValue', 1, 1)) < 1e-12);
+  assert.equal(validateDemonstration({...program, dynamics: {...program.dynamics, spatial: {...program.dynamics.spatial, nodes: 1000}}}).ok, false);
+});
+
+test('scaled coupled solve supports mass matrices and refuses singular systems', () => {
+  assert.ok(Math.abs(calc('solve2(1,2,1,1,3,5,7)') - 1.6) < 1e-12);
+  assert.ok(Math.abs(calc('solve2(2,2,1,1,3,5,7)') - 1.8) < 1e-12);
+  assert.ok(Number.isNaN(calc('solve2(1,1,1,2,2,3,6)')));
+  assert.equal(calc('dot3(1,2,3,4,5,6)'), 32);
+});
+
+test('field annotations are validated without registering a new renderer', () => {
+  const p = { version: 1, views: [{ kind: 'field', x: [-1, 1], y: [-1, 1],
+    palette: 'heat', expression: 'x^2+y^2', colorRange: [0, 2], unit: 'K',
+    contours: [0.5, 1], vector: ['-2*x', '-2*y'], vectorScale: 2 }] };
+  assert.deepEqual(validateDemonstration(p), { ok: true });
+  assert.equal(validateDemonstration({...p, views: [{...p.views[0], contours: Array(7).fill(0)}]}).ok, false);
+  assert.equal(validateDemonstration({...p, views: [{...p.views[0], vectorScale: -1}]}).ok, false);
+});
