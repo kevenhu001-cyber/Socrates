@@ -275,4 +275,32 @@ html[data-main-view$='Panel'] #appShell .mobile-newchat-btn {
   stroke-width: 1.5px;
 }
 
-
+/* Shared header control paint and phone interaction states. */
+#appShell .top-bar .toggle-sidebar {
+  color: var(--ui-text-primary);
+  transition:
+    background-color var(--ui-duration-fast) var(--ui-ease-out),
+    color var(--ui-duration-fast) var(--ui-ease-out);
+}
+#appShell .top-bar .toggle-sidebar:hover {
+  background: var(--ui-bg-hover);
+  color: var(--ui-text-primary);
+}
+@media (max-width: 768px) {
+  #appShell .top-bar :is(.toggle-sidebar, .mobile-newchat-btn, .icon-btn) {
+    transition:
+      background-color var(--ui-duration-fast) var(--ui-ease-out),
+      color var(--ui-duration-fast) var(--ui-ease-out),
+      opacity var(--ui-duration-fast) var(--ui-ease-out);
+  }
+  #appShell .top-bar :is(.toggle-sidebar, .mobile-newchat-btn, .icon-btn):active {
+    opacity: var(--press-opacity, var(--ui-press-opacity-sm, 0.72));
+  }
+  #appShell .top-bar .icon-btn {
+    color: var(--ui-text-primary);
+  }
+  #appShell .top-bar .icon-btn:hover {
+    background: var(--ui-bg-hover);
+    color: var(--ui-text-primary);
+  }
+}
