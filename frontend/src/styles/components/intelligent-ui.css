@@ -485,8 +485,8 @@
   border-bottom: 0;
 }
 .intui-table-wrap {
-  border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-md);
+  border: 0;
+  border-radius: 0;
 }
 .intui-stream-dot {
   position: absolute;
