@@ -143,6 +143,16 @@ export interface DemonstrationProgram {
       boundary: DemonstrationValue;
       source?: DemonstrationValue;
     };
+    stateSpace?: {
+      states: string[];
+      initial: DemonstrationValue[];
+      A: DemonstrationValue[][];
+      B: DemonstrationValue[][];
+      inputs: DemonstrationValue[];
+      C: DemonstrationValue[][];
+      D: DemonstrationValue[][];
+      outputs: string[];
+    };
     circuit?: {
       nodes: string[];
       elements: { kind: 'R' | 'L' | 'C' | 'V' | 'I'; id: string; p: string; n: string; value: DemonstrationValue; initial?: DemonstrationValue }[];
