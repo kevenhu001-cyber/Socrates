@@ -77,10 +77,11 @@ export interface DemonstrationObjectBase {
 }
 export type DemonstrationObject =
   | (DemonstrationObjectBase & {
-      kind: 'body' | 'cell';
+      kind: 'body';
       center: DemonstrationPoint;
       radius: DemonstrationValue;
     })
+  | (DemonstrationObjectBase & {kind:'cell';center:DemonstrationPoint;radius:DemonstrationValue})
   | (DemonstrationObjectBase & {kind:'atom';center:DemonstrationPoint;radius:DemonstrationValue;element:string})
   | (DemonstrationObjectBase & {
       kind: 'block';
@@ -152,7 +153,7 @@ export interface DemonstrationProgram {
       boundary: DemonstrationValue;
       source?: DemonstrationValue;
     };
-    reactionNetwork?: {species:{id:string;initial:DemonstrationValue;composition?:Record<string,number>}[];reactions:{id:string;reactants:Record<string,number>;products:Record<string,number>;rateConstant?:DemonstrationValue;rate?:DemonstrationValue}[]};
+    reactionNetwork?: {seed?:number;species:{id:string;initial:DemonstrationValue;composition?:Record<string,number>}[];reactions:{id:string;reactants:Record<string,number>;products:Record<string,number>;rateConstant?:DemonstrationValue;rate?:DemonstrationValue}[]};
     stateSpace?: {
       states: string[];
       initial: DemonstrationValue[];
@@ -169,7 +170,7 @@ export interface DemonstrationProgram {
     };
     duration: number;
     step: number;
-    method?: 'rk4' | 'rk45' | 'sdirk2' | 'grid-implicit';
+    method?: 'rk4' | 'rk45' | 'sdirk2' | 'grid-implicit' | 'ssa';
     /** Nonsingular M in M*state'=derivatives; rows/columns follow initial-state key order. */
     massMatrix?: DemonstrationValue[][];
     /** Semi-explicit index-one constraints g(t, state, algebraic)=0. */
