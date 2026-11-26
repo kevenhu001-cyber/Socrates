@@ -2100,5 +2100,943 @@
         ]
       }
     ]
+  },
+  "reversibleReaction": {
+    "version": 1,
+    "diagnostics": true,
+    "parameters": [
+      {
+        "id": "kf",
+        "label": "Forward rate",
+        "value": 2,
+        "min": 0.1,
+        "max": 4,
+        "unit": "1/s"
+      },
+      {
+        "id": "kr",
+        "label": "Reverse rate",
+        "value": 1,
+        "min": 0.1,
+        "max": 4,
+        "unit": "1/s"
+      }
+    ],
+    "dynamics": {
+      "method": "rk45",
+      "duration": 5,
+      "step": 0.05,
+      "reactionNetwork": {
+        "species": [
+          {
+            "id": "A",
+            "initial": 1,
+            "composition": {
+              "C": 1
+            }
+          },
+          {
+            "id": "B",
+            "initial": 0,
+            "composition": {
+              "C": 1
+            }
+          }
+        ],
+        "reactions": [
+          {
+            "id": "forward",
+            "reactants": {
+              "A": 1
+            },
+            "products": {
+              "B": 1
+            },
+            "rateConstant": "kf"
+          },
+          {
+            "id": "reverse",
+            "reactants": {
+              "B": 1
+            },
+            "products": {
+              "A": 1
+            },
+            "rateConstant": "kr"
+          }
+        ]
+      }
+    },
+    "views": [
+      {
+        "kind": "scene",
+        "label": "Reversible isomerization (schematic)",
+        "x": [
+          -1,
+          5
+        ],
+        "y": [
+          -1,
+          2
+        ],
+        "objects": [
+          {
+            "kind": "body",
+            "center": [
+              0,
+              0
+            ],
+            "radius": "0.15+0.45*sqrt(A)",
+            "label": "A",
+            "color": "blue"
+          },
+          {
+            "kind": "reversibleArrow",
+            "from": [
+              0.8,
+              0
+            ],
+            "to": [
+              3.2,
+              0
+            ],
+            "label": "A ⇌ B"
+          },
+          {
+            "kind": "body",
+            "center": [
+              4,
+              0
+            ],
+            "radius": "0.15+0.45*sqrt(B)",
+            "label": "B",
+            "color": "orange"
+          }
+        ]
+      },
+      {
+        "kind": "plot",
+        "label": "Concentrations",
+        "history": true,
+        "x": [
+          0,
+          5
+        ],
+        "y": [
+          0,
+          1.05
+        ],
+        "curves": [
+          {
+            "expression": "A",
+            "label": "A",
+            "color": "blue"
+          },
+          {
+            "expression": "B",
+            "label": "B",
+            "color": "orange"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "expression": "total_C",
+            "label": "Conserved carbon equivalents",
+            "unit": "mol/L",
+            "digits": 6
+          },
+          {
+            "expression": "rate_forward-rate_reverse",
+            "label": "Net reaction flux",
+            "unit": "mol/(L·s)",
+            "digits": 6
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "enzymeKinetics": {
+    "version": 1,
+    "diagnostics": true,
+    "parameters": [
+      {
+        "id": "kon",
+        "label": "Binding rate",
+        "value": 2,
+        "min": 0.2,
+        "max": 4
+      },
+      {
+        "id": "koff",
+        "label": "Dissociation rate",
+        "value": 1,
+        "min": 0.1,
+        "max": 3
+      },
+      {
+        "id": "kcat",
+        "label": "Catalytic rate",
+        "value": 0.8,
+        "min": 0.1,
+        "max": 2
+      }
+    ],
+    "definitions": {
+      "enzymeTotal": "Enz+Complex",
+      "substrateTotal": "Sub+Complex+Prod"
+    },
+    "dynamics": {
+      "method": "rk45",
+      "duration": 10,
+      "step": 0.05,
+      "reactionNetwork": {
+        "species": [
+          {
+            "id": "Enz",
+            "initial": 0.2
+          },
+          {
+            "id": "Sub",
+            "initial": 1
+          },
+          {
+            "id": "Complex",
+            "initial": 0
+          },
+          {
+            "id": "Prod",
+            "initial": 0
+          }
+        ],
+        "reactions": [
+          {
+            "id": "bind",
+            "reactants": {
+              "Enz": 1,
+              "Sub": 1
+            },
+            "products": {
+              "Complex": 1
+            },
+            "rateConstant": "kon"
+          },
+          {
+            "id": "unbind",
+            "reactants": {
+              "Complex": 1
+            },
+            "products": {
+              "Enz": 1,
+              "Sub": 1
+            },
+            "rateConstant": "koff"
+          },
+          {
+            "id": "catalyze",
+            "reactants": {
+              "Complex": 1
+            },
+            "products": {
+              "Enz": 1,
+              "Prod": 1
+            },
+            "rateConstant": "kcat"
+          }
+        ]
+      }
+    },
+    "views": [
+      {
+        "kind": "scene",
+        "label": "Enzyme pathway (schematic)",
+        "x": [
+          -1,
+          8
+        ],
+        "y": [
+          -1,
+          2
+        ],
+        "objects": [
+          {
+            "kind": "body",
+            "center": [
+              0,
+              0
+            ],
+            "radius": 0.45,
+            "label": "E+S",
+            "color": "blue"
+          },
+          {
+            "kind": "reversibleArrow",
+            "from": [
+              0.7,
+              0
+            ],
+            "to": [
+              3,
+              0
+            ],
+            "label": "binding"
+          },
+          {
+            "kind": "body",
+            "center": [
+              3.7,
+              0
+            ],
+            "radius": 0.45,
+            "label": "ES",
+            "color": "violet"
+          },
+          {
+            "kind": "reactionArrow",
+            "from": [
+              4.4,
+              0
+            ],
+            "to": [
+              6.5,
+              0
+            ],
+            "label": "catalysis"
+          },
+          {
+            "kind": "body",
+            "center": [
+              7.2,
+              0
+            ],
+            "radius": 0.45,
+            "label": "E+P",
+            "color": "green"
+          }
+        ]
+      },
+      {
+        "kind": "plot",
+        "label": "Enzyme and substrate kinetics",
+        "history": true,
+        "x": [
+          0,
+          10
+        ],
+        "y": [
+          0,
+          1.05
+        ],
+        "curves": [
+          {
+            "expression": "Sub",
+            "label": "Substrate",
+            "color": "blue"
+          },
+          {
+            "expression": "Complex",
+            "label": "Complex",
+            "color": "violet"
+          },
+          {
+            "expression": "Prod",
+            "label": "Product",
+            "color": "green"
+          },
+          {
+            "expression": "Enz",
+            "label": "Free enzyme",
+            "color": "orange"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "expression": "enzymeTotal",
+            "label": "Enzyme pool",
+            "unit": "",
+            "digits": 6
+          },
+          {
+            "expression": "substrateTotal",
+            "label": "Substrate equivalents",
+            "unit": "",
+            "digits": 6
+          },
+          {
+            "expression": "rate_catalyze",
+            "label": "Product formation flux",
+            "unit": "",
+            "digits": 6
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "stochasticExpression": {
+    "version": 1,
+    "diagnostics": true,
+    "parameters": [
+      {
+        "id": "birthRate",
+        "label": "Synthesis propensity",
+        "value": 4,
+        "min": 0.5,
+        "max": 8
+      },
+      {
+        "id": "decayRate",
+        "label": "Degradation rate",
+        "value": 0.4,
+        "min": 0.1,
+        "max": 1
+      }
+    ],
+    "definitions": {
+      "expected": "birthRate/decayRate*(1-exp(-decayRate*t))"
+    },
+    "dynamics": {
+      "method": "ssa",
+      "duration": 20,
+      "step": 0.1,
+      "reactionNetwork": {
+        "seed": 42,
+        "species": [
+          {
+            "id": "protein",
+            "initial": 0
+          }
+        ],
+        "reactions": [
+          {
+            "id": "birth",
+            "reactants": {},
+            "products": {
+              "protein": 1
+            },
+            "rateConstant": "birthRate"
+          },
+          {
+            "id": "decay",
+            "reactants": {
+              "protein": 1
+            },
+            "products": {},
+            "rateConstant": "decayRate"
+          }
+        ]
+      }
+    },
+    "views": [
+      {
+        "kind": "plot",
+        "label": "One stochastic trajectory and theoretical mean",
+        "history": true,
+        "x": [
+          0,
+          20
+        ],
+        "y": [
+          0,
+          40
+        ],
+        "curves": [
+          {
+            "expression": "protein",
+            "label": "One realization",
+            "color": "blue"
+          },
+          {
+            "expression": "expected",
+            "label": "Ensemble mean (analytic)",
+            "color": "muted"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "expression": "protein",
+            "label": "Molecule count",
+            "unit": "",
+            "digits": 6
+          },
+          {
+            "expression": "expected",
+            "label": "Theoretical mean",
+            "unit": "",
+            "digits": 6
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "logisticPopulation": {
+    "version": 1,
+    "diagnostics": true,
+    "parameters": [
+      {
+        "id": "growth",
+        "label": "Growth rate",
+        "value": 0.6,
+        "min": 0.1,
+        "max": 1
+      },
+      {
+        "id": "capacity",
+        "label": "Carrying capacity",
+        "value": 100,
+        "min": 40,
+        "max": 150
+      }
+    ],
+    "dynamics": {
+      "method": "rk45",
+      "duration": 15,
+      "step": 0.1,
+      "initial": {
+        "population": 10
+      },
+      "derivatives": {
+        "population": "growth*population*(1-population/capacity)"
+      }
+    },
+    "views": [
+      {
+        "kind": "plot",
+        "label": "Logistic population growth",
+        "history": true,
+        "x": [
+          0,
+          15
+        ],
+        "y": [
+          0,
+          160
+        ],
+        "curves": [
+          {
+            "expression": "population",
+            "label": "Population",
+            "color": "green"
+          },
+          {
+            "expression": "capacity",
+            "label": "Carrying capacity",
+            "color": "muted"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "expression": "population",
+            "label": "Population",
+            "unit": "",
+            "digits": 6
+          },
+          {
+            "expression": "growth*population*(1-population/capacity)",
+            "label": "Net growth",
+            "unit": "",
+            "digits": 6
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "predatorPrey": {
+    "version": 1,
+    "diagnostics": true,
+    "parameters": [
+      {
+        "id": "alpha",
+        "label": "Prey growth",
+        "value": 1,
+        "min": 0.5,
+        "max": 1.5
+      },
+      {
+        "id": "beta",
+        "label": "Interaction",
+        "value": 0.05,
+        "min": 0.02,
+        "max": 0.08
+      }
+    ],
+    "definitions": {
+      "gamma": 0.6,
+      "delta": 0.025
+    },
+    "dynamics": {
+      "method": "rk45",
+      "duration": 25,
+      "step": 0.05,
+      "initial": {
+        "prey": 30,
+        "predator": 8
+      },
+      "derivatives": {
+        "prey": "alpha*prey-beta*prey*predator",
+        "predator": "delta*prey*predator-gamma*predator"
+      }
+    },
+    "views": [
+      {
+        "kind": "plot",
+        "label": "Predator–prey populations",
+        "history": true,
+        "x": [
+          0,
+          25
+        ],
+        "y": [
+          0,
+          100
+        ],
+        "curves": [
+          {
+            "expression": "prey",
+            "label": "Prey",
+            "color": "green"
+          },
+          {
+            "expression": "predator",
+            "label": "Predator",
+            "color": "orange"
+          }
+        ]
+      },
+      {
+        "kind": "trajectory",
+        "label": "Population phase plane",
+        "x": [
+          0,
+          100
+        ],
+        "y": [
+          0,
+          100
+        ],
+        "horizontal": "prey",
+        "vertical": "predator",
+        "color": "blue"
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "compartmentExchange": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "transfer",
+        "label": "Exchange coefficient",
+        "value": 0.5,
+        "min": 0.1,
+        "max": 1
+      }
+    ],
+    "dynamics": {
+      "method": "rk45",
+      "duration": 8,
+      "step": 0.05,
+      "reactionNetwork": {
+        "species": [
+          {
+            "id": "inside",
+            "initial": 1
+          },
+          {
+            "id": "outside",
+            "initial": 0
+          }
+        ],
+        "reactions": [
+          {
+            "id": "outward",
+            "reactants": {
+              "inside": 1
+            },
+            "products": {
+              "outside": 1
+            },
+            "rateConstant": "transfer"
+          },
+          {
+            "id": "inward",
+            "reactants": {
+              "outside": 1
+            },
+            "products": {
+              "inside": 1
+            },
+            "rateConstant": "transfer"
+          }
+        ]
+      }
+    },
+    "views": [
+      {
+        "kind": "scene",
+        "label": "Two equal-volume compartments (schematic)",
+        "x": [
+          -2,
+          5
+        ],
+        "y": [
+          -2,
+          2
+        ],
+        "objects": [
+          {
+            "kind": "cell",
+            "center": [
+              0,
+              0
+            ],
+            "radius": 1,
+            "label": "Compartment 1",
+            "color": "blue"
+          },
+          {
+            "kind": "cell",
+            "center": [
+              3,
+              0
+            ],
+            "radius": 1,
+            "label": "Compartment 2",
+            "color": "green"
+          },
+          {
+            "kind": "reversibleArrow",
+            "from": [
+              1.1,
+              0
+            ],
+            "to": [
+              1.9,
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "plot",
+        "label": "Exchange dynamics",
+        "history": true,
+        "x": [
+          0,
+          8
+        ],
+        "y": [
+          0,
+          1.05
+        ],
+        "curves": [
+          {
+            "expression": "inside",
+            "label": "Compartment 1",
+            "color": "blue"
+          },
+          {
+            "expression": "outside",
+            "label": "Compartment 2",
+            "color": "green"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "expression": "inside+outside",
+            "label": "Conserved total",
+            "unit": "",
+            "digits": 6
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
+  },
+  "molecularStructures": {
+    "version": 1,
+    "views": [
+      {
+        "kind": "scene",
+        "label": "Water and carbon dioxide (schematic, not to scale)",
+        "x": [
+          -3,
+          7
+        ],
+        "y": [
+          -2,
+          2
+        ],
+        "objects": [
+          {
+            "kind": "bond",
+            "from": [
+              0,
+              0
+            ],
+            "to": [
+              -0.95,
+              -0.72
+            ]
+          },
+          {
+            "kind": "bond",
+            "from": [
+              0,
+              0
+            ],
+            "to": [
+              0.95,
+              -0.72
+            ]
+          },
+          {
+            "kind": "atom",
+            "center": [
+              0,
+              0
+            ],
+            "radius": 0.45,
+            "element": "O",
+            "label": "Water"
+          },
+          {
+            "kind": "atom",
+            "center": [
+              -0.95,
+              -0.72
+            ],
+            "radius": 0.29,
+            "element": "H"
+          },
+          {
+            "kind": "atom",
+            "center": [
+              0.95,
+              -0.72
+            ],
+            "radius": 0.29,
+            "element": "H"
+          },
+          {
+            "kind": "doubleBond",
+            "from": [
+              3,
+              0
+            ],
+            "to": [
+              4,
+              0
+            ]
+          },
+          {
+            "kind": "doubleBond",
+            "from": [
+              4,
+              0
+            ],
+            "to": [
+              5,
+              0
+            ]
+          },
+          {
+            "kind": "atom",
+            "center": [
+              3,
+              0
+            ],
+            "radius": 0.4,
+            "element": "O"
+          },
+          {
+            "kind": "atom",
+            "center": [
+              4,
+              0
+            ],
+            "radius": 0.4,
+            "element": "C",
+            "label": "Carbon dioxide"
+          },
+          {
+            "kind": "atom",
+            "center": [
+              5,
+              0
+            ],
+            "radius": 0.4,
+            "element": "O"
+          }
+        ]
+      }
+    ]
+  },
+  "bufferCurve": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "pKa",
+        "label": "pKa",
+        "value": 4.76,
+        "min": 3,
+        "max": 8
+      }
+    ],
+    "views": [
+      {
+        "kind": "plot",
+        "label": "Ideal buffer: Henderson–Hasselbalch relation",
+        "x": [
+          0.01,
+          100
+        ],
+        "xScale": "log",
+        "y": [
+          0,
+          14
+        ],
+        "xLabel": "Base / acid concentration ratio",
+        "yLabel": "pH",
+        "curves": [
+          {
+            "expression": "pKa+log10(x)",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      }
+    ]
   }
 }
