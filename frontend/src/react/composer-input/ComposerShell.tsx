@@ -262,17 +262,18 @@ export function ComposerShell({
   );
   const effort = resolveEffectiveEffort(storedEffort, capabilities);
   const configuration = useChatConfigurationSnapshot();
-  const effortControl = phone && capabilities?.supportsEffort !== false
-    ? {
-        visible: true,
-        caption: i18n('chatconfig.effort', 'Reasoning effort'),
-        value: effortLabel(effort),
-        level: effort,
-        accessibilityLabel: `${i18n('chatconfig.effort', 'Reasoning effort')} · ${effortLabel(effort)}`,
-        expanded: configuration.open && configuration.triggerId === 'effortTrigger',
-        onPress: () => openChatConfiguration(anchor('effortTrigger')),
-      }
-    : undefined;
+  const effortControl =
+    phone && capabilities?.supportsEffort !== false
+      ? {
+          visible: true,
+          caption: i18n('chatconfig.effort', 'Reasoning effort'),
+          value: effortLabel(effort),
+          level: effort,
+          accessibilityLabel: `${i18n('chatconfig.effort', 'Reasoning effort')} · ${effortLabel(effort)}`,
+          expanded: configuration.open && configuration.triggerId === 'effortTrigger',
+          onPress: () => openChatConfiguration(anchor('effortTrigger')),
+        }
+      : undefined;
   /* Dictation owns the microphone while it runs; the primary stays a send
      control and cannot submit a half-transcribed turn. */
   const canSend = !voiceActive && (hasDraft || attachments.length > 0);
