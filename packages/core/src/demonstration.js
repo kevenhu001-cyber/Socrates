@@ -1611,9 +1611,9 @@ export function validateDemonstration(input) {
           at(objectPath, () => {
             if (
               !record(object) ||
-              !['body', 'block', 'rod', 'spring', 'vector', 'path'].includes(object.kind)
+              !['body', 'block', 'rod', 'spring', 'vector', 'path', 'resistor', 'capacitor', 'inductor', 'voltageSource', 'currentSource', 'dimension', 'pin', 'roller', 'ground'].includes(object.kind)
             )
-              throw Error('Object kind must be body, block, rod, spring, vector or path');
+              throw Error('Unknown scene object kind; use a documented mechanical or electrical symbol');
             if (!text(object.label))
               throw Error('Object label must be text of at most 200 characters');
             if (
