@@ -108,6 +108,41 @@ aux(1)=0.500000000019; sampled algebraic residual 2.22e-16. All 13 scientific
 examples validate and execute without integration warnings. Added numerical,
 mesh and browser rotation tests; actual browser and newest CI remain unverified.
 
+## Stage four: implicit grids, structured algebra and quantitative surfaces
+
+- Dedicated matrix-free diffusion solver, selected with method grid-implicit,
+  for 3–257 1D nodes or 3–65 nodes per axis in 2D. Constant diffusivity,
+  fixed Dirichlet boundaries and stationary source; parameter-dependent
+  coefficients and coordinate-dependent data are allowed. Uses prefactored
+  tridiagonal backward Euler in 1D and first-order split backward Euler in 2D.
+  Per-step work is O(grid cells); no dense spatial matrix or scalar state
+  expansion. Typed-array history is capped at 2,000,000 values (16 MB of
+  Float64 sample data, excluding metadata and work arrays), 2000 steps;
+  fixed step, not adaptive error control. gridValue interpolates spatially and
+  temporally, gridMean is the arithmetic nodal mean, not a quadrature integral.
+- Ordered, shape-checked vector/matrix operations (literal, add/subtract,
+  scale, dot, norm, cross, transpose, matrix multiplication); scalar component
+  aliases compile into the same bounded expression evaluator. Dimensions
+  up to six, 24 generated and ordinary definitions combined. Not a generic
+  tensor runtime or sparse arbitrary-matrix package.
+- Optional shaded 3D scalar surface with depth-sorted finite mesh faces and
+  height-calibrated color legend; local rotation reuses Worker samples.
+  Existing wireframe remains the default.
+- Event rearming deadband after reset (default 1e-9 residual units);
+  bounded midpoint/endpoint sign detection still cannot detect every tangency
+  or crossing. No general unilateral contact solver.
+- Fixed two legacy tool-source buttons by using shared surface primitives,
+  rather than relaxing the button-primitive CI guard.
+
+Direct execution: 65x65 heat mode absolute amplitude error 1.846e-4 at t=.2
+(dt=.001); 257-node 1D mode error 9.104e-4 at t=1 (dt=.005); stationary 129-node
+linear temperature profile error 1.14e-13. Matrix rotation preserves norm 5
+and gives orthogonal dot product 0 for a quarter turn. Rearming test produced
+one event, final position error 1.68e-10. All 15 scientific and 15 historical
+programs validated and executed without warnings. Added core and browser
+regression tests; latest full CI and real-browser visual/performance
+verification remain pending. No claim of measured mobile speedup.
+
 ## Deliberate limits / next steps
 
 This is a bounded educational engine, not an industrial multiphysics solver.
@@ -115,7 +150,7 @@ No BDF/Radau solver, general high-index DAE reduction, contact/friction
 solver, arbitrary PDE or unstructured 2D/3D mesh, nonlinear SPICE-compatible netlist,
 automatic dimensional analysis, or general vector/matrix expression values are claimed. Add these only
 with explicit bounded protocols and analytic/conservation regression tests.
-Prioritize robust event rearming, sparse implicit finite-difference diffusion,
-true vector-valued mathematical objects, general constraint projection, richer
-3D geometry and scientific diagnostics. Benchmark on mobile with the same
+Prioritize generalized sparse systems, adaptive spatial/time error control, richer
+3D geometry (parametric curves, vector fields and volume slices), high-index
+constraint projection, nonlinear circuit devices and scientific diagnostics. Benchmark on mobile with the same
 error tolerance before introducing any WASM dependency.
