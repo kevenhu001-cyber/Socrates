@@ -12,7 +12,9 @@ import { i18n } from '../../ui/legacyI18n.ts';
 import { tf } from '../../legacy/toolPresentationModel.ts';
 import { useLocaleRefresh, WebUiTheme } from '../rn/WebUiTheme';
 import { MathText } from '../rn/useInlineMath';
-import { ToolActivityIcon, toolActivitySites } from './ToolActivityIcon';
+import { Icon } from '../../legacy/Icon';
+import { ToolActivityIcon, ToolSiteMarks, turnActivitySites } from './ToolActivityIcon';
+import { isInlineSearchTool } from '../../render/toolCategory';
 import { ToolRunRow } from './ToolRunRow';
 import { ToolRunGroupRow } from './ToolRunGroupRow';
 import { useElapsed } from './useElapsed';
@@ -38,6 +40,8 @@ export interface TurnActivitySurfaceProps {
 function SummaryStep({ step }: { step: ThinkingStep }) {
   return (
     <div className="activity-summary-step" data-testid="thinking-step">
+      <Icon name="check" size={18} className="activity-step-glyph" />
+      <div className="activity-summary-copy">
       {step.title ? (
         <div data-testid="thinking-step-title" className="activity-summary-title">
           <MathText text={step.title} />
@@ -48,6 +52,7 @@ function SummaryStep({ step }: { step: ThinkingStep }) {
           <MathText text={step.summary} />
         </p>
       ) : null}
+      </div>
     </div>
   );
 }
@@ -216,8 +221,11 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
   const elapsedSec = elapsedMs > 0 ? elapsedMs / 1000 : status?.elapsedSec;
   const label = activityLabel(props, hasSummary, latestStep, latestTool);
   const toolName = headerTool?.name || (liveToolPhase ? status?.toolName : undefined);
-  const headerIcon = toolName ? (
-    <ToolActivityIcon name={toolName} sites={headerTool ? toolActivitySites(headerTool) : []} />
+  const sites = !toolName || isInlineSearchTool(toolName) ? turnActivitySites(calls) : [];
+  const headerIcon = sites.length ? (
+    <ToolSiteMarks sites={sites} />
+  ) : toolName ? (
+    <ToolActivityIcon name={toolName} />
   ) : undefined;
   const currentActivity = live
     ? status?.phase || 'working'
@@ -275,7 +283,9 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
           durationClassName="activity-duration"
           live={working}
           icon={headerIcon}
-          iconWidth={18}
+          iconWidth={sites.length ? 22 * sites.length : 18}
+          fullWidth
+          disclosureIcon={<Icon name={open ? 'chevronUp' : 'chevronDown'} size={16} className="activity-chevron" />}
           expandable={expandable}
           open={open}
           onToggle={() => setOpen((value) => !value)}
@@ -290,6 +300,12 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
               data-testid="thinking-timeline"
             >
               {history}
+              {working && !liveToolPhase ? (
+                <div className="activity-current-step" data-testid="activity-current-step">
+                  <Icon name="activitySpinner" size={18} className="activity-step-glyph socrates-step-spinner" />
+                  <span>{label}</span>
+                </div>
+              ) : null}
             </div>
           </div>
         </ThinkingSurface>
