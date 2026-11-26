@@ -484,6 +484,46 @@ Next: split scalar/vector sampling, 3D mesh geometry, renderer and
 interaction modules; then measure actual bundles and evaluate on-demand
 loading. Keep the generator-based Worker scheduler and wire format.
 
+## Stage thirteen: scientific visualization boundaries
+
+- Extract shared field dimensions, dependency expressions and settings.
+- Split planar scalar sampling, vector/streamline sampling, contours and
+  physical slice mapping. Keep sampleField as a 60-line coordinator
+  (previously 542 lines).
+- Separate 3D sampled surface/curve/vector geometry, scalar volume
+  evaluation and marching tetrahedra extraction. The extraction accepts
+  independent bounded cubic sample buffers and finite levels, preserves
+  the 6000-triangle cap and cooperative yields.
+- Extract pure 3D projection, mesh face sorting, curve/arrow/wireframe
+  paths and 2D plot projection/path generation. No React or numerical
+  runtime dependencies in the geometry projection modules.
+- Move planar canvas painting, camera controls/state and playback/preview
+  state into their own modules. Preserve the current SVG/Canvas appearance,
+  Worker messages, geometry format, pixel buffers and accessibility labels.
+  No WebGL or dynamic imports introduced during this equivalence migration.
+- 14 new visualization modules. Existing component-facing interfaces
+  remain compatible. No new runtime packages or native Android changes.
+
+Direct equivalence checks against pre-split implementation:
+14 planar/3D sample cases including preview/full quality (identical
+pixel bytes, geometry, streamlines, contours, markers and yield counts);
+24 camera projection configurations (identical face order, coordinates,
+wireframe/curve/arrow paths); 10 linear/log plot path configurations;
+35 Canvas draw operations with an instrumented mock context (identical).
+The checks execute extracted TypeScript numerical/drawing bodies with
+type annotations stripped and a mock runtime/context where needed;
+they are not an end-to-end TypeScript build or browser visual comparison.
+Added standalone mesh bounds, projection immutability and plot geometry
+regression tests. Previous Server/Security/Agent/Image/Android workflows
+passed; previous full CI cancelled by superseding commits. Latest full
+CI and actual device/rendering benchmarks remain pending.
+
+Next: capture bundle size and representative preview/full sample/render
+timings, then introduce feature-specific asynchronous loading while
+preserving synchronous core APIs and cooperative cancellation. Split
+AI-facing contracts by capability after establishing request-size
+baselines. Do not infer bundle savings from source-file line counts.
+
 ## Deliberate limits / next steps
 
 This is a bounded educational engine, not an industrial multiphysics solver.
