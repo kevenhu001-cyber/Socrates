@@ -700,3 +700,14 @@ test('structured linear algebra supports shape-checked matrix-vector products', 
   const invalid={...program,linearAlgebra:program.linearAlgebra.map((e,i)=>i===0?{...e,values:[1,2,3]}:e)};
   assert.equal(validateDemonstration(invalid).ok,false);
 });
+
+test('event rearming prevents a second crossing caused solely by numerical root offset', () => {
+  const runtime=createDemonstrationRuntime({version:1,dynamics:{method:'rk45',duration:2,step:.17,
+    initial:{q:1,v:-1},derivatives:{q:'v',v:0},
+    events:[{expression:'q',direction:0,rearmTolerance:1e-6,reset:{v:'-v'}}]},
+    views:[{kind:'metrics',values:[{expression:'q'}]}]});
+  assert.deepEqual(runtime.warnings,[]);
+  assert.equal(runtime.eventTimes.length,1);
+  assert.ok(Math.abs(runtime.stateAt(2).q-1)<1e-7);
+  assert.equal(runtime.stateAt(2).v,1);
+});
