@@ -485,3 +485,23 @@ test('visible demonstrations share a worker and release it when they leave the t
   await closed;
   await expectNoGlobalError(page);
 });
+
+test('scientific field renders a physical color scale and contours without horizontal overflow', async ({ page }) => {
+  const scientific = JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json', import.meta.url), 'utf8'));
+  const node = { id: 'scientific-field', type: 'demonstration', title: 'Scientific field', program: scientific.field };
+  await prepareChatWorkbench(page, {
+    lang: 'en',
+    viewport: { width: 390, height: 844 },
+    messages: [{ clientId: 'scientific-field', role: 'assistant', type: 'assistant',
+      rawText: '\x60\x60\x60socrates-ui\n' + JSON.stringify(node) + '\n\x60\x60\x60' }],
+  });
+  const demo = page.getByRole('region', { name: node.title, exact: true });
+  await demo.scrollIntoViewIfNeeded();
+  await expect(demo).toHaveAttribute('data-demo-quality', 'full');
+  await expect(demo.locator('canvas')).toBeVisible();
+  await expect(demo.locator('.demo-color-scale')).toBeVisible();
+  await expect(demo.getByText(/Contour levels/)).toBeVisible();
+  expect(await demo.locator('.demo-color-scale').evaluate((el) => el.getBoundingClientRect().width)).toBeGreaterThan(60);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+  await expectNoGlobalError(page);
+});
