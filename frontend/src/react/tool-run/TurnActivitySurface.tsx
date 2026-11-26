@@ -13,7 +13,7 @@ import { tf } from '../../legacy/toolPresentationModel.ts';
 import { useLocaleRefresh, WebUiTheme } from '../rn/WebUiTheme';
 import { MathText } from '../rn/useInlineMath';
 import { Icon } from '../../legacy/Icon';
-import { ToolActivityIcon, ToolSiteMarks, turnActivitySites } from './ToolActivityIcon';
+import { ToolActivityIcon, ToolSiteMarks, toolActivitySites, turnActivitySites } from './ToolActivityIcon';
 import { isInlineSearchTool } from '../../render/toolCategory';
 import { ToolRunRow } from './ToolRunRow';
 import { ToolRunGroupRow } from './ToolRunGroupRow';
@@ -40,18 +40,18 @@ export interface TurnActivitySurfaceProps {
 function SummaryStep({ step }: { step: ThinkingStep }) {
   return (
     <div className="activity-summary-step" data-testid="thinking-step">
-      <Icon name="check" size={18} className="activity-step-glyph" />
+      <Icon name={step.phase === 'done' ? 'check' : 'thinking'} size={18} className="activity-step-glyph" />
       <div className="activity-summary-copy">
-      {step.title ? (
-        <div data-testid="thinking-step-title" className="activity-summary-title">
-          <MathText text={step.title} />
-        </div>
-      ) : null}
-      {step.summary ? (
-        <p className="thinking-step-summary">
-          <MathText text={step.summary} />
-        </p>
-      ) : null}
+        {step.title ? (
+          <div data-testid="thinking-step-title" className="activity-summary-title">
+            <MathText text={step.title} />
+          </div>
+        ) : null}
+        {step.summary ? (
+          <p className="thinking-step-summary">
+            <MathText text={step.summary} />
+          </p>
+        ) : null}
       </div>
     </div>
   );
@@ -178,6 +178,7 @@ function useActivityTimeline(
             id: entry.id,
             title: entry.phase === 'done' ? reasoningDone : reasoningLabel,
             summary: '',
+            phase: entry.phase,
             startedAt: entry.startedAt,
           }));
     return activityTimeline(
@@ -221,7 +222,9 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
   const elapsedSec = elapsedMs > 0 ? elapsedMs / 1000 : status?.elapsedSec;
   const label = activityLabel(props, hasSummary, latestStep, latestTool);
   const toolName = headerTool?.name || (liveToolPhase ? status?.toolName : undefined);
-  const sites = !toolName || isInlineSearchTool(toolName) ? turnActivitySites(calls) : [];
+  const sites = !toolName || isInlineSearchTool(toolName)
+    ? turnActivitySites(calls)
+    : toolActivitySites(headerTool, 3);
   const headerIcon = sites.length ? (
     <ToolSiteMarks sites={sites} />
   ) : toolName ? (
