@@ -359,3 +359,57 @@ export const DEMONSTRATION_PROGRAM_SCHEMA = {
     },
   },
 };
+
+/** Provider-only projection of specialized contracts. Keep common view and
+ * ODE fields detailed; specialized shapes remain named, with full constraints
+ * enforced by the original schema and the semantic validator on the server. */
+function compactShape(schema: Record<string, unknown>, depth: number): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const key of ['type', 'enum']) if (schema[key] !== undefined) result[key] = schema[key];
+  if (Array.isArray(schema.anyOf))
+    result.anyOf = schema.anyOf.map((part) => compactShape(part as Record<string, unknown>, depth));
+  if (schema.items && typeof schema.items === 'object')
+    result.items = compactShape(schema.items as Record<string, unknown>, Math.max(0, depth - 1));
+  if (schema.additionalProperties && typeof schema.additionalProperties === 'object')
+    result.additionalProperties = compactShape(schema.additionalProperties as Record<string, unknown>, Math.max(0, depth - 1));
+  if (depth > 0 && schema.properties && typeof schema.properties === 'object') {
+    result.properties = Object.fromEntries(Object.entries(schema.properties).map(
+      ([name, value]) => [name, compactShape(value as Record<string, unknown>, depth - 1)],
+    ));
+    if (Array.isArray(schema.required)) result.required = schema.required;
+  }
+  return result;
+}
+const FULL = DEMONSTRATION_PROGRAM_SCHEMA.properties;
+const DYNAMICS = FULL.dynamics.properties;
+const VIEW = FULL.views.items.properties;
+export const COMPACT_DEMONSTRATION_PROGRAM_SCHEMA = {
+  ...DEMONSTRATION_PROGRAM_SCHEMA,
+  properties: {
+    ...FULL,
+    ...Object.fromEntries(['analysis','finiteElement','optimization','nonlinearSystem','sparseSystem','linearAlgebra'].map(
+      (key) => [key, compactShape(FULL[key as keyof typeof FULL], 2)],
+    )),
+    dynamics: {
+      ...FULL.dynamics,
+      properties: {
+        ...DYNAMICS,
+        ...Object.fromEntries(['mechanics','coupledFields','spatial','reactionNetwork','stateSpace','circuit','algebraic','massMatrix'].map(
+          (key) => [key, compactShape(DYNAMICS[key as keyof typeof DYNAMICS], 2)],
+        )),
+      },
+    },
+    views: {
+      ...FULL.views,
+      items: {
+        ...FULL.views.items,
+        properties: {
+          ...VIEW,
+          ...Object.fromEntries(['surface3d','slicePlane','curve3d','vector3d','parameterRange','uRange','vRange','zRange'].map(
+            (key) => [key, compactShape(VIEW[key as keyof typeof VIEW], 2)],
+          )),
+        },
+      },
+    },
+  },
+};
