@@ -20,6 +20,10 @@ export function fieldExpressions(view: DemonstrationField): DemonstrationValue[]
     ...(view.vector ?? []),
     ...(view.colorRange ?? []),
     ...(view.zRange ?? []),
+    ...(view.curve3d ?? []),
+    ...(view.vector3d ?? []),
+    ...(view.parameterRange ?? []),
+    ...(view.curveHistory ? ['t'] : []),
     ...(view.contours ?? []),
     ...(view.vectorScale === undefined ? [] : [view.vectorScale]),
   ];
@@ -290,9 +294,13 @@ function* sampleContours(
   return output;
 }
 
+type Point3 = [number,number,number];
 export interface SurfaceSample {
   size: number;
   values: number[];
+  curve?: (Point3 | null)[];
+  arrows3d?: {from:Point3;to:Point3;magnitude:number}[];
+  reference?: number;
   x: Domain;
   y: Domain;
   z: Domain;
@@ -321,6 +329,50 @@ function* sampleSurface(view: DemonstrationField, runtime: DemonstrationRuntime,
   return {size, values, x, y, z};
 }
 
+function* sampleSpace(view: DemonstrationField,runtime:DemonstrationRuntime,time:number,x:Domain,y:Domain,preview:boolean): Generator<void,SurfaceSample,void> {
+  if(!view.zRange)throw Error('3D view requires z bounds');
+  const z=demonstrationDomain(view.zRange,runtime,time);
+  const ranges=[x,y,z];
+  const normalize=(p:Point3):Point3=>p.map((v,i)=>2*(v-ranges[i][0])/(ranges[i][1]-ranges[i][0])-1) as Point3;
+  const result:SurfaceSample={size:0,values:[],x,y,z};
+  if(view.presentation==='curve3d'&&view.curve3d){
+    const domain:Domain=view.curveHistory?[0,Math.max(0,time)]:demonstrationDomain(view.parameterRange!,runtime,time);
+    const steps=preview?120:480,curve:(Point3|null)[]=[];
+    for(let i=0;i<=steps;i++){
+      const u=domain[0]+(domain[1]-domain[0])*i/steps;
+      try{
+        const point=view.curve3d.map(expr=>runtime.evaluate(expr,view.curveHistory?u:time,view.curveHistory?0:u)) as Point3;
+        curve.push(point.every((v,k)=>Number.isFinite(v)&&v>=ranges[k][0]&&v<=ranges[k][1])?normalize(point):null);
+      }catch(error){if(isDemonstrationBudgetError(error))throw error;curve.push(null);}
+      if(i%32===0)yield;
+    }
+    if(!curve.some(Boolean))throw Error('No finite curve points in declared ranges');
+    result.curve=curve;
+  }else if(view.vector3d&&view.vectorScale!==undefined){
+    const reference=runtime.evaluate(view.vectorScale,time);
+    if(!Number.isFinite(reference)||reference<=0)throw Error('Vector reference magnitude must be positive');
+    const size=preview?4:7,arrows:NonNullable<SurfaceSample['arrows3d']>=[];
+    for(let k=0;k<size;k++)for(let j=0;j<size;j++){
+      for(let i=0;i<size;i++){
+        const point=[i,j,k].map((v,d)=>ranges[d][0]+(ranges[d][1]-ranges[d][0])*(v+.5)/size) as Point3;
+        try{
+          const vector=view.vector3d.map(expr=>runtime.evaluate(expr,time,...point)) as Point3;
+          const magnitude=Math.hypot(...vector);
+          if(!Number.isFinite(magnitude)||magnitude<=1e-12)continue;
+          const scaled=vector.map((v,d)=>v/(ranges[d][1]-ranges[d][0]));
+          const norm=Math.hypot(...scaled),length=0.28*Math.min(1,magnitude/reference);
+          if(!Number.isFinite(norm)||norm<=0)continue;
+          const from=normalize(point),to=from.map((v,d)=>v+scaled[d]/norm*length) as Point3;
+          arrows.push({from,to,magnitude});
+        }catch(error){if(isDemonstrationBudgetError(error))throw error;}
+      }
+      yield;
+    }
+    result.arrows3d=arrows;result.reference=reference;
+  }
+  return result;
+}
+
 export function* sampleField(
   view: DemonstrationField,
   runtime: DemonstrationRuntime,
@@ -330,6 +382,10 @@ export function* sampleField(
   runtime.resetBudget();
   const x = demonstrationDomain(view.x, runtime, time);
   const y = demonstrationDomain(view.y, runtime, time);
+  if (view.presentation === 'curve3d' || view.presentation === 'vectors3d') {
+    const surface=yield* sampleSpace(view,runtime,time,x,y,preview);
+    return {pixels:new ArrayBuffer(0),arrows:[],contours:[],colorRange:undefined,surface};
+  }
   if (view.presentation === 'surface') {
     const surface = yield* sampleSurface(view, runtime, time, x, y, preview ? 17 : 33);
     return { pixels: new ArrayBuffer(0), arrows: [], contours: [], colorRange: undefined, surface };
