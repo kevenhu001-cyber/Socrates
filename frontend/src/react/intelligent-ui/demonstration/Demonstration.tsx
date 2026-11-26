@@ -498,6 +498,7 @@ const diagnosticLabels: [keyof Omit<DemonstrationDiagnostics,'method'>,string,st
   ['gridNodes','gridNodes','Grid nodes'],['storedValues','storedValues','Stored scalar values'],
   ['unknowns','unknowns','Unknowns'],['nonzeros','nonzeros','Matrix nonzero entries'],
   ['iterations','iterations','Iterations'],['relativeResidual','relativeResidual','Relative residual'],
+  ['absoluteResidual','absoluteResidual','Absolute residual'],['diffusionCFL','diffusionCFL','Diffusion CFL'],
 ];
 function SolverDiagnostics({value}:{value:DemonstrationDiagnostics}){
   return <details className="demo-advanced"><summary>{i18n('intui.demo.diagnostics','Solver diagnostics')} · {value.method}</summary>
