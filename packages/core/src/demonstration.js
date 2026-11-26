@@ -121,6 +121,14 @@ const extraFunctions = {
   heaviside: (x) => (x >= 0 ? 1 : 0),
   dot2: (a, b, c, d) => a * c + b * d,
   dot3: (a, b, c, d, e, f) => a * d + b * e + c * f,
+  solveN: (index, n, ...args) => {
+    if (!Number.isInteger(n) || n < 1 || n > 6 || !Number.isInteger(index) ||
+        index < 1 || index > n || args.length !== n * n + n) return Number.NaN;
+    const rhs = Float64Array.from(args.slice(n * n));
+    return solveSmallSystem(Float64Array.from(args.slice(0, n * n)), rhs, n)
+      ? rhs[index - 1] : Number.NaN;
+  },
+  cross3: (i, a, b, c, d, e, f) => i === 1 ? b*f-c*e : i === 2 ? c*d-a*f : i === 3 ? a*e-b*d : Number.NaN,
   solve3: (index, ...args) => {
     if (!Number.isInteger(index) || index < 1 || index > 3) return Number.NaN;
     const rhs = Float64Array.from(args.slice(9));
@@ -139,7 +147,7 @@ const extraFunctions = {
     return index === 1 ? (d * r - b * s) / det : (a * s - c * r) / det;
   },
 };
-const extraArity = { mod: 2, dot2: 4, dot3: 6, solve2: 7, solve3: 13 };
+const extraArity = { mod: 2, dot2: 4, dot3: 6, solve2: 7, solve3: 13, cross3: 7 };
 const aliases = {
   ln: 'log',
   lg: 'log10',
@@ -391,7 +399,7 @@ export function parseDemonstrationExpression(input) {
           throw Error(`Unknown mathematical function: ${written}`);
         }
         const expected = expectedArity(name);
-        if (expected === null ? args.length === 0 || args.length > 8 : args.length !== expected)
+        if (name === 'solveN' ? (args.length < 4 || args.length > 44) : expected === null ? args.length === 0 || args.length > 8 : args.length !== expected)
           throw Error(
             `Wrong argument count: ${written} takes ${expected ?? '1–8'} argument${expected === 1 ? '' : 's'}`,
           );
@@ -562,6 +570,13 @@ export function evaluateDemonstrationExpression(ast, scope, budget = { remaining
       result = evaluateDemonstrationExpression(ast.args[3], local, budget);
     }
     return result;
+  }
+  if (ast.name === 'solveN') {
+    const n = run(ast.args[1]);
+    if (!Number.isInteger(n) || n < 1 || n > 6 || ast.args.length !== n*n+n+2) throw Error('solveN expects index, n, n*n coefficients and n RHS values');
+    budget.remaining -= n ** 3;
+    if (budget.remaining < 0) throw budgetError();
+    return extraFunctions.solveN(run(ast.args[0]), n, ...ast.args.slice(2).map(run));
   }
   if (ast.name === 'solve3') {
     budget.remaining -= 27;
@@ -1161,6 +1176,97 @@ function lowerSpatial2D(program, dynamics, spec) {
   return { ...program, definitions, dynamics: { ...rest, initial: initialStates, derivatives } };
 }
 
+
+// Compile a small linear RLC network into ODE states and algebraic MNA
+// expressions. Currents are positive p -> n. Capacitor voltage and inductor
+// current are independent states; ideal sources are algebraic constraints.
+function lowerCircuitProgram(program) {
+  const dynamics = program.dynamics;
+  if (!record(dynamics) || dynamics.circuit === undefined) return program;
+  const spec = dynamics.circuit;
+  const invalid = (message) => { throw located('dynamics.circuit', Error(message)); };
+  if (!record(spec) || !['rk45', 'sdirk2'].includes(dynamics.method) ||
+      dynamics.spatial !== undefined || dynamics.initial !== undefined ||
+      dynamics.derivatives !== undefined || dynamics.massMatrix !== undefined)
+    invalid('Circuit needs an adaptive solver and replaces initial/derivatives maps');
+  const { nodes, elements } = spec;
+  if (!Array.isArray(nodes) || nodes.length < 1 || nodes.length > 5 ||
+      new Set(nodes).size !== nodes.length || !nodes.every((id) => typeof id === 'string' && SAFE.test(id)) ||
+      !Array.isArray(elements) || elements.length < 1 || elements.length > 10)
+    invalid('Use 1–5 unique non-ground nodes and 1–10 elements');
+  const ids = new Set();
+  for (const e of elements) {
+    if (!record(e) || !['R','L','C','V','I'].includes(e.kind) || typeof e.id !== 'string' ||
+        !SAFE.test(e.id) || ids.has(e.id) || !['0', ...nodes].includes(e.p) ||
+        !['0', ...nodes].includes(e.n) || e.p === e.n)
+      invalid('Elements require unique safe ids, R/L/C/V/I kind and different declared p/n nodes');
+    ids.add(e.id);
+    if (!finite(e.value) && (typeof e.value !== 'string' || !e.value.length || e.value.length > 100))
+      invalid('Element values must be finite numbers or short expressions');
+    if (['R','L','C'].includes(e.kind) && finite(e.value) && e.value <= 0)
+      invalid('R, L and C values must be positive');
+    if (['C','L'].includes(e.kind) && e.initial !== undefined &&
+        !finite(e.initial) && typeof e.initial !== 'string')
+      invalid('Initial capacitor voltage or inductor current must be an expression');
+  }
+  const branches = elements.filter((e) => e.kind === 'V' || e.kind === 'C');
+  const states = elements.filter((e) => e.kind === 'L' || e.kind === 'C');
+  const n = nodes.length + branches.length;
+  if (n > 6 || states.length < 1 || states.length > 8)
+    invalid('MNA supports at most six algebraic unknowns and 1–8 reactive states');
+  if ((program.parameters !== undefined && !Array.isArray(program.parameters)) ||
+      (program.definitions !== undefined && !record(program.definitions)))
+    invalid('Parameters and definitions must have their normal program shapes');
+  const valueId = (e) => `mnaVal_${e.id}`;
+  const stateId = (e) => `mnaState_${e.id}`;
+  const voltageId = (id) => `voltage_${id}`;
+  const currentId = (e) => `current_${e.id}`;
+  const generated = [...nodes.map(voltageId), ...elements.map(currentId), ...elements.map(valueId), ...states.map(stateId)];
+  const used = [...(program.parameters ?? []).map((p) => p?.id), ...Object.keys(program.definitions ?? {})];
+  if (generated.some((id) => id.length > 40 || used.includes(id))) invalid('Circuit-generated names collide or exceed identifier length');
+  const definitions = { ...program.definitions }, initial = {}, derivatives = {};
+  const M = Array.from({length:n}, () => Array.from({length:n}, () => []));
+  const b = Array.from({length:n}, () => []);
+  const nodeIndex = (id) => id === '0' ? -1 : nodes.indexOf(id);
+  const v = (id) => id === '0' ? '0' : voltageId(id);
+  const stamp = (i,j,term) => { if (i >= 0 && j >= 0) M[i][j].push(term); };
+  const inject = (i,term) => { if (i >= 0) b[i].push(term); };
+  const sum = (terms) => terms.length ? terms.join('+') : '0';
+  for (const e of elements) {
+    const i = nodeIndex(e.p), j = nodeIndex(e.n);
+    const raw = normalizeDemonstrationExpression(e.value);
+    const positive = ['R','L','C'].includes(e.kind);
+    definitions[valueId(e)] = positive ? `if((${raw})>0,(${raw}),sqrt(-1))` : raw;
+    const ev = valueId(e), q = stateId(e), u = `(${v(e.p)}-${v(e.n)})`;
+    if (e.kind === 'R') {
+      const g = `1/${ev}`;
+      stamp(i,i,g); stamp(j,j,g); stamp(i,j,`(-${g})`); stamp(j,i,`(-${g})`);
+      definitions[currentId(e)] = `${u}/${ev}`;
+    } else if (e.kind === 'I' || e.kind === 'L') {
+      const k = e.kind === 'I' ? ev : q;
+      inject(i,`(-${k})`); inject(j,k);
+      definitions[currentId(e)] = k;
+      if (e.kind === 'L') {
+        initial[q] = e.initial ?? 0;
+        derivatives[q] = `${u}/${ev}`;
+      }
+    } else {
+      const k = nodes.length + branches.indexOf(e);
+      stamp(i,k,'1'); stamp(j,k,'-1'); stamp(k,i,'1'); stamp(k,j,'-1');
+      inject(k,e.kind === 'V' ? ev : q);
+      if (e.kind === 'C') {
+        initial[q] = e.initial ?? 0;
+        derivatives[q] = `${currentId(e)}/${ev}`;
+      }
+    }
+  }
+  const args = [...M.flatMap((row) => row.map(sum)), ...b.map(sum)].join(',');
+  nodes.forEach((id,i) => { definitions[voltageId(id)] = `solveN(${i+1},${n},${args})`; });
+  branches.forEach((e,i) => { definitions[currentId(e)] = `solveN(${nodes.length+i+1},${n},${args})`; });
+  const { circuit: _circuit, ...rest } = dynamics;
+  return { ...program, definitions, dynamics: { ...rest, initial, derivatives } };
+}
+
 function lowerSpatialProgram(program) {
   const dynamics = program.dynamics;
   if (!record(dynamics) || dynamics.spatial === undefined) return program;
@@ -1279,7 +1385,7 @@ export function validateDemonstration(input) {
     )
       throw located('resetKey', Error('resetKey must be a string of at most 80 characters'));
     if (JSON.stringify(program).length > 40000) throw Error('Demonstration is too large');
-    program = lowerSpatialProgram(program);
+    program = lowerSpatialProgram(lowerCircuitProgram(program));
     const shape = demonstrationShapeIssues(program);
     if (shape.length) {
       const issues = shape.slice(0, SHAPE_ISSUE_LIMIT);
@@ -1672,7 +1778,7 @@ export function compileDemonstrationRuntime(input) {
     if (validation.path) error.path = validation.path;
     throw error;
   }
-  program = lowerSpatialProgram(program);
+  program = lowerSpatialProgram(lowerCircuitProgram(program));
   const compiled = new Map();
   const compile = (expression) => {
     const key = typeof expression === 'number' ? `#${expression}` : String(expression);
