@@ -81,13 +81,41 @@ validated and ran without warnings; fifteen historical examples validated
 and executed. Added frontend unit and browser tests. Latest full CI and
 visual checks still require verification.
 
+## Stage three: scientific surfaces, engineering diagrams and structured equations
+
+- Rotatable scalar height surfaces with 17x17 preview or 33x33 full mesh,
+  explicit x/y/z bounds, local camera controls and no raster allocation for
+  the surface. Mesh values come from the same Worker as the other views.
+  Nonfinite/out-of-range samples are gaps, not invented geometry. The
+  normalized axes are labeled with their ranges; this is not a 3D volume solver.
+- Mechanical and electrical scene symbols: resistor, capacitor, inductor,
+  voltage/current source, pin/roller, ground and dimension annotations.
+  All use existing scene endpoints and may reference live simulation quantities.
+  Diagram geometry is explicitly authored; circuit topology is not auto-laid out.
+- Structured A/B/C/D state-space matrices, lowered to the shared scalar
+  expressions. Up to 16 differential states (8 with SDIRK2), four inputs
+  and eight outputs; coefficients may depend on time and parameters.
+- Small semi-explicit index-one DAEs: 1–4 algebraic unknowns, parameter-only
+  guesses, damped finite-difference Newton solve at every derivative/event
+  evaluation and reconstructed output time. Requires a regular algebraic
+  Jacobian and a consistent branch near the guess. No high-index reduction.
+- Deleted an unused web-only window dimensions adapter identified by CI
+  without changing the orphan-module guard or native Android code.
+
+Direct core checks: state-space critically damped step error 7.56e-13 at 2 s;
+nonlinear index-one test q'=-aux, aux²=q, q(0)=1 yields q(1)=0.250000000019,
+aux(1)=0.500000000019; sampled algebraic residual 2.22e-16. All 13 scientific
+examples validate and execute without integration warnings. Added numerical,
+mesh and browser rotation tests; actual browser and newest CI remain unverified.
+
 ## Deliberate limits / next steps
 
 This is a bounded educational engine, not an industrial multiphysics solver.
-No BDF/Radau solver, general singular DAE index reduction, contact/friction
+No BDF/Radau solver, general high-index DAE reduction, contact/friction
 solver, arbitrary PDE or unstructured 2D/3D mesh, nonlinear SPICE-compatible netlist,
 automatic dimensional analysis, or general vector/matrix expression values are claimed. Add these only
 with explicit bounded protocols and analytic/conservation regression tests.
-Prioritize robust event rearming, matrix/vector state lowering, implicit sparse
-finite-difference diffusion, engineering diagram primitives and richer scientific plots. Benchmark on mobile with the same
+Prioritize robust event rearming, sparse implicit finite-difference diffusion,
+true vector-valued mathematical objects, general constraint projection, richer
+3D geometry and scientific diagnostics. Benchmark on mobile with the same
 error tolerance before introducing any WASM dependency.
