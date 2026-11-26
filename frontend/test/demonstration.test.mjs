@@ -584,3 +584,22 @@ test('logarithmic plots sample physical frequencies and reject invalid bounds', 
   assert.ok(sample.paths[0].endsWith('L508.00,14.00'));
   assert.equal(validateDemonstration({...program,views:[{...view,x:[0,1000]}]}).ok,false);
 });
+
+test('linear circuit compiler solves RC node voltages and Kirchhoff currents', () => {
+  const scientific = JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json', import.meta.url), 'utf8'));
+  const program = scientific.netlistRC;
+  const runtime = createDemonstrationRuntime(program);
+  assert.deepEqual(runtime.warnings, []);
+  assert.ok(Math.abs(runtime.evaluate('voltage_out', 2) - 5*(1-Math.exp(-2))) < 1e-5);
+  assert.ok(Math.abs(runtime.evaluate('current_resistor-current_cap', 2)) < 1e-10);
+  const bad = JSON.parse(JSON.stringify(program));
+  bad.dynamics.circuit.elements[2].value = '1+t';
+  assert.equal(validateDemonstration(bad).ok,false);
+});
+test('spatial slice evaluates the requested y-coordinate', () => {
+  const view = {kind:'plot', x:[0,1], y:[0,2], sliceY:0.5, curves:[{expression:'x+y'}]};
+  const runtime = createDemonstrationRuntime({version:1,views:[view]});
+  const sample = finishGenerator(samplePlot(view,runtime,0,false,new Map()));
+  assert.ok(sample.paths[0].startsWith('M48.00,149.00'));
+  assert.ok(sample.paths[0].endsWith('L508.00,59.00'));
+});
