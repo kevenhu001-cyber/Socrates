@@ -1006,6 +1006,7 @@ function normalizeView(raw) {
       if (view[key] !== undefined) view[key] = expressionLike(view[key]);
     if (view.colorRange !== undefined) view.colorRange = rangeLike(view.colorRange);
     if (view.zRange !== undefined) view.zRange = rangeLike(view.zRange);
+    if(view.isoLevel!==undefined)view.isoLevel=expressionLike(view.isoLevel);
     if(record(view.slicePlane))view.slicePlane={...view.slicePlane,at:expressionLike(view.slicePlane.at)};
     if (view.parameterRange !== undefined) view.parameterRange = rangeLike(view.parameterRange);
     for(const key of ['uRange','vRange'])if(view[key]!==undefined)view[key]=rangeLike(view[key]);
@@ -1105,7 +1106,7 @@ export function normalizeDemonstrationProgram(input) {
     );
     let duration = numberLike(dynamics.duration),
       step = numberLike(dynamics.step);
-    if (!['rk45', 'sdirk2', 'grid-implicit', 'ssa', 'grid-heun'].includes(dynamics.method)) {
+    if (!['rk45', 'sdirk2', 'grid-implicit', 'ssa', 'grid-heun','verlet'].includes(dynamics.method)) {
       if (finite(duration) && duration > 30) duration = 30;
       if (finite(step)) step = Math.max(0.002, Math.min(0.05, step));
       if (finite(duration) && finite(step) && duration > 0 && Math.ceil(duration / step) > 10000)
@@ -2602,7 +2603,7 @@ function lowerNumericalProgram(program, metadata){
     analysisSpec:scientificAnalysisSpec(lowered),
     verletSpec:verletSpec(lowered),finiteElementSpec:finiteElementSpec(lowered),
   });
-  for(const lower of [lowerFiniteElement,lowerVerlet,lowerScientificAnalysis,lowerOptimization,lowerNonlinearSystem,lowerSparseSystem,lowerCoupledGrid,lowerImplicitGrid,lowerReactionNetwork,lowerStateSpace,lowerCircuitProgram,lowerSpatialProgram])
+  for(const lower of [lowerScientificAnalysis,lowerFiniteElement,lowerVerlet,lowerOptimization,lowerNonlinearSystem,lowerSparseSystem,lowerCoupledGrid,lowerImplicitGrid,lowerReactionNetwork,lowerStateSpace,lowerCircuitProgram,lowerSpatialProgram])
     lowered=lower(lowered);
   return lowered;
 }
@@ -2646,7 +2647,7 @@ export function validateDemonstration(input) {
     if (!record(definitions) || Object.keys(definitions).length > 24)
       throw located('definitions', Error('Use a map of at most 24 definitions'));
     const allowed = new Set(['x', 'y', 't', 'pi', 'e']);
-    if (program.views?.some(view=>(view?.presentation==='vectors3d'||view?.slicePlane!==undefined))) allowed.add('spaceZ');
+    if (program.views?.some(view=>(view?.presentation==='vectors3d'||view?.presentation==='isosurface'||view?.slicePlane!==undefined))) allowed.add('spaceZ');
     params.forEach((p, i) =>
       at(`parameters.${record(p) && typeof p.id === 'string' ? p.id : `[${i}]`}`, () => {
         if (!record(p)) throw Error('Parameter must be an object');
@@ -2929,16 +2930,20 @@ export function validateDemonstration(input) {
             throw located(path,Error('Scalar map slice needs axis x/y/z and at; no planar vector overlay'));
           check(view.slicePlane.at);
         }
-        if (view.presentation !== undefined && !['map', 'surface', 'curve3d', 'vectors3d','parametricSurface'].includes(view.presentation))
-          throw located(`${path}.presentation`, Error('Use map, surface, curve3d, vectors3d or parametricSurface'));
-        if (view.surfaceStyle !== undefined && (!['surface','parametricSurface'].includes(view.presentation) || !['wireframe','shaded'].includes(view.surfaceStyle)))
+        if (view.presentation !== undefined && !['map', 'surface', 'curve3d', 'vectors3d','parametricSurface','isosurface'].includes(view.presentation))
+          throw located(`${path}.presentation`, Error('Use map, surface, curve3d, vectors3d, parametricSurface or isosurface'));
+        if (view.surfaceStyle !== undefined && (!['surface','parametricSurface','isosurface'].includes(view.presentation) || !['wireframe','shaded'].includes(view.surfaceStyle)))
           throw located(`${path}.surfaceStyle`, Error('Surface style must be wireframe or shaded on a surface'));
-        if (['surface','curve3d','vectors3d','parametricSurface'].includes(view.presentation)) {
+        if (['surface','curve3d','vectors3d','parametricSurface','isosurface'].includes(view.presentation)) {
           if (!range(view.zRange)) throw located(`${path}.zRange`, Error('Surface needs increasing z bounds'));
           view.zRange.forEach((v) => check(v));
           if (view.vector !== undefined || view.contours !== undefined || view.colorRange !== undefined)
             throw located(path, Error('3D views cannot include 2D contours, vectors or color calibration'));
         } else if (view.zRange !== undefined) throw located(`${path}.zRange`, Error('zRange requires 3D presentation'));
+        if(view.presentation==='isosurface'){
+          if(view.isoLevel===undefined)throw located(path,Error('Isosurface needs an explicit isoLevel'));
+          check(view.isoLevel);
+        }else if(view.isoLevel!==undefined)throw located(path,Error('isoLevel requires isosurface presentation'));
         if(view.presentation==='parametricSurface'){
           if(!Array.isArray(view.surface3d)||view.surface3d.length!==3||!range(view.uRange)||!range(view.vRange))
             throw located(path,Error('Parametric surface needs three coordinate expressions and uRange/vRange'));
@@ -3106,7 +3111,7 @@ export function compileDemonstrationRuntime(input) {
   const definitions = new Map(Object.entries(program.definitions ?? {}));
   const stateNames = Object.keys(program.dynamics?.initial ?? {});
   const flags = new Map([['x', 1], ['y', 2], ['t', 4], ...stateNames.map((name) => [name, 4]), ...Object.keys(program.dynamics?.algebraic?.guess ?? {}).map(name=>[name,4])]);
-  if(program.views.some(view=>(view.presentation==='vectors3d'||view.slicePlane!==undefined))) flags.set('spaceZ',8);
+  if(program.views.some(view=>(view.presentation==='vectors3d'||view.presentation==='isosurface'||view.slicePlane!==undefined))) flags.set('spaceZ',8);
   const expressionMasks = new Map();
   const definitionMasks = new Map();
   function dependencies(expression) {
@@ -3374,7 +3379,7 @@ function* prepareRuntime(program, definitions, stateNames, compile, dependencies
       return [p.id, finite(value) ? Math.max(p.min, Math.min(p.max, value)) : p.value];
     }),
   );
-  const hasSpaceZ=program.views.some(view=>(view.presentation==='vectors3d'||view.slicePlane!==undefined));
+  const hasSpaceZ=program.views.some(view=>(view.presentation==='vectors3d'||view.presentation==='isosurface'||view.slicePlane!==undefined));
   const base = Object.assign(Object.create(null), params,hasSpaceZ?{spaceZ:0}:{});
   const constants = new Map();
   let grid,coupled,analysisResult;
