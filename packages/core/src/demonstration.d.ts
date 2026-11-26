@@ -13,6 +13,7 @@ export interface DemonstrationParameter {
   advanced?: boolean;
 }
 export interface DemonstrationCurve {
+  interpolation?: 'linear' | 'step';
   label?: string;
   expression: DemonstrationValue;
   color?: string;
