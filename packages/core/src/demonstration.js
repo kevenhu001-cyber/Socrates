@@ -1182,6 +1182,48 @@ function lowerSpatial2D(program, dynamics, spec) {
 // Compile a small linear RLC network into ODE states and algebraic MNA
 // expressions. Currents are positive p -> n. Capacitor voltage and inductor
 // current are independent states; ideal sources are algebraic constraints.
+
+// Matrix state-space models lower into the existing scalar runtime, preserving
+// a single solver and making individual states/outputs available to all views.
+function lowerStateSpace(program) {
+  const dynamics = program.dynamics;
+  if (!record(dynamics) || dynamics.stateSpace === undefined) return program;
+  const spec = dynamics.stateSpace;
+  const invalid = (message) => { throw located('dynamics.stateSpace', Error(message)); };
+  if (!record(spec) || !['rk45','sdirk2'].includes(dynamics.method) ||
+      dynamics.initial !== undefined || dynamics.derivatives !== undefined ||
+      dynamics.spatial !== undefined || dynamics.circuit !== undefined || dynamics.massMatrix !== undefined)
+    invalid('State space requires an adaptive solver and replaces other dynamics models');
+  const { states, initial, A, B, inputs, C, D, outputs } = spec;
+  const n = states?.length, m = inputs?.length, k = outputs?.length;
+  const validNames = (ids, max) => Array.isArray(ids) && ids.length >= 1 && ids.length <= max &&
+    ids.every(name) && new Set(ids).size === ids.length;
+  const validValue = (v) => finite(v) || (typeof v === 'string' && v.length > 0 && v.length <= 100);
+  const matrix = (v, rows, cols) => Array.isArray(v) && v.length === rows &&
+    v.every(row => Array.isArray(row) && row.length === cols && row.every(validValue));
+  if (!validNames(states, dynamics.method === 'sdirk2' ? 8 : 16) ||
+      !Array.isArray(initial) || initial.length !== n || !initial.every(validValue) ||
+      !Array.isArray(inputs) || m < 1 || m > 4 || !inputs.every(validValue) ||
+      !validNames(outputs, 8) || states.some(id => outputs.includes(id)) ||
+      !matrix(A,n,n) || !matrix(B,n,m) || !matrix(C,k,n) || !matrix(D,k,m))
+    invalid('Need compatible A,B,C,D matrices, 1–16 states (8 stiff), 1–4 inputs and 1–8 outputs');
+  const definitions = { ...program.definitions };
+  if (outputs.some(id => Object.hasOwn(definitions,id))) invalid('Output name collides with a definition');
+  // A and C may depend on parameters/time, but not the states or outputs:
+  // a state-space model is linear in its states and input signals.
+  const scope = new Set(['t', ...(Array.isArray(program.parameters) ? program.parameters.map(p=>p?.id) : [])]);
+  for (const value of [...A.flat(),...B.flat(),...C.flat(),...D.flat(),...inputs]) {
+    try { expressionNames(parseDemonstrationExpression(value),scope); }
+    catch { invalid('Matrix coefficients and inputs must use only parameters, constants and time'); }
+  }
+  const formula = (row, vector) => row.flatMap((v,i)=>v===0?[]:[`(${v})*(${vector[i]})`]);
+  const combine = (a,b) => [...a,...b].join('+') || '0';
+  const derivatives = Object.fromEntries(states.map((id,i)=>[id,combine(formula(A[i],states),formula(B[i],inputs))]));
+  outputs.forEach((id,i)=>{ definitions[id]=combine(formula(C[i],states),formula(D[i],inputs)); });
+  const {stateSpace: _stateSpace,...rest}=dynamics;
+  return {...program,definitions,dynamics:{...rest,initial:Object.fromEntries(states.map((id,i)=>[id,initial[i]])),derivatives}};
+}
+
 function lowerCircuitProgram(program) {
   const dynamics = program.dynamics;
   if (!record(dynamics) || dynamics.circuit === undefined) return program;
@@ -1392,7 +1434,7 @@ export function validateDemonstration(input) {
     )
       throw located('resetKey', Error('resetKey must be a string of at most 80 characters'));
     if (JSON.stringify(program).length > 40000) throw Error('Demonstration is too large');
-    program = lowerSpatialProgram(lowerCircuitProgram(program));
+    program = lowerSpatialProgram(lowerCircuitProgram(lowerStateSpace(program)));
     const shape = demonstrationShapeIssues(program);
     if (shape.length) {
       const issues = shape.slice(0, SHAPE_ISSUE_LIMIT);
@@ -1798,7 +1840,7 @@ export function compileDemonstrationRuntime(input) {
     if (validation.path) error.path = validation.path;
     throw error;
   }
-  program = lowerSpatialProgram(lowerCircuitProgram(program));
+  program = lowerSpatialProgram(lowerCircuitProgram(lowerStateSpace(program)));
   const compiled = new Map();
   const compile = (expression) => {
     const key = typeof expression === 'number' ? `#${expression}` : String(expression);
