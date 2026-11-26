@@ -1008,7 +1008,7 @@ html[data-detail-open='true'][data-detail-layout='docked'] #appShell .main {
     background: var(--ui-fill);
   }
   #appShell #sidebarNav .sidebar-nav-btn:active {
-    --sidebar-nav-bg: var(--ui-bg-active);
+    --sidebar-nav-bg: var(--ui-bg-selected);
   }
   /* The desktop row look moved into react/sidebar/SidebarNavButton.tsx: the
      control ladder, the 10px --ui-radius-row and the ghost hover now live as
