@@ -127,7 +127,7 @@ export interface DemonstrationProgram {
     };
     duration: number;
     step: number;
-    method?: 'rk4' | 'rk45';
+    method?: 'rk4' | 'rk45' | 'sdirk2';
     /** Nonsingular M in M*state'=derivatives; rows/columns follow initial-state key order. */
     massMatrix?: DemonstrationValue[][];
     rtol?: number;
