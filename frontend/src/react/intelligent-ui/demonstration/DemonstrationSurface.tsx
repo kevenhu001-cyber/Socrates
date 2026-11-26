@@ -36,6 +36,15 @@ export function DemoSurface({ sample, label, style = 'wireframe' }: { sample?: S
     }
     return result.sort((a,b)=>a.depth-b.depth);
   },[sample,style,a,e]);
+  const isoFaces=useMemo(()=>{
+    if(!sample?.triangles)return [];
+    return sample.triangles.map((tri,key)=>{
+      const points=tri.map(([x,y,z])=>{const h=x*Math.sin(a)+y*Math.cos(a);
+        return {x:260+82*(x*Math.cos(a)-y*Math.sin(a)),y:135+82*(h*Math.sin(e)-z*Math.cos(e)),d:h*Math.cos(e)+z*Math.sin(e)};});
+      const h=tri.reduce((sum,p)=>sum+(p[2]+1)/2,0)/3;
+      return {key,points:points.map(p=>p.x.toFixed(2)+','+p.y.toFixed(2)).join(' '),depth:points.reduce((s,p)=>s+p.d,0)/3,fill:`hsl(${220*(1-h)},70%,50%)`};
+    }).sort((a,b)=>a.depth-b.depth);
+  },[sample,a,e]);
   const path = (row: boolean, index: number) => {
     if (!sample) return '';
     let d = '', pen = false;
@@ -72,6 +81,7 @@ export function DemoSurface({ sample, label, style = 'wireframe' }: { sample?: S
         {axis([1,-1,-1],'x')}{axis([-1,1,-1],'y')}{axis([-1,-1,1],'z')}
         {curvePath && <path data-space-curve="1" d={curvePath} stroke="var(--ui-demo-blue)" strokeWidth="1.8" fill="none"/>}
         {sample?.arrows3d && <g data-space-vectors="1">{sample.arrows3d.map((v,i)=><path key={i} d={arrow(v.from,v.to)} stroke={`hsl(${220*(1-Math.min(1,v.magnitude/(sample.reference||1)))},70%,50%)`} strokeWidth="1.1" fill="none"/>)}</g>}
+        {sample?.triangles && <g data-isosurface="1">{isoFaces.map(face=><polygon key={face.key} points={face.points} fill={style==='shaded'?face.fill:'none'} stroke={style==='shaded'?face.fill:'var(--ui-demo-blue)'} strokeWidth=".5"/>)}</g>}
         {style === 'shaded' && <g data-surface-style="shaded">{faces.map(face=><polygon key={face.key} points={face.points} fill={face.fill} stroke={face.fill} strokeWidth=".45"/>)}</g>}
         {style === 'wireframe' && sample && Array.from({length:sample.size},(_,i)=><g key={i} stroke="var(--ui-demo-blue)" strokeWidth=".85" fill="none">
           <path d={path(true,i)}/><path d={path(false,i)}/>
@@ -79,6 +89,7 @@ export function DemoSurface({ sample, label, style = 'wireframe' }: { sample?: S
       </g>
     </svg>
     {style === 'shaded' && sample && <div className="demo-legend"><svg className="demo-color-scale" viewBox="0 0 120 10" aria-hidden="true">{Array.from({length:60},(_,i)=><rect key={i} x={i*2} width="2" height="10" fill={`hsl(${220*(1-i/59)},70%,50%)`}/>)}</svg><span>z: {sample.z.join(' – ')}</span></div>}
+    {sample?.isoLevel!==undefined && <div className="demo-legend"><span>{i18n('intui.demo.isoLevel','Isosurface level')}: {Number(sample.isoLevel.toPrecision(5))}</span></div>}
     {sample?.reference !== undefined && <div className="demo-legend"><span>|F|: 0 – {sample.reference}</span></div>}
     {sample && <div className="demo-legend"><span>x: {sample.x.join(' – ')}</span><span>y: {sample.y.join(' – ')}</span><span>z: {sample.z.join(' – ')}</span></div>}
     <div className="demo-controls">
