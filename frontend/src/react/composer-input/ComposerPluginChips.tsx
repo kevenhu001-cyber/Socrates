@@ -11,10 +11,7 @@ import { toggleComposerTools } from '../composer/composerTools.store';
 
 /* Web search is picked from the "+" menu and then shown as a removable chip,
    the same affordance chatgpt.com uses. State lives in config/providers.js;
-   setWebSearchOn() broadcasts `socrates:websearchchange`.
-   Desktop only for now: the phone composer's chip row still overlaps the
-   "+" button, so phones keep the active dot in the tools menu. */
-const DESKTOP_COMPOSER_QUERY = '(min-width: 769px)';
+   setWebSearchOn() broadcasts `socrates:websearchchange`. */
 
 /* Chips are shadcn `Badge` / `Button` (secondary): the component owns the
  * box and the skin, the stylesheet keeps the composer grid slot, the phone
@@ -37,18 +34,30 @@ const CHIP_REMOVE_BOX = [
   'rounded-sm p-0 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors duration-150 [&_svg]:size-3.5',
 ].join(' ');
 
-function useWebSearchOn(): boolean {
-  const read = () => isWebSearchOn() && window.matchMedia(DESKTOP_COMPOSER_QUERY).matches;
-  const [on, setOn] = useState(read);
+const MOBILE_COMPOSER_QUERY = '(max-width: 768px)';
+
+function useIsMobileComposer(): boolean {
+  const [mobile, setMobile] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia(MOBILE_COMPOSER_QUERY).matches,
+  );
   useEffect(() => {
-    const sync = () => setOn(read());
-    const media = window.matchMedia(DESKTOP_COMPOSER_QUERY);
+    const mq = window.matchMedia(MOBILE_COMPOSER_QUERY);
+    const sync = () => setMobile(mq.matches);
+    mq.addEventListener('change', sync);
+    sync();
+    return () => mq.removeEventListener('change', sync);
+  }, []);
+  return mobile;
+}
+
+function useWebSearchOn(): boolean {
+  const [on, setOn] = useState(isWebSearchOn);
+  useEffect(() => {
+    const sync = () => setOn(isWebSearchOn());
     document.addEventListener('socrates:websearchchange', sync);
-    media.addEventListener('change', sync);
     sync();
     return () => {
       document.removeEventListener('socrates:websearchchange', sync);
-      media.removeEventListener('change', sync);
     };
   }, []);
   return on;
@@ -84,9 +93,10 @@ function WebSearchChip() {
 
 function ComposerPluginChips({ surface }: { surface: ComposerSurface }) {
   const snapshot = useComposerPluginSelectionSnapshot();
-  const webSearchOn = useWebSearchOn();
+  const isMobile = useIsMobileComposer();
+  const showWebSearchChip = useWebSearchOn() && !isMobile;
   const plugins = snapshot[surface];
-  if (!plugins.length && !webSearchOn) return null;
+  if (!plugins.length && !showWebSearchChip) return null;
 
   const visiblePlugins = plugins.slice(0, 4);
   const hiddenCount = Math.max(0, plugins.length - visiblePlugins.length);
@@ -100,7 +110,7 @@ function ComposerPluginChips({ surface }: { surface: ComposerSurface }) {
       className="composer-plugin-chips"
       aria-label={i18n('composer.selectedPlugins', 'Selected plugins')}
     >
-      {webSearchOn ? <WebSearchChip /> : null}
+      {showWebSearchChip ? <WebSearchChip /> : null}
       {visiblePlugins.map((plugin) => (
         <Badge
           variant="secondary"

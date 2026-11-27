@@ -86,6 +86,10 @@ export function wireCodeBlockHeaders(body: Element | null): void {
     if (pre.previousElementSibling?.matches('.code-block-header')) continue;
     const lang = inferCodeLanguage(code);
     const header = createCodeBlockHeader(lang);
-    (pre.parentNode as ParentNode).insertBefore(header, pre);
+    const wrap = document.createElement('div');
+    wrap.className = 'code-block-wrap';
+    (pre.parentNode as ParentNode).insertBefore(wrap, pre);
+    wrap.appendChild(header);
+    wrap.appendChild(pre);
   }
 }

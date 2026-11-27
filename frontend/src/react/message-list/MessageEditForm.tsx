@@ -63,7 +63,10 @@ export function MessageEditForm({
           if (event.key === 'Escape') {
             event.preventDefault();
             onCancel();
-          } else if (event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !isMobile) {
+          } else if (
+            event.key === 'Enter' &&
+            (event.metaKey || event.ctrlKey || (!event.shiftKey && !isMobile))
+          ) {
             event.preventDefault();
             commit();
           }

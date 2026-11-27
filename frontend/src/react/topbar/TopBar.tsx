@@ -377,7 +377,7 @@ function ModeSwitch({
  * incognito state as the 更多 menu item and is a pressed toggle; inside a
  * conversation the slot belongs to find / share instead.
  */
-function IncognitoAction({ visible }: { visible: boolean }) {
+function IncognitoAction({ visible, touch }: { visible: boolean; touch: boolean }) {
   const on = useIncognito();
   return (
     <TopBarAction
@@ -385,7 +385,7 @@ function IncognitoAction({ visible }: { visible: boolean }) {
       icon="incognito"
       label={t('sidebar.nav.incognito', 'Incognito chat')}
       pressed={on}
-      touch
+      touch={touch}
       visible={visible}
       onPress={() => {
         void toggleIncognito();
@@ -405,7 +405,7 @@ function TopBarRight({
   return (
     <div className="top-bar-right">
       <WebUiTheme>
-        <IncognitoAction visible={phone && !conversationActive && !sharedView} />
+        <IncognitoAction visible={!conversationActive && !sharedView} touch={phone} />
         <TopBarAction
           id="findBtn"
           icon="search"

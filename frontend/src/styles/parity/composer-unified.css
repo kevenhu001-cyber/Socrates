@@ -105,11 +105,46 @@
   gap: var(--ui-step-25);
   min-width: 0;
 }
-#appShell .composer-shell [data-composer-frame][data-layout='inline']::before {
+[data-mode='dark'] #appShell .composer-shell [data-composer-frame][data-layout='inline']::before {
   display: none;
 }
 #appShell .composer-shell [data-composer-frame][data-layout='inline'][data-focused='true'] {
   box-shadow: inset 0 0 0 1px var(--ui-hairline-strong);
+}
+@media (min-width: 769px) {
+  /* ChatGPT-aligned desktop expansion: multiline drafts or active tool/plugin
+     chips lift the editor onto its own top row above the + · trailing rail. */
+  #appShell
+    .composer-shell:is(.composer-multiline, :has(.composer-plugin-chips))
+    [data-composer-frame][data-layout='inline'] {
+    border-radius: var(--ui-radius-composer);
+  }
+  #appShell
+    .composer-shell:is(.composer-multiline, :has(.composer-plugin-chips))
+    [data-composer-slot='inline'] {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'editor editor editor'
+      'tools . trailing';
+    row-gap: var(--ui-step-50);
+  }
+  #appShell
+    .composer-shell:is(.composer-multiline, :has(.composer-plugin-chips))
+    [data-composer-slot='body'] {
+    grid-area: editor;
+    padding: var(--ui-step-50) var(--ui-step-75) var(--ui-step-25);
+  }
+  #appShell
+    .composer-shell:is(.composer-multiline, :has(.composer-plugin-chips))
+    [data-composer-slot='inline']
+    > [data-composer-control='tools'] {
+    grid-area: tools;
+  }
+  #appShell
+    .composer-shell:is(.composer-multiline, :has(.composer-plugin-chips))
+    [data-composer-slot='trailing'] {
+    grid-area: trailing;
+  }
 }
 #appShell .composer-shell .composer-editor-root {
   display: block;
@@ -273,8 +308,18 @@
   height: 14px;
 }
 
-/* Web-search chip: a shadcn secondary Button. The globe turns into × on
-   hover = "click to remove"; that swap is the only thing left here. */
+/* Web-search chip: ChatGPT-style blue active pill; the globe swaps to × on
+   hover/focus to signal click-to-remove. */
+#appShell .composer-tool-chip[data-tool='webSearch'] {
+  color: var(--ui-info);
+  background: color-mix(in srgb, var(--ui-info) 12%, transparent);
+  border-color: color-mix(in srgb, var(--ui-info) 28%, transparent);
+}
+#appShell .composer-tool-chip[data-tool='webSearch']:hover,
+#appShell .composer-tool-chip[data-tool='webSearch']:focus-visible {
+  background: color-mix(in srgb, var(--ui-info) 18%, transparent);
+  border-color: color-mix(in srgb, var(--ui-info) 40%, transparent);
+}
 #appShell .composer-tool-chip-icon {
   display: inline-grid;
   place-items: center;

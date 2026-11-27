@@ -65,7 +65,13 @@ function useCreationItems(name: CreationName) {
   }, [load]);
 
   async function deleteCreation(item: CreationItem) {
-    if (typeof window !== 'undefined' && !window.confirm(currentCopy().confirmDelete)) return;
+    const copy = currentCopy();
+    const confirmed = await getLegacyActions().confirm.showConfirm(
+      copy.delete,
+      copy.confirmDelete,
+      true,
+    );
+    if (!confirmed) return;
     try {
       await api(`/api/creations/items/${name}/${item.id}`, { method: 'DELETE' });
       await load();

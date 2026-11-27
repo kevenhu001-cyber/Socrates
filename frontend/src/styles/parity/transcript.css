@@ -290,7 +290,7 @@
   #appShell
     #msgList
     .msg-body
-    :where(p, ul, ol, pre, table, blockquote, .code-block-header):first-child,
+    :where(p, ul, ol, pre, table, blockquote, .code-block-header, .code-block-wrap):first-child,
   #appShell #msgList .msg-body > :first-child > :where(h1, h2, h3, h4, p):first-child {
     margin-top: 0;
   }
@@ -473,8 +473,15 @@
     box-shadow: var(--ui-focus-shadow);
   }
 
-  /* ── Code blocks: one rounded card, label + copy in a quiet header ───── */
+  /* ── Code blocks: one rounded card, sticky label + copy header ───────── */
+  #appShell #msgList .msg-body .code-block-wrap {
+    position: relative;
+    margin: 0 0 16px;
+  }
   #appShell #msgList .msg-body .code-block-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
     display: flex;
     align-items: center;
     gap: 4px;
@@ -518,6 +525,7 @@
     line-height: 1.5;
   }
   #appShell #msgList .msg-body .code-block-header + pre {
+    margin-bottom: 0;
     padding-top: 14px;
     border-top: 0;
     border-radius: 0 0 var(--ui-radius-lg) var(--ui-radius-lg);
@@ -828,9 +836,9 @@ html[data-mode='dark'] #appShell .msg-body .hljs :is(.hljs-comment, .hljs-quote)
   flex-direction: column;
   width: 100%;
   overflow: hidden;
-  border: 1px solid var(--ui-accent-action);
+  border: 1px solid var(--ui-border-strong);
   border-radius: var(--ui-radius-bubble);
-  background: var(--ui-bg-page);
+  background: var(--ui-bg-bubble);
   box-sizing: border-box;
 }
 #appShell .msg-edit-area {

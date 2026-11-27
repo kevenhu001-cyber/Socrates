@@ -7,6 +7,7 @@ interface FindInSessionControlsProps {
   inputRef: Ref<HTMLInputElement>;
   value: string;
   countLabel: string;
+  hasMatches: boolean;
   onChange: ChangeEventHandler<HTMLInputElement>;
   onKeyDown: KeyboardEventHandler<HTMLInputElement>;
   onPrevious: () => void;
@@ -18,6 +19,7 @@ export function FindInSessionControls({
   inputRef,
   value,
   countLabel,
+  hasMatches,
   onChange,
   onKeyDown,
   onPrevious,
@@ -54,7 +56,7 @@ export function FindInSessionControls({
         onChange={onChange}
         onKeyDown={onKeyDown}
       />
-      <span className="find-count" id="findCount" aria-live="polite">
+      <span className="find-count tabular-nums" id="findCount" aria-live="polite">
         {countLabel}
       </span>
       <ShadcnButton
@@ -62,6 +64,7 @@ export function FindInSessionControls({
         size="icon-xs"
         className="find-nav-btn"
         type="button"
+        disabled={!hasMatches}
         onClick={onPrevious}
         title="Previous match"
         aria-label="Previous match"
@@ -85,6 +88,7 @@ export function FindInSessionControls({
         size="icon-xs"
         className="find-nav-btn"
         type="button"
+        disabled={!hasMatches}
         onClick={onNext}
         title="Next match"
         aria-label="Next match"

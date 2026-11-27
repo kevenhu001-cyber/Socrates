@@ -1,4 +1,4 @@
-import { memo, useRef, useState, type RefObject } from 'react';
+import { memo, useRef, useState, useSyncExternalStore, type RefObject } from 'react';
 
 import type { ChatMessage } from '../types/domain';
 import { deriveTurnPresentationState } from '../../legacy/turnActivityModel';
@@ -186,7 +186,29 @@ function userEditHandler(
   return role === 'user' ? () => setEditing(true) : undefined;
 }
 
-/** Derive visibility once so the row and its toolbar share the same gates. */
+const HOVER_POINTER_QUERY = '(hover: hover) and (pointer: fine)';
+
+function subscribeHoverCapable(listener: () => void): () => void {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return () => {};
+  const media = window.matchMedia(HOVER_POINTER_QUERY);
+  media.addEventListener('change', listener);
+  return () => media.removeEventListener('change', listener);
+}
+
+function readHoverCapable(): boolean {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
+  return window.matchMedia(HOVER_POINTER_QUERY).matches;
+}
+
+function useHoverCapable(): boolean {
+  return useSyncExternalStore(subscribeHoverCapable, readHoverCapable, () => false);
+}
+
+/** Derive visibility once so the row and its toolbar share the same gates.
+ * Desktop pointer devices align with ChatGPT: every settled/user message
+ * mounts its inline `.msg-toolbar` (revealed on hover/focus-within via CSS)
+ * while retaining the right-click context menu on historical rows. Touch
+ * devices keep only the latest row's inline bar to avoid visual clutter. */
 function messageRowVisibility(
   role: string,
   showSettledToolbar: boolean,
@@ -194,13 +216,15 @@ function messageRowVisibility(
   readOnly: boolean,
   editing: boolean,
   isLatestOfRole: boolean,
+  isDesktopHover: boolean,
 ) {
   const showContextMenu = !readOnly && !editing && !isLatestOfRole && !isLive;
   return {
     showContextMenu,
-    showHistoryToolbar: showContextMenu,
+    showHistoryToolbar: showContextMenu && !isDesktopHover,
     showToolbar:
-      isLatestOfRole && shouldShowToolbar(role, showSettledToolbar, isLive, readOnly, editing),
+      (isLatestOfRole || isDesktopHover) &&
+      shouldShowToolbar(role, showSettledToolbar, isLive, readOnly, editing),
     tabIndex: !readOnly && !isLatestOfRole ? 0 : undefined,
   };
 }
@@ -227,6 +251,7 @@ function MessageItemBase({
      toolbar and cursor transition without replacing the message body. */
   const declarative = usesDeclarativeBody(role);
   const onEdit = userEditHandler(role, setEditing);
+  const isDesktopHover = useHoverCapable();
   const visibility = messageRowVisibility(
     role,
     presentation.showToolbar,
@@ -234,6 +259,7 @@ function MessageItemBase({
     readOnly,
     editing,
     Boolean(isLatestOfRole),
+    isDesktopHover,
   );
   const contextMenu = useMessageContextMenu(visibility.showContextMenu);
 
@@ -283,6 +309,7 @@ function MessageItemBase({
         <MessageToolbar
           message={message}
           role={toolbarRole(role)}
+          isLatest={visibility.showToolbar ? undefined : false}
           onEdit={onEdit}
           contextMenu={contextMenu}
         />
@@ -292,7 +319,7 @@ function MessageItemBase({
           message={message}
           role={toolbarRole(role)}
           pending={isLive}
-          isLatest={isLatest}
+          isLatest={Boolean(isLatestOfRole)}
           onEdit={onEdit}
         />
       ) : null}

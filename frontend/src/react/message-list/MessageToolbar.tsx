@@ -295,6 +295,7 @@ function MessageToolbar({
   role,
   onEdit,
   pending = false,
+  isLatest,
   contextMenu,
 }: MessageToolbarProps): React.ReactElement | null {
   const legacyCallbacks = useMessageToolbarCallbacks(message);
@@ -388,8 +389,9 @@ function MessageToolbar({
       data-role={role}
       data-message-id={id}
       data-compact={compact ? 'true' : undefined}
+      style={!contextMenu && role === 'assistant' && isLatest ? { opacity: 1 } : undefined}
     >
-      {!contextMenu && hasBranches && callbacks.onSwitchBranch && (
+      {hasBranches && callbacks.onSwitchBranch && (!contextMenu || isLatest === false) && (
         <MessageBranchSwitcher
           currentIndex={branchInfo.currentIndex}
           total={branchInfo.variants.length}
