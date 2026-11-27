@@ -20,16 +20,6 @@ import { webSearchOn, extensiveThinkingOn } from '../../config/providers.ts';
 import { getCurrentUser as getAppCurrentUser } from '../../app/lifecycle/index.ts';
 import { getActiveTemplate } from '../../chat/templateSystemPrompt.ts';
 
-/** Standalone globals retained by the legacy shell. Keep their
- * compatibility shapes local to this boundary instead of bypassing types. */
-interface StandaloneGlobals {
-  getConnectorIconMarkup?: (id: string) => string;
-}
-
-function standaloneWindow(): Window & StandaloneGlobals {
-  return window as Window & StandaloneGlobals;
-}
-
 /**
  * Lazy singleton — resolves window.__socratesLegacy once and caches the
  * reference. The bridge is populated during app/legacyBridge.ts evaluation
@@ -96,17 +86,6 @@ export function resetBridgeCache(): void {
 }
 
 // ─── Typed accessors for lazily-published legacy globals ─────────────────────
-
-/**
- * Connector icon markup helper. Published on window by the legacy layer
- * because connector-icons.ts is a ~40 KB SVG module the
- * app loads lazily; resolving it through here keeps the direct window read
- * in this file instead of scattering it across React components.
- */
-export function getConnectorIconMarkupFn(): ((id: string) => string) | null {
-  const fn = standaloneWindow().getConnectorIconMarkup;
-  return typeof fn === 'function' ? fn : null;
-}
 
 // ─── Module-owned composer preferences ──────────────────────────────────────
 // Keep existing callers while reading the canonical module state.

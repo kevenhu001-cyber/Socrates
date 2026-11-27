@@ -40,7 +40,8 @@ function useComposerToolsPositionEffect(
         positionComposerToolsMenu(menu, trigger, mode);
       });
     };
-    schedulePosition();
+    // Measure before the first paint so the menu never flashes at the origin.
+    positionComposerToolsMenu(menu, trigger, mode);
 
     const observer =
       typeof ResizeObserver === 'function' ? new ResizeObserver(schedulePosition) : null;
@@ -163,7 +164,6 @@ function ComposerToolsMenu() {
         aria-hidden={!snapshot.isOpen}
         data-mode={snapshot.mode ?? undefined}
       >
-        <div className="composer-tools-sheet-handle" aria-hidden="true" />
         <ComposerToolMenuItems
           activeKey={activeKey}
           onPick={pick}

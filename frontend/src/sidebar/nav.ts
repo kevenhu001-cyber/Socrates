@@ -7,6 +7,7 @@ import { activateMainView } from '../legacy/mainViewController.ts';
 import { loadSession } from '../session/loader.ts';
 import { workspaceForPath, replaceRoute } from '../app/router.ts';
 import { openNav } from './navigation.service.ts';
+import { ensureConnectorIcons, connectorIconWithFallback } from './connectorIconLoader.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { refreshProjectPlugin } from '../react/pages/workspace/workspace.service.ts';
 import { apiFetch } from '../util/api/index.ts';
@@ -43,32 +44,10 @@ const workspaceCache: { connectors: WorkspaceConnector[] } = { connectors: [] };
 const CONNECTOR_RETURN_CONTEXT_KEY = 'socrates-connector-return-v1';
 const CONNECTOR_RETURN_CONTEXT_TTL = 10 * 60 * 1000;
 
-function esc(value: string | null) {
-  return String(value == null ? '' : value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
 function api(path: string, options?: undefined) {
   return apiFetch(path, options);
 }
 
-/* connector brand marks used to load from
-   icon.horse / simpleicons / raw.githubusercontent.com, which can hang
-   on mobile networks (especially in CN) and stall page switches. All
-   connectors now render bundled local SVG marks (see
-   src/connector-icons.ts) or a monogram fallback. Unknown ids still
-   fall back to a two-letter monogram so new connectors degrade
-   gracefully.
-   the icon pack inlines ~110 raw SVGs (~295KB)
-   that no first-paint surface needs; it lazy-loads on first icon
-   request (slash palette / connectors / workspace rows) and the
-   hydrate pass swaps pending monograms for real marks. */
-type ConnectorIconModule = typeof import('../connector-icons.ts');
-let _ciMod: ConnectorIconModule | null = null;
-let _ciReady: Promise<ConnectorIconModule> | null = null;
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
@@ -80,72 +59,6 @@ function isWorkspaceConnector(value: unknown): value is WorkspaceConnector {
     (value.auth === undefined || typeof value.auth === 'string')
   );
 }
-export function ensureConnectorIcons() {
-  if (!_ciReady) {
-    _ciReady = import('../connector-icons.ts').then(function (m) {
-      _ciMod = m;
-      hydrateConnectorIcons();
-      try {
-        requestAnimationFrame(function () {
-          hydrateConnectorIcons();
-        });
-      } catch (e) {
-        reportSwallow(e, 'sidebar/nav.ensureConnectorIcons.deferHydrate');
-      }
-      return m;
-    });
-    _ciReady.catch(function (err) {
-      _ciReady = null;
-      console.error('[icons] connector icon pack failed to load', err);
-    });
-  }
-  return _ciReady;
-}
-
-function _connectorMonogram(provider: unknown) {
-  return (
-    '<span class="connector-logo-fallback" data-cicon="' +
-    esc(String(provider || '?')) +
-    '" style="display:flex" aria-hidden="true">' +
-    esc(
-      String(provider || '?')
-        .slice(0, 2)
-        .toUpperCase(),
-    ) +
-    '</span>'
-  );
-}
-
-export function connectorIconWithFallback(provider: unknown): string {
-  const markup = _ciMod && _ciMod.getConnectorIconMarkup(provider);
-  if (markup) return markup;
-  if (!_ciMod) ensureConnectorIcons();
-  return _connectorMonogram(provider);
-}
-
-/* Swap pending monogram placeholders for real SVG marks once the icon
-   pack resolves. Fallback spans carry data-cicon so the pass is
-   idempotent and safe to re-run (also covers React-committed chips). */
-function hydrateConnectorIcons(root?: ParentNode) {
-  if (!_ciMod) return;
-  const scope = root && typeof root.querySelectorAll === 'function' ? root : document;
-  scope
-    .querySelectorAll<HTMLElement>('.connector-logo-fallback[data-cicon]')
-    .forEach(function (el) {
-      const markup = _ciMod!.getConnectorIconMarkup(el.dataset.cicon);
-      if (markup) el.outerHTML = markup;
-    });
-}
-
-/* React composer/plugin surfaces reuse the same local brand marks as the
-   legacy connector panel. Keep the adapter on window so the React module
-   does not duplicate Vite's raw SVG imports or introduce a second icon map. */
-if (typeof window !== 'undefined') {
-  (
-    window as unknown as { getConnectorIconMarkup?: typeof connectorIconWithFallback }
-  ).getConnectorIconMarkup = connectorIconWithFallback;
-}
-
 /* Connected-app slash commands. Each connector that has a matching
    server-side function-calling tool (see server/src/services/
    connectorTools.js) gets a slash entry so the user can invoke it

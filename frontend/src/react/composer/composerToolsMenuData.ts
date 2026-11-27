@@ -1,4 +1,3 @@
-import { interfaceIcon } from '../../legacy/icons/interfaceIcons';
 import { t as _t } from '../../ui/legacyI18n.ts';
 import { registry } from '../../extensions/registry';
 import { extensiveThinkingExtension } from '../../extensions/modules/extensiveThinking';
@@ -6,27 +5,7 @@ import type { ExtensionDefinition } from '../../extensions/types';
 
 export type MenuItemSpec = ExtensionDefinition;
 
-export const MOBILE_MENU_ITEMS: ReadonlyArray<{
-  action: 'camera' | 'photos';
-  labelKey: string;
-  label: string;
-  icon: string;
-}> = [
-  {
-    action: 'camera',
-    labelKey: 'composer.tools.camera',
-    label: 'Camera',
-    icon: interfaceIcon('camera', 18),
-  },
-  {
-    action: 'photos',
-    labelKey: 'composer.tools.photos',
-    label: 'Photos',
-    icon: interfaceIcon('image', 18),
-  },
-];
-
-export const MOBILE_TILES: ReadonlyArray<{
+export const MOBILE_MEDIA_ACTIONS: ReadonlyArray<{
   action: 'camera' | 'photos' | 'upload' | 'wechatFiles';
   labelKey: string;
   label: string;

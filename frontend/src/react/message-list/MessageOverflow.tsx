@@ -1,13 +1,12 @@
-import { Icon } from '../../legacy/Icon';
-import { INTERFACE_ICON_STROKE } from '../../legacy/icons/interfaceIcons';
-import { useRef, useState, useSyncExternalStore, type MouseEvent, type ReactNode } from 'react';
+import { Icon, type IconProps } from '../../legacy/Icon';
+import { useRef, useState, useSyncExternalStore, type MouseEvent } from 'react';
 import { i18n } from '../../ui/legacyI18n.ts';
 import { DeferredMenu } from '../menu/DeferredMenu';
 import { ToolButton } from './ToolButton';
 
 export interface OverflowAction {
   label: string;
-  icon: ReactNode;
+  icon: IconProps['name'];
   onClick?: (event: MouseEvent<HTMLButtonElement>) => void;
   mobileOnly?: boolean;
 }
@@ -84,17 +83,7 @@ export function MessageOverflow({
                 action.onClick?.(event);
               }}
             >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={INTERFACE_ICON_STROKE}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                {action.icon}
-              </svg>
+              <Icon name={action.icon} size={20} />
               {action.label}
             </FoundationMenuItem>
           ))

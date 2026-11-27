@@ -80,6 +80,10 @@ test('mobile conversation home matches the compact dark reference layout', async
     return {
       left: rect('#sidebarOpenBtn'),
       composer: rect('#composerInputWrap'),
+      frame: rect('[data-composer-frame]'),
+      editorSlot: rect('[data-composer-slot="body"]'),
+      tool: rect('#composerToolsBtn'),
+      primary: rect('#composerPrimaryBtn'),
       topicFontSize: parseFloat(
         getComputedStyle(document.querySelector('#composerRoot .rich-composer-editor')).fontSize,
       ),
@@ -98,6 +102,10 @@ test('mobile conversation home matches the compact dark reference layout', async
   expect(geometry.composer?.width).toBeGreaterThanOrEqual(320);
   /* The current phone target is a stable two-row frame, including idle. */
   expect(geometry.composer?.height).toBe(86);
+  expect(geometry.frame?.height).toBe(86);
+  expect(geometry.frame?.y).toBe(geometry.composer?.y);
+  expect(geometry.editorSlot?.bottom).toBeLessThanOrEqual(geometry.tool?.y ?? 0);
+  expect(geometry.tool?.y).toBe(geometry.primary?.y);
   expect(geometry.composer?.bottom).toBeLessThanOrEqual((geometry.viewportHeight ?? 844) - 16);
   /* The empty-state capsule pins to the bottom action band: its foot rests
      on the safe-area inset above the viewport bottom, not in the old

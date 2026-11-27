@@ -269,6 +269,18 @@ export default defineConfig({
       '@socrates/core/demonstration': fileURLToPath(
         new URL('../packages/core/src/demonstration.js', import.meta.url),
       ),
+      '@socrates/core/learn': fileURLToPath(
+        new URL('../packages/core/src/learn/index.ts', import.meta.url),
+      ),
+      '@socrates/core/thinkModel': fileURLToPath(
+        new URL('../packages/core/src/thinkModel.ts', import.meta.url),
+      ),
+      '@socrates/core/streamPlayer': fileURLToPath(
+        new URL('../packages/core/src/streamPlayer.ts', import.meta.url),
+      ),
+      '@socrates/core/examModel': fileURLToPath(
+        new URL('../packages/core/src/examModel.ts', import.meta.url),
+      ),
       '@socrates/core': fileURLToPath(new URL('../packages/core/src/index.ts', import.meta.url)),
       /* RN-1 — shared React Native modules render through react-native-web.
          Only the narrow entries are aliased, so the web shell never pulls in

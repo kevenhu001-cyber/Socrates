@@ -7,7 +7,7 @@ import {
   useSyncExternalStore,
 } from 'react';
 import { NativeControl } from '../ui/NativeControl';
-import { ComposerFrame } from '@socrates/ui/composer';
+import { WebComposerFrame } from './WebComposerFrame';
 import { WebUiTheme } from '../rn/WebUiTheme';
 import { i18n } from '../../ui/legacyI18n.ts';
 import { ComposerAttachmentChips } from '../attachments/AttachmentChipsRow';
@@ -343,19 +343,19 @@ export function ComposerShell({
 
   return (
     <>
-      {/* RN-7: the question box is the shared RN frame (packages/ui/src/composer).
-          The web supplies two slots — the attachment row and the rich editor
-          (paste, shortcuts, IME, tokens unchanged); the frame draws the rest. */}
+      {/* One Web layout owns both rows; the editor and controls never remount
+          on a viewport change. Shared controls retain their real behavior. */}
       <WebUiTheme>
-        <ComposerFrame
+        <WebComposerFrame
           focused={focused}
           expanded={expanded}
           compact={phone}
-          layout="inline"
-          surface="var(--ui-bg-ask)"
           topVisible={attachments.length > 0}
           top={
-            <div className="attachment-chips hidden" id="composerAttachmentChips">
+            <div
+              className={attachments.length ? 'attachment-chips' : 'attachment-chips hidden'}
+              id="composerAttachmentChips"
+            >
               <ComposerAttachmentChips />
             </div>
           }

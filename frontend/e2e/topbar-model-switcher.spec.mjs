@@ -176,3 +176,35 @@ test('phone model menu stays above the composer after a viewport resize', async 
       .toBe(true);
   }
 });
+
+test('model menu uses canonical icons, visible divider and selected keyboard focus', async ({ page }) => {
+  const trigger = page.locator('#topModelSwitcher');
+  await trigger.focus();
+  await trigger.press('Enter');
+  const pop = page.locator('.chat-config-pop');
+  const active = pop.locator('[role="option"][aria-selected="true"]');
+  await expect(active).toBeFocused();
+  const geometry = await pop.evaluate((menu) => {
+    const selected = menu.querySelector('[role="option"][aria-selected="true"]');
+    const divider = menu.querySelector('.chat-config-divider');
+    const glyph = menu.querySelector('.chat-config-value svg');
+    return {
+      radius: getComputedStyle(menu).borderTopLeftRadius,
+      divider: divider?.getBoundingClientRect().height,
+      selectedWidth: selected?.getBoundingClientRect().width,
+      menuWidth: menu.getBoundingClientRect().width,
+      officialChevron: glyph?.getAttribute('data-icon-source'),
+    };
+  });
+  expect(geometry.radius).toBe('16px');
+  expect(geometry.divider).toBe(1);
+  expect(geometry.selectedWidth).toBeGreaterThan((geometry.menuWidth ?? 0) - 24);
+  expect(geometry.officialChevron).toBe('openai-apps-sdk');
+  await pop.locator('.chat-config-row:not([role="option"])').first().click();
+  await expect(pop.locator('.chat-config-back')).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(active).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(pop).toHaveCount(0);
+  await expect(trigger).toBeFocused();
+});

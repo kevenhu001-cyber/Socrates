@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import { Icon } from '../../legacy/Icon';
 import { NativeControl as ShadcnNativeControl } from '../ui/NativeControl';
 import { Button as UiButton } from '../ui/Button';
 import type { ReasoningEffort, ResponseSpeed } from '../../config/chatPreferences';
@@ -13,38 +14,6 @@ export function effortLabel(value: ReasoningEffort): string {
 
 export function speedLabel(value: ResponseSpeed): string {
   return i18n(`chatconfig.speed.${value}`, value === 'fast' ? 'Fast' : 'Standard');
-}
-
-function CheckIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.4"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="m5 12 4 4L19 6" />
-    </svg>
-  );
-}
-
-function ChevronIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="m9 18 6-6-6-6" />
-    </svg>
-  );
 }
 
 function providerName(provider: ChatProviderOption): string {
@@ -85,7 +54,11 @@ export function ModelPickerPanel({
               className="chat-config-row press-tint"
               role="option"
               aria-selected={activeId === provider.id}
-              data-initial-focus={index === 0 ? 'true' : undefined}
+              data-initial-focus={
+                (activeId === provider.id || (index === 0 && !providers.some((p) => p.id === activeId)))
+                  ? 'true'
+                  : undefined
+              }
               onClick={() => onPickModel(provider.id)}
             >
               <span>
@@ -94,7 +67,7 @@ export function ModelPickerPanel({
                   <small>{provider.model}</small>
                 ) : null}
               </span>
-              {activeId === provider.id ? <CheckIcon /> : null}
+              {activeId === provider.id ? <Icon name="check" size={18} /> : null}
             </UiButton>
           ))
         ) : (
@@ -108,7 +81,7 @@ export function ModelPickerPanel({
         </span>
         <span className="chat-config-value">
           {effortLabel(effort)}
-          <ChevronIcon />
+          <Icon name="chevronRight" size={16} />
         </span>
       </UiButton>
       <UiButton type="button" className="chat-config-row press-tint" onClick={onOpenSpeed}>
@@ -117,7 +90,7 @@ export function ModelPickerPanel({
         </span>
         <span className="chat-config-value">
           {speedLabel(speed)}
-          <ChevronIcon />
+          <Icon name="chevronRight" size={16} />
         </span>
       </UiButton>
       <UiButton type="button" className="chat-config-row press-tint" onClick={onOpenSettings}>
@@ -154,16 +127,14 @@ export function EffortPanel({
     <>
       <UiButton
         type="button"
-        className="chat-config-row press-tint"
+        className="chat-config-row chat-config-back press-tint"
         data-initial-focus="true"
         aria-label={`${i18n('chatconfig.backToModels', 'Back to model list')} · ${effortLabel(effort)}`}
         onClick={onBack}
       >
-        <span>
+        <Icon name="chevronLeft" size={18} />
+        <span className="chat-config-back-label">
           <strong>{effortLabel(effort)}</strong>
-        </span>
-        <span className="chat-config-value">
-          <ChevronIcon />
         </span>
       </UiButton>
       <UiButton
@@ -181,7 +152,7 @@ export function EffortPanel({
               : i18n('chatconfig.instantUnsupported', 'This model always reasons')}
           </small>
         </span>
-        {effort === 'instant' ? <CheckIcon /> : null}
+        {effort === 'instant' ? <Icon name="check" size={18} /> : null}
       </UiButton>
       <div
         className="chat-config-slider"
@@ -237,7 +208,7 @@ export function SpeedPanel({ effort, speed, onCommit }: SpeedPanelProps) {
             {i18n('chatconfig.speed.standardHint', 'Works with every configured model')}
           </small>
         </span>
-        {speed === 'standard' ? <CheckIcon /> : null}
+        {speed === 'standard' ? <Icon name="check" size={18} /> : null}
       </UiButton>
       <UiButton
         type="button"
@@ -255,7 +226,7 @@ export function SpeedPanel({ effort, speed, onCommit }: SpeedPanelProps) {
             )}
           </small>
         </span>
-        {speed === 'fast' ? <CheckIcon /> : null}
+        {speed === 'fast' ? <Icon name="check" size={18} /> : null}
       </UiButton>
     </div>
   );

@@ -6,7 +6,6 @@ import { useComposerSurface } from './useComposerSurface';
 import { useComposerShape, useComposerShapeObserver } from './useComposerShape';
 import { useRichComposerEditor } from './useRichComposerEditor';
 import { useComposerController } from './useComposerController';
-import { useComposerPresentation } from './useComposerPresentation';
 import { ComposerPluginChips, useWebSearchOn } from './ComposerPluginChips';
 import { ComposerQueueBanner } from './ComposerQueueBanner';
 import { FormattingToolbar } from './FormattingToolbar';
@@ -62,7 +61,10 @@ export function RichComposer({
     shape.syncComposerShape,
   );
   useComposerController(editor, surface);
-  useComposerPresentation(editor, activePlaceholder, webSearchOn, surface);
+  // TipTap initializes attributes once; keep the accessible name localized.
+  useEffect(() => {
+    if (editor) editor.view.dom.setAttribute('aria-label', activePlaceholder);
+  }, [editor, activePlaceholder]);
 
   if (!editor) return null;
   return (

@@ -89,6 +89,22 @@
     "./demonstrationAsync": {
       "types": "./src/demonstrationAsync.d.ts",
       "import": "./src/demonstrationAsync.js"
+    },
+    "./learn": {
+      "types": "./src/learn/index.ts",
+      "import": "./src/learn/index.ts"
+    },
+    "./thinkModel": {
+      "types": "./src/thinkModel.ts",
+      "import": "./src/thinkModel.ts"
+    },
+    "./streamPlayer": {
+      "types": "./src/streamPlayer.ts",
+      "import": "./src/streamPlayer.ts"
+    },
+    "./examModel": {
+      "types": "./src/examModel.ts",
+      "import": "./src/examModel.ts"
     }
   }
 }

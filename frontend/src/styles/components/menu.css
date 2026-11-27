@@ -1,10 +1,4 @@
 /* Compact action menu used by the + button in both rounded composers. */
-.composer-tools-menu {
-  position: fixed;
-  z-index: calc(var(--ui-z-sheet) - 2);
-  animation: composer-tools-enter 0.22s var(--ease-out);
-  transform-origin: left bottom;
-}
 .composer-tools-menu.hidden {
   display: none;
 }
@@ -62,90 +56,7 @@
   line-height: 1.3;
 }
 
-@keyframes composer-tools-enter {
-  from {
-    opacity: 0;
-    transform: translateY(7px) scale(0.985);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-@media (max-width: 768px) {
-  /* Bottom sheet: the anchored popover read poorly on phones (a transparent
-    list floating over the page). Pin the menu to the bottom edge with a
-    solid surface, grabber, and safe-area padding. JS positions the desktop
-    popover via inline left/top, so those are overridden here. */
-  .composer-tools-menu {
-    left: 0;
-    right: 0;
-    top: auto;
-    bottom: 0;
-    width: 100%;
-    max-width: none;
-    max-height: min(72vh, calc(100vh - 72px));
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    border-top: 1px solid color-mix(in srgb, var(--ui-border-default) 35%, transparent);
-    animation: composer-tools-sheet-in 0.32s cubic-bezier(0.22, 1, 0.36, 1);
-    transform-origin: center bottom;
-  }
-  /* Grabber affordance at the top of the sheet. */
-  .composer-tools-menu::before {
-    content: '';
-    display: block;
-    width: 36px;
-    height: 4px;
-    margin: 4px auto 10px;
-    border-radius: var(--ui-radius-pill);
-    background: color-mix(in srgb, var(--ui-border-default) 90%, transparent);
-  }
-  .composer-tools-item {
-    min-height: 52px;
-    padding: 10px 14px;
-    border-radius: var(--ui-radius-md);
-    gap: 16px;
-    font-size: calc(var(--ui-foundation-font-size-lg) * var(--app-font-scale, 1));
-    font-weight: var(--ui-font-weight-medium);
-  }
-  .composer-tools-item + .composer-tools-item {
-    margin-top: 2px;
-  }
-  .composer-tools-icon svg {
-    width: 24px;
-    height: 24px;
-  }
-  .composer-tools-menu .composer-tools-copy {
-    line-height: 1.2;
-  }
-  /* Scrim behind the sheet; the React menu controller toggles the body class
-    and dismisses the menu when a click lands outside the menu or trigger. */
-  body.composer-tools-open::after {
-    animation: composer-tools-scrim-in 0.25s ease;
-  }
-}
-@keyframes composer-tools-sheet-in {
-  from {
-    opacity: 0;
-    transform: translateY(28px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-@keyframes composer-tools-scrim-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
 
-.composer-tools-menu,
-.chat-config-pop,
 .sidebar-more-popover,
 .display-prefs-popover,
 .tag-editor-popover {
@@ -200,9 +111,10 @@
 }
 
 body #composerToolsMenu.composer-tools-menu {
+  box-sizing: border-box;
   position: fixed;
   z-index: var(--ui-z-popover);
-  width: 260px;
+  width: 240px;
   min-width: 0;
   max-width: calc(100vw - 24px);
   max-height: min(75dvh, 520px);
@@ -231,7 +143,6 @@ body #composerToolsMenu.composer-tools-menu {
 
 /* Chat-Demo aligned menu options */
 #composerToolsMenu .composer-tools-item,
-#composerToolsMenu .composer-tools-mobile-item,
 #composerToolsMenu .composer-tools-plugin-item {
   width: 100%;
   min-height: var(--ui-control-md);
@@ -253,8 +164,6 @@ body #composerToolsMenu.composer-tools-menu {
 
 #composerToolsMenu .composer-tools-item:hover,
 #composerToolsMenu .composer-tools-item:focus-visible,
-#composerToolsMenu .composer-tools-mobile-item:hover,
-#composerToolsMenu .composer-tools-mobile-item:focus-visible,
 #composerToolsMenu .composer-tools-plugin-item:hover,
 #composerToolsMenu .composer-tools-plugin-item:focus-visible {
   background: var(--ui-bg-hover);
@@ -340,15 +249,21 @@ body #composerToolsMenu.composer-tools-menu {
   display: flex;
   flex-direction: column;
   overflow-y: auto;
-  width: min(254px, calc(100vw - 32px));
-  max-height: min(60dvh, 420px);
+  box-sizing: border-box;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
   padding: var(--ui-menu-gutter);
-  transform-origin: top left;
   background: var(--popover);
-  border-radius: var(--ui-radius-popover);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-lg);
+  box-shadow: var(--ui-shadow-menu);
+  color: var(--ui-text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--ui-text-ui);
+  line-height: var(--ui-text-ui-line);
 }
 .chat-config-pop button {
-  border-radius: var(--ui-radius-row);
+  border-radius: var(--ui-radius-sidebar-row);
 }
 .chat-config-pop input[type='range'] {
   accent-color: var(--ui-link);
@@ -368,7 +283,10 @@ body #composerToolsMenu.composer-tools-menu {
   align-items: center;
   justify-content: space-between;
   text-align: left;
+  flex-shrink: 0;
   min-height: 40px;
+  height: auto;
+  white-space: normal;
   padding: var(--ui-menu-item-padding);
   gap: var(--ui-menu-item-gap);
   font-size: var(--ui-font-size-sm);
@@ -399,30 +317,45 @@ body #composerToolsMenu.composer-tools-menu {
 }
 .chat-config-row strong {
   font-weight: var(--ui-font-weight-regular);
+  font-size: var(--ui-font-size-sm);
+}
+.chat-config-row :is(strong, small) {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-align: start;
+}
+.chat-config-row > svg,
+.chat-config-value svg {
+  flex-shrink: 0;
+}
+.chat-config-row.chat-config-back {
+  justify-content: flex-start;
+}
+.chat-config-back-label {
+  min-width: 0;
 }
 .chat-config-value {
   display: inline-flex;
   align-items: center;
   gap: 2px;
   margin-inline-start: auto;
+  flex-shrink: 0;
 }
 .chat-config-divider {
+  flex: 0 0 1px;
   margin: 3px 8px;
   background: var(--ui-border-default);
-}
-.chat-config-row strong {
-  font-size: var(--ui-font-size-sm);
 }
 .chat-config-row small {
   font-size: var(--ui-font-size-xxs);
 }
 .chat-config-row > svg {
-  width: 17px;
-  height: 17px;
+  width: 18px;
+  height: 18px;
 }
 .chat-config-value svg {
-  width: 15px;
-  height: 15px;
+  width: 16px;
+  height: 16px;
 }
 .chat-config-empty {
   padding: 16px 12px;
@@ -453,20 +386,12 @@ body #composerToolsMenu.composer-tools-menu {
   transition: opacity var(--ui-duration-fast) var(--ui-ease-out);
 }
 
-.composer-tools-sheet-handle {
-  display: none;
-}
-
 @media (min-width: 769px) {
   #composerToolsMenu .composer-tools-desktop-items {
     display: block;
   }
   #composerToolsMenu .composer-tools-mobile-items {
     display: none;
-  }
-  body #composerToolsMenu.composer-tools-menu {
-    width: 240px;
-    min-width: 0;
   }
 }
 
@@ -484,119 +409,36 @@ body #composerToolsMenu.composer-tools-menu {
   .composer-tools-plugins {
     display: none;
   }
-
-  .composer-tools-sheet-handle {
-    display: block;
-    width: 36px;
-    height: 4px;
-    margin: 8px auto 14px;
-    border-radius: var(--ui-radius-xs);
-    background: rgba(255, 255, 255, 0.22);
-  }
-  [data-mode='light'] .composer-tools-sheet-handle {
-    background: rgba(0, 0, 0, 0.16);
-  }
-
-  /* Phone bottom sheet matching mobile reference 1000038600.jpg */
+  /* One floating list, no grabber, no bottom sheet or tile grid. */
   body #composerToolsMenu.composer-tools-menu {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-    max-width: 100%;
-    max-height: 80vh;
-    padding: 0 0 calc(20px + env(safe-area-inset-bottom, 0px)) 0;
-    border-radius: var(--ui-radius-xl) var(--ui-radius-xl) 0 0;
-    border: 1px solid var(--ui-border-subtle);
-    border-bottom: 0;
-    background: var(--ui-bg-surface);
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    box-shadow: var(--ui-shadow-menu);
-  }
-  body #composerToolsMenu.composer-tools-menu::before {
-    content: none;
-  }
-
-  /* 4-Tile Grid */
-  .composer-tools-tiles {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-    padding: 0 16px 14px;
-  }
-  .composer-tools-tile {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 76px;
-    padding: 10px 4px 8px;
-    border-radius: var(--ui-radius-md);
-    background: rgba(255, 255, 255, 0.07);
+    padding: var(--ui-step-75);
     border: 0;
-    cursor: pointer;
-    transition:
-      background-color var(--ui-duration-fast) ease,
-      transform 0.12s var(--ui-ease-out);
-  }
-  [data-mode='light'] .composer-tools-tile {
-    background: rgba(0, 0, 0, 0.05);
-  }
-  .composer-tools-tile:hover,
-  .composer-tools-tile:focus-visible {
-    background: rgba(255, 255, 255, 0.12);
-  }
-  [data-mode='light'] .composer-tools-tile:hover,
-  [data-mode='light'] .composer-tools-tile:focus-visible {
-    background: rgba(0, 0, 0, 0.08);
-  }
-  .composer-tools-tile:active {
-    transform: scale(0.96);
-  }
-  .composer-tools-tile-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    color: var(--ui-text-primary);
-    margin-bottom: 6px;
-  }
-  .composer-tools-tile-icon svg {
-    width: 24px;
-    height: 24px;
-    stroke-width: 1.75;
-  }
-  .composer-tools-tile-label {
-    font-size: var(--ui-font-size-xs);
-    font-weight: var(--ui-font-weight-regular);
-    color: var(--ui-text-primary);
-    white-space: nowrap;
-    text-align: center;
+    border-radius: var(--ui-radius-composer-desktop);
+    background: var(--ui-bg-ask);
+    box-shadow: var(--ui-shadow-popover);
   }
 
   /* Mobile Rows List */
   .composer-tools-mobile-list {
     display: flex;
     flex-direction: column;
-    padding: 0 10px;
+    padding: 0;
     gap: 2px;
   }
   #composerToolsMenu .composer-tools-row-item {
     display: flex;
     align-items: center;
     width: 100%;
-    min-height: 48px;
+    min-height: 46px;
+    height: auto;
     padding: 8px 12px;
-    border-radius: var(--ui-radius-sm);
+    border-radius: var(--ui-radius-lg);
     border: 0;
     background: transparent;
     cursor: pointer;
     text-align: left;
     color: var(--ui-text-primary);
-    gap: 12px;
+    gap: 14px;
     transition: background-color var(--ui-duration-fast) ease;
   }
   #composerToolsMenu .composer-tools-row-item:hover,
@@ -620,17 +462,19 @@ body #composerToolsMenu.composer-tools-menu {
   }
   #composerToolsMenu .composer-tools-row-copy {
     display: flex;
-    flex-direction: column;
-    justify-content: center;
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: flex-start;
     flex: 1 1 auto;
     min-width: 0;
     text-align: left;
-    gap: 2px;
+    gap: 12px;
   }
   #composerToolsMenu .composer-tools-row-title {
+    flex: 0 1 auto;
     color: var(--ui-text-primary);
-    font-size: var(--ui-font-size-sm);
-    font-weight: var(--ui-font-weight-medium);
+    font-size: var(--ui-font-size-md);
+    font-weight: var(--ui-font-weight-regular);
     line-height: 1.3;
     white-space: nowrap;
     overflow: hidden;
@@ -638,8 +482,9 @@ body #composerToolsMenu.composer-tools-menu {
   }
   #composerToolsMenu .composer-tools-row-subtitle {
     display: block;
-    color: var(--ui-text-muted);
-    font-size: var(--ui-font-size-xxs);
+    min-width: 0;
+    color: var(--ui-text-tertiary);
+    font-size: var(--ui-font-size-md);
     font-weight: var(--ui-font-weight-regular);
     line-height: 1.3;
     white-space: nowrap;
@@ -697,6 +542,11 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side='above'] {
 body #composerToolsMenu.composer-tools-menu[data-menu-side='sheet'] {
   --_ct-dir: var(--ui-step-150);
   --_ct-scale: 1;
+  transform-origin: center bottom;
+}
+body #composerToolsMenu.composer-tools-menu:is([data-menu-side='mobile-below'], [data-menu-side='mobile-overlay']) {
+  --_ct-scale: 1;
+  transform-origin: center top;
 }
 @starting-style {
   body #composerToolsMenu.composer-tools-menu:not(.hidden) {
@@ -711,9 +561,7 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side='sheet'] {
   }
 }
 
-/* Reference phone sheet is a flat action list — group labels stay in the
-   DOM for the group aria-labels and the compat specs, but clip out of the
-   painted sheet on phones. */
+/* The phone list has no painted group label. */
 @media (max-width: 768px) {
   body #composerToolsMenu .composer-tools-mobile-items .composer-tools-group-label {
     position: absolute;
@@ -727,10 +575,6 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side='sheet'] {
 
 /* Phone composer-tools rows migrated from the retired restore/fixes.css. */
 @media (max-width: 768px) {
-  body #composerToolsMenu .composer-tools-mobile-items .composer-tools-group-label {
-    padding-top: 8px;
-    padding-bottom: 2px;
-  }
   body #composerToolsMenu .composer-tools-plugin-state {
     padding: 10px 8px;
     text-align: left;
@@ -805,89 +649,4 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side='sheet'] {
 
 #composerToolsMenu {
   font-family: var(--font-sans);
-}
-
-@media (max-width: 768px) {
-  body #composerToolsMenu.composer-tools-menu,
-  [data-mode='dark'] body #composerToolsMenu.composer-tools-menu {
-    background-color: var(--ui-bg-surface);
-    border-color: var(--ui-border-subtle);
-    box-shadow: var(--ui-shadow-menu);
-  }
-}
-
-/* 2026-11-26 phone reference "+" sheet: one floating 28px card resting just
-   above the question box with side margins — no grabber, no tile grid. Every
-   action is a 46px row (glyph · label · inline grey hint), the quick tiles
-   included, so the sheet reads as one list. */
-@media (max-width: 768px) {
-  /* Placement (12px side margins, 8px above the question box) is set by
-     react/composer/composerTools.position.ts; this rule only paints. */
-  body #composerToolsMenu.composer-tools-menu {
-    padding: var(--ui-step-75);
-    border: 0;
-    border-radius: var(--ui-radius-composer-desktop);
-    background: var(--ui-bg-ask);
-    box-shadow: var(--ui-shadow-popover);
-  }
-  .composer-tools-sheet-handle {
-    display: none;
-  }
-  .composer-tools-tiles {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    padding: 0;
-  }
-  .composer-tools-tile {
-    flex-direction: row;
-    justify-content: flex-start;
-    gap: 14px;
-    min-height: 46px;
-    padding: 8px 12px;
-    border-radius: var(--ui-radius-lg);
-    background: transparent;
-  }
-  [data-mode='light'] .composer-tools-tile {
-    background: transparent;
-  }
-  .composer-tools-tile:active {
-    transform: none;
-  }
-  .composer-tools-tile-icon {
-    width: 24px;
-    height: 24px;
-    margin-bottom: 0;
-  }
-  .composer-tools-tile-icon svg {
-    width: 22px;
-    height: 22px;
-  }
-  .composer-tools-tile-label {
-    font-size: var(--ui-font-size-md);
-  }
-  .composer-tools-mobile-list {
-    padding: 0;
-  }
-  #composerToolsMenu .composer-tools-row-item {
-    min-height: 46px;
-    gap: 14px;
-    border-radius: var(--ui-radius-lg);
-  }
-  #composerToolsMenu .composer-tools-row-copy {
-    flex-direction: row;
-    align-items: baseline;
-    justify-content: flex-start;
-    gap: 12px;
-  }
-  #composerToolsMenu .composer-tools-row-title {
-    flex: none;
-    font-size: var(--ui-font-size-md);
-    font-weight: var(--ui-font-weight-regular);
-  }
-  #composerToolsMenu .composer-tools-row-subtitle {
-    min-width: 0;
-    color: var(--ui-text-tertiary);
-    font-size: var(--ui-font-size-md);
-  }
 }

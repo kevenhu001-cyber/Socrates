@@ -686,9 +686,7 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     align-items: center;
     justify-content: space-between;
     box-sizing: border-box;
-    height: 56px;
     margin: 0;
-    padding: 0 8px;
   }
   /* 图1 leads the drawer with a large wordmark rather
      than a logo chip. Give it the room and weight to read as the rail's
@@ -696,22 +694,15 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
   #appShell #sidebarHeader .sidebar-logo {
     display: flex;
     align-items: center;
-    gap: 10px;
     min-width: 0;
-    height: 40px;
-    padding: 0 8px;
     border-radius: var(--ui-radius-row);
     color: var(--foreground);
     font-family: var(--font-sans);
-    font-size: var(--ui-font-size-lg);
-    line-height: 26px;
-    letter-spacing: -0.015em;
     white-space: nowrap;
   }
   #appShell #sidebarHeader .sidebar-logo-img {
     width: var(--ui-space-xl);
     height: var(--ui-space-xl);
-    border-radius: var(--ui-radius-sm);
   }
   #appShell #sidebarHeader .sidebar-logo > span {
     font: inherit;
@@ -747,12 +738,10 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     display: flex;
     flex: 0 0 auto;
     flex-direction: column;
-    gap: var(--ui-space-xxs);
     margin: 0;
     /* The reference rail breathes between destinations:
        a little air above, more below, instead of one packed list. Only the
        nav block gets it; the conversation list below stays dense. */
-    padding: var(--ui-space-xs) var(--ui-space-sm) var(--ui-space-md);
   }
   /* Hairline between the destination block and the
      conversation history, inset to the icon gutter so it reads as a
@@ -777,7 +766,6 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     /* The chatgpt.com baseline: a 20px glyph, a 16px label and a 6px gap
        between them (docs/ref/chatgpt-parity.md, captured over CDP at
        1440×900). The spacing scale has no 6px step, so the gap is literal. */
-    gap: 6px;
     height: var(--sidebar-row);
     min-height: var(--sidebar-row);
     box-sizing: border-box;
@@ -788,12 +776,11 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
        doubled to the baseline's 6px. */
     padding: 6px 10px;
     border: 0;
-    border-radius: var(--ui-radius-sidebar-row);
+    border-radius: var(--ui-radius-row);
     background: transparent;
     /* The reference sets its destination labels in the primary ink, not a
        secondary grey: the rail is a list of places to go, and the rail's
        own surface already separates it from the page. */
-    color: var(--foreground);
     font: inherit;
     /* R1 restyle: the rail is set at the interface size (14px), one step
        under the prose, so the transcript stays the loudest text on screen. */
@@ -810,10 +797,6 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
   /* Selected is one step stronger than the hover wash (8% ink over the rail),
      so the current chat stays marked while the pointer moves over its
      neighbours. */
-  #appShell #sidebar .recent-item.active,
-  #appShell #sidebar .recent-item[aria-current='true'] {
-    background: color-mix(in srgb, var(--ui-ink) 8%, transparent);
-  }
   /* Secondary destinations remain available from More. */
   #appShell #sidebarNav #navImages.sidebar-nav-btn,
   #appShell #sidebarNav #navAssistants.sidebar-nav-btn,
@@ -849,7 +832,6 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     display: flex;
     flex: 1 1 auto;
     align-items: center;
-    gap: 6px;
     box-sizing: border-box;
     min-width: 0;
     height: var(--sidebar-row);
@@ -869,9 +851,6 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
   }
   #appShell #sidebar .sidebar-search svg {
     flex: 0 0 20px;
-    width: 20px;
-    height: 20px;
-    color: var(--ui-text-tertiary);
   }
   #appShell #sidebarSearch {
     flex: 1 1 auto;
@@ -886,7 +865,6 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     line-height: var(--ui-text-ui-line);
   }
   #appShell #sidebarSearch::placeholder {
-    color: var(--ui-text-tertiary);
     opacity: 1;
   }
 
@@ -909,7 +887,6 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     gap: 0;
     min-height: 0;
     margin: 0;
-    padding: 0 6px 8px;
     overflow-y: auto;
   }
   #appShell #recentsPanel.hidden {
@@ -923,13 +900,8 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
        contributes 8px and the header 4px — and the reference draws it a
        shade LEFT of the row icons it introduces (12.8px against 15.2px).
        It used to land to their right, which read as a misalignment. */
-    padding: 20px var(--ui-space-xs) 6px;
   }
   #appShell #sidebar .recents-title {
-    color: var(--ui-text-tertiary);
-    font-size: var(--ui-text-ui);
-    font-weight: var(--ui-font-weight-regular);
-    line-height: var(--ui-text-ui-line);
     /* A quiet group label in sentence case, not a tracked-out eyebrow. */
     text-transform: none;
     letter-spacing: 0;
@@ -939,9 +911,7 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     flex-direction: column;
   }
   #appShell #sidebar .recents-time-label {
-    padding: 12px 10px 4px;
     font-size: var(--ui-font-size-xxs);
-    line-height: 16px;
   }
   #appShell #sidebar .recents-list-content > .recents-time-label:first-child {
     padding-top: 0;
@@ -1006,7 +976,6 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     min-height: 24px;
     padding: 0;
     border: 0;
-    border-radius: var(--ui-radius-sm, 6px);
     background: transparent;
     cursor: pointer;
   }
@@ -1027,8 +996,6 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     gap: 4px;
     box-sizing: border-box;
     margin: 0;
-    padding: 6px;
-    border-top: 1px solid var(--ui-border-subtle);
   }
   #appShell #sidebarUserRow {
     position: relative;
@@ -1040,9 +1007,6 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     padding: 0;
     border-radius: var(--ui-radius-row);
     transition: background-color var(--ui-duration-hover) ease;
-  }
-  #appShell #sidebarUserRow:hover {
-    background: var(--accent);
   }
   #appShell #sidebarFooter .sidebar-footer-actions {
     display: flex;
@@ -1059,7 +1023,6 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: 8px;
   }
 
   #appShell #sidebarFooter .icon-btn {
@@ -1099,7 +1062,6 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     flex-direction: column;
     justify-content: flex-start;
     height: auto;
-    padding: 8px 8px 4px;
   }
   /* The brand lockup is taken out of the layout by React
      (`SidebarBrand.hidden`), not here: the component paints its own
@@ -1474,9 +1436,6 @@ html[data-detail-open='true'][data-detail-layout='docked'] #appShell .main {
   }
 
   /* Header icon controls are pill-round; the wash is owned above. */
-  #appShell #sidebarCloseBtn {
-    border-radius: var(--ui-round-pill);
-  }
 }
 
 /* RN-7 — header icon actions are RN Pressables (packages/ui/src/shell).
@@ -1697,7 +1656,6 @@ html[data-detail-open='true'][data-detail-layout='docked'] #appShell .main {
   #appShell #sidebar .recent-item {
     gap: 0;
     padding-inline: 10px;
-    border-radius: var(--ui-radius-row);
     color: var(--foreground);
     transition:
       background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),

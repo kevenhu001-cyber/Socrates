@@ -1,7 +1,5 @@
 import { restingRect } from '../../legacy/pressFeedback.ts';
 
-/* Phone bottom sheet, matching the mobile drawer reference (screenshot 1000038600.jpg):
-   it slides up from the bottom of the viewport, spans full width, with rounded top corners. */
 /* 2026-11-26 phone reference: the "+" menu is a floating card that rests just
  * above the question box with 12px side margins, not a full-width bottom
  * sheet. `composerTop` is the box's top edge in the layout viewport; the card
@@ -9,28 +7,50 @@ import { restingRect } from '../../legacy/pressFeedback.ts';
 const MOBILE_MENU_MARGIN = 12;
 const MOBILE_MENU_GAP = 8;
 
+/** Place the phone list against the composer when possible. If the visual
+ * viewport is shortened or panned by a keyboard, use the other edge or a
+ * bounded in-viewport overlay rather than producing a zero-height menu. */
+export function mobileMenuPlacement(
+  viewportTop: number,
+  viewportBottom: number,
+  anchorTop: number,
+  anchorBottom: number,
+): { edge: number; maxHeight: number; side: 'sheet' | 'mobile-below' | 'mobile-overlay' } {
+  const top = viewportTop + MOBILE_MENU_MARGIN;
+  const bottom = Math.max(top, viewportBottom - MOBILE_MENU_MARGIN);
+  const cap = Math.min(bottom - top, (viewportBottom - viewportTop) * 0.75);
+  const aboveEdge = Math.min(bottom, anchorTop - MOBILE_MENU_GAP);
+  const belowEdge = Math.max(top, anchorBottom + MOBILE_MENU_GAP);
+  const above = Math.max(0, aboveEdge - top);
+  const below = Math.max(0, bottom - belowEdge);
+  if (above >= 120 || (above >= 46 && above >= below)) {
+    return { edge: aboveEdge, maxHeight: Math.min(above, cap), side: 'sheet' };
+  }
+  if (below >= 46) {
+    return { edge: belowEdge, maxHeight: Math.min(below, cap), side: 'mobile-below' };
+  }
+  return { edge: top, maxHeight: cap, side: 'mobile-overlay' };
+}
+
 function positionMobileMenu(
   menu: HTMLElement,
-  viewportHeight: number,
-  bottomInset: number,
-  composerTop: number | null,
+  viewportTop: number,
+  viewportBottom: number,
+  viewportLeft: number,
+  viewportWidth: number,
+  anchorTop: number,
+  anchorBottom: number,
 ): void {
-  const layoutHeight = typeof window !== 'undefined' ? window.innerHeight : viewportHeight;
-  const bottom =
-    composerTop !== null && composerTop > 0
-      ? Math.max(bottomInset, layoutHeight - composerTop + MOBILE_MENU_GAP)
-      : bottomInset;
-  const room = Math.max(160, viewportHeight - (bottom - bottomInset) - MOBILE_MENU_MARGIN * 2);
-  menu.style.setProperty('position', 'fixed', 'important');
-  menu.style.setProperty('left', `${MOBILE_MENU_MARGIN}px`, 'important');
-  menu.style.setProperty('right', `${MOBILE_MENU_MARGIN}px`, 'important');
-  menu.style.setProperty('width', 'auto', 'important');
-  menu.style.setProperty('max-width', 'none', 'important');
-  menu.style.setProperty('top', 'auto', 'important');
-  menu.style.setProperty('bottom', `${bottom}px`, 'important');
-  menu.style.setProperty('max-height', `${Math.min(room, viewportHeight * 0.75)}px`, 'important');
-  menu.style.removeProperty('border-radius');
-  menu.dataset.menuSide = 'sheet';
+  const placement = mobileMenuPlacement(viewportTop, viewportBottom, anchorTop, anchorBottom);
+  menu.style.position = 'fixed';
+  menu.style.left = `${viewportLeft + MOBILE_MENU_MARGIN}px`;
+  menu.style.right = `${Math.max(0, window.innerWidth - viewportLeft - viewportWidth) + MOBILE_MENU_MARGIN}px`;
+  menu.style.width = 'auto';
+  menu.style.maxWidth = 'none';
+  menu.style.top = placement.side === 'sheet' ? 'auto' : `${placement.edge}px`;
+  menu.style.bottom = placement.side === 'sheet' ? `${window.innerHeight - placement.edge}px` : 'auto';
+  menu.style.maxHeight = `${placement.maxHeight}px`;
+  menu.dataset.menuSide = placement.side;
 }
 
 function chooseDesktopMenuPosition(
@@ -122,11 +142,15 @@ export function positionComposerToolsMenu(
     // The keyboard can shrink the visual viewport without resizing the
     // layout viewport. Keep the sheet inside the visible part of the screen.
     const frame = trigger.closest('[data-composer-frame]') ?? trigger.closest('.composer-shell');
+    const anchor = frame?.getBoundingClientRect() ?? rect;
     positionMobileMenu(
       menu,
-      viewportHeight,
-      Math.max(0, window.innerHeight - viewportBottom),
-      frame ? frame.getBoundingClientRect().top : null,
+      viewportTop,
+      viewportBottom,
+      viewport?.offsetLeft ?? 0,
+      viewportWidth,
+      anchor.top,
+      anchor.bottom,
     );
     return;
   }

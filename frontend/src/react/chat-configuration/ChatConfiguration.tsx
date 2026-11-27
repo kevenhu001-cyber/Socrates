@@ -42,7 +42,10 @@ function popoverStyle(
   const above = Math.max(0, anchor.top - y - 2 * gap);
   const below = Math.max(0, y + h - anchor.bottom - 2 * gap);
   const composer = triggerId === 'composerToolsBtn' || triggerId === 'effortTrigger';
-  const naturalHeight = menu.scrollHeight + menu.offsetHeight - menu.clientHeight;
+  const naturalHeight = Math.max(
+    menu.offsetHeight,
+    menu.scrollHeight + menu.offsetHeight - menu.clientHeight,
+  );
   const opensAbove = composer
     ? above >= Math.min(naturalHeight, 120) || above >= below
     : below < naturalHeight && above > below;
@@ -53,7 +56,14 @@ function popoverStyle(
     Math.min(composer ? anchor.right - width : anchor.left, x + w - width - gap),
   );
   const top = opensAbove ? anchor.top - gap - height : anchor.bottom + gap;
-  return { left, top: Math.max(y + gap, top), bottom: 'auto', width, maxHeight };
+  return {
+    left,
+    top: Math.max(y + gap, top),
+    bottom: 'auto',
+    width,
+    maxHeight,
+    transformOrigin: opensAbove ? 'bottom right' : 'top left',
+  };
 }
 
 export function ChatConfiguration() {
@@ -145,11 +155,17 @@ export function ChatConfiguration() {
         ?.querySelector<HTMLElement>('[data-initial-focus]')
         ?.focus({ preventScroll: true });
     });
+    return () => window.cancelAnimationFrame(frame);
+  }, [snapshot.open, view]);
+
+  useEffect(() => {
+    if (!snapshot.open) return;
     const onPointerDown = (event: PointerEvent) => {
       const target = event.target as HTMLElement | null;
       if (popRef.current?.contains(target)) return;
       if (target?.closest?.('.effort-trigger, [data-chat-config-trigger]')) return;
-      closeChatConfiguration();
+      // The outside target owns focus; do not steal it back to the trigger.
+      closeChatConfiguration(false);
     };
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
@@ -162,7 +178,6 @@ export function ChatConfiguration() {
     document.addEventListener('pointerdown', onPointerDown, true);
     document.addEventListener('keydown', onKeyDown, true);
     return () => {
-      window.cancelAnimationFrame(frame);
       document.removeEventListener('pointerdown', onPointerDown, true);
       document.removeEventListener('keydown', onKeyDown, true);
     };

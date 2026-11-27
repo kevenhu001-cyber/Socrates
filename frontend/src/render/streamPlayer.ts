@@ -23,7 +23,7 @@ import {
   type PlaybackClock,
   type PlaybackConfig,
   type PlaybackState,
-} from '@socrates/core';
+} from '@socrates/core/streamPlayer';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 export interface StreamPlayerFrame {

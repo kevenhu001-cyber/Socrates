@@ -1,15 +1,13 @@
 import { Badge } from '../ui/shadcn/badge';
 import { Button } from '../ui/shadcn/button';
 import { Icon } from '../../legacy/Icon';
-import { useEffect, useLayoutEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ComposerSurface } from '../../composer/types.ts';
-import { syncComposerShellFlags } from '../../legacy/composerShape.ts';
 import { getLegacyActions, isWebSearchOn } from '../legacy/gateway.ts';
 import { i18n } from '../../ui/legacyI18n.ts';
 import { removeComposerPlugin } from '../../composer/pluginSelection.ts';
 import { useComposerPluginSelectionSnapshot } from '../composer/useComposerPluginSelection';
 import { toggleComposerTools } from '../composer/composerTools.store';
-import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 
 /* Web search is picked from the "+" menu and then shown as a removable chip,
    the same affordance chatgpt.com uses. State lives in config/providers.js;
@@ -88,15 +86,6 @@ function ComposerPluginChips({ surface }: { surface: ComposerSurface }) {
   const snapshot = useComposerPluginSelectionSnapshot();
   const webSearchOn = useWebSearchOn();
   const plugins = snapshot[surface];
-  useLayoutEffect(() => {
-    try {
-      const host = document.getElementById('composerInputWrap');
-      if (host) syncComposerShellFlags(host);
-    } catch (_) {
-      reportEmptyCatch(_, 'empty catch: react/composer-input/ComposerPluginChips.tsx');
-      /* detached shell */
-    }
-  }, [plugins.length, webSearchOn, surface]);
   if (!plugins.length && !webSearchOn) return null;
 
   const visiblePlugins = plugins.slice(0, 4);

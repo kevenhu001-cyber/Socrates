@@ -12,7 +12,7 @@ import {
   looksLikeQuestion,
   seedChain,
   type ChainState,
-} from '@socrates/core';
+} from '@socrates/core/thinkModel';
 import { sessionBridge } from '../store/index.ts';
 import { getAppMode } from '../config/providers.ts';
 
