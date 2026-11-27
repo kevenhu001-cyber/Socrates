@@ -55,7 +55,12 @@ test('the activity header carries no filled state container', () => {
   // Only the reset's zero border is allowed: a row never draws an outline of
   // its own, on any edge.
   assert.match(style, /(?:^|;)border:0(?:;|$)/, 'the border is reset to zero');
-  assert.doesNotMatch(style, /border-(?:top|right|bottom|left|width|color|style)/);
+  assert.doesNotMatch(
+    style,
+    /border-(?:top|right|bottom|left|inline|block|width|color|style)/,
+    'no physical or logical edge draws on the row',
+  );
+  assert.equal(toggle.disabled, false, 'an expandable header is a live button');
   assert.equal(
     document.querySelector('[data-testid="turn-activity-label"]')?.textContent,
     'Searching official sources',
@@ -84,11 +89,17 @@ test('the disclosure body stays inert and hidden until opened', () => {
 });
 
 test('a non-expandable header is not a button that pretends to open', () => {
-  const { document } = mount(surface({ expandable: false }));
+  let toggles = 0;
+  const { document } = mount(surface({ expandable: false, onToggle: () => (toggles += 1) }));
   const toggle = document.querySelector('[data-testid="turn-activity-toggle"]');
   assert.equal(toggle.getAttribute('aria-expanded'), null);
   assert.equal(toggle.getAttribute('aria-controls'), null);
   assert.equal(toggle.getAttribute('aria-disabled'), 'true');
+  // aria-disabled alone leaves the header activatable; the control must also be
+  // natively disabled so a click cannot reach onToggle.
+  assert.equal(toggle.disabled, true, 'the header is natively disabled');
+  toggle.click();
+  assert.equal(toggles, 0, 'a disabled header never reaches onToggle');
 });
 
 test('the step list is indented, never railed', () => {
@@ -114,8 +125,8 @@ test('the surface draws colour from the theme, not from literals', () => {
   assert.doesNotMatch(COMPONENT_SOURCE, /\b(?:rgb|rgba|hsl)\(/, 'no functional colour literals');
   assert.doesNotMatch(
     COMPONENT_SOURCE,
-    /borderLeft|border-left/,
-    'the shared surface draws no rail',
+    /border(?:Top|Right|Bottom|Left|Inline|Block|Start|End)|border-(?:top|right|bottom|left|inline|block|start|end)/,
+    'the shared surface draws no rail, physical or logical',
   );
 });
 
