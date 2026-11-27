@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useReducer, useRef, useState } from 'react';
 import { Check, ClipboardX, Copy, Expand } from 'lucide-react';
 import { Button } from '../ui/shadcn/button';
 import { Textarea } from '../ui/shadcn/textarea';
@@ -19,6 +19,12 @@ export function CodeBlockActions({ codeElement, language }: CodeBlockActionsProp
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
   const fallbackRef = useRef<HTMLTextAreaElement>(null);
   const feedbackTimer = useRef<number | null>(null);
+  const [, refreshLang] = useReducer((n: number) => n + 1, 0);
+
+  useEffect(() => {
+    document.addEventListener('socrates:langchange', refreshLang);
+    return () => document.removeEventListener('socrates:langchange', refreshLang);
+  }, []);
 
   useEffect(
     () => () => {
@@ -74,8 +80,8 @@ export function CodeBlockActions({ codeElement, language }: CodeBlockActionsProp
         variant="ghost"
         size="icon-sm"
         className="code-block-expand"
-        aria-label="Expand code"
-        title="Expand"
+        aria-label={translate('tool.expand', 'Expand')}
+        title={translate('tool.expand', 'Expand')}
         onClick={expandCode}
       >
         <Expand aria-hidden="true" />

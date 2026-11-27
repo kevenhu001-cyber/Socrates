@@ -41,6 +41,13 @@ export function SidebarSearchRow() {
      arrives and the field would silently keep the stale draft. */
   const [draft, setDraft] = useState(storeQuery);
   const lastSentRef = useRef(storeQuery);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const clearSearch = () => {
+    lastSentRef.current = '';
+    setDraft('');
+    setRecentsSearch('');
+    inputRef.current?.focus();
+  };
   useEffect(() => {
     if (storeQuery === lastSentRef.current) return;
     lastSentRef.current = storeQuery;
@@ -52,6 +59,7 @@ export function SidebarSearchRow() {
       <div className="sidebar-search">
         <Icon name="search" size={16} className="sidebar-search-icon" />
         <Input
+          ref={inputRef}
           type="text"
           id="sidebarSearch"
           name="sidebarSearch"
@@ -68,8 +76,29 @@ export function SidebarSearchRow() {
             setDraft(next);
             setRecentsSearch(next);
           }}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape' && draft) {
+              event.preventDefault();
+              event.stopPropagation();
+              clearSearch();
+            }
+          }}
           onFocus={showRecents}
         />
+        {draft ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            className="h-5 w-5 shrink-0 rounded-full p-0 text-muted-foreground hover:text-foreground"
+            aria-label={i18n('common.clear', 'Clear')}
+            title={i18n('common.clear', 'Clear')}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={clearSearch}
+          >
+            <Icon name="close" size={12} />
+          </Button>
+        ) : null}
       </div>
       <Button
         id="tabKnowledge"
