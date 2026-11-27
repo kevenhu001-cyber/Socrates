@@ -105,20 +105,23 @@ for (const format of ['native', 'openui']) {
         await expect(shell.locator('.iui-card')).toHaveCSS('border-top-width', '0px');
         const reset = shell.getByRole('button', { name: '重置计划' });
         await expect(reset).toBeVisible();
-        expect(await reset.evaluate((node) => {
-          const height = node.getBoundingClientRect().height;
-          return parseFloat(getComputedStyle(node).borderTopLeftRadius) >= height / 2;
-        })).toBe(true);
-        const sizes = await shell.locator('.iui-title').evaluateAll((nodes) =>
-          nodes.map((node) => parseFloat(getComputedStyle(node).fontSize)),
-        );
+        expect(
+          await reset.evaluate((node) => {
+            const height = node.getBoundingClientRect().height;
+            return parseFloat(getComputedStyle(node).borderTopLeftRadius) >= height / 2;
+          }),
+        ).toBe(true);
+        const sizes = await shell
+          .locator('.iui-title')
+          .evaluateAll((nodes) => nodes.map((node) => parseFloat(getComputedStyle(node).fontSize)));
         expect(sizes.length).toBeGreaterThanOrEqual(2);
         expect(sizes[1]).toBeGreaterThan(sizes[0]);
         const isPrimaryBlue = await reset.evaluate((node) => {
           const probe = document.createElement('span');
           probe.style.backgroundColor = 'var(--ui-action)';
           document.body.append(probe);
-          const same = getComputedStyle(node).backgroundColor === getComputedStyle(probe).backgroundColor;
+          const same =
+            getComputedStyle(node).backgroundColor === getComputedStyle(probe).backgroundColor;
           probe.remove();
           return same;
         });
@@ -128,11 +131,11 @@ for (const format of ['native', 'openui']) {
       } else {
         await expect(slider).toHaveCSS('outline-style', 'none');
       }
-      /* The result is one quiet card in the answer: the card fill and the
-         16px radius, but no presentation toolbar competing with the prose. */
+      /* Expository results sit directly in the answer prose: flush edges, no
+         outer card box, and no presentation toolbar competing with the copy. */
       await expect(shell).toHaveCSS('border-top-width', '0px');
-      await expect(shell).toHaveCSS('border-radius', mode === 'mobile' ? '12px' : '16px');
-      await expect(shell).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+      await expect(shell).toHaveCSS('border-radius', '0px');
+      await expect(shell).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
       await expect(shell).toHaveAttribute('data-display-mode', 'inline');
       await expect(shell.locator('.intui-surface-toolbar')).toHaveCount(0);
       await expect(shell.locator('.intui-surface-expand')).toHaveCount(0);

@@ -38,7 +38,12 @@ function popoverStyle(
   const w = viewport?.width ?? window.innerWidth;
   const h = viewport?.height ?? window.innerHeight;
   const gap = 8;
-  const width = Math.max(0, Math.min(264, w - 2 * gap));
+  /* Phones use the same 12px side margin as the composer tools card; desktop
+     keeps ChatGPT's 300px model picker. Both read as one menu, not a settings
+     list. */
+  const mobile = w <= 768;
+  const edge = mobile ? 12 : gap;
+  const width = mobile ? Math.max(0, w - 24) : Math.max(0, Math.min(300, w - 2 * gap));
   const above = Math.max(0, anchor.top - y - 2 * gap);
   const below = Math.max(0, y + h - anchor.bottom - 2 * gap);
   const composer = triggerId === 'composerToolsBtn' || triggerId === 'effortTrigger';
@@ -52,8 +57,8 @@ function popoverStyle(
   const maxHeight = Math.min(420, opensAbove ? above : below);
   const height = Math.min(naturalHeight, maxHeight);
   const left = Math.max(
-    x + gap,
-    Math.min(composer ? anchor.right - width : anchor.left, x + w - width - gap),
+    x + edge,
+    Math.min(composer ? anchor.right - width : anchor.left, x + w - width - edge),
   );
   const top = opensAbove ? anchor.top - gap - height : anchor.bottom + gap;
   return {
@@ -136,14 +141,19 @@ export function ChatConfiguration() {
 
   useEffect(() => {
     if (!snapshot.open) return;
-    setView(
-      snapshot.triggerId === 'composerToolsBtn' || snapshot.triggerId === 'effortTrigger'
-        ? 'effort'
-        : 'main',
-    );
+    /* The caller decides the landing panel: the top-bar switcher opens the
+       model list, the composer effort pill opens effort directly. */
+    setView(snapshot.initialView);
     setEffort(effectiveEffort);
     setSpeed(snapshot.speed);
-  }, [snapshot.open, snapshot.revision, snapshot.triggerId, effectiveEffort, snapshot.speed]);
+  }, [
+    snapshot.open,
+    snapshot.revision,
+    snapshot.initialView,
+    snapshot.triggerId,
+    effectiveEffort,
+    snapshot.speed,
+  ]);
 
   useEffect(() => {
     if (!snapshot.open) return;
@@ -151,9 +161,9 @@ export function ChatConfiguration() {
       // A pointer-opened menu must not take focus away from the active IME.
       // Keyboard-opened menus still receive the normal initial focus.
       if (hasMobileComposerFocus()) return;
-      popRef.current
-        ?.querySelector<HTMLElement>('[data-initial-focus]')
-        ?.focus({ preventScroll: true });
+      const target = popRef.current?.querySelector<HTMLElement>('[data-initial-focus]');
+      target?.focus({ preventScroll: true });
+      target?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' });
     });
     return () => window.cancelAnimationFrame(frame);
   }, [snapshot.open, view]);
@@ -235,6 +245,7 @@ export function ChatConfiguration() {
         <SpeedPanel
           effort={effort}
           speed={speed}
+          onBack={() => setView('main')}
           onCommit={(nextEffort, nextSpeed) => {
             commitPreferences(nextEffort, nextSpeed);
             setView('main');

@@ -13,7 +13,10 @@ import {
   workflowGlyph,
   type MenuItemSpec,
 } from './composerToolsMenuData';
-import { useStoredReasoningEffort } from '../chat-configuration/useChatConfigurationLabels';
+import {
+  useActiveModelLabel,
+  useStoredReasoningEffort,
+} from '../chat-configuration/useChatConfigurationLabels';
 import { effortLabel } from '../chat-configuration/ChatConfigurationPanels';
 import type { ComposerToolsAction } from './types';
 
@@ -34,6 +37,7 @@ export function ComposerToolMenuItems({
     return () => document.removeEventListener('socrates:langchange', refreshLanguage);
   }, []);
   const effort = useStoredReasoningEffort();
+  const modelLabel = useActiveModelLabel();
   const definitions = toolDefinitions();
   const findTools = (actions: ReadonlyArray<string>) =>
     actions
@@ -90,6 +94,13 @@ export function ComposerToolMenuItems({
               onPick={onPick}
             />
           ))}
+          <MobileToolRow
+            action="model"
+            iconName="model"
+            title={i18n('chatconfig.model', 'Model')}
+            rightText={modelLabel}
+            onPick={onPick}
+          />
           <MobileToolRow
             action="reasoningEffort"
             iconName="analyze"

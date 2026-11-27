@@ -23,11 +23,6 @@ const DOCUMENT = [
   path('M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'),
   path('M14 2v6h6'),
 ];
-const THUMB = [
-  path(
-    'M7 10v12M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h3Z',
-  ),
-];
 
 const GLYPHS = {
   // Two-line conversation menu from the supplied phone reference.
@@ -40,48 +35,19 @@ const GLYPHS = {
   ],
   bookmark: [path('M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2Z')],
   list: [path('M4 6h3M4 12h3M4 18h3'), path('M10 6h10M10 12h10M10 18h10')],
-  lifeBuoy: [
-    circle(12, 12, 8.5),
-    circle(12, 12, 3.25),
-    path('m6 6 3.7 3.7m4.6 4.6L18 18M18 6l-3.7 3.7m-4.6 4.6L6 18'),
-  ],
-  /* Door frame on the left, arrow leaving to the right. */
-  logOut: [path('M9 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3M15 7l5 5-5 5M20 12H9')],
-  sun: [
-    circle(12, 12, 4),
-    path(
-      'M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-    ),
-  ],
-  tag: [
-    path(
-      'M4 6.5V11a2 2 0 0 0 .6 1.4l7 7a2 2 0 0 0 2.8 0l5-5a2 2 0 0 0 0-2.8l-7-7A2 2 0 0 0 11 4H6.5A2.5 2.5 0 0 0 4 6.5Z',
-    ),
-  ],
   compass: [circle(12, 12, 8.5), path('m15.9 8.1-2.2 5.6-5.6 2.2 2.2-5.6 5.6-2.2Z')],
   analyze: [path('M5 19.5v-6M12 19.5v-15M19 19.5v-10')],
   arrowUp: [path('M12 19V5M5 12l7-7 7 7')],
   arrowDown: [path('M12 5v14M5 12l7 7 7-7')],
   check: [path('m5 12 5 5L20 7')],
-  activitySpinner: [path('M12 2v4m0 12v4M2 12h4m12 0h4M4.93 4.93l2.83 2.83m8.48 8.48 2.83 2.83M4.93 19.07l2.83-2.83m8.48-8.48 2.83-2.83')],
-  regenerate: [
+  activitySpinner: [
     path(
-      'M4 10a8 8 0 0 1 13.7-3.7L20 8.5M20 4v4.5h-4.5M20 14A8 8 0 0 1 6.3 17.7L4 15.5M4 20v-4.5h4.5',
+      'M12 2v4m0 12v4M2 12h4m12 0h4M4.93 4.93l2.83 2.83m8.48 8.48 2.83 2.83M4.93 19.07l2.83-2.83m8.48-8.48 2.83-2.83',
     ),
   ],
-  thumbsUp: THUMB,
-  thumbsDown: THUMB.map(([tag, attrs]): IconShape => [
-    tag,
-    { ...attrs, transform: 'rotate(180 12 12)' },
-  ]),
   branch: [path('M6 4v11.5M18 8.5A9.5 9.5 0 0 1 8.5 18'), circle(6, 18, 2.5), circle(18, 6, 2.5)],
   bulb: [
     path('M9 16c0-1.5-.8-2.5-1.8-3.5a6 6 0 1 1 9.6 0C15.8 13.5 15 14.5 15 16M9 17h6M10 20.5h4'),
-  ],
-  speaker: [
-    path(
-      'M10.5 5 6 8.5H4a.5.5 0 0 0-.5.5v6a.5.5 0 0 0 .5.5h2l4.5 3.5a.6.6 0 0 0 1-.5v-13a.6.6 0 0 0-1-.5ZM15.5 9a4.5 4.5 0 0 1 0 6M18 6a8.5 8.5 0 0 1 0 12',
-    ),
   ],
   document: DOCUMENT,
   read: [...DOCUMENT, path('M8.5 13.5h7M8.5 17h4')],
@@ -115,6 +81,11 @@ const GLYPHS = {
 
 export type InterfaceIconName = keyof typeof GLYPHS;
 
+export function getInterfaceIconViewBox(name: InterfaceIconName): string {
+  // The Apps SDK Folder glyph is authored on a 20px grid.
+  return name === 'folder' ? '0 0 20 20' : '0 0 24 24';
+}
+
 export function getInterfaceIconShapes(name: InterfaceIconName): readonly IconShape[] {
   return Object.prototype.hasOwnProperty.call(GLYPHS, name) ? GLYPHS[name] : [];
 }
@@ -125,7 +96,8 @@ export function interfaceIconInnerHtml(name: InterfaceIconName): string {
     .map(([tag, attrs]) => {
       const attributes = Object.entries(attrs)
         .map(([key, value]) => {
-          const attribute = key === 'fillRule' ? 'fill-rule' : key === 'clipRule' ? 'clip-rule' : key;
+          const attribute =
+            key === 'fillRule' ? 'fill-rule' : key === 'clipRule' ? 'clip-rule' : key;
           return `${attribute}="${value}"`;
         })
         .join(' ');
@@ -141,5 +113,5 @@ export function interfaceIcon(name: InterfaceIconName, size?: number): string {
   const paint = isOpenAIGlyph(name)
     ? 'fill="currentColor" stroke="none" data-icon-source="openai-apps-sdk"'
     : `fill="none" stroke="currentColor" stroke-width="${INTERFACE_ICON_STROKE}" stroke-linecap="round" stroke-linejoin="round"`;
-  return `<svg viewBox="0 0 24 24"${dimensions} ${paint} aria-hidden="true" focusable="false">${body}</svg>`;
+  return `<svg viewBox="${getInterfaceIconViewBox(name)}"${dimensions} ${paint} aria-hidden="true" focusable="false">${body}</svg>`;
 }

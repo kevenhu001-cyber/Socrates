@@ -294,7 +294,7 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
   body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
     #appShell
     .msg-body
-    h3 {
+    h3:not(:where(.visualization-card *, .viz-state-skeleton *)) {
     font-size: var(--ui-text-body);
     line-height: 1.55;
     margin: var(--ui-space-xl) 0 var(--ui-space-sm);
@@ -603,9 +603,13 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
 .msg-toolbar-btn.is-speaking:hover {
   background: var(--primary);
 }
-.msg-toolbar-btn svg {
-  width: 16px;
-  height: 16px;
+.msg-toolbar-btn > svg {
+  display: block;
+  flex: none;
+}
+.msg-toolbar-btn:not(.msg-branch-btn) > svg {
+  width: 18px;
+  height: 18px;
 }
 /* 消息工具栏的所有图标（复制、编辑、重新生成、赞/踩、分享、分支、朗读、换个角度、「更多」、版本切换箭头）
    统一画成屏幕上的 1.5px 线：non-scaling-stroke 让线宽按渲染像素算，
@@ -636,15 +640,7 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
     margin: 4px -6px 0 0;
   }
 }
-@media (min-width: 769px) {
-  #appShell #msgList .msg-toolbar-btn svg {
-    width: 18px;
-    height: 18px;
-    shape-rendering: geometricPrecision;
-  }
-}
-/* Mobile reference: 22px action glyphs on a 36px pitch. The complete
- * toolbar contract lives here, not in a later mobile polish override. */
+/* Keep the phone pitch while sharing the action glyph footprint across viewports. */
 @media (max-width: 768px) {
   #appShell .msg-toolbar {
     gap: var(--ui-step-50);
@@ -673,10 +669,6 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
     position: absolute;
     inset: -4px 0;
     pointer-events: auto;
-  }
-  #appShell .msg-toolbar-btn svg {
-    width: 22px;
-    height: 22px;
   }
   #appShell .msg-toolbar-btn:active {
     opacity: var(--press-opacity, var(--ui-press-opacity-sm, 0.72));

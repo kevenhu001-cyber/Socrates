@@ -50,7 +50,6 @@
   line-height: 1.3;
 }
 
-
 .sidebar-more-popover,
 .display-prefs-popover,
 .tag-editor-popover {
@@ -108,14 +107,14 @@ body #composerToolsMenu.composer-tools-menu {
   box-sizing: border-box;
   position: fixed;
   z-index: var(--ui-z-popover);
-  width: 240px;
+  width: 300px;
   min-width: 0;
   max-width: calc(100vw - 24px);
-  max-height: min(75dvh, 520px);
-  padding: var(--ui-menu-gutter);
+  max-height: min(72dvh, 560px);
+  padding: 6px;
   overflow-y: auto;
   overscroll-behavior: contain;
-  border-radius: var(--ui-radius-tools-card);
+  border-radius: var(--ui-radius-xl);
   border: 1px solid var(--ui-border-subtle);
   background: var(--ui-bg-surface);
   color: var(--ui-text-primary);
@@ -130,21 +129,22 @@ body #composerToolsMenu.composer-tools-menu {
 }
 
 #composerToolsMenu .composer-tools-group + .composer-tools-group {
-  margin-top: 6px;
-  padding-top: 6px;
+  margin-top: 4px;
+  padding-top: 4px;
   border-top: 1px solid var(--ui-border-subtle);
 }
 
-/* Chat-Demo aligned menu options */
+/* ChatGPT's "+" menu is a scannable row list, not a form. Rows are 44px,
+   one-line labels, 20px leading glyphs and an optional trailing check. */
 #composerToolsMenu .composer-tools-item,
 #composerToolsMenu .composer-tools-plugin-item {
   width: 100%;
-  min-height: var(--ui-control-md);
+  min-height: 44px;
   margin: 0;
-  padding: var(--ui-menu-item-padding);
-  gap: var(--ui-menu-item-gap);
+  padding: 8px 10px;
+  gap: 10px;
   border: 0;
-  border-radius: var(--ui-radius-tools-row);
+  border-radius: var(--ui-radius-sm);
   background: transparent;
   color: var(--ui-text-primary);
   font-size: var(--ui-font-size-sm);
@@ -173,17 +173,19 @@ body #composerToolsMenu.composer-tools-menu {
   height: 20px;
   border-radius: var(--ui-radius-xs);
   background: none;
-  color: var(--ui-text-primary);
+  color: var(--ui-text-secondary);
   transition: color var(--ui-duration-fast) ease;
 }
 #composerToolsMenu .composer-tools-item:hover .composer-tools-icon,
-#composerToolsMenu .composer-tools-item:focus-visible .composer-tools-icon {
+#composerToolsMenu .composer-tools-item:focus-visible .composer-tools-icon,
+#composerToolsMenu .composer-tools-plugin-item:hover .composer-tools-icon,
+#composerToolsMenu .composer-tools-plugin-item:focus-visible .composer-tools-icon {
   color: var(--ui-text-primary);
 }
 #composerToolsMenu .composer-tools-icon svg {
   display: block;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
 }
 #composerToolsMenu .composer-tools-copy {
   display: flex;
@@ -191,6 +193,7 @@ body #composerToolsMenu.composer-tools-menu {
   justify-content: center;
   flex: 1;
   min-width: 0;
+  gap: 1px;
   text-align: left;
 }
 #composerToolsMenu .composer-tools-copy > span {
@@ -198,12 +201,32 @@ body #composerToolsMenu.composer-tools-menu {
   font-size: var(--ui-font-size-sm);
   font-weight: var(--ui-font-weight-regular);
   line-height: 20px;
-  white-space: nowrap;
+}
+#composerToolsMenu .composer-tools-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+}
+#composerToolsMenu .composer-tools-title-row > span {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
+/* The reference's quiet second line ("Browse and search your files") is the
+   menu's only explanatory copy; it stays 12px and muted so rows still scan. */
 #composerToolsMenu .composer-tools-copy small {
-  display: none;
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xxs);
+  font-weight: var(--ui-font-weight-regular);
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 #composerToolsMenu .composer-tools-item kbd {
   display: block;
@@ -211,28 +234,39 @@ body #composerToolsMenu.composer-tools-menu {
   color: var(--ui-text-tertiary);
   font-size: var(--ui-font-size-xxs);
   font-weight: var(--ui-font-weight-regular);
-  letter-spacing: 0.05em;
-  padding: 1px 4px;
+  padding: 1px 5px;
   border-radius: var(--ui-radius-xs);
-  background: var(--ui-bg-hover);
+  background: var(--ui-bg-control);
 }
 
 #composerToolsMenu .composer-tools-check {
   flex: 0 0 16px;
   margin-left: auto;
-  color: var(--ui-accent-action);
+  color: var(--ui-text-primary);
   width: 16px;
   height: 16px;
   flex-shrink: 0;
 }
 
-#composerToolsMenu .composer-tools-group-label {
-  padding: 6px 10px 4px;
-  font-size: var(--ui-font-size-xxs);
-  font-weight: var(--ui-font-weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+/* Group labels are structural for assistive tech (the groups keep their
+   aria-label) but visually the reference uses hairline separators instead of
+   uppercase section headers. */
+#composerToolsMenu .composer-tools-desktop-items .composer-tools-group-label,
+#composerToolsMenu .composer-tools-mobile-items .composer-tools-group-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+#composerToolsMenu .composer-tools-section-label {
+  padding: 8px 10px 4px;
   color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xxs);
+  font-weight: var(--ui-font-weight-medium);
+  line-height: 1.4;
 }
 
 .chat-config-pop {
@@ -245,6 +279,7 @@ body #composerToolsMenu.composer-tools-menu {
   overflow-x: hidden;
   overscroll-behavior: contain;
   padding: var(--ui-menu-gutter);
+  scroll-padding-block: var(--ui-menu-gutter);
   background: var(--popover);
   border: 1px solid var(--ui-border-subtle);
   border-radius: var(--ui-radius-lg);
@@ -266,6 +301,13 @@ body #composerToolsMenu.composer-tools-menu {
    anchors to a 36px pill; 46px rows at 15px read oversized beside it.
    Surface: a raised card like the other menus, with the ghost wash for
    rows. */
+.chat-config-section-label {
+  padding: 8px 10px 4px;
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xxs);
+  font-weight: var(--ui-font-weight-medium);
+  line-height: 1.4;
+}
 .chat-config-row {
   /* Rows read left to right — label column, then value / check at the end —
      as in every reference menu. The UiButton default centred its children,
@@ -276,17 +318,27 @@ body #composerToolsMenu.composer-tools-menu {
   justify-content: space-between;
   text-align: left;
   flex-shrink: 0;
-  min-height: 40px;
+  min-height: 44px;
   height: auto;
   white-space: normal;
-  padding: var(--ui-menu-item-padding);
-  gap: var(--ui-menu-item-gap);
+  padding: 8px 10px;
+  gap: 10px;
+  border-radius: var(--ui-radius-sm);
   font-size: var(--ui-font-size-sm);
   color: var(--ui-text-primary);
 }
 .chat-config-row:hover,
 .chat-config-row:focus-visible {
-  background: var(--ui-bg-hover-ghost);
+  background: var(--ui-bg-hover);
+}
+/* The selected model is marked by the trailing check, not by a persistent
+   fill: a highlighted row would read as hover while the menu is at rest. */
+.chat-config-model-row[aria-selected='true'] {
+  background: transparent;
+}
+.chat-config-model-row[aria-selected='true']:hover,
+.chat-config-model-row[aria-selected='true']:focus-visible {
+  background: var(--ui-bg-hover);
 }
 /* A control the active model cannot honour
    (Instant on a model that always reasons) is shown, but not offered. */
@@ -301,11 +353,39 @@ body #composerToolsMenu.composer-tools-menu {
 .chat-config-value {
   color: var(--ui-text-tertiary);
 }
-.chat-config-row > span:first-child {
+.chat-config-row-copy,
+.chat-config-model-copy {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  flex: 1 1 auto;
   min-width: 0;
+}
+.chat-config-model-copy {
+  gap: 2px;
+}
+.chat-config-model-copy small {
+  font-size: var(--ui-font-size-xxs);
+  line-height: 1.35;
+}
+.chat-config-row-lead {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  color: var(--ui-text-tertiary);
+}
+.chat-config-action-chevron {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  color: var(--ui-text-tertiary);
+}
+.chat-config-check {
+  flex-shrink: 0;
+  color: var(--ui-text-primary);
 }
 .chat-config-row strong {
   font-weight: var(--ui-font-weight-regular);
@@ -323,8 +403,9 @@ body #composerToolsMenu.composer-tools-menu {
 .chat-config-row.chat-config-back {
   justify-content: flex-start;
 }
-.chat-config-back-label {
+.chat-config-row .chat-config-back-label {
   min-width: 0;
+  font-weight: var(--ui-font-weight-medium);
 }
 .chat-config-value {
   display: inline-flex;
@@ -463,7 +544,9 @@ body #composerToolsMenu.composer-tools-menu {
     gap: 12px;
   }
   #composerToolsMenu .composer-tools-row-title {
-    flex: 0 1 auto;
+    /* The title keeps its full label; the description is the only column
+       allowed to ellipsize. Shrinking both made "Plugins" render as "Pl...". */
+    flex: 0 0 auto;
     color: var(--ui-text-primary);
     font-size: var(--ui-font-size-md);
     font-weight: var(--ui-font-weight-regular);
@@ -474,11 +557,12 @@ body #composerToolsMenu.composer-tools-menu {
   }
   #composerToolsMenu .composer-tools-row-subtitle {
     display: block;
+    flex: 0 1 auto;
     min-width: 0;
     color: var(--ui-text-tertiary);
-    font-size: var(--ui-font-size-md);
+    font-size: var(--ui-font-size-xs);
     font-weight: var(--ui-font-weight-regular);
-    line-height: 1.3;
+    line-height: 1.35;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -536,7 +620,11 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side='sheet'] {
   --_ct-scale: 1;
   transform-origin: center bottom;
 }
-body #composerToolsMenu.composer-tools-menu:is([data-menu-side='mobile-below'], [data-menu-side='mobile-overlay']) {
+body
+  #composerToolsMenu.composer-tools-menu:is(
+    [data-menu-side='mobile-below'],
+    [data-menu-side='mobile-overlay']
+  ) {
   --_ct-scale: 1;
   transform-origin: center top;
 }

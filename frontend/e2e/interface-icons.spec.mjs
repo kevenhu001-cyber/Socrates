@@ -2,7 +2,59 @@ import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
-const officialNav = ['navNew', 'navSearch', 'navLibrary', 'navProjects', 'navScheduled', 'navPlugins', 'navSites', 'navMore'];
+const officialNav = [
+  'navNew',
+  'navSearch',
+  'navLibrary',
+  'navProjects',
+  'navScheduled',
+  'navPlugins',
+  'navSites',
+  'navMore',
+];
+
+async function expectNavIconAlignment(page) {
+  const geometry = await page
+    .locator('#sidebarNav [data-part="nav-glyph"] svg')
+    .evaluateAll((icons) =>
+      icons
+        .filter((icon) => icon.getClientRects().length)
+        .map((icon) => {
+          const glyph = icon.getBoundingClientRect();
+          const row = icon.closest('.sidebar-nav-btn').getBoundingClientRect();
+          const { width, height } = getComputedStyle(icon);
+          return {
+            x: glyph.x,
+            offsetY: glyph.y + glyph.height / 2 - row.y - row.height / 2,
+            width,
+            height,
+          };
+        }),
+    );
+  expect(geometry.length).toBeGreaterThanOrEqual(5);
+  for (const { x, offsetY, width, height } of geometry) {
+    expect(width).toBe('20px');
+    expect(height).toBe('20px');
+    expect(Math.abs(x - geometry[0].x)).toBeLessThan(0.5);
+    expect(Math.abs(offsetY)).toBeLessThan(0.5);
+  }
+  await expect(page.locator('#navProjects svg')).toHaveAttribute('viewBox', '0 0 20 20');
+}
+
+async function expectCenteredIcon(icon, size) {
+  await expect(icon).toHaveCSS('width', `${size}px`);
+  await expect(icon).toHaveCSS('height', `${size}px`);
+  const { x, y } = await icon.evaluate((svg) => {
+    const glyph = svg.getBoundingClientRect();
+    const button = svg.closest('button').getBoundingClientRect();
+    return {
+      x: glyph.x + glyph.width / 2 - button.x - button.width / 2,
+      y: glyph.y + glyph.height / 2 - button.y - button.height / 2,
+    };
+  });
+  expect(Math.abs(x)).toBeLessThan(0.5);
+  expect(Math.abs(y)).toBeLessThan(0.5);
+}
 
 test('React-owned navigation renders a glyph for every primary destination', async ({ page }) => {
   await mockAuthedApp(page);
@@ -29,6 +81,45 @@ test('React-owned navigation renders a glyph for every primary destination', asy
       await icon.locator('path, circle, rect, line, polyline, polygon').count(),
       id,
     ).toBeGreaterThan(0);
+  }
+  await expectNavIconAlignment(page);
+});
+
+test('sidebar history and desktop footer use Apps SDK glyphs', async ({ page }) => {
+  const timestamp = new Date().toISOString();
+  await mockAuthedApp(page, {
+    sessions: {
+      sessions: [
+        {
+          id: 'sidebar-icon-history',
+          title: 'History icon',
+          updatedAt: timestamp,
+          createdAt: timestamp,
+        },
+      ],
+    },
+  });
+  await gotoAndSettle(page);
+  await waitForAppShell(page);
+  for (const selector of [
+    '#recentsList .recent-item-glyph',
+    '#recentsList .recents-search-all svg',
+    '#themeToggle .theme-sun',
+    '#themeToggle .theme-moon',
+    '#displayPrefsBtn svg',
+    '#apiSettingsBtn svg',
+  ]) {
+    const glyph = page.locator(selector);
+    await expect(glyph, selector).toHaveAttribute('data-icon-source', 'openai-apps-sdk');
+    await expect(glyph, selector).toHaveAttribute('stroke', 'none');
+  }
+  for (const selector of [
+    '#themeToggle .theme-sun',
+    '#themeToggle .theme-moon',
+    '#displayPrefsBtn svg',
+    '#apiSettingsBtn svg',
+  ]) {
+    await expectCenteredIcon(page.locator(selector), 16);
   }
 });
 
@@ -60,12 +151,10 @@ for (const theme of ['light', 'dark']) {
     for (const id of officialNav) {
       const glyph = page.locator(`#${id} [data-part="nav-glyph"] svg`);
       await expect(glyph).toHaveAttribute('data-icon-source', 'openai-apps-sdk');
-      const bounds = await glyph.boundingBox();
-      if (bounds) {
-        expect(bounds.width).toBe(20);
-        expect(bounds.height).toBe(20);
-      }
     }
+    await expectNavIconAlignment(page);
+    await expectCenteredIcon(page.locator('#sidebarSearchBtn svg'), 20);
+    await expectCenteredIcon(page.locator('#sidebarCloseBtn svg'), 20);
     const icons = await page
       .locator('#sidebarNav .sidebar-nav-btn [data-part="nav-glyph"] svg')
       .evaluateAll((elements) =>
@@ -74,6 +163,7 @@ for (const theme of ['light', 'dark']) {
           .map((svg) => {
             const style = getComputedStyle(svg);
             const box = svg.getBBox();
+            const viewBox = svg.viewBox.baseVal;
             return {
               official: svg.getAttribute('data-icon-source') === 'openai-apps-sdk',
               fill: style.fill,
@@ -81,7 +171,11 @@ for (const theme of ['light', 'dark']) {
               color: style.stroke,
               decorative: svg.getAttribute('aria-hidden'),
               focusable: svg.getAttribute('focusable'),
-              fits: box.x >= 0 && box.y >= 0 && box.x + box.width <= 24 && box.y + box.height <= 24,
+              fits:
+                box.x >= viewBox.x &&
+                box.y >= viewBox.y &&
+                box.x + box.width <= viewBox.x + viewBox.width &&
+                box.y + box.height <= viewBox.y + viewBox.height,
             };
           }),
       );
@@ -131,21 +225,31 @@ for (const theme of ['light', 'dark']) {
   });
 }
 
-
-test('desktop workflows use the registered glyph renderer and an 18px footprint', async ({ page }) => {
+test('desktop workflows use the registered glyph renderer and a 20px footprint', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await mockAuthedApp(page);
   await gotoAndSettle(page);
   await waitForAppShell(page);
   await page.locator('#composerToolsBtn').click();
   const menu = page.locator('#composerToolsMenu .composer-tools-desktop-items');
-  for (const action of ['upload', 'webSearch', 'deepResearch', 'write', 'createImage', 'createSite', 'exam', 'skills']) {
+  for (const action of [
+    'upload',
+    'webSearch',
+    'deepResearch',
+    'write',
+    'createImage',
+    'createSite',
+    'exam',
+    'skills',
+  ]) {
     const svg = menu.locator(`[data-composer-action="${action}"] .composer-tools-icon > svg`);
     await expect(svg).toHaveAttribute('data-icon-source', 'openai-apps-sdk');
     await expect(svg).toHaveAttribute('stroke', 'none');
     await expect(svg).toHaveAttribute('focusable', 'false');
-    await expect(svg).toHaveCSS('width', '18px');
-    await expect(svg).toHaveCSS('height', '18px');
+    await expect(svg).toHaveCSS('width', '20px');
+    await expect(svg).toHaveCSS('height', '20px');
   }
   for (const action of ['explore', 'analyze']) {
     const svg = menu.locator(`[data-composer-action="${action}"] .composer-tools-icon > svg`);

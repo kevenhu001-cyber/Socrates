@@ -449,7 +449,8 @@
   border-radius: var(--ui-radius-sm);
   background: var(--ui-bg-sunken);
   color: var(--ui-text-primary);
-  font: var(--ui-font-size-xxs)/1.6 var(--font-mono, ui-monospace, SFMono-Regular, Consolas, monospace);
+  font: var(--ui-font-size-xxs)/1.6
+    var(--font-mono, ui-monospace, SFMono-Regular, Consolas, monospace);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }

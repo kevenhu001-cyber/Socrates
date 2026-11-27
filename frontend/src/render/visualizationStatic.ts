@@ -180,7 +180,7 @@ function computeStructureLayout(
   isHierarchy: boolean,
   width: number,
 ): { height: number; positions: Record<string, Point> } {
-  let height = Math.max(260, 130 + Math.ceil(nodes.length / 3) * 95);
+  let height: number;
   const positions: Record<string, Point> = {};
   if (isHierarchy) {
     const children = new Map<string, string[]>();
@@ -223,17 +223,22 @@ function computeStructureLayout(
         levels[levels.length - 1].push(id);
       }
     });
-    height = Math.max(260, 105 + levels.length * 112);
+    height = Math.max(120, levels.length * 112 + 12);
     levels.forEach(function (level, depth) {
       level.forEach(function (id, index) {
         positions[id] = { x: ((index + 1) * width) / (level.length + 1), y: 62 + depth * 112 };
       });
     });
   } else {
+    const cols = Math.min(3, Math.max(1, nodes.length));
+    const rows = Math.ceil(nodes.length / cols);
+    height = rows * 92 + 16;
     nodes.forEach(function (node, index) {
+      const col = index % cols;
+      const row = Math.floor(index / cols);
       positions[nodeIdOf(node, index)] = {
-        x: 110 + (index % 3) * 270,
-        y: 70 + Math.floor(index / 3) * 100,
+        x: ((col + 0.5) * width) / cols,
+        y: 52 + row * 92,
       };
     });
   }
@@ -500,18 +505,18 @@ export function renderTimelineVisualization(
   if (layoutWidth < SEMANTIC_NARROW_WIDTH)
     return renderNarrowTimeline(spec, items, layoutWidth, escapeHtml, fontFamily, truncateLabel);
   const width = 760,
-    height = 260,
-    axisY = 130;
-  const left = 48,
-    right = width - 48,
+    height = 210,
+    axisY = 105;
+  const left = 36,
+    right = width - 36,
     gap = items.length > 1 ? (right - left) / (items.length - 1) : 0;
   let svg = svgStart(spec, width, height, escapeHtml, fontFamily, 'visualization-timeline');
   svg += '<path class="visualization-edge" d="M' + left + ' ' + axisY + ' H' + right + '"/>';
   items.forEach(function (item, index) {
     const x = items.length === 1 ? width / 2 : left + index * gap;
     const top = index % 2 === 0,
-      markerY = top ? axisY - 23 : axisY + 23;
-    const textY = top ? 48 : 204;
+      markerY = top ? axisY - 20 : axisY + 20;
+    const textY = top ? 36 : 176;
     const title = [item.value, item.label, item.detail].filter(Boolean).join(' — ');
     svg +=
       '<g class="visualization-node"><title>' +
@@ -563,13 +568,15 @@ export function renderProcessVisualization(
   const columns = Math.max(1, Math.min(fit, 4, Math.ceil(Math.sqrt(items.length * 1.5))));
   const rows = Math.ceil(items.length / columns),
     cellW = width / columns,
-    cellH = 112,
-    height = rows * cellH + 24;
+    nodeW = cellW >= 200 ? Math.min(220, Math.round(cellW - 32)) : 152,
+    halfW = nodeW / 2,
+    cellH = 88,
+    height = rows * cellH + 10;
   const positions: Point[] = items.map(function (_, index) {
     const row = Math.floor(index / columns);
     let col = index % columns;
     if (row % 2 === 1) col = columns - col - 1;
-    return { x: col * cellW + cellW / 2, y: row * cellH + 60 };
+    return { x: col * cellW + cellW / 2, y: row * cellH + 46 };
   });
   let svg =
     svgStart(spec, width, height, escapeHtml, fontFamily, 'visualization-process') +
@@ -580,10 +587,10 @@ export function renderProcessVisualization(
     const from = positions[index],
       to = positions[index + 1];
     const sameRow = Math.floor(index / columns) === Math.floor((index + 1) / columns);
-    const x1 = sameRow ? from.x + (to.x > from.x ? 76 : -76) : from.x;
-    const y1 = sameRow ? from.y : from.y + 30;
-    const x2 = sameRow ? to.x - (to.x > from.x ? 76 : -76) : to.x;
-    const y2 = sameRow ? to.y : to.y - 30;
+    const x1 = sameRow ? from.x + (to.x > from.x ? halfW : -halfW) : from.x;
+    const y1 = sameRow ? from.y : from.y + 26;
+    const x2 = sameRow ? to.x - (to.x > from.x ? halfW : -halfW) : to.x;
+    const y2 = sameRow ? to.y : to.y - 26;
     const path = sameRow
       ? 'M' + x1 + ' ' + y1 + ' L' + x2 + ' ' + y2
       : 'M' +
@@ -612,33 +619,35 @@ export function renderProcessVisualization(
       '<g class="visualization-node"><title>' +
       escapeHtml(title) +
       '</title><rect x="' +
-      (point.x - 76) +
+      (point.x - halfW) +
       '" y="' +
-      (point.y - 29) +
-      '" width="152" height="58" rx="11" fill="currentColor" fill-opacity=".06" stroke="currentColor" stroke-opacity=".24"/><circle cx="' +
-      (point.x - 60) +
+      (point.y - 26) +
+      '" width="' +
+      nodeW +
+      '" height="52" rx="11" fill="currentColor" fill-opacity=".06" stroke="currentColor" stroke-opacity=".24"/><circle cx="' +
+      (point.x - halfW + 16) +
       '" cy="' +
-      (point.y - 14) +
+      (point.y - 11) +
       '" r="10" fill="currentColor"/><text style="fill:white" font-size="10" x="' +
-      (point.x - 60) +
+      (point.x - halfW + 16) +
       '" y="' +
-      (point.y - 10) +
+      (point.y - 7) +
       '" text-anchor="middle">' +
       (index + 1) +
       '</text><text dominant-baseline="middle" x="' +
-      (point.x + 4) +
+      (point.x + 6) +
       '" y="' +
-      (point.y - 5) +
+      (point.y - 4) +
       '">' +
-      escapeHtml(truncateLabel(item.label, 18)) +
+      escapeHtml(truncateLabel(item.label, nodeW > 180 ? 22 : 18)) +
       '</text>' +
       (item.detail
         ? '<text class="visualization-node-detail" text-anchor="middle" x="' +
           point.x +
           '" y="' +
-          (point.y + 18) +
+          (point.y + 16) +
           '">' +
-          escapeHtml(truncateLabel(item.detail, 22)) +
+          escapeHtml(truncateLabel(item.detail, nodeW > 180 ? 28 : 22)) +
           '</text>'
         : '') +
       '</g>';
@@ -657,12 +666,12 @@ export function renderComparisonVisualization(
     columns = Math.min(4, items.length),
     rows = Math.ceil(items.length / columns);
   const cellW = width / columns,
-    cellH = 154,
-    height = rows * cellH + 12;
+    cellH = 128,
+    height = rows * cellH + 8;
   let svg = svgStart(spec, width, height, escapeHtml, fontFamily, 'visualization-comparison');
   items.forEach(function (item, index) {
     const x = (index % columns) * cellW + 8,
-      y = Math.floor(index / columns) * cellH + 8;
+      y = Math.floor(index / columns) * cellH + 4;
     const title = [item.label, item.value, item.detail].filter(Boolean).join(' — ');
     svg +=
       '<g class="visualization-node"><title>' +
@@ -673,10 +682,10 @@ export function renderComparisonVisualization(
       y +
       '" width="' +
       (cellW - 16) +
-      '" height="138" rx="12" fill="currentColor" fill-opacity=".045" stroke="currentColor" stroke-opacity=".2"/><text text-anchor="middle" x="' +
+      '" height="118" rx="12" fill="currentColor" fill-opacity=".045" stroke="currentColor" stroke-opacity=".2"/><text text-anchor="middle" x="' +
       (x + (cellW - 16) / 2) +
       '" y="' +
-      (y + 31) +
+      (y + 28) +
       '">' +
       escapeHtml(truncateLabel(item.label, columns > 2 ? 16 : 24)) +
       '</text>' +
@@ -684,7 +693,7 @@ export function renderComparisonVisualization(
         ? '<text text-anchor="middle" x="' +
           (x + (cellW - 16) / 2) +
           '" y="' +
-          (y + 68) +
+          (y + 62) +
           '" font-size="16" font-weight="700" fill="currentColor">' +
           escapeHtml(truncateLabel(item.value, 20)) +
           '</text>'
@@ -693,7 +702,7 @@ export function renderComparisonVisualization(
         ? '<text class="visualization-node-detail" text-anchor="middle" x="' +
           (x + (cellW - 16) / 2) +
           '" y="' +
-          (y + 103) +
+          (y + 92) +
           '">' +
           escapeHtml(truncateLabel(item.detail, columns > 2 ? 22 : 34)) +
           '</text>'
@@ -723,10 +732,10 @@ export function renderNumberLineVisualization(
   max += spread * 0.12;
   const narrow = layoutWidth < SEMANTIC_NARROW_WIDTH;
   const width = layoutWidth,
-    height = 260,
-    left = narrow ? 28 : 52,
+    height = 204,
+    left = narrow ? 20 : 36,
     right = width - left,
-    axisY = 128;
+    axisY = 102;
   /* Labels in one lane keep this much room; a narrow axis packs them tighter. */
   const spacing = narrow ? 72 : 112;
   const xAt = function (value: number): number {
@@ -777,7 +786,7 @@ export function renderNumberLineVisualization(
     const point = layout.get(item);
     if (!point) return;
     const top = point.lane < 2;
-    const labelY = [42, 78, 184, 220][point.lane];
+    const labelY = [32, 62, 148, 178][point.lane];
     const lineY = top ? labelY + 26 : labelY - 12;
     svg +=
       '<g class="visualization-node"><title>' +
@@ -960,9 +969,9 @@ export function renderGeometryVisualization(
       });
   });
   const width = 760,
-    height = 360,
-    plotW = width - 90,
-    plotH = height - 70;
+    height = 300,
+    plotW = width - 48,
+    plotH = height - 48;
   const spanX = maxX - minX || 2,
     spanY = maxY - minY || 2;
   const scale = Math.min(plotW / spanX, plotH / spanY);

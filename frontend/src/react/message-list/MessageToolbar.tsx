@@ -18,7 +18,7 @@ const BranchIcon: IconName = 'branch';
 const ReExplainIcon: IconName = 'bulb';
 const ReadAloudIcon: IconName = 'speaker';
 const CopyIcon: IconName = 'copy';
-const CheckIcon: IconName = 'check';
+const CheckIcon: IconName = 'copyCheck';
 const EditIcon: IconName = 'edit';
 const TrashIcon: IconName = 'trash';
 const RegenerateIcon: IconName = 'regenerate';
@@ -211,7 +211,7 @@ function MessageToolbarActions({
         onClick={onCopy}
         className={`${copied ? 'active ' : ''}${copied ? 'is-copied' : ''}`}
       >
-        {copied ? toolbarIcon('check') : toolbarIcon('copy')}
+        {toolbarIcon(copied ? CheckIcon : CopyIcon)}
       </ToolButton>
       {role === 'user' && (
         <>
@@ -252,7 +252,7 @@ function MessageToolbarActions({
               ref={likeButtonRef}
               className={liked ? 'active' : undefined}
             >
-              {toolbarIcon('thumbsUp')}
+              {toolbarIcon(liked ? 'thumbsUpFilled' : ThumbsUpIcon)}
             </ToolButton>
             <ToolButton
               label={i18n('message.notHelpful', 'Not helpful')}

@@ -346,9 +346,9 @@
 .intui-panel-actions {
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: var(--ui-space-sm);
-  margin-top: var(--ui-space-md);
+  margin-top: var(--ui-space-xs);
   padding-top: 0;
   border-top: 0;
 }
@@ -738,20 +738,22 @@
 
 /* A single quiet frame for interactive output. Use an inset hairline rather
    than an elevation shadow; semantic groups inside remain borderless. */
+/* Interactive outputs sit directly in the answer prose rather than inside an
+   outer card box; genuinely self-contained instruments keep their own surface. */
 .intui-surface-shell {
   --intui-action-size: var(--ui-control-sm);
   position: relative;
   width: 100%;
   max-width: none;
   max-height: none;
-  margin: 0;
+  margin: var(--ui-space-xs) 0;
   padding: 0;
   min-width: 0;
   box-sizing: border-box;
   border: 0;
-  border-radius: var(--ui-radius-lg);
-  background: var(--ui-bg-surface);
-  box-shadow: inset 0 0 0 1px var(--ui-border-subtle);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
   color: var(--ui-text-primary);
   font: inherit;
   text-align: start;
@@ -760,13 +762,13 @@
   display: flex;
   align-items: flex-start;
   gap: var(--ui-space-sm);
-  padding: var(--ui-space-md) var(--ui-space-md) 0;
+  padding: 0 0 var(--ui-space-xs);
 }
 /* Reserve space for an action-only header: an absolute button used to
    cover the first generated control on narrow screens. */
 .intui-surface-header.is-actions-only {
   justify-content: flex-end;
-  padding: var(--ui-space-xs) var(--ui-space-sm) 0;
+  padding: 0;
 }
 .intui-surface-header.is-actions-only .intui-surface-heading {
   display: none;
@@ -890,13 +892,13 @@
 .intui-surface-document {
   display: grid;
   align-content: start;
-  gap: var(--ui-space-md);
+  gap: var(--ui-space-sm);
   min-width: 0;
-  padding: var(--ui-space-sm);
+  padding: var(--ui-space-xxs) 0;
   container-type: inline-size;
 }
 .intui-surface-header + .intui-surface-document {
-  padding-top: var(--ui-space-md);
+  padding-top: var(--ui-space-xs);
 }
 .intui-surface-document > * {
   min-width: 0;
@@ -938,19 +940,19 @@
 @media (max-width: 768px) {
   .intui-surface-shell {
     --intui-action-size: var(--ui-control-touch);
-    border-radius: var(--ui-radius-md);
+    border-radius: 0;
   }
   .intui-surface-header {
-    padding: var(--ui-space-sm) var(--ui-space-sm) 0;
+    padding: 0 0 var(--ui-space-xs);
   }
   .intui-surface-header.is-actions-only {
-    padding: var(--ui-space-xs) var(--ui-space-xs) 0;
+    padding: 0;
   }
   .intui-surface-document {
-    padding: var(--ui-space-sm);
+    padding: var(--ui-space-xxs) 0;
   }
   .intui-surface-header + .intui-surface-document {
-    padding-top: var(--ui-space-sm);
+    padding-top: var(--ui-space-xs);
   }
   .intui-surface-menu :is([role='menuitemradio'], [role='menuitem']) {
     min-height: var(--ui-control-touch);
@@ -1088,16 +1090,17 @@
 }
 .demo-control {
   display: grid;
-  grid-template-columns: minmax(52px, 1fr) minmax(80px, 5fr) minmax(56px, 1fr);
+  grid-template-columns: minmax(7rem, 11rem) minmax(0, 1fr) minmax(4rem, auto);
   align-items: center;
-  gap: var(--ui-gap-3);
+  gap: var(--ui-gap-2) var(--ui-gap-3);
   min-height: var(--ui-control-md);
 }
 .demo-control > label {
   font-weight: var(--ui-font-weight-regular);
   color: var(--ui-ink-secondary);
   font-size: var(--ui-type-label-size);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  word-break: keep-all;
 }
 .demo-control > output {
   text-align: end;
@@ -1108,6 +1111,34 @@
 .demo-control > output > span {
   color: var(--ui-ink-tertiary);
   font-size: var(--ui-type-label-sm-size);
+}
+@container (max-width: 30rem) {
+  .demo-control {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .demo-control > output {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .demonstration .demo-control input[type='range'] {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    height: var(--ui-control-touch);
+  }
+}
+@media (max-width: 520px) {
+  .demo-control {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .demo-control > output {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .demonstration .demo-control input[type='range'] {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    height: var(--ui-control-touch);
+  }
 }
 .demonstration input[type='range'] {
   appearance: none;
@@ -1232,16 +1263,18 @@
    and background by id, so the rule that removes a second frame inside a
    card has to reach that id too; a visual that is the whole surface keeps
    its own frame. */
-:is(.intui, .intui-openui) [data-openui-visualization] .visualization-card {
+:is(.intui, .intui-openui) .visualization-card {
   margin: 0;
   font-family: var(--font-sans);
 }
-#appShell :is(.intui, .intui-openui) [data-openui-visualization] .visualization-card {
+#appShell :is(.intui, .intui-openui) .visualization-card {
   border: 0;
+  border-radius: 0;
   box-shadow: none;
   background: transparent;
 }
-:is(.intui, .intui-openui) [data-openui-visualization] .visualization-header {
+:is(.intui, .intui-openui) .visualization-header {
+  min-height: 0;
   padding: var(--ui-space-xs) 0;
   border-bottom: 0;
 }
@@ -1249,16 +1282,20 @@
    title and caption share the prose column's left edge instead. */
 #appShell
   :is(.intui, .intui-openui)
-  [data-openui-visualization]
+  .visualization-card
   :is(.visualization-header, .visualization-caption) {
   padding-inline: 0;
 }
 /* Suppress the duplicate title, not the chart's table/download/reset actions.
    The chart toolbar must remain usable when its outer surface supplies a title. */
-#appShell .intui [data-openui-visualization][data-header-hidden] .visualization-header > div:first-child:not(.visualization-actions) {
+#appShell
+  .intui
+  [data-openui-visualization][data-header-hidden]
+  .visualization-header
+  > div:first-child:not(.visualization-actions) {
   display: none;
 }
-#appShell :is(.intui, .intui-openui) [data-openui-visualization] .visualization-header {
+#appShell :is(.intui, .intui-openui) .visualization-header {
   background: transparent;
   border-bottom: 0;
 }
@@ -1267,7 +1304,7 @@
 .intui-surface-document
   .visualization-card[data-visualization-renderer='echarts']
   .visualization-stage {
-  height: 200px;
+  height: 220px;
 }
 
 /* Preserve Markdown alignment; generated tables default to reading direction. */
@@ -1569,8 +1606,12 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .intui-lightbox-backdrop { animation: none; }
-  .intui-lightbox-img-wrapper { transition: none; }
+  .intui-lightbox-backdrop {
+    animation: none;
+  }
+  .intui-lightbox-img-wrapper {
+    transition: none;
+  }
 }
 
 /* ── Interactive Accordion ── */

@@ -71,9 +71,10 @@ function useEditorFocus(keepControlsInPlace: boolean): boolean {
     const isEditor = (target: EventTarget | null) =>
       target instanceof Element && Boolean(target.closest('.rich-composer-editor'));
     // Reconcile when a breakpoint changes while the editor already has focus.
-    setFocused((previous) =>
-      isEditor(document.activeElement) ||
-      (previous && keepControlsInPlace && host.contains(document.activeElement)),
+    setFocused(
+      (previous) =>
+        isEditor(document.activeElement) ||
+        (previous && keepControlsInPlace && host.contains(document.activeElement)),
     );
     const onFocusIn = (event: FocusEvent) => {
       if (isEditor(event.target)) setFocused(true);
@@ -254,7 +255,7 @@ function useComposerEffortControl(phone: boolean) {
         level: effort,
         accessibilityLabel: `${i18n('chatconfig.effort', 'Reasoning effort')} · ${effortLabel(effort)}`,
         expanded: configuration.open && configuration.triggerId === 'effortTrigger',
-        onPress: () => openChatConfiguration(anchor('effortTrigger')),
+        onPress: () => openChatConfiguration(anchor('effortTrigger'), 'effort'),
       }
     : undefined;
 }
@@ -325,7 +326,8 @@ export function ComposerShell({
 
   // The empty primary disc actually starts dictation; its hover label must
   // describe the same action as the committed accessible name.
-  const primaryIsVoice = !streaming && !canSend && voicePhase === 'idle' && voiceUnavailable === null;
+  const primaryIsVoice =
+    !streaming && !canSend && voicePhase === 'idle' && voiceUnavailable === null;
   useControlTitles(toolsLabel, voiceLabel, primaryIsVoice ? voiceLabel : primaryLabel);
 
   /* The React composer exposes readiness as `data-ready` on the disc, but two

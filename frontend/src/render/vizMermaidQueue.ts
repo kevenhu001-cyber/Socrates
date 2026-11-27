@@ -247,13 +247,18 @@ function renderMermaidResult(
   if (result.bindFunctions) result.bindFunctions(card.body);
   const svg = card.body.querySelector('svg') as SVGElement | null;
   if (svg) {
-    /* Mermaid writes width="100%" plus its natural max-width; overriding that
-       with a bare 100% stretched a three-node chart to the full column (2026-11-26
-       reference shows diagrams at their natural size). Keep the natural width
-       from the viewBox and only cap it at the card. */
-    const natural = mermaidNaturalWidth(svg);
-    svg.style.width = '100%';
-    svg.style.maxWidth = natural ? `min(100%, ${natural}px)` : '100%';
+    /* Let compact Mermaid flowcharts scale smoothly toward the card measure
+       without blowing up narrow vertical graphs past the viewport height. */
+    const box = mermaidViewBox(svg);
+    if (box) {
+      const targetMax = Math.max(Math.round(box.width * 1.65), 360);
+      svg.style.width = '100%';
+      svg.style.maxWidth = `min(100%, ${targetMax}px)`;
+      svg.style.maxHeight = 'min(65vh, 440px)';
+    } else {
+      svg.style.width = '100%';
+      svg.style.maxWidth = '100%';
+    }
     svg.style.height = 'auto';
   }
   /* A re-render (theme switch, resize, re-parse) replaces the SVG but keeps
@@ -264,14 +269,17 @@ function renderMermaidResult(
   body._vizMathCleanup = installVisualizationMath(body);
 }
 
-function mermaidNaturalWidth(svg: SVGElement): number | null {
+function mermaidViewBox(svg: SVGElement): { width: number; height: number } | null {
   const box = svg
     .getAttribute('viewBox')
     ?.trim()
     .split(/[\s,]+/)
     .map(Number);
   const width = box && box.length === 4 ? box[2] : NaN;
-  return Number.isFinite(width) && width > 0 ? Math.ceil(width) : null;
+  const height = box && box.length === 4 ? box[3] : NaN;
+  return Number.isFinite(width) && width > 0 && Number.isFinite(height) && height > 0
+    ? { width: Math.ceil(width), height: Math.ceil(height) }
+    : null;
 }
 
 function mermaidErrorMessage(error: unknown): string {

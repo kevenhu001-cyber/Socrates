@@ -125,7 +125,7 @@ export function ComposerPluginItems({
       className="composer-tools-plugins"
       aria-label={i18n('composer.tools.connectedApps', 'Connected apps')}
     >
-      <div className="composer-tools-group-label">
+      <div className="composer-tools-section-label">
         {i18n('composer.tools.connectedApps', 'Connected apps')}
       </div>
       {loadState === 'loading' || loadState === 'idle' ? (

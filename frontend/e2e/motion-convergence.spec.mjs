@@ -180,9 +180,9 @@ test('composer menu opens crisply without a competing entrance animation', async
   expect(motion.name).toBe('none');
   expect(motion.duration).toBe('0s');
   expect(motion.easing).toBe('ease');
-  /* The tools card keeps its snapshot-pinned 12px step; the shared popover
-     rung is 16px, but this surface is deliberately the exception. */
-  expect(motion.radius).toBe('12px');
+  /* 2026-11-27 menu round: the 300px tools card uses the 20px xl rung so it
+     matches the model picker; the shared popover rung is 16px. */
+  expect(motion.radius).toBe('20px');
   expect(motion.hasFilter).toBe(false);
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect(menu).toHaveCSS('animation-name', 'none');

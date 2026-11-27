@@ -28,4 +28,5 @@ export type ComposerToolsAction =
   | 'exam'
   | 'skills'
   | 'managePlugins'
+  | 'model'
   | 'reasoningEffort';

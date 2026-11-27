@@ -200,12 +200,12 @@
     border-radius: var(--ui-radius-md);
   }
   .visualization-header {
-    padding: 12px;
+    padding: 0 0 var(--ui-space-xs);
     gap: 8px;
   }
   .visualization-stage {
-    height: clamp(300px, 48dvh, 360px);
-    padding: 2px;
+    height: clamp(220px, 42dvh, 260px);
+    padding: 0;
   }
   .visualization-data {
     padding: 0 10px 10px;
@@ -599,29 +599,39 @@
 }
 .viz-skeleton-header {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
+  min-width: 0;
   gap: var(--ui-space-xs) var(--ui-space-sm);
-  padding: 10px 0;
+  padding: 0 0 var(--ui-space-xs);
 }
 .viz-skeleton-title {
+  flex: 0 1 auto;
+  min-width: 0;
   margin: 0;
   color: var(--foreground);
   font: var(--ui-font-weight-semibold) var(--ui-font-size-sm) / 1.35 var(--font-sans);
   letter-spacing: -0.01em;
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .viz-skeleton-status {
+  flex: 1 1 0;
+  min-width: 0;
   margin: 0;
   color: var(--ui-ink-secondary);
   font-size: var(--ui-font-size-sm);
   line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .viz-skeleton-stage {
   position: relative;
   box-sizing: border-box;
-  height: 350px;
-  padding: 4px 4px 0;
+  height: 280px;
+  padding: 0;
   display: grid;
   align-content: space-evenly;
   background-color: color-mix(in srgb, var(--ui-ink) 2.5%, transparent);
@@ -633,8 +643,8 @@
      old 56px/24px inset and the 48px per-bar cap made a narrow island in the
      middle of a full-width card. */
   position: absolute;
-  inset: auto 12px 20px;
-  height: 220px;
+  inset: auto 12px 14px;
+  height: 176px;
   display: flex;
   align-items: flex-end;
   justify-content: space-around;
@@ -661,8 +671,8 @@
 }
 .viz-state-skeleton[data-renderer='mermaid'] .viz-skeleton-stage {
   height: auto;
-  min-height: 300px;
-  padding: 22px;
+  min-height: 160px;
+  padding: var(--ui-space-sm);
 }
 .viz-skeleton-gridline {
   display: block;
@@ -679,16 +689,16 @@
 }
 @media (max-width: 520px) {
   .viz-skeleton-stage {
-    height: 292px;
-    padding: 2px;
+    height: 240px;
+    padding: 0;
   }
 }
 /* Keep inline ECharts skeletons at the same height as their finished stage. */
 .intui-surface-document .viz-state-skeleton[data-renderer='echarts'] .viz-skeleton-stage {
-  height: 200px;
+  height: 220px;
 }
 .intui-surface-document .viz-state-skeleton[data-renderer='echarts'] .viz-skeleton-bars {
-  height: 140px;
+  height: 152px;
 }
 /* The engine's card is in the host: it owns the footprint from here on. */
 .openui-visualization:has(> .openui-visualization-host > .visualization-card)
@@ -752,6 +762,48 @@
   height: auto;
   min-height: 0;
   padding: 0;
+}
+/* Compact stage sizing: charts keep a crisp landscape stage, while semantic,
+   Mermaid, and static SVG diagrams hug their natural aspect ratio without
+   empty 350px letterboxing. Interactive canvases frame their own viewport. */
+.visualization-card .visualization-stage {
+  height: 280px;
+  padding: 0;
+}
+@media (max-width: 520px) {
+  .visualization-card .visualization-stage {
+    height: clamp(220px, 42dvh, 260px);
+  }
+}
+.visualization-card:is([data-visualization-renderer='mermaid'], [data-visualization-renderer='svg'])
+  .visualization-stage,
+.visualization-card .visualization-stage:has(> svg.visualization-diagram) {
+  display: block;
+  height: auto;
+  min-height: 0;
+  padding: 0;
+}
+.visualization-card:is([data-visualization-renderer='mermaid'], [data-visualization-renderer='svg'])
+  .visualization-stage
+  > svg,
+.visualization-card .visualization-stage > svg.visualization-diagram {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  max-height: min(68vh, 480px);
+  margin-inline: auto;
+}
+.visualization-card:is(
+    [data-visualization-renderer='tldraw'],
+    [data-visualization-renderer='geogebra'],
+    [data-visualization-renderer='three']
+  )
+  .visualization-stage,
+.visualization-card .visualization-stage:has(> iframe) {
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-lg);
+  overflow: hidden;
 }
 /* A timeline, process or number line laid out at a phone stage's own width
    is drawn 1:1: the stage takes the drawing's height. */
@@ -874,8 +926,8 @@
   background: var(--ui-bg-page);
 }
 #appShell .viz-mermaid-header {
-  min-height: 56px;
-  padding: 8px 8px 8px 16px;
+  min-height: 40px;
+  padding: 4px 6px 4px 14px;
   border-bottom: 0;
   background: var(--ui-bg-elevated);
 }
@@ -927,5 +979,5 @@ html[data-mode='light'] #appShell .viz-mermaid-header {
   height: 18px;
 }
 #appShell .viz[data-viz-kind='mermaid'] .viz-body {
-  padding: 20px 16px;
+  padding: 12px;
 }

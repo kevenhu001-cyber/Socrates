@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { ChevronRightIcon } from 'lucide-react';
+import { Icon } from '../../legacy/Icon';
 import { mountOwnedRoot } from '../lib/boot/ownedRoot';
 import { Button } from '../ui/shadcn/button';
 import { getLegacyActions } from '../legacy/gateway.ts';
@@ -172,7 +172,7 @@ export function SessionList() {
         <span data-i18n-key="sidebar.searchAllChats">
           {i18n('sidebar.searchAllChats', 'Search all chats')}
         </span>
-        <ChevronRightIcon aria-hidden />
+        <Icon name="chevronRight" />
       </Button>
     </>
   );

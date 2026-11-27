@@ -1174,6 +1174,10 @@ export const en = {
   'chatconfig.speed.standardHint': 'Works with every configured model',
   'chatconfig.speed.fastHint': 'Prefers low-latency service; falls back automatically',
   'chatconfig.manageModels': 'Manage models',
+  'chatconfig.modelHint.reasoning': 'Thinks before answering',
+  'chatconfig.modelHint.reasoningInstant': 'Reasons, or answers instantly',
+  'chatconfig.modelHint.effort': 'Adjustable reasoning effort',
+  'chatconfig.modelHint.standard': 'Answers directly',
   'toast.speedFallback': "This model doesn't support fast mode — used standard speed",
   'toast.mockFallback':
     'No model is configured — showing sample prompts instead of AI replies. Add a model in Settings.',

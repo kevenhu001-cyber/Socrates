@@ -18,6 +18,7 @@ test.beforeEach(async ({ page }) => {
           url: 'https://first.example/v1',
           hasKey: true,
           isActive: true,
+          capabilities: { isReasoning: true, supportsInstant: true },
         },
         {
           id: 'switcher-second',
@@ -26,6 +27,7 @@ test.beforeEach(async ({ page }) => {
           url: 'https://second.example/v1',
           hasKey: true,
           isActive: false,
+          capabilities: { isReasoning: false },
         },
       ],
     },
@@ -46,10 +48,10 @@ test('header is a 48px bar with the switcher at the top-left', async ({ page }) 
       swCy: sw.top + sw.height / 2 - bar.top,
     };
   });
-  /* The 2026-11-24 alignment pass settled the desktop bar at 48px with a
-     32px switcher (docs/design/chatgpt-alignment.md §5). */
+  /* The 2026-11-27 menu pass keeps the 48px bar but gives the switcher the
+     reference's 36px pill so it matches the composer's control rung. */
   expect(Math.round(g.barH)).toBe(48);
-  expect(Math.round(g.swH)).toBe(32);
+  expect(Math.round(g.swH)).toBe(36);
   expect(Math.round(g.swCy)).toBe(24);
   expect(g.swLeft).toBeLessThanOrEqual(12);
   await expect(page.locator('#topModelSwitcher [data-part="model-brand"]')).toHaveText('Socrates');
@@ -125,6 +127,9 @@ test('phones switch models from the composer and keep the mode tabs centred', as
     'aria-selected',
     'true',
   );
+  await pop.getByRole('button', { name: /速度/ }).click();
+  await pop.getByRole('button', { name: /返回模型列表.*速度/ }).click();
+  await expect(pop.getByRole('option', { name: /Second model/ })).toBeVisible();
 });
 
 test('switcher exposes the React model label and composer effort stays in sync', async ({
@@ -155,6 +160,19 @@ test('switcher exposes the React model label and composer effort stays in sync',
   await expect(pop.getByRole('slider')).toHaveAttribute('aria-valuetext', /高|High/);
 });
 
+test('phone tools menu opens the model list directly', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator('#composerRoot .rich-composer-editor').focus();
+  await page.locator('#composerToolsBtn').click();
+  await page.locator('#composerToolsMenu [data-composer-action="model"]').click();
+  const pop = page.locator('.chat-config-pop');
+  await expect(pop.getByRole('option', { name: /First model/ })).toBeVisible();
+  await expect(pop.getByRole('slider')).toHaveCount(0);
+  await pop.getByRole('option', { name: /Second model/ }).click();
+  await expect(pop).toHaveCount(0);
+  await expect(page.locator('#topModelSwitcherModel')).toHaveText('Second model');
+});
+
 test('phone model menu stays above the composer after a viewport resize', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.locator('#composerRoot .rich-composer-editor').focus();
@@ -177,7 +195,9 @@ test('phone model menu stays above the composer after a viewport resize', async 
   }
 });
 
-test('model menu uses canonical icons, visible divider and selected keyboard focus', async ({ page }) => {
+test('model menu uses canonical icons, visible divider and selected keyboard focus', async ({
+  page,
+}) => {
   const trigger = page.locator('#topModelSwitcher');
   await trigger.focus();
   await trigger.press('Enter');
@@ -198,8 +218,12 @@ test('model menu uses canonical icons, visible divider and selected keyboard foc
   });
   expect(geometry.radius).toBe('16px');
   expect(geometry.divider).toBe(1);
+  expect(geometry.menuWidth).toBe(300);
   expect(geometry.selectedWidth).toBeGreaterThan((geometry.menuWidth ?? 0) - 24);
   expect(geometry.officialChevron).toBe('openai-apps-sdk');
+  await expect(pop.locator('.chat-config-section-label')).toHaveText('模型');
+  await expect(active).toContainText('可深度思考，也可直接回答');
+  await expect(pop.getByRole('option', { name: /Second model/ })).toContainText('直接回答');
   await pop.locator('.chat-config-row:not([role="option"])').first().click();
   await expect(pop.locator('.chat-config-back')).toBeFocused();
   await page.keyboard.press('Escape');
@@ -207,4 +231,27 @@ test('model menu uses canonical icons, visible divider and selected keyboard foc
   await page.keyboard.press('Escape');
   await expect(pop).toHaveCount(0);
   await expect(trigger).toBeFocused();
+});
+
+test('speed panel returns to the models and focuses the saved speed when reopened', async ({
+  page,
+}) => {
+  await page.locator('#topModelSwitcher').press('Enter');
+  const pop = page.locator('.chat-config-pop');
+  const speed = pop.getByRole('button', { name: /^速度/ });
+  await speed.press('Enter');
+  await expect(pop.getByRole('option', { name: /^标准/ })).toBeFocused();
+
+  await page.keyboard.press('Shift+Tab');
+  await expect(pop.getByRole('button', { name: /返回模型列表.*速度/ })).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(pop.getByRole('option', { name: /First model/ })).toBeFocused();
+
+  await speed.press('Enter');
+  await pop.getByRole('option', { name: /^快速/ }).press('Enter');
+  await expect(speed).toContainText('快速');
+  await speed.press('Enter');
+  const fast = pop.getByRole('option', { name: /^快速/ });
+  await expect(fast).toHaveAttribute('aria-selected', 'true');
+  await expect(fast).toBeFocused();
 });

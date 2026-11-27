@@ -59,7 +59,7 @@
    colour on the dark canvas). Bumping to 1.18em + weight 600 +
    `--text-000` makes `### 标题` read as a heading without changing the
    h1/h2/h4–h6 hierarchy. */
-.msg-body h3 {
+.msg-body h3:not(.sc-rich *):not(:where(.visualization-card *, .viz-state-skeleton *)) {
   font-size: 1.18em;
   font-weight: var(--ui-font-weight-semibold);
   color: var(--ui-text-primary);
@@ -323,7 +323,10 @@
     font-size: var(--ui-font-size-xl);
     line-height: 1.4;
   }
-  #appShell #msgList .msg-body h3:not(.sc-rich *) {
+  #appShell
+    #msgList
+    .msg-body
+    h3:not(.sc-rich *):not(:where(.visualization-card *, .viz-state-skeleton *)) {
     margin: 20px 0 10px;
     font-size: var(--ui-font-size-lg);
     line-height: 1.4;
@@ -1356,7 +1359,10 @@ html[data-mode='dark'] #appShell .msg-body .hljs :is(.hljs-comment, .hljs-quote)
     font-weight: var(--ui-font-weight-bold);
     line-height: 1.4;
   }
-  #appShell #msgList .msg-body h3:not(.sc-rich *) {
+  #appShell
+    #msgList
+    .msg-body
+    h3:not(.sc-rich *):not(:where(.visualization-card *, .viz-state-skeleton *)) {
     font-size: var(--ui-font-size-lg);
     font-weight: var(--ui-font-weight-bold);
   }

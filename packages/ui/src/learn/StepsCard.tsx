@@ -112,6 +112,7 @@ export function StepsCard({ kind, title, steps, testID }: StepsCardProps) {
     <ScaffoldCard
       kind={kind}
       label={label}
+      variant="inline"
       testID={testID}
       trailing={
         canStep && !stepping ? (

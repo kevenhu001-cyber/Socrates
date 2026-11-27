@@ -20,6 +20,8 @@ export interface ChatConfigurationAnchor {
   height: number;
 }
 
+export type ChatConfigurationView = 'main' | 'effort' | 'speed';
+
 export interface ChatConfigurationSnapshot {
   open: boolean;
   providers: ChatProviderOption[];
@@ -28,6 +30,9 @@ export interface ChatConfigurationSnapshot {
   speed: ResponseSpeed;
   anchorRect: ChatConfigurationAnchor | null;
   triggerId: string | null;
+  /** Which panel the next open should land on. The model picker is the
+      default; the composer effort pill opens the effort panel directly. */
+  initialView: ChatConfigurationView;
   revision: number;
 }
 

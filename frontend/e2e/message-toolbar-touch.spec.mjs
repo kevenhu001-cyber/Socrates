@@ -37,6 +37,33 @@ for (const touch of [false, true]) {
       const errors = [];
       page.on('pageerror', (error) => errors.push(error.message));
       await seedTranscript(page);
+      const icons = page.locator('.msg.assistant .msg-toolbar button > svg');
+      await expect(icons).toHaveCount(7);
+      const geometry = await icons.evaluateAll((nodes) =>
+        nodes.map((svg) => {
+          const icon = svg.getBoundingClientRect();
+          const hit = svg.parentElement.getBoundingClientRect();
+          const ink = svg.getBBox();
+          return {
+            width: icon.width,
+            height: icon.height,
+            centerY: icon.y + icon.height / 2,
+            offsetX: icon.x + icon.width / 2 - hit.x - hit.width / 2,
+            offsetY: icon.y + icon.height / 2 - hit.y - hit.height / 2,
+            inkOffsetY: ((ink.y + ink.height / 2 - 12) * icon.height) / 24,
+            source: svg.dataset.iconSource,
+          };
+        }),
+      );
+      for (const icon of geometry) {
+        expect(icon.source).toBe('openai-apps-sdk');
+        expect(icon.width).toBeCloseTo(18, 1);
+        expect(icon.height).toBeCloseTo(18, 1);
+        expect(Math.abs(icon.offsetX)).toBeLessThan(0.5);
+        expect(Math.abs(icon.offsetY)).toBeLessThan(0.5);
+        expect(Math.abs(icon.centerY - geometry[0].centerY)).toBeLessThan(0.5);
+        expect(Math.abs(icon.inkOffsetY)).toBeLessThan(1.5);
+      }
       for (const role of ['user', 'assistant']) {
         const rows = page.locator(`#msgList .msg.${role}`);
         await expect(rows.first().locator('.msg-toolbar')).toHaveCount(0);

@@ -1,8 +1,3 @@
-.theme-toggle .theme-sun,
-.theme-toggle .theme-moon {
-  width: 16px;
-  height: calc(var(--ui-control-badge) - 4px);
-}
 /*
  * polish/sidebar.css — shared sidebar affordances and account interactions.
  *
@@ -83,7 +78,7 @@
 /* ── Theme toggle: one icon changing meaning ─────────────────────────────
    Sun and moon used to swap through `display: none`, which is a cut. Both
    glyphs now stay in the tree, stacked in the control, and cross-fade with a
-   quarter turn: the eye sees the same 20px slot change state instead of two
+   quarter turn: the eye sees the same 16px slot change state instead of two
    different marks appearing in place. The button owns its accessible label. */
 #themeToggle {
   position: relative;

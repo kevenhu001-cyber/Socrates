@@ -48,7 +48,8 @@ function positionMobileMenu(
   menu.style.width = 'auto';
   menu.style.maxWidth = 'none';
   menu.style.top = placement.side === 'sheet' ? 'auto' : `${placement.edge}px`;
-  menu.style.bottom = placement.side === 'sheet' ? `${window.innerHeight - placement.edge}px` : 'auto';
+  menu.style.bottom =
+    placement.side === 'sheet' ? `${window.innerHeight - placement.edge}px` : 'auto';
   menu.style.maxHeight = `${placement.maxHeight}px`;
   menu.dataset.menuSide = placement.side;
 }
@@ -156,17 +157,24 @@ export function positionComposerToolsMenu(
   }
 
   const menuHeightCap = Math.max(120, Math.min(560, viewportHeight * 0.62));
-  menu.style.width = '240px';
+  /* 300px matches the reference "+" card: wide enough for the icon, label,
+     shortcut and check on one line without turning into a settings panel. */
+  menu.style.width = '300px';
   menu.style.maxHeight = `${menuHeightCap}px`;
   menu.style.left = '0px';
   menu.style.top = '0px';
   const width = menu.offsetWidth || 260;
   const height = menu.offsetHeight || 300;
-  const left = Math.max(8, Math.min(rect.left - 5, viewportWidth - width - 8));
+  /* Anchor the card to the whole composer, not the small + button: opening
+     below the button covered the capsule's bottom edge, and opening above it
+     in a conversation must clear the composer entirely. */
+  const frame = trigger.closest('[data-composer-frame]') ?? trigger.closest('.composer-shell');
+  const anchor = frame?.getBoundingClientRect() ?? rect;
+  const left = Math.max(8, Math.min(anchor.left, viewportWidth - width - 8));
   const placement = chooseDesktopMenuPosition(
     menu,
-    rect.top,
-    rect.bottom,
+    anchor.top,
+    anchor.bottom,
     viewportTop,
     viewportBottom,
     height,

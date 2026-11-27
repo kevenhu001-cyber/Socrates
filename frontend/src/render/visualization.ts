@@ -671,11 +671,18 @@ function mountNativeSvgIllustration(spec: VizSpec, card: VisualizationCard, stag
   if (!match) {
     throw new Error('svg_document_root_invalid');
   }
-  const cleanSvg = match[0].replace(
+  const rawSvg = match[0];
+  const hasViewBox = /\bviewBox\s*=/i.test(rawSvg);
+  const inlineStyle = hasViewBox
+    ? 'width:100%;max-width:100%;height:auto;max-height:min(68vh,480px);display:block;margin:0 auto;'
+    : 'max-width:100%;max-height:100%;display:block;margin:0 auto;';
+  const cleanSvg = rawSvg.replace(
     /^<svg\b/i,
     '<svg role="img" aria-label="' +
       esc(spec.accessibilitySummary || spec.title) +
-      '" style="max-width:100%;max-height:100%;display:block;margin:auto;"',
+      '" style="' +
+      inlineStyle +
+      '"',
   );
   stage.innerHTML = cleanSvg;
   // SVG's implicit black fill disappears on the dark canvas. Inherit the

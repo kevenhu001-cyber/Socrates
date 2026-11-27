@@ -11,6 +11,7 @@
    session teardown before returning the user to this gate. */
 
 import { notifyEmbeddedAuthExpired } from '../native/mobileWebSessionBridge.ts';
+import { requestReactCompatibilityMount } from '../app/reactCompatibilityMount.ts';
 import { offerBrowserLoginHandoff } from '../native/browserLoginHandoff.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { afterAuthEnter } from './postAuth/index.ts';
@@ -36,7 +37,6 @@ export { afterAuthEnter };
 
 interface AuthLegacyWindow extends Window {
   ReactNativeWebView?: { postMessage?: (message: string) => void };
-  __socratesMountReactCompatibility?: () => void;
 }
 
 function isEmbeddedNativeWebView(): boolean {
@@ -164,10 +164,7 @@ export function revealAppAndHydrate(onHydrated?: () => void): void {
      composer/editor and modal graph. Share routes do not call this function
      and keep using the lightweight assistant-turn entry point above. */
   try {
-    const win = window as AuthLegacyWindow;
-    if (typeof win.__socratesMountReactCompatibility === 'function') {
-      win.__socratesMountReactCompatibility();
-    }
+    requestReactCompatibilityMount();
   } catch (e) {
     reportSwallow(e, 'auth/index.mountReactCompatibility');
   }

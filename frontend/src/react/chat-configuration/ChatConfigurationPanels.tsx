@@ -22,6 +22,46 @@ function providerName(provider: ChatProviderOption): string {
     : provider.model || provider.label || i18n('chatconfig.model', 'Model');
 }
 
+/* A short, capability-derived line under the model name — the picker should
+   describe what the model does, not print the provider's technical model id.
+   Absent capabilities mean "nothing is known", so the row stays single-line. */
+function providerHint(provider: ChatProviderOption): string {
+  const capabilities = provider.capabilities;
+  if (!capabilities) return '';
+  if (capabilities.isReasoning) {
+    return capabilities.supportsInstant
+      ? i18n('chatconfig.modelHint.reasoningInstant', 'Reasons, or answers instantly')
+      : i18n('chatconfig.modelHint.reasoning', 'Thinks before answering');
+  }
+  if (capabilities.supportsEffort) {
+    return i18n('chatconfig.modelHint.effort', 'Adjustable reasoning effort');
+  }
+  return i18n('chatconfig.modelHint.standard', 'Answers directly');
+}
+
+function BackToModels({
+  label,
+  onBack,
+  initialFocus,
+}: {
+  label: string;
+  onBack: () => void;
+  initialFocus?: boolean;
+}) {
+  return (
+    <UiButton
+      type="button"
+      className="chat-config-row chat-config-back press-tint"
+      data-initial-focus={initialFocus}
+      aria-label={`${i18n('chatconfig.backToModels', 'Back to model list')} · ${label}`}
+      onClick={onBack}
+    >
+      <Icon name="chevronLeft" size={18} />
+      <strong className="chat-config-back-label">{label}</strong>
+    </UiButton>
+  );
+}
+
 interface ModelPickerPanelProps {
   providers: ReadonlyArray<ChatProviderOption>;
   activeId: string;
@@ -45,38 +85,52 @@ export function ModelPickerPanel({
 }: ModelPickerPanelProps) {
   return (
     <>
+      <div className="chat-config-section-label">{i18n('chatconfig.models', 'Models')}</div>
       <div role="listbox" aria-label={i18n('chatconfig.models', 'Models')}>
         {providers.length ? (
-          providers.map((provider, index) => (
-            <UiButton
-              key={provider.id}
-              type="button"
-              className="chat-config-row press-tint"
-              role="option"
-              aria-selected={activeId === provider.id}
-              data-initial-focus={
-                (activeId === provider.id || (index === 0 && !providers.some((p) => p.id === activeId)))
-                  ? 'true'
-                  : undefined
-              }
-              onClick={() => onPickModel(provider.id)}
-            >
-              <span>
-                <strong>{providerName(provider)}</strong>
-                {provider.model && provider.model !== providerName(provider) ? (
-                  <small>{provider.model}</small>
+          providers.map((provider, index) => {
+            const name = providerName(provider);
+            const hint = providerHint(provider);
+            return (
+              <UiButton
+                key={provider.id}
+                type="button"
+                className="chat-config-row chat-config-model-row press-tint"
+                role="option"
+                aria-selected={activeId === provider.id}
+                aria-label={hint ? `${name}. ${hint}` : name}
+                data-initial-focus={
+                  activeId === provider.id ||
+                  (index === 0 && !providers.some((p) => p.id === activeId))
+                    ? 'true'
+                    : undefined
+                }
+                onClick={() => onPickModel(provider.id)}
+              >
+                <span className="chat-config-model-copy">
+                  <strong>{name}</strong>
+                  {hint ? <small>{hint}</small> : null}
+                </span>
+                {activeId === provider.id ? (
+                  <Icon name="check" size={18} className="chat-config-check" />
                 ) : null}
-              </span>
-              {activeId === provider.id ? <Icon name="check" size={18} /> : null}
-            </UiButton>
-          ))
+              </UiButton>
+            );
+          })
         ) : (
           <div className="chat-config-empty">{i18n('chatconfig.noModels', 'No models yet.')}</div>
         )}
       </div>
       <div className="chat-config-divider" />
-      <UiButton type="button" className="chat-config-row press-tint" onClick={onOpenEffort}>
-        <span>
+      <UiButton
+        type="button"
+        className="chat-config-row chat-config-action-row press-tint"
+        onClick={onOpenEffort}
+      >
+        <span className="chat-config-row-lead" aria-hidden="true">
+          <Icon name="sliders" size={18} />
+        </span>
+        <span className="chat-config-row-copy">
           <strong>{i18n('chatconfig.effort', 'Reasoning effort')}</strong>
         </span>
         <span className="chat-config-value">
@@ -84,8 +138,15 @@ export function ModelPickerPanel({
           <Icon name="chevronRight" size={16} />
         </span>
       </UiButton>
-      <UiButton type="button" className="chat-config-row press-tint" onClick={onOpenSpeed}>
-        <span>
+      <UiButton
+        type="button"
+        className="chat-config-row chat-config-action-row press-tint"
+        onClick={onOpenSpeed}
+      >
+        <span className="chat-config-row-lead" aria-hidden="true">
+          <Icon name="clock" size={18} />
+        </span>
+        <span className="chat-config-row-copy">
           <strong>{i18n('chatconfig.speed', 'Speed')}</strong>
         </span>
         <span className="chat-config-value">
@@ -93,10 +154,19 @@ export function ModelPickerPanel({
           <Icon name="chevronRight" size={16} />
         </span>
       </UiButton>
-      <UiButton type="button" className="chat-config-row press-tint" onClick={onOpenSettings}>
-        <span>
+      <div className="chat-config-divider" />
+      <UiButton
+        type="button"
+        className="chat-config-row chat-config-action-row press-tint"
+        onClick={onOpenSettings}
+      >
+        <span className="chat-config-row-lead" aria-hidden="true">
+          <Icon name="gear" size={18} />
+        </span>
+        <span className="chat-config-row-copy">
           <strong>{i18n('chatconfig.manageModels', 'Manage models')}</strong>
         </span>
+        <Icon name="chevronRight" size={16} className="chat-config-action-chevron" />
       </UiButton>
     </>
   );
@@ -125,18 +195,7 @@ export function EffortPanel({
   const sliderIndex = stops.indexOf(effort);
   return (
     <>
-      <UiButton
-        type="button"
-        className="chat-config-row chat-config-back press-tint"
-        data-initial-focus="true"
-        aria-label={`${i18n('chatconfig.backToModels', 'Back to model list')} · ${effortLabel(effort)}`}
-        onClick={onBack}
-      >
-        <Icon name="chevronLeft" size={18} />
-        <span className="chat-config-back-label">
-          <strong>{effortLabel(effort)}</strong>
-        </span>
-      </UiButton>
+      <BackToModels label={effortLabel(effort)} onBack={onBack} initialFocus />
       <UiButton
         type="button"
         className="chat-config-row press-tint"
@@ -144,7 +203,7 @@ export function EffortPanel({
         disabled={!supportsInstant}
         onClick={() => onCommit('instant', speed)}
       >
-        <span>
+        <span className="chat-config-row-copy">
           <strong>{i18n('effort.instant', 'Instant')}</strong>
           <small>
             {supportsInstant
@@ -188,46 +247,43 @@ export function EffortPanel({
 interface SpeedPanelProps {
   effort: ReasoningEffort;
   speed: ResponseSpeed;
+  onBack: () => void;
   onCommit: (effort: ReasoningEffort, speed: ResponseSpeed) => void;
 }
 
-export function SpeedPanel({ effort, speed, onCommit }: SpeedPanelProps) {
+const SPEED_OPTIONS: ResponseSpeed[] = ['standard', 'fast'];
+
+export function SpeedPanel({ effort, speed, onBack, onCommit }: SpeedPanelProps) {
+  const title = i18n('chatconfig.speed', 'Speed');
   return (
-    <div role="listbox" aria-label={i18n('chatconfig.speed', 'Speed')}>
-      <UiButton
-        type="button"
-        className="chat-config-row press-tint"
-        role="option"
-        aria-selected={speed === 'standard'}
-        data-initial-focus="true"
-        onClick={() => onCommit(effort, 'standard')}
-      >
-        <span>
-          <strong>{speedLabel('standard')}</strong>
-          <small>
-            {i18n('chatconfig.speed.standardHint', 'Works with every configured model')}
-          </small>
-        </span>
-        {speed === 'standard' ? <Icon name="check" size={18} /> : null}
-      </UiButton>
-      <UiButton
-        type="button"
-        className="chat-config-row press-tint"
-        role="option"
-        aria-selected={speed === 'fast'}
-        onClick={() => onCommit(effort, 'fast')}
-      >
-        <span>
-          <strong>{speedLabel('fast')}</strong>
-          <small>
-            {i18n(
-              'chatconfig.speed.fastHint',
-              'Prefers low-latency service; falls back automatically',
-            )}
-          </small>
-        </span>
-        {speed === 'fast' ? <Icon name="check" size={18} /> : null}
-      </UiButton>
-    </div>
+    <>
+      <BackToModels label={title} onBack={onBack} />
+      <div role="listbox" aria-label={title}>
+        {SPEED_OPTIONS.map((option) => (
+          <UiButton
+            key={option}
+            type="button"
+            className="chat-config-row press-tint"
+            role="option"
+            aria-selected={speed === option}
+            data-initial-focus={speed === option || undefined}
+            onClick={() => onCommit(effort, option)}
+          >
+            <span className="chat-config-row-copy">
+              <strong>{speedLabel(option)}</strong>
+              <small>
+                {option === 'standard'
+                  ? i18n('chatconfig.speed.standardHint', 'Works with every configured model')
+                  : i18n(
+                      'chatconfig.speed.fastHint',
+                      'Prefers low-latency service; falls back automatically',
+                    )}
+              </small>
+            </span>
+            {speed === option ? <Icon name="check" size={18} /> : null}
+          </UiButton>
+        ))}
+      </div>
+    </>
   );
 }

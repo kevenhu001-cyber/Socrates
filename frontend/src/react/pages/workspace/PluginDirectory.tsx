@@ -8,7 +8,12 @@ import { i18n, installedRank } from './workspaceUi';
 import { PluginDirectoryCard } from './PluginDirectoryCard';
 import { InstalledPluginStrip } from './InstalledPluginStrip';
 import { dedupePlugins } from './pluginDirectory.data';
-import { actionDescription, actionTitle, detailText, pluginDescription } from './pluginDetailContent';
+import {
+  actionDescription,
+  actionTitle,
+  detailText,
+  pluginDescription,
+} from './pluginDetailContent';
 import { PageEmptyState } from '../../ui/page/PageEmptyState';
 import { PageFrame } from '../../ui/page/PageFrame';
 import { PageHeader } from '../../ui/page/PageHeader';
@@ -146,7 +151,9 @@ export function PluginDirectory({
           action.description,
           actionTitle(action.name),
           actionDescription(action),
-        ]) || plugin.capabilities || []),
+        ]) ||
+          plugin.capabilities ||
+          []),
       ]
         .filter(Boolean)
         .join(' ')
@@ -196,15 +203,23 @@ export function PluginDirectory({
         </div>
       </PageToolbar>
 
-      {browse ? <InstalledPluginStrip
-        plugins={installedPlugins}
-        onSelect={onSelectPlugin}
-        onShowPersonal={() => setScope('personal')}
-      /> : null}
+      {browse ? (
+        <InstalledPluginStrip
+          plugins={installedPlugins}
+          onSelect={onSelectPlugin}
+          onShowPersonal={() => setScope('personal')}
+        />
+      ) : null}
 
       <PluginDirectoryBody
         visiblePlugins={visiblePlugins}
-        sectionTitle={query.trim() ? i18n('plugins.searchResults', 'Search results') : scope === 'personal' ? detailText('Your apps', '我的插件') : detailText('Featured', '精选插件')}
+        sectionTitle={
+          query.trim()
+            ? i18n('plugins.searchResults', 'Search results')
+            : scope === 'personal'
+              ? detailText('Your apps', '我的插件')
+              : detailText('Featured', '精选插件')
+        }
         popularPlugins={popularPlugins}
         newPlugins={newPlugins}
         configured={configured}

@@ -43,7 +43,12 @@ export function DefinitionCard({
 }) {
   const { strings } = useLearnHost();
   return (
-    <ScaffoldCard kind="definition" label={strings.label.definition} testID={testID}>
+    <ScaffoldCard
+      kind="definition"
+      label={strings.label.definition}
+      variant="inline"
+      testID={testID}
+    >
       {term ? <Rich source={term} part="definition-term" /> : null}
       {body ? <Rich source={body} part="definition-body" /> : null}
     </ScaffoldCard>
@@ -53,7 +58,7 @@ export function DefinitionCard({
 export function KeyPointCard({ body, testID }: { body: string; testID?: string }) {
   const { strings } = useLearnHost();
   return (
-    <ScaffoldCard kind="key-point" label={strings.label.keyPoint} testID={testID}>
+    <ScaffoldCard kind="key-point" label={strings.label.keyPoint} variant="inline" testID={testID}>
       <Rich source={body} part="key-point-body" />
     </ScaffoldCard>
   );
@@ -75,7 +80,7 @@ export function TheoremCard({
   const { strings } = useLearnHost();
   const [open, setOpen] = useState(false);
   return (
-    <ScaffoldCard kind="theorem" label={strings.label.theorem} testID={testID}>
+    <ScaffoldCard kind="theorem" label={strings.label.theorem} variant="inline" testID={testID}>
       {title ? <Rich source={title} part="theorem-title" /> : null}
       <Rich source={statement} part="theorem-statement" />
       {proofBody ? (
@@ -117,6 +122,7 @@ export function ProofCard({
     <ScaffoldCard
       kind="proof"
       label={strings.label.proof}
+      variant="inline"
       testID={testID}
       trailing={
         <PillAction

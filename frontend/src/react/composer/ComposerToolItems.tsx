@@ -35,10 +35,12 @@ export function MenuItem({
         <Icon name={workflowGlyph(spec.key)} size={18} />
       </span>
       <span className="composer-tools-copy">
-        <span>{label}</span>
+        <span className="composer-tools-title-row">
+          <span>{label}</span>
+          {spec.shortcut ? <kbd>{spec.shortcut}</kbd> : null}
+        </span>
         {description ? <small>{description}</small> : null}
       </span>
-      {spec.shortcut ? <kbd>{spec.shortcut}</kbd> : null}
       {/* RN-7: an active tool reads as a check, like a selected plugin — never a dot. */}
       {active ? (
         <Icon name="check" className="composer-tools-check composer-tools-active-check" />

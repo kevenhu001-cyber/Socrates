@@ -8,13 +8,12 @@ import { Button } from '../ui/shadcn/button';
  * transcript stylesheets no longer own `.msg-toolbar-btn` (ADR 0024:
  * structure in the component, geometry from tokens). The class stays on the
  * node because the tooltip (`::after` on `attr(aria-label)`), the state skins
- * (`.active`, `.is-speaking`, `.is-copied`), the phone `::before` hit area and
- * the 16 → 18px glyph rung are affordances rather than geometry, and they are
- * still product-owned. */
+ * (`.active`, `.is-speaking`, `.is-copied`), the phone `::before` hit area,
+ * and the glyph footprint remain product-owned. */
 const TOOL_BUTTON = [
   'msg-toolbar-btn relative inline-grid size-(--ui-control-sm) place-items-center',
   'rounded-[var(--ui-radius-control)] border-0 bg-transparent p-0',
-  'text-foreground cursor-pointer hover:bg-[var(--ui-bg-hover-ghost)] hover:text-foreground',
+  'text-muted-foreground cursor-pointer hover:bg-[var(--ui-bg-hover-ghost)] hover:text-foreground',
   'focus-visible:bg-[var(--ui-bg-hover-ghost)] focus-visible:text-foreground',
   'transition-all duration-(--ui-duration-hover) active:not-aria-[haspopup]:translate-y-0 active:scale-95',
 ].join(' ');

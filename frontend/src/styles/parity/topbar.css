@@ -169,7 +169,7 @@ html[data-main-view='settingsPage'] #appShell .top-bar {
       min-width: 0;
       max-width: 100%;
     }
-    #appShell .top-bar-left #topModelSwitcher > svg {
+    #appShell .top-bar-left #topModelSwitcher > span[aria-hidden='true'] {
       flex-shrink: 0;
     }
     #appShell .top-mode-switch {

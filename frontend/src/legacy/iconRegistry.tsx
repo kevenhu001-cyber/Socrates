@@ -2,6 +2,7 @@
 import React, { type ReactNode } from 'react';
 import {
   getInterfaceIconShapes,
+  getInterfaceIconViewBox,
   interfaceIcon,
   isOpenAIGlyph,
   type InterfaceIconName,
@@ -34,10 +35,12 @@ export function getIconDescriptor(name: IconName): IconDescriptor {
   if (name === 'spinner') return { children: null };
   let descriptor = descriptors.get(name);
   if (!descriptor) {
-    const shapes = getInterfaceIconShapes(resolve(name));
+    const resolved = resolve(name);
+    const shapes = getInterfaceIconShapes(resolved);
     if (!shapes.length) return { children: null };
     descriptor = {
-      filled: isOpenAIGlyph(resolve(name)),
+      viewBox: getInterfaceIconViewBox(resolved),
+      filled: isOpenAIGlyph(resolved),
       children: shapes.map(([tag, attrs], key) => React.createElement(tag, { ...attrs, key })),
     };
     descriptors.set(name, descriptor);

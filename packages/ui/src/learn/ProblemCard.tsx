@@ -243,6 +243,7 @@ export function ProblemCard(props: ProblemCardProps) {
     <ScaffoldCard
       kind={kind}
       label={kind === 'example' ? strings.label.example : strings.label.practice}
+      variant={kind === 'example' ? 'inline' : 'card'}
       testID={testID}
     >
       {showTitle ? <Rich source={title || ''} part={`${kind}-title`} /> : null}

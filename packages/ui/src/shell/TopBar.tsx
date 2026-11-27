@@ -186,7 +186,7 @@ export function TopBarModelSwitcher({
           flexShrink: 1,
           minWidth: 0,
           maxWidth: narrow ? 80 : compact ? 108 : 360,
-          height: 32,
+          height: compact ? 32 : 36,
           paddingTop: 0,
           paddingBottom: 0,
           paddingLeft: showSettings ? 0 : compact ? uiStep[100] - 2 : uiControl.padNav,
@@ -249,7 +249,20 @@ export function TopBarModelSwitcher({
         {model}
       </span>
       {showSettings || narrow ? null : (
-        <UiIcon name="chevron-down" size={compact ? 12 : 14} color={colors.inkTertiary} />
+        <span
+          aria-hidden="true"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            transform: expanded ? 'rotate(180deg)' : 'none',
+            transitionProperty: 'transform',
+            transitionDuration: `${uiMotion.fast}ms`,
+          }}
+        >
+          <UiIcon name="chevron-down" size={compact ? 12 : 14} color={colors.inkTertiary} />
+        </span>
       )}
     </button>
   );

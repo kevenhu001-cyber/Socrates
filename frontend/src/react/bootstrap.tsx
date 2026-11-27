@@ -14,6 +14,7 @@ import { preloadAssistantTurn } from './tool-run/LazyAssistantTurn';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { canReloadComposer, reloadWithComposerDrafts } from '../composer/reloadDrafts.ts';
 import { isImportLoadError } from './lib/boot/retryImport';
+import { registerReactCompatibilityMount } from '../app/reactCompatibilityMount.ts';
 
 const RECOVERY_MESSAGES: Record<string, [string, string]> = {
   'sidebar-nav': ['boot.navigationUnavailable', 'The navigation could not load.'],
@@ -77,10 +78,14 @@ export function bootstrapReactCompatibilityRuntime(): void {
   const runtime = window as Window & {
     __socratesMountReactCompatibility?: () => void;
   };
-  runtime.__socratesMountReactCompatibility = () => {
+  const mount = () => {
     runMountRegistry(document, mountOptions);
     warmAssistantTurnOnComposerIntent();
   };
+  runtime.__socratesMountReactCompatibility = mount;
+  registerReactCompatibilityMount(() => {
+    if (document.documentElement.dataset.bootState === 'app') mount();
+  });
 }
 
 /**

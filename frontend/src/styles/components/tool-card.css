@@ -96,7 +96,9 @@
   padding-inline: 0;
 }
 @media (max-width: 768px) {
-  .tool-approval-decisions > * { min-height: var(--ui-control-touch); }
+  .tool-approval-decisions > * {
+    min-height: var(--ui-control-touch);
+  }
 }
 
 /* Inline artifacts remain in the answer when activity is collapsed. */

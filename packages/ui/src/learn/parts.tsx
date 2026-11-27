@@ -35,6 +35,7 @@ export function ScaffoldCard({
   kind,
   label,
   trailing,
+  variant = 'card',
   children,
   testID,
   accessibilityLabel,
@@ -42,27 +43,44 @@ export function ScaffoldCard({
   kind: string;
   label: string;
   trailing?: ReactNode;
+  variant?: 'card' | 'inline';
   children: ReactNode;
   testID?: string;
   accessibilityLabel?: string;
 }) {
   const pad = useCardPad();
   const { colors } = useUiTheme();
+  const inline = variant === 'inline';
   return (
     <div
       data-testid={testID ?? `scaffold-${kind}`}
       role="group"
       aria-label={accessibilityLabel ?? label}
-      {...dataAttributes({ scaffold: kind })}
+      {...dataAttributes({ scaffold: kind, surface: variant })}
       style={{
         display: 'flex',
         flexDirection: 'column',
-        borderRadius: R.card,
-        backgroundColor: colors.card,
-        borderWidth: 1,
-        borderStyle: 'solid',
-        borderColor: colors.hairline,
-        overflow: 'hidden',
+        borderRadius: inline ? 0 : R.card,
+        backgroundColor: inline ? 'transparent' : colors.card,
+        ...(inline
+          ? {
+              borderTopWidth: 0,
+              borderRightWidth: 0,
+              borderBottomWidth: 0,
+              borderLeftWidth: 2,
+              borderLeftStyle: 'solid',
+              borderLeftColor: colors.hairlineStrong,
+              paddingLeft: pad,
+            }
+          : {
+              borderTopWidth: 1,
+              borderRightWidth: 1,
+              borderBottomWidth: 1,
+              borderLeftWidth: 1,
+              borderStyle: 'solid',
+              borderColor: colors.hairline,
+              overflow: 'hidden',
+            }),
       }}
     >
       <div
@@ -72,14 +90,19 @@ export function ScaffoldCard({
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: S[100],
-          minHeight: H.action,
-          paddingLeft: pad,
-          paddingRight: pad,
-          paddingTop: S[50],
-          paddingBottom: S[50],
+          minHeight: inline ? 28 : H.action,
+          paddingLeft: inline ? 0 : pad,
+          paddingRight: inline ? 0 : pad,
+          paddingTop: inline ? 0 : S[50],
+          paddingBottom: inline ? S[50] : S[50],
         }}
       >
-        <UiText variant="labelSm" tone="ink" numberOfLines={1} style={{ flexShrink: 1 }}>
+        <UiText
+          variant="labelSm"
+          tone={inline ? 'secondary' : 'ink'}
+          numberOfLines={1}
+          style={{ flexShrink: 1 }}
+        >
           {label}
         </UiText>
         {trailing ?? null}
@@ -88,11 +111,11 @@ export function ScaffoldCard({
         style={{
           display: 'flex',
           flexDirection: 'column',
-          paddingLeft: pad,
-          paddingRight: pad,
-          paddingTop: pad,
-          paddingBottom: pad,
-          gap: S[100],
+          paddingLeft: inline ? 0 : pad,
+          paddingRight: inline ? 0 : pad,
+          paddingTop: inline ? 0 : pad,
+          paddingBottom: inline ? 2 : pad,
+          gap: inline ? S[75] : S[100],
         }}
       >
         {children}

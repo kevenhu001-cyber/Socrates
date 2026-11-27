@@ -6,6 +6,7 @@ import { restingRect } from '../../legacy/pressFeedback.ts';
 import type {
   ChatConfigurationBridge,
   ChatConfigurationSnapshot,
+  ChatConfigurationView,
   ChatProviderOption,
 } from './types';
 
@@ -27,6 +28,7 @@ const factoryBridge = createImmutableBridge<ChatConfigurationSnapshot, Action>({
     speed: 'standard',
     anchorRect: null,
     triggerId: null,
+    initialView: 'main',
     revision: 0,
   },
   reducer: (_state, action) => action,
@@ -40,7 +42,10 @@ export function installChatConfigurationBridge(): ChatConfigurationBridge {
   return bridge;
 }
 
-export function openChatConfiguration(trigger?: HTMLElement | null): void {
+export function openChatConfiguration(
+  trigger?: HTMLElement | null,
+  initialView: ChatConfigurationView = 'main',
+): void {
   const bridge = installChatConfigurationBridge();
   /* The pill toggles: a second tap on the same control dismisses instead of
      re-publishing an already-open popover. */
@@ -68,6 +73,7 @@ export function openChatConfiguration(trigger?: HTMLElement | null): void {
     effort: getStoredReasoningEffort(),
     speed: getStoredResponseSpeed(),
     triggerId: trigger?.id || null,
+    initialView,
     anchorRect: rect
       ? {
           top: rect.top,
@@ -91,6 +97,7 @@ export function closeChatConfiguration(restoreFocus = true): void {
     speed: current.speed,
     anchorRect: current.anchorRect,
     triggerId: null,
+    initialView: 'main',
   });
   if (restoreFocus && returnFocus && !hasMobileComposerFocus()) {
     const target = returnFocus;

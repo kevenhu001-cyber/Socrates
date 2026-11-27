@@ -418,22 +418,35 @@
    second dashboard card. Their data, controls, and chart grid remain intact.
    A chart the tutor writes as an ```openui fence in the prose follows the
    same rule: no frame, and no header band (the dark theme painted one). */
-#appShell .tool-inline-attachments .visualization-card,
-#appShell .intui-openui [data-openui-visualization] .visualization-card {
+#appShell
+  :is(.tool-inline-attachments, .intui-openui [data-openui-visualization], .msg-body)
+  .visualization-card {
   border: 0;
+  border-radius: 0;
   box-shadow: none;
   background: transparent;
 }
-#appShell .tool-inline-attachments .visualization-header,
-#appShell .intui-openui [data-openui-visualization] .visualization-header {
+#appShell
+  :is(.tool-inline-attachments, .msg-body)
+  .visualization-card:not(:where(.intui *, .intui-openui *)) {
+  margin-block: var(--ui-space-xs);
+}
+#appShell
+  :is(.tool-inline-attachments, .intui-openui [data-openui-visualization], .msg-body)
+  .visualization-header {
+  min-height: 0;
+  padding: 0 0 var(--ui-space-xs);
   border-bottom: 0;
   background: transparent;
 }
-#appShell .tool-inline-attachments :is(.visualization-header, .visualization-caption) {
+#appShell
+  :is(.tool-inline-attachments, .intui-openui [data-openui-visualization], .msg-body)
+  :is(.visualization-header, .visualization-caption) {
   padding-inline: 0;
 }
-#appShell .tool-inline-attachments .visualization-caption,
-#appShell .intui-openui [data-openui-visualization] .visualization-caption {
+#appShell
+  :is(.tool-inline-attachments, .intui-openui [data-openui-visualization], .msg-body)
+  .visualization-caption {
   color: var(--ui-text-secondary);
   font-size: var(--ui-font-size-xs);
   overflow-wrap: anywhere;

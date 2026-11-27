@@ -96,6 +96,50 @@
   overflow: hidden;
 }
 
+.sc-live:is(
+  [data-scaffold-live='definition'],
+  [data-scaffold-live='key-point'],
+  [data-scaffold-live='theorem'],
+  [data-scaffold-live='proof'],
+  [data-scaffold-live='derivation'],
+  [data-scaffold-live='step'],
+  [data-scaffold-live='example']
+) {
+  border: 0;
+  border-left: 2px solid var(--ui-hairline-strong);
+  border-radius: 0;
+  background: transparent;
+  padding-left: var(--sc-pad);
+}
+
+.sc-live:is(
+    [data-scaffold-live='definition'],
+    [data-scaffold-live='key-point'],
+    [data-scaffold-live='theorem'],
+    [data-scaffold-live='proof'],
+    [data-scaffold-live='derivation'],
+    [data-scaffold-live='step'],
+    [data-scaffold-live='example']
+  )
+  > .sc-live-head {
+  min-height: 28px;
+  padding: 0 0 var(--ui-gap-1);
+}
+
+.sc-live:is(
+    [data-scaffold-live='definition'],
+    [data-scaffold-live='key-point'],
+    [data-scaffold-live='theorem'],
+    [data-scaffold-live='proof'],
+    [data-scaffold-live='derivation'],
+    [data-scaffold-live='step'],
+    [data-scaffold-live='example']
+  )
+  > .sc-live-body {
+  padding: 0 0 2px;
+  gap: var(--ui-gap-1);
+}
+
 @media (max-width: 768px) {
   .sc-live {
     --sc-pad: var(--ui-gap-3);
@@ -341,7 +385,7 @@
   padding-bottom: 0;
 }
 .sc-live[data-scaffold-live='step'] + .sc-live[data-scaffold-live='step'] > .sc-live-body {
-  padding-top: var(--ui-gap-5);
+  padding-top: var(--ui-gap-2);
 }
 
 /* A field that is a single formula renders as display math in prose; inside

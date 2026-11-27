@@ -42,13 +42,15 @@ test('Composer tools menu React mode hydrates #composerToolsMenu eagerly', async
   const mobileActions = await page
     .locator('#composerToolsMenu .composer-tools-mobile-items [data-composer-action]')
     .evaluateAll((els) => els.map((el) => el.getAttribute('data-composer-action')));
-  /* The floating phone list keeps media actions first, followed by effort,
-     connected capabilities, search and the remaining workflows. */
+  /* The floating phone list keeps media actions first, followed by the
+     model and effort shortcuts, connected capabilities, search and the
+     remaining workflows. */
   expect(mobileActions).toEqual([
     'camera',
     'photos',
     'upload',
     'wechatFiles',
+    'model',
     'reasoningEffort',
     'managePlugins',
     'skills',
@@ -109,6 +111,23 @@ test('Composer tools menu opens and dismisses from React controls', async ({ pag
   await expect(
     menu.locator('.composer-tools-desktop-items .composer-tools-group-label').first(),
   ).toContainText(/Add context|添加资料/);
+  /* ChatGPT-style card: 300px, 20px corners, quiet row separators and no
+     painted section headers. */
+  const card = await menu.evaluate((node) => {
+    const label = node.querySelector('.composer-tools-desktop-items .composer-tools-group-label');
+    return {
+      width: Math.round(node.getBoundingClientRect().width),
+      radius: getComputedStyle(node).borderTopLeftRadius,
+      labelPosition: label ? getComputedStyle(label).position : null,
+      rowHeight: Math.round(
+        node.querySelector('[data-composer-action="upload"]')?.getBoundingClientRect().height ?? 0,
+      ),
+    };
+  });
+  expect(card.width).toBe(300);
+  expect(card.radius).toBe('20px');
+  expect(card.labelPosition).toBe('absolute');
+  expect(card.rowHeight).toBeGreaterThanOrEqual(44);
   await page.screenshot({
     path: 'test-results/visual-qa/composer-workflows-menu.png',
     fullPage: true,
