@@ -17,6 +17,10 @@ describe('production prompt contracts', () => {
     assert.ok(prompt.length < 4_000, `Beagle prompt grew to ${prompt.length} characters`);
     assert.match(prompt, /server policy above/i);
     assert.match(prompt, /`tools` array supplied by the server/i);
+    assert.match(prompt, /Answer directly by default/i);
+    assert.match(prompt, /Prefer one sufficient call over a chain/i);
+    assert.match(prompt, /Never narrate tool plans/i);
+    assert.doesNotMatch(prompt, /calculations, verification, visuals/i);
     assert.doesNotMatch(
       prompt,
       /MiniMax|deny it if directly asked|web_search|web_fetch|code_interpreter|render_visualization|create_plan|create_spec/,

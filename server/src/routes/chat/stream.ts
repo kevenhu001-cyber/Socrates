@@ -131,9 +131,15 @@ export function registerStreamRoute(router: Router) {
           await withChatTurnExecution(req.userId!, turnId, async (executionSignal) => {
             timing.mark('claimed');
             const bodyMode = (req.body as { mode?: unknown } | undefined)?.mode;
+            /* Read the validated request value before prepare resolves it:
+               the tool policy is built alongside the DB prelude, and the
+               user's chosen effort is already available here. */
+            const requestedEffort = (req.body as { reasoning_effort?: unknown } | undefined)
+              ?.reasoning_effort;
             const toolCtxPromise = createStreamToolContext(
               req as typeof req & { userId?: string },
               bodyMode === 'tutor' ? 'tutor' : 'chat',
+              typeof requestedEffort === 'string' ? requestedEffort : undefined,
             );
             toolCtxPromise.catch(() => {});
             const prep = await prepareChatRequest(req, res, {

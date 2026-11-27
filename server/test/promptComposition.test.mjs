@@ -34,9 +34,18 @@ test('production chat and tutor instructions agree on native learning output and
     assert.match(prompt, /Output style never overrides these requirements/);
     assert.match(prompt, /one thought per short paragraph/);
     assert.match(prompt, /For explanations in any mode/);
+    assert.match(prompt, /when the request calls for understanding rather than a quick fact/);
+    assert.match(
+      prompt,
+      /A definition, fact, or short calculation gets a direct answer, not a lesson/,
+    );
     assert.match(prompt, /complete requested derivations/);
     assert.match(prompt, /important equations on their own display lines/i);
     assert.match(prompt, /an excellent textbook in conversation/);
+    assert.match(
+      prompt,
+      /Do not add a visual, card, or artifact merely because a tool is available/,
+    );
     assert.doesNotMatch(prompt, /detailed, rich, self-contained explanation/);
     // Actual composed instructions must never teach the retired output format.
     assert.doesNotMatch(prompt, /<(?:quiz|practice|definition|flashcard|correct)[ >]/);
@@ -60,11 +69,21 @@ test('every learning mode composes with teacher policy without reintroducing XML
 test('turn-level reminder follows the shared defaults and preserves explicit output requests', () => {
   assert.match(STYLE_REMINDER, /user's explicit task/);
   assert.match(STYLE_REMINDER, /Preserve structured output contracts/);
-  assert.doesNotMatch(STYLE_REMINDER, /do not use a colon|override any conflicting client style hint/);
+  assert.doesNotMatch(
+    STYLE_REMINDER,
+    /do not use a colon|override any conflicting client style hint/,
+  );
 });
 
 test('current tutor role keeps the legacy split boundary and separates changing lesson state', () => {
-  const input = [{ role: 'system', content: '[Assistant mode instructions]\n' + SOCRATIC_SYSTEM_PROMPT.replace('{context}', 'Stage: exercise') }];
+  const input = [
+    {
+      role: 'system',
+      content:
+        '[Assistant mode instructions]\n' +
+        SOCRATIC_SYSTEM_PROMPT.replace('{context}', 'Stage: exercise'),
+    },
+  ];
   const split = splitPromptContext(input, 'tutor');
   assert.equal(split.initialization.length, 1);
   assert.doesNotMatch(split.initialization[0].content, /Stage: exercise/);

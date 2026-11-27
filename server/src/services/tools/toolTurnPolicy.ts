@@ -10,8 +10,10 @@
  *
  * This module replaces those counters with one explicit policy object:
  *
- *   - a generous iteration budget (12 hops by default) so genuine
- *     multi-step work fits inside a single turn,
+ *   - an effort-scaled iteration budget: High keeps the generous 12 hops
+ *     that genuine multi-step work needs, while Low and Instant get short
+ *     budgets so a simple question cannot spend the whole turn in the tool
+ *     loop,
  *   - failure accounting per tool, so a broken call only ever costs the
  *     tool that broke, never the whole toolset,
  *   - a duplicate-call guard, because an identical retry cannot make
@@ -20,13 +22,50 @@
  *     budget from turning into a runaway turn.
  *
  * Every threshold is environment-tunable so operators can tighten or relax
- * the loop without a code change.
+ * the loop without a code change. An explicit environment value wins over
+ * the effort-derived default.
  */
 
 import { createHash } from 'node:crypto';
 
 /** Consecutive same-tool failures tolerated before that tool steps aside. */
 const DEFAULT_PER_TOOL_FAILURE_LIMIT = 3;
+
+export type ToolReasoningEffort = 'none' | 'low' | 'medium' | 'high';
+
+interface EffortBudget {
+  maxIterations: number;
+  maxCallsPerIteration: number;
+  maxTotalCalls: number;
+  wallClockMs: number;
+}
+
+/**
+ * A low-effort turn should not behave like a high-effort one. The model may
+ * still choose tools, but it cannot keep discovering, retrying and
+ * synthesizing for a dozen hops after the user asked for a quick answer.
+ *
+ * `high` is also the fallback for callers that send no effort (an undeclared
+ * model or an older client), so the previous default budget is preserved.
+ */
+const EFFORT_BUDGETS: Record<ToolReasoningEffort, EffortBudget> = {
+  none: { maxIterations: 2, maxCallsPerIteration: 4, maxTotalCalls: 4, wallClockMs: 2 * 60_000 },
+  low: { maxIterations: 4, maxCallsPerIteration: 6, maxTotalCalls: 8, wallClockMs: 5 * 60_000 },
+  medium: {
+    maxIterations: 8,
+    maxCallsPerIteration: 8,
+    maxTotalCalls: 16,
+    wallClockMs: 10 * 60_000,
+  },
+  high: { maxIterations: 12, maxCallsPerIteration: 8, maxTotalCalls: 24, wallClockMs: 15 * 60_000 },
+};
+
+function effortBudget(effort: string | undefined): EffortBudget {
+  if (effort === 'none' || effort === 'low' || effort === 'medium' || effort === 'high') {
+    return EFFORT_BUDGETS[effort];
+  }
+  return EFFORT_BUDGETS.high;
+}
 
 function envInt(name: string, fallback: number, min: number, max: number): number {
   const raw = process.env[name];
@@ -37,6 +76,8 @@ function envInt(name: string, fallback: number, min: number, max: number): numbe
 }
 
 export interface ToolTurnPolicyOptions {
+  /** User-selected thinking level; scales the default budgets. */
+  reasoningEffort?: string;
   maxIterations?: number;
   maxCallsPerIteration?: number;
   maxTotalCalls?: number;
@@ -96,15 +137,20 @@ export interface ToolTurnPolicy {
 }
 
 export function createToolTurnPolicy(options: ToolTurnPolicyOptions = {}): ToolTurnPolicy {
-  const maxIterations = options.maxIterations ?? envInt('CHAT_MAX_TOOL_ITERATIONS', 12, 1, 40);
+  const defaults = effortBudget(options.reasoningEffort);
+  const maxIterations =
+    options.maxIterations ?? envInt('CHAT_MAX_TOOL_ITERATIONS', defaults.maxIterations, 1, 40);
   const maxCallsPerIteration =
-    options.maxCallsPerIteration ?? envInt('CHAT_MAX_TOOL_CALLS_PER_TURN', 8, 1, 16);
-  const maxTotalCalls = options.maxTotalCalls ?? envInt('CHAT_MAX_TOOL_CALLS_TOTAL', 24, 1, 200);
+    options.maxCallsPerIteration ??
+    envInt('CHAT_MAX_TOOL_CALLS_PER_TURN', defaults.maxCallsPerIteration, 1, 16);
+  const maxTotalCalls =
+    options.maxTotalCalls ?? envInt('CHAT_MAX_TOOL_CALLS_TOTAL', defaults.maxTotalCalls, 1, 200);
   const perToolFailureLimit =
     options.perToolFailureLimit ??
     envInt('CHAT_TOOL_FAILURE_LIMIT', DEFAULT_PER_TOOL_FAILURE_LIMIT, 1, 10);
   const wallClockMs =
-    options.wallClockMs ?? envInt('CHAT_TOOL_WALL_CLOCK_MS', 15 * 60_000, 30_000, 60 * 60_000);
+    options.wallClockMs ??
+    envInt('CHAT_TOOL_WALL_CLOCK_MS', defaults.wallClockMs, 30_000, 60 * 60_000);
   const backoffBaseMs = envInt('CHAT_TOOL_BACKOFF_BASE_MS', 1_500, 0, 60_000);
   const backoffMaxMs = envInt('CHAT_TOOL_BACKOFF_MAX_MS', 15_000, 1_000, 120_000);
   const now = options.now || (() => Date.now());
@@ -171,7 +217,8 @@ export function createToolTurnPolicy(options: ToolTurnPolicyOptions = {}): ToolT
       if (seenCalls.has(key)) {
         return {
           code: 'duplicate_tool_call',
-          message: 'This exact call already ran in this turn, so it was not executed again. Use the previous result, change the arguments materially, or continue in prose.',
+          message:
+            'This exact call already ran in this turn, so it was not executed again. Use the previous result, change the arguments materially, or continue in prose.',
         };
       }
       const exhausted = budgetExhausted();

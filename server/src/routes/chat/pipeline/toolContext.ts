@@ -118,25 +118,73 @@ async function loadConnectorSnapshots(userId?: string): Promise<{
   return { connectorConnectionsByProvider, projectConnectorConnectionsByProvider };
 }
 
+/* Intent prewarm is an optimization, not an authorization gate: a tool that
+ * is not prewarmed remains discoverable through search_connectors. These
+ * patterns therefore require an explicit action, not a topic mention.
+ * "解释这个图表" or "项目为什么慢" must not load the visualization or
+ * workspace toolset for a prose answer. */
+const DEFINITION_QUESTION = /(?:什么是|是什么意思|是什么|what\s+is|what\s+does|meaning\s+of)/i;
+
+const VISUAL_VERB =
+  /(?:画|绘制|画出|生成|制作|创建|做个|做一个|呈现|展示|更新|修改|调整|render|draw|plot|chart|diagram|visuali[sz]e|create|make|build|show|update|edit|patch|refresh)/i;
+const VISUAL_NOUN =
+  /(?:图|图表|示意图|曲线|函数图像|流程图|关系图|对比图|可视化|交互演示|演示|仿真|动画|chart|diagram|graph|plot|visual|simulation|animation)/i;
+
+const WORKSPACE_ACTION =
+  /(?:修改|编辑|创建|新建|删除|重命名|移动|修复|调试|实现|重构|运行|执行|测试|检查|审查|查看|读取|写入|编写|加|改|review|inspect|read|write|create|edit|update|delete|rename|move|fix|debug|implement|refactor|run|execute|test|check)/i;
+const WORKSPACE_OBJECT =
+  /(?:代码|源码|文件|仓库|项目|脚本|测试|工作区|目录|bug|repo|repository|codebase|workspace|file|script|test)/i;
+
+const DOCUMENT_VERB =
+  /(?:写|生成|创建|制定|整理|输出|起草|做|列|给我|make|create|write|draft|generate|build|give)/i;
+const DOCUMENT_NOUN = /(?:计划|方案|需求文档|文档|规格|spec|plan|document|proposal)/i;
+
+const SITE_VERB = /(?:创建|制作|搭建|生成|建|做|写|build|create|make|generate|code)/i;
+const SITE_NOUN = /(?:网站|网页|website|web\s*page|html|site)/i;
+
+const PAPER_VERB = /(?:找|搜索|查找|检索|查|阅读|读|推荐|search|find|look\s+up|read|recommend)/i;
+const PAPER_NOUN = /(?:论文|文献|paper|literature|arxiv)/i;
+
+const IMAGE_VERB = /(?:找|搜索|查找|搜|来|给我|展示|show|find|search|look\s+for)/i;
+const IMAGE_NOUN = /(?:图片|照片|图像|image|photo|picture)/i;
+
 /**
  * No classifier model call: prewarm clearly relevant capabilities, defer
  * the rest to the existing schema discovery path. Unknown intents retain
  * access to every enabled tool through discovery. Environment opt-out.
  */
-export function selectDeferredCoreTools(body: unknown, mode: string): Set<string> {
+export function selectDeferredCoreTools(body: unknown, _mode: string): Set<string> {
   if (process.env.CHAT_DEFER_CORE_TOOLS === '0') return new Set();
   const messages = requestMessages(body);
   const users = messages.filter((m) => m.role === 'user');
   const latest = users.at(-1);
   const text = contentText(latest?.content).slice(0, 16000);
   // A short follow-up may refer to the preceding task.
-  const prior = users.length > 1 && text.length < 80 ? contentText(users.at(-2)?.content).slice(0, 3000) : '';
+  const prior =
+    users.length > 1 && text.length < 80 ? contentText(users.at(-2)?.content).slice(0, 3000) : '';
   const intent = text + '\n' + prior;
-  const deferred = new Set(['code_interpreter', 'render_intelligent_ui', 'get_ui_contract',
-    'patch_intelligent_ui', 'image_search', 'workspace_agent', 'initialize_workspace',
-    'create_document', 'create_site', 'arxiv_search']);
+  const deferred = new Set([
+    'code_interpreter',
+    'render_intelligent_ui',
+    'get_ui_contract',
+    'patch_intelligent_ui',
+    'image_search',
+    'workspace_agent',
+    'initialize_workspace',
+    'create_document',
+    'create_site',
+    'arxiv_search',
+  ]);
   const enable = (...names: string[]) => names.forEach((name) => deferred.delete(name));
-  if (mode === 'tutor' || /图|示意|可视化|交互|仿真|推导|讲解|解释|diagram|chart|visual|plot|explain|derive|simulation/i.test(intent)) {
+  /* A short follow-up inherits the prior topic for intent matching, but a
+     definitional prior ("what is …") must not turn "continue" into a
+     workspace request. */
+  const definitional =
+    DEFINITION_QUESTION.test(text) || (text.length < 80 && DEFINITION_QUESTION.test(prior));
+  /* Tutor mode used to prewarm the whole visualization stack for every
+   * turn. Most tutor turns are prose explanations; discovery still exposes
+   * the visual tools when a chart is actually requested. */
+  if (VISUAL_VERB.test(intent) && VISUAL_NOUN.test(intent)) {
     enable('render_intelligent_ui', 'get_ui_contract', 'patch_intelligent_ui');
   }
   // Mentioning Python, CSV or numerical methods is not itself an execution
@@ -147,19 +195,22 @@ export function selectDeferredCoreTools(body: unknown, mode: string): Set<string
       intent,
     );
   if (needsCodeExecution) enable('code_interpreter');
-  if (/图片|照片|找图|image|photo|picture/i.test(intent)) enable('image_search');
-  if (/仓库|编程|修改代码|修复|工作区|项目|实现|repo|github|coding|workspace|implement|refactor|debug|fix|edit files/i.test(intent)) enable('workspace_agent', 'initialize_workspace');
-  if (/计划|需求|方案|文档|plan|specification|document/i.test(intent)) enable('create_document');
-  if (/网页|网站|website|web page|html/i.test(intent)) enable('create_site');
-  if (/论文|文献|arxiv|paper|literature/i.test(intent)) enable('arxiv_search');
+  if (IMAGE_VERB.test(intent) && IMAGE_NOUN.test(intent)) enable('image_search');
+  if (!definitional && WORKSPACE_ACTION.test(intent) && WORKSPACE_OBJECT.test(intent)) {
+    enable('workspace_agent', 'initialize_workspace');
+  }
+  if (DOCUMENT_VERB.test(intent) && DOCUMENT_NOUN.test(intent)) enable('create_document');
+  if (SITE_VERB.test(intent) && SITE_NOUN.test(intent)) enable('create_site');
+  if (PAPER_VERB.test(intent) && PAPER_NOUN.test(intent)) enable('arxiv_search');
   return deferred;
 }
 
 export async function createStreamToolContext(
   req: Request & { userId?: string },
   mode: string,
+  reasoningEffort?: string,
 ): Promise<StreamToolContext> {
-  const toolPolicy = createToolTurnPolicy();
+  const toolPolicy = createToolTurnPolicy({ reasoningEffort });
   const codeInterpreterToolDef = codeInterpreter.getToolDefinition();
 
   const { connectorConnectionsByProvider, projectConnectorConnectionsByProvider } =
@@ -185,7 +236,9 @@ export async function createStreamToolContext(
   });
   const validationDefs = toolRegistry.definitions as RuntimeToolDefinition[];
   const toolDefs: RuntimeToolDefinition[] = validationDefs.map((definition) =>
-    definition.function?.name === 'render_intelligent_ui' ? INTELLIGENT_UI_PROVIDER_TOOL : definition,
+    definition.function?.name === 'render_intelligent_ui'
+      ? INTELLIGENT_UI_PROVIDER_TOOL
+      : definition,
   );
   connectorCatalog = addDeferredCoreTools(connectorCatalog, toolDefs, deferredCore);
 
@@ -205,7 +258,12 @@ export async function createStreamToolContext(
    * their native schemas, and generated placeholder examples for connector
    * arguments are not necessarily semantically valid. On-error correction
    * still has access to the canonical example for every tool. */
-  const exampleTools = new Set(['code_interpreter', 'patch_intelligent_ui', 'cite_sources', 'create_document']);
+  const exampleTools = new Set([
+    'code_interpreter',
+    'patch_intelligent_ui',
+    'cite_sources',
+    'create_document',
+  ]);
   const toolExamples: Record<string, string> = {};
   for (const name of toolNames) {
     if (!exampleTools.has(name)) continue;
@@ -222,7 +280,9 @@ export async function createStreamToolContext(
   const FUZZY_SAFE = (name: string) => toolRegistry.get(name)?.pure === true;
 
   const initialToolNames = splitInitialToolNames(toolNames, connectorCatalog).sort();
-  const initialToolDefs = toolDefs.filter((tool) => initialToolNames.includes(tool.function?.name || ''));
+  const initialToolDefs = toolDefs.filter((tool) =>
+    initialToolNames.includes(tool.function?.name || ''),
+  );
   return {
     toolPolicy,
     MAX_TOOL_ITERATIONS: toolPolicy.maxIterations,

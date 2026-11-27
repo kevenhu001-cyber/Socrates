@@ -13,6 +13,40 @@ test('default budget offers tools for twelve hops', () => {
   assert.equal(policy.toolsAllowed(12), false);
 });
 
+test('reasoning effort scales the tool budget down for quick answers', () => {
+  const instant = createToolTurnPolicy({ reasoningEffort: 'none' });
+  assert.equal(instant.maxIterations, 2);
+  assert.equal(instant.maxCallsPerIteration, 4);
+  assert.equal(instant.snapshot().maxTotalCalls, 4);
+
+  const low = createToolTurnPolicy({ reasoningEffort: 'low' });
+  assert.equal(low.maxIterations, 4);
+  assert.equal(low.maxCallsPerIteration, 6);
+  assert.equal(low.snapshot().maxTotalCalls, 8);
+  assert.equal(low.toolsAllowed(3), true);
+  assert.equal(low.toolsAllowed(4), false);
+
+  const medium = createToolTurnPolicy({ reasoningEffort: 'medium' });
+  assert.equal(medium.maxIterations, 8);
+  assert.equal(medium.snapshot().maxTotalCalls, 16);
+
+  const high = createToolTurnPolicy({ reasoningEffort: 'high' });
+  assert.equal(high.maxIterations, 12);
+  assert.equal(high.snapshot().maxTotalCalls, 24);
+});
+
+test('an explicit environment budget wins over the effort default', () => {
+  const previous = process.env.CHAT_MAX_TOOL_ITERATIONS;
+  process.env.CHAT_MAX_TOOL_ITERATIONS = '9';
+  try {
+    const low = createToolTurnPolicy({ reasoningEffort: 'low' });
+    assert.equal(low.maxIterations, 9);
+  } finally {
+    if (previous === undefined) delete process.env.CHAT_MAX_TOOL_ITERATIONS;
+    else process.env.CHAT_MAX_TOOL_ITERATIONS = previous;
+  }
+});
+
 test('two malformed calls no longer disable the toolset', () => {
   const policy = createToolTurnPolicy();
   policy.recordResult('web_search', false, 'invalid_tool_arguments');

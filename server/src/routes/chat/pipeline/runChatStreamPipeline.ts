@@ -91,7 +91,7 @@ async function executeChatStreamPipeline(
   const toolCtxPromise =
     ctx.toolCtxPromise ??
     (() => {
-      const p = createStreamToolContext(req, mode);
+      const p = createStreamToolContext(req, mode, reasoning_effort);
       p.catch(() => {});
       return p;
     })();

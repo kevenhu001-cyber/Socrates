@@ -5,7 +5,11 @@
  * tool contract, and routing hints. Context retrieval (RAG/memory) lives in
  * context.ts; the request orchestrator lives in request.ts.
  */
-import { appendServerPolicy, escapePromptControlText, FINAL_OUTPUT_CONSTRAINTS_MARKER } from '../../../lib/chatPolicy.js';
+import {
+  appendServerPolicy,
+  escapePromptControlText,
+  FINAL_OUTPUT_CONSTRAINTS_MARKER,
+} from '../../../lib/chatPolicy.js';
 import { getCodeInterpreterPrompt, getTeacherModePrompt } from '../../../lib/prompts.js';
 import { MAX_VISUALIZATION_POINTS } from '../../../services/visualization.js';
 import { getDb } from '../../../db/index.js';
@@ -162,6 +166,7 @@ export function appendNativeToolContract<T extends { role: string; content?: unk
     NATIVE_TOOL_CONTRACT_MARKER,
     `The native tools available for this turn are exactly: ${availability}.`,
     'Invoke a tool only through the provider\'s native function-calling channel. Each call argument must be one JSON object matching that function\'s supplied `parameters` schema exactly and any per-kind shape rules in the tool-routing hints above. Never emit a legacy text marker, Markdown tool block, `{"tool":...}` object, or an extra `input`/`arguments` wrapper. If no native tool is supplied, do not invent or imitate one.',
+    'Prefer the shortest correct path. Answer directly for general knowledge, definitions, short calculations, explanations of supplied text, and ordinary conversation. Do not call a tool merely to confirm or restate what you already know. When one lookup or calculation settles the question, stop after that result and answer; do not chain extra tools or render a visual unless the user asked for one.',
     'Treat tool errors as internal feedback. Correct retryable arguments and retry within the turn budget when needed; do not narrate errors or ask the user to retry. Never repeat an uncertain side-effecting action automatically. If recovery is exhausted, answer with verified results and briefly state only a material limitation.',
   ];
 
@@ -181,9 +186,7 @@ export function appendNativeToolContract<T extends { role: string; content?: unk
   if (limits) {
     const budget: string[] = [];
     if (limits.maxIterations) {
-      budget.push(
-        `This turn allows up to ${limits.maxIterations} tool rounds.`,
-      );
+      budget.push(`This turn allows up to ${limits.maxIterations} tool rounds.`);
     }
     if (limits.maxCallsPerIteration)
       budget.push(`Emit at most ${limits.maxCallsPerIteration} tool calls per round.`);
@@ -243,16 +246,16 @@ const READ_ATTACHMENT_ROUTING_HINT = `## Reading file attachments
 When a user message contains \`[Attached file: "name" (mime, size), fileId: <uuid>]\` pointers, those files are stored on the server. Call \`read_attachment\` with the pointer's fileId to read a file on demand: documents return extracted text page by page (page forward with \`offset\` until hasMore is false), image attachments return a visual description (optionally focused by \`question\`), and media/binary files return metadata. Always read an attachment before answering questions about its contents; never guess from the filename. If the message also contains native image content, prefer it; use \`read_attachment\` for a second look or for files with no inline preview.`;
 
 const WORKSPACE_AGENT_ROUTING_HINT = `## Workspace agent (Pi)
-Choose \`workspace_agent\` automatically whenever the user's intent requires touching the project workspace: creating, editing, or reviewing files; implementing, fixing, or refactoring code; inspecting a repository; running commands or tests; performing an experiment; using project workspace context; or doing work that should be resumed later. This includes a request that changes only one file. Call \`initialize_workspace\` first when the user wants an explicit or clean workspace. Do not wait for the user to enable Agent, start a worker, or provide a special mode. Include the concrete desired outcome and constraints in \`task\`, then let the workspace agent perform the work instead of returning an imagined patch or merely describing commands. Ordinary explanations, short calculations, and a single quick lookup belong in the native response path. The server owns the workspace, model, sandbox, and resource limits. Never ask for or invent an absolute workspace path. While the agent works, the interface streams each step it takes (commands run, files edited, files read) directly into the conversation, so do not narrate those steps yourself or paste raw command output. After the tool returns, summarize what changed, tests run, and created artifacts. In Tutor mode, explain relevant decisions if useful; offer exercises only when the active learning activity or user requests them.`;
+Choose \`workspace_agent\` only when the user asks to change, create, run, or inspect files in the project workspace: editing or reviewing files; implementing, fixing, or refactoring code in the project; inspecting a repository; running commands or tests; performing an experiment; using project workspace context; or doing work that should be resumed later. This includes a request that changes only one file. Do not use it for explaining code, writing a short snippet in chat, or a general algorithm question unless the user asks to put it in the project. Call \`initialize_workspace\` first only when the user wants an explicit or clean workspace. Do not wait for the user to enable Agent, start a worker, or provide a special mode. Include the concrete desired outcome and constraints in \`task\`, then let the workspace agent perform the work instead of returning an imagined patch or merely describing commands. Ordinary explanations, short calculations, and a single quick lookup belong in the native response path. The server owns the workspace, model, sandbox, and resource limits. Never ask for or invent an absolute workspace path. While the agent works, the interface streams each step it takes (commands run, files edited, files read) directly into the conversation, so do not narrate those steps yourself or paste raw command output. After the tool returns, summarize what changed, tests run, and created artifacts. In Tutor mode, explain relevant decisions if useful; offer exercises only when the active learning activity or user requests them.`;
 
 const WEB_SEARCH_ROUTING_HINT = `## Web search
-When \`web_search\` is supplied, call it for real-time information, current facts, or looking up URLs. The required parameter is \`query\` (a concise search string, 1-6 words). Do not use \`q\` or \`keyword\`. An optional \`count\` (1-12, default 6) may be provided.`;
+When \`web_search\` is supplied, call it only for real-time information, current facts, or looking up URLs; do not search for stable definitions or arithmetic. One concise query is usually enough, and a successful result does not need a confirming second search. The required parameter is \`query\` (a concise search string, 1-6 words). Do not use \`q\` or \`keyword\`. An optional \`count\` (1-12, default 6) may be provided.`;
 
 const IMAGE_SEARCH_ROUTING_HINT = `## Image search
 When \`image_search\` is supplied, call it whenever the user asks for pictures, photos, or visual references, or when real-world imagery materially improves the requested answer. Avoid decorative images. The required parameter is \`query\` (a concise descriptive query, 1-6 words). Present the returned image URLs directly on the page using \`render_intelligent_ui\` (with \`image\` or \`image-gallery\` nodes) or Markdown image syntax.`;
 
 const WEB_FETCH_ROUTING_HINT = `## Web fetch
-When \`web_fetch\` is supplied, call it to read the content of specific URLs discovered via search or provided by the user. Pass \`url\` (a single http/https URL string) or \`urls\` (an array of up to 4 URLs). Start with small pages; continue with the returned next_offset when needed.`;
+When \`web_fetch\` is supplied, call it to read the content of specific URLs discovered via search or provided by the user. Do not fetch a page when the search result already answers the question; one source is enough for one lookup unless the user asks for broader coverage. Pass \`url\` (a single http/https URL string) or \`urls\` (an array of up to 4 URLs). Start with small pages; continue with the returned next_offset when needed.`;
 
 const CONNECTOR_DISCOVERY_ROUTING_HINT = `## Connected app connectors
 When a request needs connected apps or a native capability not currently listed (computation, visuals, images, files/workspace, documents, sites, papers), call \`search_connectors\` with a short English query. Then call \`get_connector_spec\` with the exact tool name to read its arguments; that tool becomes callable on the next step. Never guess a connector tool name or call a deferred tool before reading its spec. If no match appears, use the connected services list in the result to refine the query.`;
