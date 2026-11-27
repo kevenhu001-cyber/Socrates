@@ -11,6 +11,7 @@ import { ToolActivityIcon, toolActivitySites } from './ToolActivityIcon';
 import { ToolRunAgentSteps } from './ToolRunAgentSteps';
 import { ToolRunApproval } from './ToolRunApproval';
 import { ToolRunDetail } from './ToolRunDetail';
+import { publicToolDetailOf } from './publicToolDetail';
 import { useToolRunDisclosure } from './ToolRunDisclosure';
 import {
   agentRunStateOf,
@@ -45,7 +46,8 @@ export const ToolRunRow = memo(function ToolRunRow({
   const running = live && view.state === 'running';
   const stateLabel = executionStateLabel(view.state, live);
   const label = stateLabel ? toolActionLabel(call) : view.label;
-  const expandable = hasToolDetail(view);
+  const detail = publicToolDetailOf(view, call);
+  const { expandable } = detail;
   const testId = `tool-row-${view.id}`;
   const search = isInlineSearchTool(call.name);
   const seenHosts = new Set<string>();
@@ -120,7 +122,7 @@ export const ToolRunRow = memo(function ToolRunRow({
             {rowContent}
           </div>
         )}
-        {sources.length > 0 && !disclosure.open ? (
+        {sources.length > 0 && !(expandable && disclosure.open) ? (
           <div className="activity-source-preview" data-testid="activity-source-preview">
             {sources.map((source) => (
               <Button
@@ -148,12 +150,7 @@ export const ToolRunRow = memo(function ToolRunRow({
         ) : null}
         {disclosure.open && expandable ? (
           <div id={detailId} className="tool-run-detail-body" data-testid="tool-detail">
-            <ToolRunDetail
-              view={view}
-              call={call}
-              inFlight={live && (view.state === 'running' || view.state === 'awaiting')}
-              readOnly={readOnly}
-            />
+            <ToolRunDetail detail={detail} />
             {view.agentRun ? (
               <ToolRunAgentSteps
                 run={view.agentRun}
@@ -176,17 +173,6 @@ export const ToolRunRow = memo(function ToolRunRow({
     </div>
   );
 });
-
-function hasToolDetail(view: ToolRunView): boolean {
-  return Boolean(
-    view.sections.length ||
-    view.tech.length ||
-    view.livePreview ||
-    view.liveOutput ||
-    view.approval ||
-    view.agentRun,
-  );
-}
 
 function executionStateLabel(state: ToolRunView['state'], live: boolean): string | undefined {
   if (state === 'awaiting') return translate('tool.awaitingApproval', 'Waiting for your decision');

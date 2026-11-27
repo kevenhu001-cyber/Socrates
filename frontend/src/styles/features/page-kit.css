@@ -57,6 +57,7 @@
 
 .ui-page-description {
   max-width: 62ch;
+  overflow-wrap: anywhere;
   margin: var(--ui-space-xs) 0 0;
   color: var(--ui-text-secondary);
   font-size: var(--ui-font-size-sm);

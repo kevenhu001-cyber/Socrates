@@ -192,8 +192,8 @@ html[data-theme='socrates'][data-mode]:lang(zh) {
   /* Geist's monochrome primary + semantic status colors. */
   --ui-on-accent: var(--primary-foreground);
   --ui-accent-strong: var(--primary);
-  /* Restore the pre-R1 blue action and teal identity; geometry stays neutral. */
-  --ui-accent-action: rgb(61 102 192);
+  /* Sampled dark action blue from the November phone reference. */
+  --ui-accent-action: rgb(59 111 214);
   --ui-on-action: rgb(255 255 255);
   /* The danger tone is a *text* colour, so it has to clear AA on the
      lightest dark rung as well as on the canvas. The old Lobe value

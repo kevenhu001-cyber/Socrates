@@ -36,9 +36,7 @@
     width: 20px;
     height: 20px;
   }
-  #appShell .top-bar-left {
-    --ui-ink-secondary: var(--ui-text-primary);
-  }
+  #appShell .top-bar-left,
   #appShell .top-bar-right {
     --ui-ink-secondary: var(--ui-text-primary);
   }
@@ -77,7 +75,7 @@
     --ui-phone-header-bg: var(--ui-bg-page);
     --ui-phone-drawer-size: var(--ui-hit-area);
     margin-bottom: calc(-1 * (var(--ui-mobile-header) + env(safe-area-inset-top, 0px)));
-    padding-inline: var(--ui-mobile-page-gutter);
+    padding-inline: max(var(--ui-mobile-page-gutter), env(safe-area-inset-left, 0px)) max(var(--ui-mobile-page-gutter), env(safe-area-inset-right, 0px));
     pointer-events: none;
   }
   body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
@@ -161,7 +159,7 @@
     inset-inline-start: 50%;
     top: calc(50% + env(safe-area-inset-top, 0px) / 2);
     transform: translate(-50%, -50%);
-    max-width: calc(100% - 2 * (var(--ui-control-touch) * 2 + var(--ui-mobile-page-gutter)));
+    max-width: max(0px, calc(100% - 2 * (var(--ui-control-touch) * 2 + max(var(--ui-mobile-page-gutter), env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px)))));
     min-width: 0;
     padding: 0 var(--ui-space-xs);
     pointer-events: none;

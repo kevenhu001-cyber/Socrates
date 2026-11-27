@@ -178,14 +178,8 @@
   /* Keep row actions tappable even on devices that report mouse hover
      support as well as touch. Brighten them when the row is in use. */
   #appShell .recent-item-actions {
-    opacity: 0.4;
-    transition: opacity var(--ui-duration-hover) ease;
-  }
-  #appShell .recent-item:hover .recent-item-actions,
-  #appShell .recent-item:focus-within .recent-item-actions,
-  #appShell .recent-item.active .recent-item-actions,
-  #appShell .recent-item.actions-open .recent-item-actions {
     opacity: 1;
+    transition: opacity var(--ui-duration-hover) ease;
   }
   #appShell .recent-item-overflow svg {
     width: 18px;

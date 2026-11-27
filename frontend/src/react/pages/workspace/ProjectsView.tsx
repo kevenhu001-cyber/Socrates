@@ -44,7 +44,7 @@ function ProjectRow({
         type="button"
         size="icon-sm"
         className="workspace-row-action workspace-icon-action"
-        aria-label={i18n('projects.edit', 'Edit')}
+        aria-label={i18n('projects.edit', 'Edit') + ': ' + project.name}
         title={i18n('projects.edit', 'Edit')}
         onClick={(e) => {
           e.stopPropagation();

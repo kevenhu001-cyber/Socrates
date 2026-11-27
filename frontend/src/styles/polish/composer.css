@@ -396,8 +396,3 @@
   }
 }
 
-@media (max-width: 768px) {
-  #appShell .composer-input-wrap.composer-focused #composerAttachmentChips {
-    max-height: 64px;
-  }
-}

@@ -1,7 +1,7 @@
 import { Button } from '../ui/shadcn/button';
 import { Icon } from '../../legacy/Icon';
 import type { IconProps } from '../../legacy/Icon';
-import { menuCopy, type MenuItemSpec } from './composerToolsMenuData';
+import { menuCopy, workflowGlyph, type MenuItemSpec } from './composerToolsMenuData';
 import type { ComposerToolsAction } from './types';
 
 export function MenuItem({
@@ -31,7 +31,9 @@ export function MenuItem({
         onPick(spec.key as ComposerToolsAction);
       }}
     >
-      <span className="composer-tools-icon" dangerouslySetInnerHTML={{ __html: spec.icon }} />
+      <span className="composer-tools-icon">
+        <Icon name={workflowGlyph(spec.key)} size={18} />
+      </span>
       <span className="composer-tools-copy">
         <span>{label}</span>
         {description ? <small>{description}</small> : null}
@@ -47,7 +49,6 @@ export function MenuItem({
 
 export function MobileToolRow({
   action,
-  iconHtml,
   iconName,
   title,
   subtitle,
@@ -57,8 +58,7 @@ export function MobileToolRow({
   onPick,
 }: {
   action: ComposerToolsAction;
-  iconHtml?: string;
-  iconName?: IconProps['name'];
+  iconName: IconProps['name'];
   title: string;
   subtitle?: string;
   rightText?: string;
@@ -82,11 +82,7 @@ export function MobileToolRow({
       }}
     >
       <span className="composer-tools-icon composer-tools-row-icon">
-        {iconName ? (
-          <Icon name={iconName} size={22} />
-        ) : (
-          <span dangerouslySetInnerHTML={{ __html: iconHtml ?? '' }} />
-        )}
+        <Icon name={iconName} size={22} />
       </span>
       <span className="composer-tools-copy composer-tools-row-copy">
         <span className="composer-tools-row-title">{title}</span>

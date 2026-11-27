@@ -784,7 +784,7 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
   }
 
   html[data-main-view='settingsPage'] #settingsPage .settings-nav-item[aria-current='page'] {
-    background: var(--ui-bg-hover);
+    background: var(--ui-bg-selected);
     color: var(--ui-text-primary);
     font-weight: var(--ui-font-weight-medium);
   }
@@ -1030,7 +1030,6 @@ html[data-main-view='settingsPage']
 
 html[data-main-view='settingsPage'] #settingsPage .settings-nav-item.active {
   background: var(--ui-bg-selected);
-  border-radius: var(--ui-radius-sidebar-row);
   box-shadow: none;
 }
 html[data-main-view='settingsPage'] #settingsPage .settings-nav-item.active:focus-visible {
@@ -1051,6 +1050,7 @@ html[data-main-view='settingsPage'] #settingsPage .settings-choice {
   .settings-page .account-page-title {
     justify-self: center;
     min-width: 0;
+    max-width: 100%;
     text-align: center;
   }
   .settings-page .account-page-header > [data-slot='button'] {
@@ -1160,6 +1160,10 @@ html[data-main-view='settingsPage'] #settingsPage .settings-choice {
   .settings-page .settings-category-name,
   .settings-index-appearance-title {
     font-size: var(--ui-font-size-md);
+  }
+  .settings-page .settings-category-name {
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
   .settings-page .settings-category-chevron {
     display: block;

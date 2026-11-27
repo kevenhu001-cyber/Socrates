@@ -1,7 +1,7 @@
 import { test, expect } from './_state-fixture.mjs';
 import { prepareChatWorkbench } from './_chat-workbench.mjs';
 import { publishChatRuntime } from './_lib.mjs';
-import { TURN, openToolDetail, toolRow } from './_turn-ui.mjs';
+import { TURN, toolRow } from './_turn-ui.mjs';
 
 const message = {
   clientId: 'activity-polish',
@@ -77,39 +77,17 @@ for (const mobile of [false, true]) {
   });
 }
 
-for (const fallback of ['native', 'success', 'failure', 'throws']) {
-  test(`tool copy reports the actual clipboard result (${fallback})`, async ({ page }) => {
-    await prepareChatWorkbench(page, { messages: [message] });
-    await page.evaluate((fallback) => {
-      Object.defineProperty(navigator, 'clipboard', {
-        configurable: true,
-        value: {
-          writeText: async () => {
-            if (fallback !== 'native') throw new Error('Clipboard denied');
-          },
-        },
-      });
-      document.execCommand = () => {
-        if (fallback === 'throws') throw new Error('Fallback denied');
-        return fallback === 'success';
-      };
-    }, fallback);
-    const detail = await openToolDetail(
-      page,
-      page.locator('.msg.assistant').last(),
-      'output-polish',
-    );
-    const copy = detail.locator(TURN.codeCopy).last();
-    await copy.focus();
-    await copy.click();
-    await expect(copy).toHaveText(
-      ['native', 'success'].includes(fallback) ? 'Copied' : 'Copy failed',
-    );
-    await expect(copy).toBeFocused();
-    await expect(page.locator('body > textarea')).toHaveCount(0);
-    await expect(copy).toHaveText('Copy');
-  });
-}
+test('internal tool output has no copy button or empty detail panel', async ({ page }) => {
+  await prepareChatWorkbench(page, { messages: [message] });
+  const bubble = page.locator('.msg.assistant').last();
+  await bubble.locator(TURN.toggle).click();
+  const row = bubble.getByTestId('tool-row-output-polish');
+  await expect(row).toBeVisible();
+  await expect(row).not.toHaveAttribute('aria-expanded', /.+/);
+  await expect(bubble.locator(TURN.detail)).toHaveCount(0);
+  await expect(bubble.locator(TURN.codeCopy)).toHaveCount(0);
+  await expect(bubble).not.toContainText('A concise comparison from the original sources.');
+});
 
 for (const mobile of [false, true]) {
   test(`reference activity caption is quiet and stops animating on completion (${mobile ? 'mobile' : 'desktop'})`, async ({

@@ -244,3 +244,31 @@ for (const width of [320, 360, 430]) {
     );
   });
 }
+
+
+test('phone long drafts stay scrollable above a keyboard without remounting the editor', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockAuthedApp(page);
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+  const frame = page.locator('#composerInputWrap [data-composer-frame]');
+  const editor = frame.locator('.rich-composer-editor');
+  const primary = frame.locator('#composerPrimaryBtn');
+  await expect(editor).toHaveAttribute('role', 'textbox');
+  await expect(editor).toHaveAttribute('aria-multiline', 'true');
+  await expect.poll(() => primary.evaluate((node) => node.title === node.getAttribute('aria-label'))).toBe(true);
+  const handle = await editor.elementHandle();
+  await editor.fill(Array.from({ length: 20 }, (_, i) => 'Draft line ' + i).join('\n'));
+  await expect(primary).toHaveAttribute('data-ready', 'true');
+  await expect.poll(() => editor.evaluate((node) => node.clientHeight)).toBeLessThanOrEqual(220);
+  // A local inherited inset models overlay IME geometry without racing the
+  // real keyboard controller's document-level writes.
+  await frame.evaluate((node) => node.style.setProperty('--keyboard-inset', '500px'));
+  await expect.poll(() => editor.evaluate((node) => node.clientHeight)).toBeLessThanOrEqual(138);
+  expect(await editor.evaluate((node) => node.scrollHeight > node.clientHeight)).toBe(true);
+  expect(await editor.evaluate((node, original) => node === original, handle)).toBe(true);
+  await expect(primary).toBeEnabled();
+  await frame.evaluate((node) => node.style.removeProperty('--keyboard-inset'));
+  await editor.fill('Short draft');
+  await expect(frame).toHaveCSS('height', '86px');
+});
