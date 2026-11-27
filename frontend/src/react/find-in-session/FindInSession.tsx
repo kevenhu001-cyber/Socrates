@@ -80,6 +80,7 @@ export function FindInSession() {
   }, []);
 
   const handleKeyDown = useCallback((e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.nativeEvent.isComposing) return;
     if (e.key === 'Escape') {
       e.preventDefault();
       closeFindInSession();
@@ -111,6 +112,7 @@ export function FindInSession() {
       inputRef={inputRef}
       value={inputValue}
       countLabel={countLabel}
+      hasMatches={snapshot.matchCount > 0}
       onChange={handleInput}
       onKeyDown={handleKeyDown}
       onPrevious={handlePrev}

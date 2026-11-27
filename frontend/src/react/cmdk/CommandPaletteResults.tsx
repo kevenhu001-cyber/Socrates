@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { fill, t } from './text';
 import { getLegacyActions } from '../legacy/gateway.ts';
 import { Button } from '../ui/shadcn/button';
@@ -77,6 +77,11 @@ export function CommandPaletteResults({
   onActivate,
 }: CommandPaletteResultsProps) {
   const hasQuery = query.trim().length > 0;
+  const selectedRowRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    selectedRowRef.current?.scrollIntoView?.({ block: 'nearest' });
+  }, [selectedIndex, results]);
+
   const hitViews = useMemo(
     () =>
       results.map((hit, idx): { view: CmdKDocView | null; idx: number } => {
@@ -151,7 +156,7 @@ export function CommandPaletteResults({
   }
 
   return (
-    <div className="cmd-k-section">
+    <div className="cmd-k-section" role="listbox">
       <div className="cmd-k-section-label">
         {hitViews.length === 1
           ? fill(t('chrome.cmdkResultsOne', '1 result for {query}'), { query: `“${query}”` })
@@ -164,6 +169,9 @@ export function CommandPaletteResults({
         view === null ? null : (
           <div
             key={`${view.kind}:${view.id}:${idx}`}
+            ref={idx === selectedIndex ? selectedRowRef : undefined}
+            role="option"
+            aria-selected={idx === selectedIndex}
             className={'cmd-k-row' + (idx === selectedIndex ? ' selected' : '')}
             data-idx={idx}
             data-kind={view.kind}
