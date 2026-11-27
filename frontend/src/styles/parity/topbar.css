@@ -33,8 +33,9 @@
     color var(--ui-duration-fast) var(--ui-ease-out);
   flex-shrink: 0;
 }
-.toggle-sidebar:hover {
+#appShell .top-bar .toggle-sidebar:hover {
   background: var(--ui-bg-hover);
+  color: var(--ui-text-primary);
 }
 .toggle-sidebar svg {
   width: 20px;

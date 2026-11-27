@@ -665,3 +665,27 @@ test('returning from plugin detail restores the directory scroll position', asyn
     .poll(() => page.locator('#pluginsPanel').evaluate((el) => el.scrollTop))
     .toBe(position);
 });
+
+
+for (const theme of ['light', 'dark']) {
+  test(`narrow plugin cards expose connection state and keep long labels bounded in ${theme}`, async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 780 });
+    await page.addInitScript((mode) => localStorage.setItem('socrates-theme', mode), theme);
+    await mockAuthedApp(page, { lang: 'en' });
+    const name = 'An unusually long connector name for responsive layout verification';
+    await mockConnectedCatalog(page, [{ ...CONNECTORS[0], name }]);
+    await gotoAndSettle(page, '/');
+    await waitForAppShell(page);
+    await page.locator('#sidebarOpenBtn').click();
+    await page.locator('#navPlugins').click();
+    const row = page.locator('[data-connector-id="github"]');
+    const main = row.locator('.plugin-directory-card-main');
+    await expect(main).toBeVisible();
+    await expect(main).toHaveAttribute('aria-description', 'Connected');
+    expect(await row.evaluate((node) => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(1);
+    await main.click();
+    await expect(page.locator('.plugin-detail-view')).toBeVisible();
+    expect(await page.locator('.plugin-detail-page-header').evaluate((node) => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(1);
+    await page.screenshot({ path: `test-results/detail-polish/plugins-320-${theme}.png`, animations: 'disabled' });
+  });
+}

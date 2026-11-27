@@ -23,3 +23,7 @@ Keep attachment strip height independent of focus (remove the phone 64px focus o
 - Directories: desktop project actions appear on card hover and focus; destructive bulk action uses semantic colors; mobile library names remain bounded and use shared type tokens. Plugin title/status layout wraps, neutral secondary descriptions remain readable, and the connection state is available to assistive technology even when hidden visually on narrow viewports. Plugin details wrap long copy and action groups; prompt rows have keyboard-visible hover parity.
 - Intelligence UI: numeric value styling is independent of transcript host, full-width tables have one wrapper owner, long choice labels and badges wrap. Auth links provide equivalent focus feedback; reduced-motion also disables root view-transition animation. Shared Page Kit descriptions wrap.
 - This is a source-level pass across the remaining named surfaces, not a claim of exhaustive pixel parity. Existing visual baselines remain untouched. Run the browser matrix and inspect screenshots before closing visual acceptance.
+
+### Additional regression coverage
+
+Preserve the header hover selector required by the CSS ownership guard and align the higher-specificity app-shell opener with the 20px glyph contract. Add explicit narrow phone plugin tests in both themes, desktop settings selection geometry checks, and a 320px library name/action collision check. Captures are outputs for inspection, not new golden snapshots.

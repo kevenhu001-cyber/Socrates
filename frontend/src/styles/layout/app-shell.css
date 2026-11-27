@@ -144,18 +144,18 @@ html[data-show-grid='false'] .main-bg {
   border: 0;
   border-radius: var(--ui-radius-pill);
   background: transparent;
-  color: var(--muted-foreground);
+  color: var(--ui-text-primary);
   box-shadow: none;
 }
 
 #appShell #sidebarOpenBtn:hover {
-  background: var(--accent);
-  color: var(--foreground);
+  background: var(--ui-bg-hover);
+  color: var(--ui-text-primary);
 }
 
 #appShell #sidebarOpenBtn svg {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
 }
 
 #appShell .mobile-newchat-btn {
