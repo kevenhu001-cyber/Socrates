@@ -22,7 +22,7 @@
  * Every mode lives in Tutor mode, so choosing one from Chat switches modes
  * through the existing toggle (the header Chat / Tutor switch is unchanged).
  */
-import { learningModeAction, type LearningModeId } from '@socrates/core';
+import { learningModeAction, type LearningModeId } from '@socrates/core/thinkModel';
 import { setLearningMode } from './learningModeState.ts';
 import { focusComposer, type ComposerSurface } from '../composer/controller.ts';
 import { setSidebarPanelView } from '../sidebar/sidebar.store.ts';

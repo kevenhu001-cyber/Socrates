@@ -8,7 +8,7 @@
 
 import { normalizeIntelligentUiControl } from './intelligentUiControls.js';
 import { normalizeLearningUiNode } from './learningUi.js';
-import { normalizeDemonstrationProgram } from './demonstration.js';
+import { normalizeDemonstrationProgram } from './simulation/compiler/normalize.js';
 
 const ITEM_KEYS = new Set(['item', 'items']);
 

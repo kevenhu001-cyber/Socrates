@@ -27,7 +27,7 @@ import {
   type ParsedFlashcard,
   type ParsedKeyPoint,
   type ParsedProof,
-} from '@socrates/core';
+} from '@socrates/core/learn';
 import type { PracticeMountData, QuizMountData, TheoremMountData } from './widgetRuntime.ts';
 
 export interface ScaffoldPlaceholder<Parsed = unknown> {

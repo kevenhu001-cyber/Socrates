@@ -28,7 +28,7 @@ import {
   SCAFFOLD_TAGS,
   type ScaffoldMarkupMatch,
   type ScaffoldTag,
-} from '@socrates/core';
+} from '@socrates/core/learn';
 import {
   findStreamScaffold,
   pendingScaffoldOpener,
