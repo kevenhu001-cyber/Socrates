@@ -686,6 +686,6 @@ for (const theme of ['light', 'dark']) {
     await main.click();
     await expect(page.locator('.plugin-detail-view')).toBeVisible();
     expect(await page.locator('.plugin-detail-page-header').evaluate((node) => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(1);
-    await page.screenshot({ path: `test-results/detail-polish/plugins-320-${theme}.png`, animations: 'disabled' });
+    await page.screenshot({ path: `test-results/detail-polish/plugins-320-${encodeURIComponent(theme)}.png`, animations: 'disabled' });
   });
 }
