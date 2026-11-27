@@ -17,3 +17,7 @@ Replace the phone tool menu's tile and bottom-sheet implementation with the refe
 ## Phase 4 — dead declaration cleanup and budget diagnosis
 
 Removed 38 superseded single-line declarations from repeated identical selectors under the same media context, preserving the final winning declarations and avoiding cross-context changes. Consolidated the menu frame and motion origin and removed obsolete theme-toggle hide rules. The last CI build passed lint and production compilation but measured 371085 gzip bytes of static JavaScript against the unchanged 360000-byte gate. The gate now prints its largest static chunks and retained first-party dependency paths on failure. No budget raised; JS reduction and screenshot verification remain open.
+
+## Phase 5 — search ownership and production/test split
+
+Merged the two command-palette rule sets into their final owner, retired the unused mobile menu row/component data and the one-rule mobile skin sheet. Main header actions use primary ink in the phone shell. Test state is now fetched only when the pre-navigation automation receiver is present, with fixture installation before bootstrap and a static graph assertion. The 360000-byte budget is unchanged. No measured gzip saving is claimed before CI.

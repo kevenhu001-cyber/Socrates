@@ -18,7 +18,6 @@
  *   workspace.css   — projects/directory page fixes
  *   auth.css        — auth gate card
  *   home.css        — landing shortcuts and their secondary controls
- *   mobile.css      — ≤768px skin alignment only
  *   press.css       — single press-feedback contract for every control
  *   buttons.css     — .btn / .btn-icon / .btn-pill utility classes
  *   mobile-controls.css — ≤768px expanded hit areas and shared controls
@@ -35,7 +34,6 @@
 @import './workspace.css';
 @import './auth.css';
 @import './home.css';
-@import './mobile.css';
 @import './press.css';
 @import './buttons.css';
 @import './mobile-controls.css';

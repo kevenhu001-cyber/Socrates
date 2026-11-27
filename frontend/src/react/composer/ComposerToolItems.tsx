@@ -1,7 +1,7 @@
 import { Button } from '../ui/shadcn/button';
 import { Icon } from '../../legacy/Icon';
 import type { IconProps } from '../../legacy/Icon';
-import { i18n, menuCopy, MOBILE_MENU_ITEMS, type MenuItemSpec } from './composerToolsMenuData';
+import { menuCopy, type MenuItemSpec } from './composerToolsMenuData';
 import type { ComposerToolsAction } from './types';
 
 export function MenuItem({
@@ -41,41 +41,6 @@ export function MenuItem({
       {active ? (
         <Icon name="check" className="composer-tools-check composer-tools-active-check" />
       ) : null}
-    </Button>
-  );
-}
-
-export function MobileMenuItem({
-  action,
-  labelKey,
-  label,
-  icon,
-  active,
-  onPick,
-}: (typeof MOBILE_MENU_ITEMS)[number] & {
-  active: boolean;
-  onPick: (action: ComposerToolsAction) => void;
-}) {
-  const text = i18n(labelKey, label);
-  return (
-    <Button
-      type="button"
-      variant="surface"
-      size="surface"
-      className={`composer-tools-item composer-tools-mobile-item${active ? ' is-active' : ''}`}
-      role="menuitem"
-      data-composer-action={action}
-      aria-label={text}
-      onClick={(event) => {
-        event.stopPropagation();
-        onPick(action);
-      }}
-    >
-      <span className="composer-tools-icon" dangerouslySetInnerHTML={{ __html: icon }} />
-      <span className="composer-tools-copy">
-        <span>{text}</span>
-      </span>
-      {active ? <Icon name="check" className="composer-tools-check" /> : null}
     </Button>
   );
 }

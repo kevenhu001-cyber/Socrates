@@ -143,7 +143,6 @@ body #composerToolsMenu.composer-tools-menu {
 
 /* Chat-Demo aligned menu options */
 #composerToolsMenu .composer-tools-item,
-#composerToolsMenu .composer-tools-mobile-item,
 #composerToolsMenu .composer-tools-plugin-item {
   width: 100%;
   min-height: var(--ui-control-md);
@@ -165,8 +164,6 @@ body #composerToolsMenu.composer-tools-menu {
 
 #composerToolsMenu .composer-tools-item:hover,
 #composerToolsMenu .composer-tools-item:focus-visible,
-#composerToolsMenu .composer-tools-mobile-item:hover,
-#composerToolsMenu .composer-tools-mobile-item:focus-visible,
 #composerToolsMenu .composer-tools-plugin-item:hover,
 #composerToolsMenu .composer-tools-plugin-item:focus-visible {
   background: var(--ui-bg-hover);

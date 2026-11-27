@@ -29,21 +29,21 @@
     border: 0;
     background: transparent;
     box-shadow: none;
-    color: var(--ui-icon-secondary);
+    color: var(--ui-text-primary);
   }
-  /* Reference header glyphs: 20px, the drawer toggle and new chat in the
-     secondary grey (#b0b0b0 dark / #8f8f8f light), trailing actions in ink. */
+  /* Main header actions share primary ink; only secondary metadata is muted. */
   #appShell #sidebarOpenBtn svg {
     width: 20px;
     height: 20px;
   }
   #appShell .top-bar-left {
-    --ui-ink-secondary: var(--ui-icon-secondary);
+    --ui-ink-secondary: var(--ui-text-primary);
   }
   #appShell .top-bar-right {
     --ui-ink-secondary: var(--ui-text-primary);
   }
   #appShell .mobile-newchat-btn {
+    color: var(--ui-text-primary);
     display: inline-flex;
     align-items: center;
     justify-content: center;

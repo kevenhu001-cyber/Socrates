@@ -7,7 +7,7 @@ import {
   menuCopy,
   MOBILE_GROUP_ORDER,
   MOBILE_THINKING_SPEC,
-  MOBILE_TILES,
+  MOBILE_MEDIA_ACTIONS,
   TOOL_GROUPS,
   toolDefinitions,
   type MenuItemSpec,
@@ -80,7 +80,7 @@ export function ComposerToolMenuItems({
           {i18n('composer.tools.group.context', 'Add context')}
         </div>
         <div className="composer-tools-mobile-list">
-          {MOBILE_TILES.map((item) => (
+          {MOBILE_MEDIA_ACTIONS.map((item) => (
             <MobileToolRow
               key={item.action}
               action={item.action}
