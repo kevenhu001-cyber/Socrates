@@ -153,6 +153,19 @@
   --ui-font-size-lg: calc(var(--ui-font-size-base-large) * var(--app-type-scale));
   --ui-font-size-xl: calc(var(--ui-foundation-font-size-xl) * var(--app-type-scale));
   --ui-font-size-xxl: calc(var(--ui-foundation-font-size-heading-3) * var(--app-type-scale));
+  --ui-font-size-2xl: calc(var(--ui-foundation-font-size-heading-2) * var(--app-type-scale));
+  --ui-font-size-3xl: calc(var(--ui-foundation-font-size-heading-1) * var(--app-type-scale));
+
+  /* Raw rungs — the same step in px, without the reading-preference
+     dampener. Reserved for chrome that already carries its own scale factor
+     (`--sidebar-font-scale` is itself `--app-font-scale * 0.92`), so the
+     preference is never applied twice. Everywhere else uses the damped rung
+     above. */
+  --ui-font-size-xxs-raw: var(--ui-foundation-font-size-sm);
+  --ui-font-size-xs-raw: var(--ui-font-size-base-small);
+  --ui-font-size-sm-raw: var(--ui-foundation-font-size-base);
+  --ui-font-size-md-raw: var(--ui-foundation-font-size-lg);
+  --ui-font-size-xl-raw: var(--ui-foundation-font-size-xl);
 
   /* Typography — weights */
   --ui-font-weight-regular: 400;
@@ -216,12 +229,15 @@
   --ui-press-opacity-sm: 0.84;
   --ui-press-tint: color-mix(in srgb, var(--ui-bg-hover), var(--ui-text-primary) 8%);
 
-  /* Product text roles. */
-  --ui-text-ui: calc(var(--ui-foundation-font-size-base) * var(--app-type-scale));
+  /* Product text roles. Sizes are aliases of one rung on the ladder above —
+     no role carries its own value, so the scale has a single source. The
+     `-line` companions are the matching line-height rungs. */
+  --ui-text-meta: var(--ui-font-size-xxs);
+  --ui-text-ui: var(--ui-font-size-sm);
   --ui-text-ui-line: calc(20px * var(--app-type-scale));
-  --ui-text-body: calc(var(--ui-foundation-font-size-lg) * var(--app-type-scale));
+  --ui-text-body: var(--ui-font-size-md);
   --ui-text-body-line: calc(28px * var(--app-type-scale));
-  --ui-text-page: calc(var(--ui-foundation-font-size-heading-3) * var(--app-type-scale));
+  --ui-text-page: var(--ui-font-size-xxl);
   /* R1 restyle: the landing headline is a 28px medium line (marketing-site
      heading rhythm, scaled down for the app). */
   --ui-text-hero: calc(28px * var(--app-type-scale));

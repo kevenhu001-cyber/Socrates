@@ -159,10 +159,10 @@
 .sc-live-label,
 .sc-live-face-label {
   font-family: var(--ui-font-ui);
-  font-size: calc(var(--ui-type-label-sm-size) * var(--app-font-scale, 1));
+  font-size: calc(var(--ui-font-size-xs-raw) * var(--app-font-scale, 1));
   line-height: var(--ui-type-label-sm-line);
   font-weight: var(--ui-font-weight-medium);
-  color: var(--ui-ink-tertiary);
+  color: var(--ui-text-tertiary);
 }
 
 .sc-live-label {
@@ -278,7 +278,7 @@
   border-radius: var(--ui-round-pill);
   box-shadow: inset 0 0 0 1px var(--ui-hairline-strong);
   font-family: var(--ui-font-ui);
-  font-size: calc(var(--ui-type-label-sm-size) * var(--app-font-scale, 1));
+  font-size: calc(var(--ui-font-size-xs-raw) * var(--app-font-scale, 1));
   font-weight: var(--ui-font-weight-medium);
   color: var(--ui-ink-secondary);
 }
@@ -334,7 +334,7 @@
   box-shadow: inset 0 0 0 1px var(--ui-hairline-strong);
   text-align: center;
   font-family: var(--ui-font-ui);
-  font-size: calc(var(--ui-type-label-sm-size) * var(--app-font-scale, 1));
+  font-size: calc(var(--ui-font-size-xs-raw) * var(--app-font-scale, 1));
   line-height: 24px;
   font-weight: var(--ui-font-weight-medium);
   font-variant-numeric: tabular-nums;

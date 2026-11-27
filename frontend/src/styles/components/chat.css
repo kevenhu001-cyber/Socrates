@@ -63,7 +63,7 @@
   background: transparent;
 }
 .msg-list::-webkit-scrollbar-thumb {
-  border-radius: var(--ui-space-xs);
+  border-radius: var(--ui-radius-xs);
   background: transparent;
   transition: background 0.25s;
 }

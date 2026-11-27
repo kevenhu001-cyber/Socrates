@@ -50,7 +50,7 @@
   right: 6px;
   bottom: 1px;
   height: 1.5px;
-  border-radius: var(--ui-space-xxs);
+  border-radius: var(--ui-radius-xs);
   background: var(--ui-text-primary);
   opacity: 0.85;
 }

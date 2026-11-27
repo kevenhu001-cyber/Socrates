@@ -4,7 +4,7 @@
   outline: none;
   background: transparent;
   resize: none;
-  font-size: calc(var(--ui-foundation-font-size-lg) * var(--app-font-scale, 1));
+  font-size: calc(var(--ui-font-size-md-raw) * var(--app-font-scale, 1));
   line-height: 1.55;
   color: var(--ui-text-primary);
   min-height: 76px;
@@ -233,7 +233,7 @@
   inset-inline: 0;
   top: 0;
   float: none;
-  color: var(--ui-ink-tertiary);
+  color: var(--ui-text-placeholder);
   opacity: 1;
   white-space: nowrap;
   overflow: hidden;
@@ -335,7 +335,6 @@
     --ui-card: var(--ui-bg-ask);
     --composer-disabled-send-opacity: 0.86;
     --ui-ink-secondary: var(--ui-text-primary);
-    --ui-ink-tertiary: var(--ui-text-placeholder);
   }
   #appShell .composer-shell [data-composer-frame][data-layout='inline'] {
     border-radius: var(--ui-radius-composer-phone);

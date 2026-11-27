@@ -110,7 +110,7 @@ body.sidebar-resizing {
   align-items: center;
   gap: 6px;
   padding: 3px 8px;
-  font-size: calc(var(--ui-foundation-font-size-lg) * var(--sidebar-font-scale));
+  font-size: calc(var(--ui-font-size-md-raw) * var(--sidebar-font-scale));
   letter-spacing: -0.03em;
   white-space: nowrap;
   border-radius: var(--ui-radius-xs);
@@ -169,7 +169,7 @@ body.sidebar-resizing {
   background: transparent;
   outline: none;
   color: var(--ui-text-primary);
-  font-size: calc(var(--ui-foundation-font-size-sm) * var(--sidebar-font-scale));
+  font-size: calc(var(--ui-font-size-xxs-raw) * var(--sidebar-font-scale));
   line-height: 1;
   padding: 0;
 }
@@ -250,7 +250,7 @@ body.sidebar-resizing {
 .recent-item-tag-btn {
   width: 22px;
   height: var(--ui-control-xs);
-  border-radius: var(--ui-space-xs);
+  border-radius: var(--ui-radius-xs);
   background: transparent;
   border: 0;
   color: var(--ui-text-tertiary);
@@ -275,7 +275,7 @@ body.sidebar-resizing {
 .recent-item-archive {
   width: 22px;
   height: 22px;
-  border-radius: var(--ui-space-xs);
+  border-radius: var(--ui-radius-xs);
   background: transparent;
   border: 0;
   color: var(--ui-text-tertiary);
@@ -322,7 +322,7 @@ body.sidebar-resizing {
 .recent-item-label {
   font-size: calc(var(--ui-font-size-micro) * var(--sidebar-font-scale));
   padding: 1px 6px;
-  border-radius: var(--ui-space-xs);
+  border-radius: var(--ui-radius-xs);
   background: color-mix(in srgb, var(--ui-bg-hover) 25%, transparent);
   color: var(--ui-text-secondary);
   font-weight: var(--ui-font-weight-medium);
@@ -353,7 +353,7 @@ body.sidebar-resizing {
   align-items: center;
   padding: 8px 12px;
   border-radius: var(--ui-radius-row);
-  font-size: calc(var(--ui-foundation-font-size-sm) * var(--sidebar-font-scale));
+  font-size: calc(var(--ui-font-size-xxs-raw) * var(--sidebar-font-scale));
   transition:
     background 0.18s var(--ease-out),
     color 0.18s var(--ease-out);
@@ -453,7 +453,7 @@ body.sidebar-resizing {
 .recent-item-del {
   width: 20px;
   height: 20px;
-  border-radius: var(--ui-space-xs);
+  border-radius: var(--ui-radius-xs);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -544,7 +544,7 @@ body.sidebar-resizing {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: calc(var(--ui-foundation-font-size-sm) * var(--sidebar-font-scale));
+  font-size: calc(var(--ui-font-size-xxs-raw) * var(--sidebar-font-scale));
   font-weight: var(--ui-font-weight-semibold);
   background: var(--ui-text-secondary);
   color: var(--ui-bg-sidebar);
@@ -561,7 +561,7 @@ body.sidebar-resizing {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   padding: 1px 6px;
-  border-radius: var(--ui-space-xs);
+  border-radius: var(--ui-radius-xs);
 }
 
 @media (min-width: 769px) {
