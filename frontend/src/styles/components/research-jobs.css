@@ -270,8 +270,7 @@
   display: grid;
   place-items: stretch;
   padding: var(--ui-space-md);
-  background: color-mix(in srgb, var(--background) 76%, transparent);
-  backdrop-filter: blur(10px);
+  background: var(--ui-backdrop);
 }
 .research-report-dialog {
   display: flex;

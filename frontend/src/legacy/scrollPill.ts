@@ -239,26 +239,31 @@ export function wireScrollPill() {
         if (Date.now() - upIntentAt < UP_INTENT_GUARD_MS) return;
         dispatchUi({ type: 'ui/set', key: '_userScrolledAway', value: false });
         hideNewReplyPill();
-      } else if (!uiStore.getState()._userScrolledAway) {
-        /* Only an upward position change means the reader left the latest
-         answer. Composer growth, keyboard avoidance, and late rich-content
-         layout all reduce the visible viewport without changing scrollTop;
-         treating those geometry-only events as user intent strands the
-         reader above the bottom. Downward programmatic snaps followed by
-         same-task content growth must not release the pin either. */
-        /* Layout settling (font metrics, image decode, appended content) can
-         nudge scrollTop a few pixels upward without any user intent, and
-         those tiny movements used to flip _userScrolledAway, killing the
-         content-follow for a reader who was still pinned. Real scroll-aways
-         (scrollbar drag, wheel/touch/keyboard) move by tens+ of pixels, and
-         the input-based listeners above already catch those gestures, so a
-         12px position threshold is safe. */
-        const movedUp = previousTop != null && sc.scrollTop < previousTop - 12;
-        if (movedUp && !debounceTmo) {
-          dispatchUi({ type: 'ui/set', key: '_userScrolledAway', value: true });
-          debounceTmo = setTimeout(function () {
-            debounceTmo = null;
-          }, 300);
+      } else {
+        if (sc.scrollHeight - sc.scrollTop - sc.clientHeight > SCROLL_SLACK * 2) {
+          showNewReplyPill();
+        }
+        if (!uiStore.getState()._userScrolledAway) {
+          /* Only an upward position change means the reader left the latest
+           answer. Composer growth, keyboard avoidance, and late rich-content
+           layout all reduce the visible viewport without changing scrollTop;
+           treating those geometry-only events as user intent strands the
+           reader above the bottom. Downward programmatic snaps followed by
+           same-task content growth must not release the pin either. */
+          /* Layout settling (font metrics, image decode, appended content) can
+           nudge scrollTop a few pixels upward without any user intent, and
+           those tiny movements used to flip _userScrolledAway, killing the
+           content-follow for a reader who was still pinned. Real scroll-aways
+           (scrollbar drag, wheel/touch/keyboard) move by tens+ of pixels, and
+           the input-based listeners above already catch those gestures, so a
+           12px position threshold is safe. */
+          const movedUp = previousTop != null && sc.scrollTop < previousTop - 12;
+          if (movedUp && !debounceTmo) {
+            dispatchUi({ type: 'ui/set', key: '_userScrolledAway', value: true });
+            debounceTmo = setTimeout(function () {
+              debounceTmo = null;
+            }, 300);
+          }
         }
       }
     },
