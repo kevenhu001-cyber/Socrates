@@ -37,7 +37,7 @@ for (const touch of [false, true]) {
       const errors = [];
       page.on('pageerror', (error) => errors.push(error.message));
       await seedTranscript(page);
-      const icons = page.locator('.msg.assistant .msg-toolbar button > svg');
+      const icons = page.locator('.msg.assistant').last().locator('.msg-toolbar button > svg');
       await expect(icons).toHaveCount(7);
       const geometry = await icons.evaluateAll((nodes) =>
         nodes.map((svg) => {
@@ -66,9 +66,13 @@ for (const touch of [false, true]) {
       }
       for (const role of ['user', 'assistant']) {
         const rows = page.locator(`#msgList .msg.${role}`);
-        await expect(rows.first().locator('.msg-toolbar')).toHaveCount(0);
+        await expect(rows.first().locator('.msg-toolbar')).toHaveCount(touch ? 0 : 1);
         await expect(rows.last().locator('.msg-toolbar')).toHaveCount(1);
-        await expect(rows.first().getByRole('button')).not.toBeVisible();
+        if (touch) {
+          await expect(rows.first().getByRole('button')).not.toBeVisible();
+        } else {
+          await expect(rows.first().locator('.msg-toolbar')).toHaveCSS('opacity', '0');
+        }
         const body = rows.first().locator('.msg-body');
         if (touch) {
           await body.dispatchEvent('pointerdown', {

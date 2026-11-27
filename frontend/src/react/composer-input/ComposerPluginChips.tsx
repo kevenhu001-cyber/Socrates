@@ -11,10 +11,7 @@ import { toggleComposerTools } from '../composer/composerTools.store';
 
 /* Web search is picked from the "+" menu and then shown as a removable chip,
    the same affordance chatgpt.com uses. State lives in config/providers.js;
-   setWebSearchOn() broadcasts `socrates:websearchchange`.
-   Desktop only for now: the phone composer's chip row still overlaps the
-   "+" button, so phones keep the active dot in the tools menu. */
-const DESKTOP_COMPOSER_QUERY = '(min-width: 769px)';
+   setWebSearchOn() broadcasts `socrates:websearchchange`. */
 
 /* Chips are shadcn `Badge` / `Button` (secondary): the component owns the
  * box and the skin, the stylesheet keeps the composer grid slot, the phone
@@ -38,17 +35,13 @@ const CHIP_REMOVE_BOX = [
 ].join(' ');
 
 function useWebSearchOn(): boolean {
-  const read = () => isWebSearchOn() && window.matchMedia(DESKTOP_COMPOSER_QUERY).matches;
-  const [on, setOn] = useState(read);
+  const [on, setOn] = useState(isWebSearchOn);
   useEffect(() => {
-    const sync = () => setOn(read());
-    const media = window.matchMedia(DESKTOP_COMPOSER_QUERY);
+    const sync = () => setOn(isWebSearchOn());
     document.addEventListener('socrates:websearchchange', sync);
-    media.addEventListener('change', sync);
     sync();
     return () => {
       document.removeEventListener('socrates:websearchchange', sync);
-      media.removeEventListener('change', sync);
     };
   }, []);
   return on;
