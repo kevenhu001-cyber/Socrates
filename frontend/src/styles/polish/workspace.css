@@ -55,15 +55,15 @@
   padding: 2px 7px;
   border-radius: var(--ui-radius-xs);
   font-size: var(--ui-font-size-caption);
-  background: hsl(0 65% 62%/0.15);
-  color: hsl(0 65% 62%);
+  background: color-mix(in srgb, var(--ui-danger) 12%, transparent);
+  color: var(--ui-danger);
 }
 .library-bulk-delete:disabled {
   opacity: 0.35;
   cursor: default;
 }
 .library-bulk-delete:not(:disabled):hover {
-  background: hsl(0 65% 62%/0.25);
+  background: color-mix(in srgb, var(--ui-danger) 20%, transparent);
 }
 .library-row-selected {
   background: color-mix(in srgb, var(--ui-bg-control) 72%, transparent);
@@ -205,8 +205,8 @@
   .workspace-row-action {
     opacity: 0;
   }
-  .workspace-row:hover .workspace-row-action,
-  .workspace-row:focus-within .workspace-row-action,
+  :is(.workspace-row, .ui-page-card):hover .workspace-row-action,
+  :is(.workspace-row, .ui-page-card):focus-within .workspace-row-action,
   .workspace-row-action:focus-visible {
     opacity: 1;
   }
@@ -604,6 +604,8 @@
 
 #appShell .plugin-detail-page-header .account-page-title {
   flex: 1 1 180px;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 #appShell .plugin-detail-page-header .account-page-actions {
@@ -686,7 +688,9 @@
 #appShell .plugin-detail-cta-group {
   display: flex;
   align-items: center;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: var(--ui-space-sm);
+  min-width: 0;
   width: 100%;
 }
 
@@ -722,6 +726,7 @@
 }
 
 #appShell .plugin-detail-desc {
+  overflow-wrap: anywhere;
   font-size: var(--ui-font-size-md);
   line-height: 1.6;
   color: var(--ui-text-primary);
@@ -765,7 +770,7 @@
   color: var(--ui-text-secondary);
 }
 
-#appShell button.plugin-detail-prompt-card:hover {
+#appShell button.plugin-detail-prompt-card:is(:hover, :focus-visible) {
   background: var(--ui-bg-hover);
 }
 

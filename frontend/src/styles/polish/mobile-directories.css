@@ -106,11 +106,6 @@
     flex: 1 1 auto;
     min-width: 0;
   }
-  body.workspace-active #appShell .plugin-directory-card-title-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
   body.workspace-active #appShell .plugin-directory-card-title-row strong {
     font-size: var(--ui-font-size-md);
     line-height: 20px;
@@ -129,7 +124,7 @@
     overflow: hidden;
     font-size: var(--ui-font-size-sm);
     line-height: 20px;
-    color: var(--ui-text-tertiary);
+    color: var(--ui-text-secondary);
   }
   body.workspace-active #appShell .plugin-directory-row-action {
     display: flex;
@@ -244,10 +239,12 @@
   }
   body.workspace-active #appShell .library-row .library-item-name {
     display: block;
+    min-width: 0;
+    max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 15px;
+    font-size: var(--ui-font-size-md);
     font-weight: var(--ui-font-weight-regular);
     line-height: 22px;
   }

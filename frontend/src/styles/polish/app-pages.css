@@ -293,7 +293,7 @@ body.workspace-active #appShell .ui-page-card.project-card {
 }
 
 #appShell .project-card .workspace-row-copy span {
-  color: var(--ui-text-tertiary);
+  color: var(--ui-text-secondary);
   font-size: var(--ui-font-size-xs);
 }
 
@@ -330,7 +330,7 @@ body.workspace-active #appShell .ui-page-card.project-card {
   transition: background-color var(--ui-duration-hover) ease;
 }
 
-#appShell .plugin-directory-row:hover {
+#appShell .plugin-directory-row:is(:hover, :focus-within) {
   border-color: transparent;
   background: var(--ui-bg-hover);
 }
@@ -385,8 +385,9 @@ body.workspace-active #appShell .ui-page-card.project-card {
 
 #appShell .plugin-directory-card-title-row {
   display: flex;
-  align-items: center;
-  gap: var(--ui-space-xs);
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--ui-space-xxs) var(--ui-space-xs);
   min-width: 0;
 }
 

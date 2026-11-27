@@ -14,3 +14,12 @@ Only nonempty public source/file sections, image artifacts and actual agent step
 ## Pass 3 — composer stability and accessibility
 
 Keep attachment strip height independent of focus (remove the phone 64px focus override that could clip 64px cards and their scrollbar). Bound long draft scrolling by the visible viewport using the existing normalized keyboard inset, without another viewport listener or controller. Keep the existing 86px empty-frame target and 220px normal maximum. Placeholder truncation is owned by the same rule on desktop and mobile, long unbroken drafts wrap, and the rich editor has an explicit multiline textbox role. Reconcile focus on breakpoint changes, recognize nested editor targets, and use the actual voice/send/stop label for the primary hover title. Add a browser contract with a simulated inherited keyboard inset; actual physical IME and screenshots remain unverified. No native source changes.
+
+## Pass 4 — remaining Web surface detail pass
+
+- Header: unify drawer glyph footprint and neutral hover paint; reserve safe-area insets on both sides of a phone conversation title. Retain the existing measured/provisional header heights rather than inventing new measurements.
+- Sidebar: mobile recent actions no longer have a 40% opacity resting state. Keep actual hit targets and route behavior.
+- Settings: selected background and row geometry are independent; mobile category names wrap when text is long; header title bounded.
+- Directories: desktop project actions appear on card hover and focus; destructive bulk action uses semantic colors; mobile library names remain bounded and use shared type tokens. Plugin title/status layout wraps, neutral secondary descriptions remain readable, and the connection state is available to assistive technology even when hidden visually on narrow viewports. Plugin details wrap long copy and action groups; prompt rows have keyboard-visible hover parity.
+- Intelligence UI: numeric value styling is independent of transcript host, full-width tables have one wrapper owner, long choice labels and badges wrap. Auth links provide equivalent focus feedback; reduced-motion also disables root view-transition animation. Shared Page Kit descriptions wrap.
+- This is a source-level pass across the remaining named surfaces, not a claim of exhaustive pixel parity. Existing visual baselines remain untouched. Run the browser matrix and inspect screenshots before closing visual acceptance.

@@ -111,6 +111,7 @@ export function PluginDirectoryCard({
         className="plugin-directory-card-main justify-start whitespace-normal"
         onClick={() => onSelect(plugin.id)}
         aria-label={plugin.name}
+        aria-description={connectionLabel || undefined}
       >
         <span className={'workspace-row-icon connector-icon connector-' + plugin.id}>
           <ConnectorMark id={plugin.id} name={plugin.name} />
