@@ -31,7 +31,6 @@ import { initChatComposerReserve } from './legacy/scroll.ts';
 import { initKeyboardLift } from './legacy/keyboard/index.ts';
 import { initAndroidBridge } from './native/androidBridge.ts';
 import { initTopicFocusAssist } from './legacy/topicFocusAssist.ts';
-import './legacy/composerAnim.js';
 import { installComposerShapeMirror } from './legacy/composerShape.ts';
 import { installKeyboardShortcuts } from './legacy/keyboardShortcuts.ts';
 import { initSidebarDrag } from './legacy/sidebarResize.ts';

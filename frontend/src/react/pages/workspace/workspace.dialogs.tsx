@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
-import { getConnectorIconMarkupFn, getLegacyActions } from '../../legacy/gateway.ts';
+import { getLegacyActions } from '../../legacy/gateway.ts';
+import { connectorIconWithFallback } from '../../../sidebar/connectorIconLoader.ts';
 import { apiFetch } from '../../../util/api/index.ts';
 import { i18n } from '../../../ui/legacyI18n.ts';
 import { getCachedProjects } from '../../../projects/projectCache.ts';
@@ -545,13 +546,6 @@ export async function openScheduledTaskForm(taskId?: string, initialPrompt = '')
   bindScheduledTaskForm(dialog, task, editing, initialPrompt, String(activeProjectId));
 }
 
-function connectorIcon(id: string): string {
-  return (
-    getConnectorIconMarkupFn()?.(id) ||
-    `<span class="connector-logo-fallback" data-cicon="${escapeHtml(id)}" style="display:flex" aria-hidden="true">${escapeHtml(id.slice(0, 2).toUpperCase())}</span>`
-  );
-}
-
 function credentialDialog(
   connector: NonNullable<ReturnType<typeof useWorkspaceStore.getState>['pluginsData'][number]>,
 ): void {
@@ -680,7 +674,7 @@ export function openArxivSearch(): void {
                   (paper.pdfUrl
                     ? `<a class="workspace-row-action" href="${escapeHtml(paper.pdfUrl)}" target="_blank" rel="noopener noreferrer">PDF</a>`
                     : '');
-                return `<div class="workspace-row arxiv-paper"><span class="workspace-row-icon connector-icon connector-arxiv">${connectorIcon('arxiv')}</span><div class="workspace-row-copy"><strong>${escapeHtml(paper.title || 'Untitled paper')}</strong><span>${escapeHtml(meta || 'arXiv preprint')}</span>${paper.summary ? `<p class="arxiv-summary">${escapeHtml(paper.summary)}</p>` : ''}</div><span class="connector-actions">${links}</span></div>`;
+                return `<div class="workspace-row arxiv-paper"><span class="workspace-row-icon connector-icon connector-arxiv">${connectorIconWithFallback('arxiv')}</span><div class="workspace-row-copy"><strong>${escapeHtml(paper.title || 'Untitled paper')}</strong><span>${escapeHtml(meta || 'arXiv preprint')}</span>${paper.summary ? `<p class="arxiv-summary">${escapeHtml(paper.summary)}</p>` : ''}</div><span class="connector-actions">${links}</span></div>`;
               })
               .join('')
           : `<div class="workspace-empty"><strong>${i18n('connectors.arxivNone', 'No matching papers')}</strong><span>${i18n('connectors.arxivNoneHint', 'Try another research topic or author.')}</span></div>`;
@@ -709,7 +703,7 @@ export function openZoteroLibrary(): void {
               const details = [item.itemType, item.creators?.join(', '), item.date]
                 .filter(Boolean)
                 .join(' · ');
-              return `<div class="workspace-row zotero-item"><span class="workspace-row-icon connector-icon connector-zotero">${connectorIcon('zotero')}</span><div class="workspace-row-copy"><strong>${escapeHtml(item.title || 'Untitled item')}</strong><span>${escapeHtml(details || 'Zotero item')}</span></div></div>`;
+              return `<div class="workspace-row zotero-item"><span class="workspace-row-icon connector-icon connector-zotero">${connectorIconWithFallback('zotero')}</span><div class="workspace-row-copy"><strong>${escapeHtml(item.title || 'Untitled item')}</strong><span>${escapeHtml(details || 'Zotero item')}</span></div></div>`;
             })
             .join('')
         : `<div class="workspace-empty"><strong>${i18n('connectors.zoteroNone', 'No matching references')}</strong><span>${i18n('connectors.zoteroNoneHint', 'Try a title, author, or year.')}</span></div>`;

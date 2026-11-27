@@ -21,3 +21,7 @@ Removed 38 superseded single-line declarations from repeated identical selectors
 ## Phase 5 — search ownership and production/test split
 
 Merged the two command-palette rule sets into their final owner, retired the unused mobile menu row/component data and the one-rule mobile skin sheet. Main header actions use primary ink in the phone shell. Test state is now fetched only when the pre-navigation automation receiver is present, with fixture installation before bootstrap and a static graph assertion. The 360000-byte budget is unchanged. No measured gzip saving is claimed before CI.
+
+## Phase 6 — retire unused animation probe and connector icon window bridge
+
+Fixed the strict CSS import manifest to match the deleted mobile skin file (no debt allowances increased). Removed the unused composer fr-interpolation feature probe and its startup side effect. The connector icon pack remains demand-loaded, but navigation, composer and workspace now import a common loader directly; the window publication and gateway forwarding function are deleted. Regression assertion forbids the old global. Removed duplicate mobile header paint and model menu / scroll-to-bottom rules while preserving effective current values. Latest prior CI failed solely at the obsolete cascade manifest; new build and browser results are still required. The icon pack remains one lazy chunk; per-brand asset splitting is not claimed.

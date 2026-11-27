@@ -1099,9 +1099,9 @@ html[data-mode='dark'] #appShell .msg-body .hljs :is(.hljs-comment, .hljs-quote)
   margin-inline: auto;
   padding: 0;
   border-radius: 50%;
-  border: 1px solid var(--ui-border-subtle);
+  border: 1px solid var(--ui-border-strong);
   background: var(--ui-bg-page);
-  box-shadow: var(--ui-shadow-menu);
+  box-shadow: none;
   color: var(--ui-text-primary);
   transition:
     opacity var(--ui-duration-fast) var(--ui-ease-out),
@@ -1348,11 +1348,6 @@ html[data-mode='dark'] #appShell .msg-body .hljs :is(.hljs-comment, .hljs-quote)
 }
 #appShell #msgList .msg-body hr {
   border-top-color: var(--ui-border-subtle);
-}
-#appShell .new-reply-pill {
-  border-color: var(--ui-border-strong);
-  background: var(--ui-bg-page);
-  box-shadow: none;
 }
 @media (max-width: 768px) {
   #appShell #msgList .msg-body h2:not(.sc-rich *) {

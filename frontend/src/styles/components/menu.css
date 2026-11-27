@@ -317,6 +317,7 @@ body #composerToolsMenu.composer-tools-menu {
 }
 .chat-config-row strong {
   font-weight: var(--ui-font-weight-regular);
+  font-size: var(--ui-font-size-sm);
 }
 .chat-config-row :is(strong, small) {
   max-width: 100%;
@@ -344,9 +345,6 @@ body #composerToolsMenu.composer-tools-menu {
   flex: 0 0 1px;
   margin: 3px 8px;
   background: var(--ui-border-default);
-}
-.chat-config-row strong {
-  font-size: var(--ui-font-size-sm);
 }
 .chat-config-row small {
   font-size: var(--ui-font-size-xxs);

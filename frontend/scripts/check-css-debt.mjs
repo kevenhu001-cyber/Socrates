@@ -54,7 +54,6 @@ const ORDERED_MANIFESTS = {
     './workspace.css',
     './auth.css',
     './home.css',
-    './mobile.css',
     './press.css',
     './buttons.css',
     './mobile-controls.css',

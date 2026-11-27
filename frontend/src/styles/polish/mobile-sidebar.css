@@ -907,12 +907,6 @@
     opacity: 1;
   }
 
-  #appShell #sidebarOpenBtn {
-    border: 0;
-    background: transparent;
-    box-shadow: none;
-  }
-
   #appShell #apiSettingsBtn {
     display: none;
   }
@@ -940,10 +934,6 @@
     min-width: var(--ui-hit-area);
     height: var(--ui-hit-area);
     min-height: var(--ui-hit-area);
-    border: 0;
-    background: transparent;
-    color: var(--ui-icon-secondary, var(--ui-text-primary));
-    box-shadow: none;
   }
 }
 
