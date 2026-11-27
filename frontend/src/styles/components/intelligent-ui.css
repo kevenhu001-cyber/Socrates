@@ -1031,7 +1031,7 @@
 .demonstration figcaption {
   margin-bottom: var(--ui-gap-2);
   color: var(--ui-ink-secondary);
-  font-size: var(--ui-type-label-sm-size);
+  font-size: var(--ui-font-size-xs);
 }
 .demo-field canvas {
   display: block;
@@ -1044,8 +1044,8 @@
   overflow: visible;
 }
 .demo-axis {
-  color: var(--ui-ink-tertiary);
-  font-size: var(--ui-type-label-sm-size);
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xs);
 }
 .demo-axis line {
   stroke: var(--ui-hairline-strong);
@@ -1053,13 +1053,13 @@
 }
 .demo-axis text,
 .demo-axis-label {
-  color: var(--ui-ink-tertiary);
+  color: var(--ui-text-tertiary);
   fill: currentColor;
-  font-size: var(--ui-type-label-sm-size);
+  font-size: var(--ui-font-size-xs);
 }
 .demo-marker-label {
   fill: var(--ui-ink-secondary);
-  font-size: var(--ui-type-label-sm-size);
+  font-size: var(--ui-font-size-xs);
 }
 .demo-legend {
   display: flex;
@@ -1067,7 +1067,7 @@
   gap: var(--ui-gap-3);
   margin: var(--ui-gap-2) 0 0;
   color: var(--ui-ink-secondary);
-  font-size: var(--ui-type-label-sm-size);
+  font-size: var(--ui-font-size-xs);
 }
 .demo-legend > span {
   display: inline-flex;
@@ -1109,8 +1109,8 @@
   font-variant-numeric: tabular-nums;
 }
 .demo-control > output > span {
-  color: var(--ui-ink-tertiary);
-  font-size: var(--ui-type-label-sm-size);
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xs);
 }
 @container (max-width: 30rem) {
   .demo-control {
@@ -1182,9 +1182,9 @@
   border-radius: var(--ui-round-pill);
 }
 .demo-advanced summary {
-  color: var(--ui-ink-tertiary);
+  color: var(--ui-text-tertiary);
   cursor: pointer;
-  font-size: var(--ui-type-label-sm-size);
+  font-size: var(--ui-font-size-xs);
 }
 .demo-advanced summary:focus-visible,
 .demo-error summary:focus-visible,
@@ -1198,8 +1198,8 @@
 }
 .demo-issue details {
   margin-top: var(--ui-gap-1);
-  color: var(--ui-ink-tertiary);
-  font-size: var(--ui-type-label-sm-size);
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xs);
   overflow-wrap: anywhere;
 }
 .demo-issue summary {
@@ -1208,7 +1208,7 @@
 .demo-note {
   margin-top: var(--ui-gap-2);
   color: var(--ui-ink-secondary);
-  font-size: var(--ui-type-label-sm-size);
+  font-size: var(--ui-font-size-xs);
 }
 .demo-presets {
   display: flex;
@@ -1226,8 +1226,8 @@
   padding-top: var(--ui-gap-2);
 }
 .demo-metrics dt {
-  color: var(--ui-ink-tertiary);
-  font-size: var(--ui-type-label-sm-size);
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xs);
 }
 .demo-metrics dd {
   margin: var(--ui-gap-1) 0 0;
@@ -1236,7 +1236,7 @@
   font-variant-numeric: tabular-nums;
 }
 .demo-metrics dd > span {
-  font-size: var(--ui-type-label-sm-size);
+  font-size: var(--ui-font-size-xs);
   font-weight: var(--ui-font-weight-regular);
   color: var(--ui-ink-secondary);
 }
@@ -1245,8 +1245,8 @@
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--ui-gap-3);
-  color: var(--ui-ink-tertiary);
-  font-size: var(--ui-type-label-sm-size);
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xs);
   font-variant-numeric: tabular-nums;
 }
 /* Older convenience scenes use the same compact control grammar. */

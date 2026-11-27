@@ -52,7 +52,7 @@
   padding: 20px 14px;
   text-align: center;
   color: var(--ui-text-secondary);
-  font-size: var(--ui-foundation-font-size-sm);
+  font-size: var(--ui-font-size-xxs);
 }
 .slash-command-row {
   display: flex;
@@ -110,7 +110,7 @@
   font-size: var(--ui-font-size-caption);
   padding: 1px 4px;
   border: 0.5px solid color-mix(in srgb, var(--ui-border-default) 40%, transparent);
-  border-radius: var(--ui-space-xs);
+  border-radius: var(--ui-radius-xs);
   background: transparent;
   margin-right: 3px;
 }
@@ -141,7 +141,7 @@
 .prompt-templates-intro {
   margin: 0 0 4px;
   color: var(--ui-text-secondary);
-  font-size: var(--ui-foundation-font-size-sm);
+  font-size: var(--ui-font-size-xxs);
   line-height: 1.45;
 }
 .prompt-templates-empty {
@@ -150,7 +150,7 @@
   border-radius: var(--ui-radius-row);
   text-align: center;
   color: var(--ui-text-secondary);
-  font-size: var(--ui-foundation-font-size-sm);
+  font-size: var(--ui-font-size-xxs);
 }
 .prompt-row {
   display: flex;

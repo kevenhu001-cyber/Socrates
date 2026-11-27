@@ -21,7 +21,7 @@
   padding: 12px 14px;
   overflow-x: auto;
   font-family: var(--font-mono);
-  font-size: calc(var(--ui-foundation-font-size-sm) * var(--app-font-scale, 1));
+  font-size: calc(var(--ui-font-size-xxs-raw) * var(--app-font-scale, 1));
   line-height: 1.5;
   margin: 8px 0;
   color: var(--ui-text-secondary);
@@ -31,7 +31,7 @@
   font-size: 0.9em;
   background: var(--ui-bg-chip);
   padding: 2px 5px;
-  border-radius: var(--ui-space-xs);
+  border-radius: var(--ui-radius-xs);
 }
 .msg-body pre code {
   background: none;

@@ -89,7 +89,7 @@
   gap: 8px;
   padding: 6px 10px;
   border-radius: var(--ui-radius-row);
-  font-size: calc(var(--ui-foundation-font-size-sm) * var(--sidebar-font-scale));
+  font-size: calc(var(--ui-font-size-xxs-raw) * var(--sidebar-font-scale));
   color: var(--ui-text-tertiary);
   transition: background 0.06s;
 }

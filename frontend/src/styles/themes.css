@@ -598,8 +598,16 @@ html[data-theme='philosophy'][data-mode='light'] {
 
   --ui-text-primary: var(--foreground);
   --ui-text-secondary: var(--muted-foreground);
-  --ui-text-muted: rgb(125 117 104);
-  --ui-text-tertiary: rgb(125 117 104);
+  /* Warm tertiary, two steps darker than the first draft. The parchment
+     page is rgb(247 244 238) and the sunken rung rgb(232 227 214); the old
+     value (125 117 104) read at 4.14:1 and 3.62:1, under AA. This one clears
+     4.5:1 on all four rungs (page 5.31, card 5.64, sunken 4.55, bubble 4.82)
+     while staying on the palette hue. */
+  --ui-text-muted: rgb(108 100 88);
+  --ui-text-tertiary: rgb(108 100 88);
+  /* Geist keeps the placeholder a rung lighter than tertiary; the warm
+     equivalent of gray-700 so hints do not fall back to a cool gray. */
+  --ui-text-placeholder: rgb(154 146 132);
   --ui-text-disabled: rgb(168 160 146);
 
   --ui-accent-action: rgb(168 88 50);

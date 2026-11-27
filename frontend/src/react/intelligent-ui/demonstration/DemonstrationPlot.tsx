@@ -12,7 +12,7 @@ import { demoAxisLabel } from './mathLabels';
 import { DemoIssue } from './DemonstrationIssue';
 export const demoColors: Record<string, string> = {
   ink: 'var(--ui-ink)',
-  muted: 'var(--ui-ink-tertiary)',
+  muted: 'var(--ui-text-tertiary)',
   blue: 'var(--ui-demo-blue)',
   orange: 'var(--ui-demo-orange)',
   red: 'var(--ui-demo-red)',

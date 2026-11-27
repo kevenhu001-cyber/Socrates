@@ -39,7 +39,7 @@
   margin: 0;
   padding: 10px 16px 12px;
   color: var(--ui-text-tertiary);
-  font-size: var(--ui-foundation-font-size-sm);
+  font-size: var(--ui-font-size-xxs);
   line-height: 1.45;
   border-top: 1px solid color-mix(in srgb, var(--ui-border-subtle) 60%, transparent);
 }
@@ -110,7 +110,7 @@
 .visualization-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: var(--ui-foundation-font-size-sm);
+  font-size: var(--ui-font-size-xxs);
   font-family: var(--font-sans);
 }
 .visualization-table th,
@@ -408,7 +408,7 @@
   align-items: center;
   gap: 6px;
   padding: 24px 16px;
-  font-size: calc(var(--ui-foundation-font-size-sm) * var(--app-font-scale, 1));
+  font-size: calc(var(--ui-font-size-xxs-raw) * var(--app-font-scale, 1));
   color: var(--ui-text-secondary);
   background: color-mix(in srgb, var(--ui-bg-raised) 40%, transparent);
   border-radius: var(--ui-radius-row);
@@ -427,7 +427,7 @@
   flex-wrap: wrap;
   align-items: flex-start;
   gap: 6px;
-  font-size: calc(var(--ui-foundation-font-size-sm) * var(--app-font-scale, 1));
+  font-size: calc(var(--ui-font-size-xxs-raw) * var(--app-font-scale, 1));
   color: var(--ui-text-secondary);
   padding: 10px 12px;
   background: color-mix(in srgb, var(--ui-bg-raised) 50%, transparent);

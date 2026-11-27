@@ -33,7 +33,7 @@
   margin: 4px 0 0;
 }
 .admin-hint {
-  font-size: var(--ui-foundation-font-size-sm);
+  font-size: var(--ui-font-size-xxs);
   color: var(--ui-text-secondary);
   margin: 0;
   line-height: 1.6;
@@ -46,7 +46,7 @@
 }
 .admin-loading {
   padding: 20px 18px;
-  font-size: var(--ui-foundation-font-size-base);
+  font-size: var(--ui-font-size-sm);
   color: var(--ui-text-secondary);
 }
 .admin-error {
@@ -60,7 +60,7 @@
   line-height: 1.5;
 }
 .admin-key-present {
-  font-size: var(--ui-foundation-font-size-sm);
+  font-size: var(--ui-font-size-xxs);
   color: var(--ui-text-tertiary);
   font-weight: var(--ui-font-weight-regular);
 }

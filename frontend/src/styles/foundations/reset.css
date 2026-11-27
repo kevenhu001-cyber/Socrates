@@ -92,7 +92,7 @@ body {
   a:focus-visible {
     outline: 2px solid transparent;
     outline-offset: 2px;
-    border-radius: var(--ui-space-xs);
+    border-radius: var(--ui-radius-xs);
   }
 }
 ::selection {
