@@ -300,13 +300,9 @@ test('parallel tools keep their order, DOM identity, and open details as later c
   const first = toolRow(bubble, 'first-slow');
   await expect(first).toBeVisible();
   const handle = await first.elementHandle();
-  await toolRowButton(bubble, 'first-slow').click();
+  await expect(toolRowButton(bubble, 'first-slow')).not.toHaveAttribute('aria-expanded', /.+/);
   const detail = page.locator(TURN.detail);
-  await expect(detail).toBeVisible();
-  const rowButton = toolRowButton(bubble, 'first-slow');
-  await rowButton.focus();
-  await expect(detail.getByTestId('tool-input-toggle')).toHaveCount(0);
-  const detailHandle = await detail.elementHandle();
+  await expect(detail).toHaveCount(0);
   await page.evaluate(() =>
     window.__pushThinkingFrame('tool_result', {
       id: 'second-fast',
@@ -318,15 +314,12 @@ test('parallel tools keep their order, DOM identity, and open details as later c
     }),
   );
   await expect(toolRow(bubble, 'second-fast')).toHaveAttribute('data-state', 'done');
-  await expect(rowButton).toBeFocused();
-  /* A sibling settling neither closes nor remounts the open panel. */
+  const rowButton = toolRowButton(bubble, 'second-fast');
+  await rowButton.click();
+  await rowButton.focus();
   await expect(detail).toBeVisible();
-  expect(
-    await page.evaluate(
-      (node) => node === document.querySelector('[data-testid="tool-detail"]'),
-      detailHandle,
-    ),
-  ).toBe(true);
+  await expect(detail.getByTestId('tool-source')).toHaveCount(1);
+  const detailHandle = await detail.elementHandle();
   expect(
     await page.evaluate(
       (node) => node === document.querySelector('.rn-tool-row[data-tcid="first-slow"]'),

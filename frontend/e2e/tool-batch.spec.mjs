@@ -17,7 +17,7 @@ test('a large tool burst collapses to one summary and preserves individual detai
     for (const id of ['batch-a', 'batch-b', 'batch-c', 'batch-d']) {
       frames.push(
         'event: tool_result\ndata: ' +
-          JSON.stringify({ id, ok: true, status: 'completed', output: id }) +
+          JSON.stringify({ id, ok: true, status: 'completed', output: id, results: [{ title: id, url: 'https://example.test/' + id }] }) +
           '\n\n',
       );
     }

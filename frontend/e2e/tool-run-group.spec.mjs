@@ -232,38 +232,37 @@ test('raw Python output and search JSON never enter expanded tool details', asyn
       output: '{"raw":"private_json_probe"}' },
   ];
   const body = await loadFixtureSession(page, { toolCalls: calls });
-  for (const id of ['raw-python', 'raw-search']) {
-    const detail = await openDetail(page, body, id);
-    await expect(detail.getByTestId('tool-code-output')).toHaveCount(0);
-    await expect(detail.getByTestId('tool-input-toggle')).toHaveCount(0);
-    if (id === 'raw-search') await expect(detail.getByTestId('tool-source')).toHaveCount(1);
-    await body.getByTestId(`tool-row-${id}`).click();
-  }
+  await expect(body.getByTestId('tool-row-raw-python')).not.toHaveAttribute('aria-expanded', /.+/);
+  await expect(page.getByTestId('tool-detail')).toHaveCount(0);
+  const detail = await openDetail(page, body, 'raw-search');
+  await expect(detail.getByTestId('tool-code-output')).toHaveCount(0);
+  await expect(detail.getByTestId('tool-input-toggle')).toHaveCount(0);
+  await expect(detail.getByTestId('tool-source')).toHaveCount(1);
+  await body.getByTestId('tool-row-raw-search').click();
   await expect(body).not.toContainText(/private_(python|stdout|arg|json)_probe/);
 });
 
-test('tool failures remain internal until details are explicitly opened', async ({ page }) => {
+test('tool failures remain visible as status without a technical disclosure', async ({ page }) => {
   const body = await loadFixtureSession(page);
   await expect(body.getByTestId('tool-error')).toHaveCount(0);
   await expect(body.getByTestId('tool-error-retry')).toHaveCount(0);
   await expect(body.getByText('Search upstream timed out after 30s')).toHaveCount(0);
   await expect(body.locator('.rn-tool-row[data-tcid="f1"]')).toHaveAttribute('data-error', '1');
-  const detail = await openDetail(page, body, 'f1');
-  await expect(detail.getByTestId('tool-detail-section-error')).toHaveCount(0);
-  await expect(detail.getByTestId('tool-detail-section-technical')).toHaveCount(0);
-  await expect(detail).not.toContainText('Search upstream timed out after 30s');
-  await expect(detail).not.toContainText('SEARCH_TIMEOUT');
+  await expect(body.getByTestId('tool-row-f1')).not.toHaveAttribute('aria-expanded', /.+/);
+  await expect(page.getByTestId('tool-detail')).toHaveCount(0);
+  await expect(body).not.toContainText('Search upstream timed out after 30s');
+  await expect(body).not.toContainText('SEARCH_TIMEOUT');
 });
 
-test('each file action names its file in the row and in its own details', async ({ page }) => {
+test('each file action names its file without repeating its label in an empty detail', async ({ page }) => {
   const body = await loadFixtureSession(page);
   const w1 = body.getByTestId('tool-row-w1');
   await expect(w1).toContainText('router_v2.py');
   const w2 = body.getByTestId('tool-row-w2');
   await expect(w2).toContainText('moe.py');
-  const detail = await openDetail(page, body, 'w1');
-  await expect(detail.getByTestId('tool-input-toggle')).toHaveCount(0);
-  await expect(detail).toContainText('router_v2.py');
+  await expect(w1).not.toHaveAttribute('aria-expanded', /.+/);
+  await expect(w2).not.toHaveAttribute('aria-expanded', /.+/);
+  await expect(page.getByTestId('tool-detail')).toHaveCount(0);
 });
 
 test('answer prose keeps its recorded order around the rows, with no baked-in duplicates', async ({
@@ -472,12 +471,12 @@ test('a running code call streams into the open panel and keeps it open on compl
   });
   const preview = page.getByTestId('tool-live-preview');
   await expect(preview).toHaveCount(0);
-  const detail = await openDetail(page, bubble, 'live-code');
+  await expect(bubble.getByTestId('tool-row-live-code')).not.toHaveAttribute('aria-expanded', /.+/);
   await expect(preview).toHaveCount(0);
-  await expect(detail).not.toContainText('step_39(data)');
+  await expect(bubble).not.toContainText('step_39(data)');
   await page.evaluate(() => window.__streamStdout());
   await expect(page.getByTestId('tool-live-output')).toHaveCount(0);
-  await expect(detail).not.toContainText('running step_0');
+  await expect(bubble).not.toContainText('running step_0');
   const snapshotChecks = await page.evaluate(() => {
     const current = window.__socratesTestState.session().messages.at(-1);
     const call = current.toolCalls[0];
@@ -505,10 +504,9 @@ test('a running code call streams into the open panel and keeps it open on compl
 
   await page.evaluate(() => window.__finishCode());
   await expect(row).toHaveAttribute('data-state', 'done');
-  /* A settled call reports results, not the stream: the open panel swaps the
-     live blocks for the output section and stays open. */
+  /* Raw streaming and settled logs remain outside the public surface. */
   await expect(page.getByTestId('tool-live-preview')).toHaveCount(0);
-  await expect(page.getByTestId('tool-detail')).toBeVisible();
+  await expect(page.getByTestId('tool-detail')).toHaveCount(0);
   await expect(page.getByTestId('tool-detail-section-output')).toHaveCount(0);
 });
 
@@ -622,7 +620,7 @@ test('activity bursts start collapsed including failed and unknown rows', async 
   await expect(burst).toHaveAttribute('aria-expanded', 'false');
   await expect(body.getByTestId('tool-row-w1')).toBeHidden();
   await expect(body.getByTestId('tool-row-f1')).toBeHidden();
-  await expect(body.getByTestId('tool-row-f1')).toHaveAttribute('aria-expanded', 'false');
+  await expect(body.getByTestId('tool-row-f1')).not.toHaveAttribute('aria-expanded', /.+/);
   await expect(body.getByTestId('tool-row-s3')).toBeHidden();
   await burst.focus();
   await page.keyboard.press('Enter');

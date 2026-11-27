@@ -270,11 +270,8 @@ test('detail-free rows are static and native UI output is outside disclosure', a
   await page.getByRole('button', { name: 'Add one', exact: true }).click();
   await expect.poll(() => page.locator('.intui').innerText()).not.toBe(before);
   await page.getByTestId('turn-activity-toggle').click();
-  await page.getByTestId('tool-row-ui').click();
-  await expect(page.getByTestId('tool-detail')).toBeVisible();
-  // The native UI lives outside the disclosure, so opening and closing the
-  // row never unmounts it.
-  await page.getByTestId('tool-row-ui').click();
+  // The native UI lives in the answer, not a duplicate tool disclosure.
+  await expect(page.getByTestId('tool-row-ui')).not.toHaveAttribute('aria-expanded', /.+/);
   await expect(page.getByTestId('tool-detail')).toHaveCount(0);
   await expect(page.locator('.intui')).toBeVisible();
 

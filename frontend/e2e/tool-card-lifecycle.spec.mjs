@@ -102,7 +102,7 @@ async function startTurn(page) {
   return page.locator('.msg.assistant').last().locator('.msg-body');
 }
 
-test('the declarative tool row runs, settles, and opens its details', async ({ page }) => {
+test('the declarative tool row runs and settles without exposing raw output', async ({ page }) => {
   await installToolStream(page);
   const bubble = await startTurn(page);
 
@@ -134,23 +134,11 @@ test('the declarative tool row runs, settles, and opens its details', async ({ p
   await expect(row).toHaveAttribute('data-state', 'done');
   await expect(row.getByTestId('thinking-step-spinner')).toHaveCount(0);
 
-  // The settled row opens its detail inline on demand; a second press folds it.
+  // Raw execution output does not create a disclosure, even after settling.
   const activityToggle = bubble.getByTestId('turn-activity-toggle');
-  if (await activityToggle.count()) {
-    const isExpanded = await activityToggle.getAttribute('aria-expanded');
-    if (isExpanded !== 'true') {
-      await activityToggle.click();
-    }
-  }
-
-  await expect(rowButton).toHaveAttribute('aria-expanded', 'false');
+  if ((await activityToggle.getAttribute('aria-expanded')) !== 'true') await activityToggle.click();
+  await expect(rowButton).toBeVisible();
+  await expect(rowButton).not.toHaveAttribute('aria-expanded', /.+/);
   await expect(page.getByTestId('tool-detail')).toHaveCount(0);
-  await rowButton.click();
-  const detail = page.getByTestId('tool-detail');
-  await expect(detail).toBeVisible();
-  await expect(detail.getByTestId('tool-input-toggle')).toHaveCount(0);
-  await expect(detail.getByTestId('tool-detail-section-input')).toHaveCount(0);
-  await expect(detail.getByTestId('tool-code-output')).toHaveCount(0);
-  await rowButton.click();
-  await expect(page.getByTestId('tool-detail')).toHaveCount(0);
+  await expect(page.getByTestId('tool-code-output')).toHaveCount(0);
 });
