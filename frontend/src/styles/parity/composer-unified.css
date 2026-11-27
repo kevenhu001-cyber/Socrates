@@ -20,20 +20,16 @@
 /*
  * parity/composer-unified.css — THE composer stylesheet (RN-7 rewrite).
  *
- * The question box is the shared React Native frame
- * (packages/ui/src/composer/ComposerFrame.tsx): it paints the white sheet,
- * the 24px radius, the hairline-in-shadow at rest / hover / focus, the
- * two-storey rhythm and the 36px control rail, all from the site tokens in
- * packages/theme/src/ui.ts. This owner is left with what only the web can
- * style: the moving host, the rich editor's text, the chip strip inside the
- * editor slot, the attachment cards and the recording bar.
+ * WebComposerFrame.tsx owns one normal-flow DOM grid; shared ComposerControls
+ * supplies behavior and accessibility. This stylesheet owns the Web frame,
+ * editor, attachment slot and responsive control arrangement.
  *
  *   #composerInputWrap.composer-shell       moving host, no paint
- *     [data-composer-frame]                 RN sheet
- *       [data-composer-slot=top]            #composerAttachmentChips
- *       [data-composer-slot=body]           #composerRoot > .rich-composer
- *                                             queue · editor · chip strip
- *       [data-composer-slot=rail]           + ······ effort  mic  send
+ *     [data-composer-frame]                 Web frame
+ *       [data-composer-slot=top]            attachment strip
+ *       [data-composer-slot=inline]         tools · editor · trailing controls
+ *         [data-composer-slot=body]        rich editor and plugin chips
+ *         [data-composer-slot=trailing]    effort · mic · send
  */
 
 /* Parking slots for the moving shell. */

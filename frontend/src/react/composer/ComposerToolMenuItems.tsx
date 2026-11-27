@@ -10,6 +10,7 @@ import {
   MOBILE_MEDIA_ACTIONS,
   TOOL_GROUPS,
   toolDefinitions,
+  workflowGlyph,
   type MenuItemSpec,
 } from './composerToolsMenuData';
 import { useStoredReasoningEffort } from '../chat-configuration/useChatConfigurationLabels';
@@ -125,7 +126,7 @@ export function ComposerToolMenuItems({
               <MobileToolRow
                 key={spec.key}
                 action={spec.key as ComposerToolsAction}
-                iconHtml={spec.icon}
+                iconName={workflowGlyph(spec.key)}
                 title={label}
                 subtitle={description}
                 active={spec.key === activeKey}

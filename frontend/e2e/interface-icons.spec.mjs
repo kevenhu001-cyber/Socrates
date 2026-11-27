@@ -130,3 +130,26 @@ for (const theme of ['light', 'dark']) {
     await expect(page.locator('#composerToolsBtn')).toBeFocused();
   });
 }
+
+
+test('desktop workflows use the registered glyph renderer and an 18px footprint', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await mockAuthedApp(page);
+  await gotoAndSettle(page);
+  await waitForAppShell(page);
+  await page.locator('#composerToolsBtn').click();
+  const menu = page.locator('#composerToolsMenu .composer-tools-desktop-items');
+  for (const action of ['upload', 'webSearch', 'deepResearch', 'write', 'createImage', 'createSite', 'exam', 'skills']) {
+    const svg = menu.locator(`[data-composer-action="${action}"] .composer-tools-icon > svg`);
+    await expect(svg).toHaveAttribute('data-icon-source', 'openai-apps-sdk');
+    await expect(svg).toHaveAttribute('stroke', 'none');
+    await expect(svg).toHaveAttribute('focusable', 'false');
+    await expect(svg).toHaveCSS('width', '18px');
+    await expect(svg).toHaveCSS('height', '18px');
+  }
+  for (const action of ['explore', 'analyze']) {
+    const svg = menu.locator(`[data-composer-action="${action}"] .composer-tools-icon > svg`);
+    await expect(svg).toHaveAttribute('fill', 'none');
+    await expect(svg).toHaveAttribute('stroke', 'currentColor');
+  }
+});

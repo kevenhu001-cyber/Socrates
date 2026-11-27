@@ -3,7 +3,29 @@ import { registry } from '../../extensions/registry';
 import { extensiveThinkingExtension } from '../../extensions/modules/extensiveThinking';
 import type { ExtensionDefinition } from '../../extensions/types';
 
+import type { IconName } from '../../legacy/iconRegistry';
+
 export type MenuItemSpec = ExtensionDefinition;
+
+/** Built-in workflows share the same React glyph on both menu layouts.
+ * Extension text and execution remain owned by the registry. */
+const WORKFLOW_GLYPHS: ReadonlyMap<string, IconName> = new Map<string, IconName>([
+  ['upload', 'paperclip'],
+  ['webSearch', 'webSearch'],
+  ['explore', 'compass'],
+  ['deepResearch', 'research'],
+  ['write', 'edit'],
+  ['analyze', 'analyze'],
+  ['createImage', 'image'],
+  ['createSite', 'site'],
+  ['exam', 'exam'],
+  ['skills', 'skills'],
+  ['extensiveThinking', 'thinking'],
+]);
+
+export function workflowGlyph(key: string): IconName {
+  return WORKFLOW_GLYPHS.get(key) ?? 'document';
+}
 
 export const MOBILE_MEDIA_ACTIONS: ReadonlyArray<{
   action: 'camera' | 'photos' | 'upload' | 'wechatFiles';

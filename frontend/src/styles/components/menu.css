@@ -28,12 +28,6 @@
   flex-shrink: 0;
   transition: color 0.18s ease;
 }
-.composer-tools-icon svg {
-  width: 16px;
-  height: 16px;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
 .composer-tools-copy {
   display: flex;
   flex: 1;
@@ -187,11 +181,9 @@ body #composerToolsMenu.composer-tools-menu {
   color: var(--ui-text-primary);
 }
 #composerToolsMenu .composer-tools-icon svg {
-  width: 16px;
-  height: 16px;
-  stroke-width: 1.75;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+  display: block;
+  width: 18px;
+  height: 18px;
 }
 #composerToolsMenu .composer-tools-copy {
   display: flex;
