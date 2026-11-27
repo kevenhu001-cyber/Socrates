@@ -244,7 +244,7 @@ function SceneGridTicks({
               fill="none"
             />
             <text
-              fill="var(--ui-ink-tertiary)"
+              fill="var(--ui-text-tertiary)"
               className="demo-axis-label"
               x={px}
               y={bottom + 17}
@@ -253,7 +253,7 @@ function SceneGridTicks({
               {tick(x[0] + (x[1] - x[0]) * fraction)}
             </text>
             <text
-              fill="var(--ui-ink-tertiary)"
+              fill="var(--ui-text-tertiary)"
               className="demo-axis-label"
               x={left - 7}
               y={py + 4}
