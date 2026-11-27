@@ -1,6 +1,8 @@
 import { Button } from '../ui/shadcn/button';
-import { useEffect, useState, type ReactNode } from 'react';
+import { Input } from '../ui/shadcn/input';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Editor } from '@tiptap/react';
+import { i18n } from '../../ui/legacyI18n.ts';
 
 function ToolbarButton({
   active,
@@ -156,8 +158,20 @@ function BlockStyleButtons({
   );
 }
 
+function sanitizeLinkHref(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return '';
+  if (/^(https?:|mailto:|\/)/i.test(trimmed)) return trimmed;
+  if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(trimmed)) return `https://${trimmed}`;
+  return null;
+}
+
 function FormattingToolbar({ editor }: { editor: Editor }) {
   const [, setRevision] = useState(0);
+  const [linkOpen, setLinkOpen] = useState(false);
+  const [linkValue, setLinkValue] = useState('');
+  const linkInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     const refresh = () => setRevision((value) => value + 1);
     editor.on('selectionUpdate', refresh);
@@ -168,23 +182,88 @@ function FormattingToolbar({ editor }: { editor: Editor }) {
     };
   }, [editor]);
 
+  useEffect(() => {
+    if (!linkOpen) return;
+    const id = window.requestAnimationFrame(() => {
+      linkInputRef.current?.focus();
+      linkInputRef.current?.select();
+    });
+    return () => window.cancelAnimationFrame(id);
+  }, [linkOpen]);
+
   const run = (command: () => boolean) => () => {
     command();
     editor.commands.focus();
   };
-  const setLink = () => {
+  const openLinkEditor = () => {
     const previous = editor.getAttributes('link').href as string | undefined;
-    const href = window.prompt('Link URL', previous ?? 'https://');
-    if (href === null) return;
-    if (!href.trim()) editor.chain().focus().extendMarkRange('link').unsetLink().run();
-    else editor.chain().focus().extendMarkRange('link').setLink({ href: href.trim() }).run();
+    setLinkValue(previous ?? 'https://');
+    setLinkOpen(true);
   };
+  const closeLinkEditor = () => {
+    setLinkOpen(false);
+    editor.commands.focus();
+  };
+  const applyLink = () => {
+    const safeHref = sanitizeLinkHref(linkValue);
+    if (safeHref === null) return;
+    setLinkOpen(false);
+    if (!safeHref) editor.chain().focus().extendMarkRange('link').unsetLink().run();
+    else editor.chain().focus().extendMarkRange('link').setLink({ href: safeHref }).run();
+  };
+
+  if (linkOpen) {
+    return (
+      <div
+        className="rich-composer-toolbar flex items-center gap-1.5"
+        role="toolbar"
+        aria-label={i18n('composer.link.label', 'Link URL')}
+      >
+        <Input
+          ref={linkInputRef}
+          type="url"
+          value={linkValue}
+          onChange={(event) => setLinkValue(event.currentTarget.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              applyLink();
+            } else if (event.key === 'Escape') {
+              event.preventDefault();
+              closeLinkEditor();
+            }
+          }}
+          placeholder="https://"
+          aria-label={i18n('composer.link.label', 'Link URL')}
+          className="h-7 min-w-0 flex-1 rounded-full px-2.5 text-xs"
+        />
+        <Button
+          type="button"
+          variant="default"
+          size="sm"
+          className="h-7 rounded-full px-2.5 text-xs"
+          onClick={applyLink}
+        >
+          {i18n('common.apply', 'Apply')}
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-7 rounded-full px-2 text-xs"
+          onClick={closeLinkEditor}
+        >
+          {i18n('common.cancel', 'Cancel')}
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="rich-composer-toolbar" role="toolbar" aria-label="Formatting">
       <HeadingButtons editor={editor} run={run} />
       <span className="rich-composer-divider" />
-      <InlineStyleButtons editor={editor} run={run} setLink={setLink} />
+      <InlineStyleButtons editor={editor} run={run} setLink={openLinkEditor} />
       <span className="rich-composer-divider" />
       <BlockStyleButtons editor={editor} run={run} />
       <span className="rich-composer-divider" />
