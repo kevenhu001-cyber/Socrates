@@ -1,6 +1,6 @@
 import React from 'react';
 import { Icon } from '../../legacy/Icon';
-import { getIconDescriptor, type IconName } from '../../legacy/iconRegistry';
+import type { IconName } from '../../legacy/iconRegistry';
 import { animateSpring, readScale } from '../../legacy/motion/spring';
 import { SPRING_PRESETS } from '@socrates/core/motion/spring';
 import { MessageOverflow, type OverflowAction } from './MessageOverflow';
@@ -11,17 +11,17 @@ import { i18n } from '../../ui/legacyI18n.ts';
 import { Button } from '../ui/shadcn/button';
 import { TOOL_BUTTON, ToolButton } from './ToolButton';
 
-const ShareIcon = getIconDescriptor('share').children;
-const ThumbsUpIcon = getIconDescriptor('thumbsUp').children;
-const ThumbsDownIcon = getIconDescriptor('thumbsDown').children;
-const BranchIcon = getIconDescriptor('branch').children;
-const ReExplainIcon = getIconDescriptor('bulb').children;
-const ReadAloudIcon = getIconDescriptor('speaker').children;
-const CopyIcon = getIconDescriptor('copy').children;
-const CheckIcon = getIconDescriptor('check').children;
-const EditIcon = getIconDescriptor('edit').children;
-const TrashIcon = getIconDescriptor('trash').children;
-const RegenerateIcon = getIconDescriptor('regenerate').children;
+const ShareIcon: IconName = 'share';
+const ThumbsUpIcon: IconName = 'thumbsUp';
+const ThumbsDownIcon: IconName = 'thumbsDown';
+const BranchIcon: IconName = 'branch';
+const ReExplainIcon: IconName = 'bulb';
+const ReadAloudIcon: IconName = 'speaker';
+const CopyIcon: IconName = 'copy';
+const CheckIcon: IconName = 'check';
+const EditIcon: IconName = 'edit';
+const TrashIcon: IconName = 'trash';
+const RegenerateIcon: IconName = 'regenerate';
 
 /* The reaction pop: one visible overshoot of roughly 19% that settles back.
  * The number is the spring's own — stiffness 380 / damping 18 give ζ = 0.46
@@ -62,20 +62,7 @@ function MessageBranchSwitcher({
         aria-label={i18n('message.branch.prev', 'Previous version')}
         title={i18n('message.branch.prev', 'Previous version')}
       >
-        <svg
-          viewBox="0 0 24 24"
-          width="12"
-          height="12"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          shapeRendering="geometricPrecision"
-          aria-hidden="true"
-        >
-          <polyline points="15 18 9 12 15 6" />
-        </svg>
+        <Icon name="chevronLeft" size={12} />
       </Button>
       <span className="msg-branch-counter" aria-live="polite">
         {currentIndex + 1} / {total}
@@ -89,20 +76,7 @@ function MessageBranchSwitcher({
         aria-label={i18n('message.branch.next', 'Next version')}
         title={i18n('message.branch.next', 'Next version')}
       >
-        <svg
-          viewBox="0 0 24 24"
-          width="12"
-          height="12"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          shapeRendering="geometricPrecision"
-          aria-hidden="true"
-        >
-          <polyline points="9 18 15 12 9 6" />
-        </svg>
+        <Icon name="chevronRight" size={12} />
       </Button>
     </div>
   );
@@ -241,6 +215,15 @@ function MessageToolbarActions({
       </ToolButton>
       {role === 'user' && (
         <>
+          {/* 2026-11-26 reference: copy · share · edit under the bubble.
+              Delete stays on desktop rows; phones reach it from the
+              long-press context menu. */}
+          <ToolButton
+            label={i18n('message.share', 'Share conversation')}
+            onClick={() => callbacks.onShare?.()}
+          >
+            {toolbarIcon('share')}
+          </ToolButton>
           <ToolButton
             label={i18n('message.edit', 'Edit message')}
             onClick={() => callbacks.onEdit?.()}
@@ -250,6 +233,7 @@ function MessageToolbarActions({
           <ToolButton
             label={i18n('message.delete', 'Delete message')}
             onClick={() => callbacks.onDelete?.()}
+            className="msg-toolbar-desktop-only"
           >
             {toolbarIcon('trash')}
           </ToolButton>
@@ -257,12 +241,9 @@ function MessageToolbarActions({
       )}
       {role === 'assistant' && (
         <>
-          <ToolButton
-            label={i18n('message.regenerate', 'Regenerate response')}
-            onClick={() => callbacks.onRegenerate?.()}
-          >
-            {toolbarIcon('regenerate')}
-          </ToolButton>
+          {/* 2026-11-26 reference answer row, left to right: copy · feedback ·
+              read aloud · share · regenerate · more. Branch and re-explain
+              live in the overflow. */}
           <span className="msg-toolbar-feedback">
             <ToolButton
               label={i18n('message.helpful', 'Helpful')}
@@ -280,22 +261,28 @@ function MessageToolbarActions({
               {toolbarIcon('thumbsDown')}
             </ToolButton>
           </span>
+          <ToolButton
+            label={i18n('message.readAloud', 'Read aloud')}
+            onClick={(event: React.MouseEvent<HTMLButtonElement>) => callbacks.onReadAloud?.(event)}
+          >
+            {toolbarIcon('speaker')}
+          </ToolButton>
+          <ToolButton
+            label={i18n('message.share', 'Share conversation')}
+            onClick={() => callbacks.onShare?.()}
+          >
+            {toolbarIcon('share')}
+          </ToolButton>
+          <ToolButton
+            label={i18n('message.regenerate', 'Regenerate response')}
+            onClick={() => callbacks.onRegenerate?.()}
+          >
+            {toolbarIcon('regenerate')}
+          </ToolButton>
           <MessageOverflow
-            actions={[
-              ...secondaryActions,
-              {
-                label: i18n('message.helpful', 'Helpful'),
-                icon: ThumbsUpIcon,
-                mobileOnly: true,
-                onClick: () => callbacks.onThumbsUp?.(),
-              },
-              {
-                label: i18n('message.notHelpful', 'Not helpful'),
-                icon: ThumbsDownIcon,
-                mobileOnly: true,
-                onClick: () => callbacks.onThumbsDown?.(),
-              },
-            ]}
+            actions={secondaryActions.filter(
+              (action) => action.icon !== ShareIcon && action.icon !== ReadAloudIcon,
+            )}
           />
         </>
       )}

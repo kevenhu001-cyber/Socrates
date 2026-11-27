@@ -7,6 +7,7 @@ import { installVisualizationMath } from './visualizationMath.ts';
 
 /** The vendored Mermaid global, injected by the lazy loader. */
 declare const mermaid: {
+  initialize?(options: Record<string, unknown>): void;
   render(
     id: string,
     code: string,
@@ -246,7 +247,13 @@ function renderMermaidResult(
   if (result.bindFunctions) result.bindFunctions(card.body);
   const svg = card.body.querySelector('svg') as SVGElement | null;
   if (svg) {
-    svg.style.maxWidth = '100%';
+    /* Mermaid writes width="100%" plus its natural max-width; overriding that
+       with a bare 100% stretched a three-node chart to the full column (2026-11-26
+       reference shows diagrams at their natural size). Keep the natural width
+       from the viewBox and only cap it at the card. */
+    const natural = mermaidNaturalWidth(svg);
+    svg.style.width = '100%';
+    svg.style.maxWidth = natural ? `min(100%, ${natural}px)` : '100%';
     svg.style.height = 'auto';
   }
   /* A re-render (theme switch, resize, re-parse) replaces the SVG but keeps
@@ -257,6 +264,16 @@ function renderMermaidResult(
   body._vizMathCleanup = installVisualizationMath(body);
 }
 
+function mermaidNaturalWidth(svg: SVGElement): number | null {
+  const box = svg
+    .getAttribute('viewBox')
+    ?.trim()
+    .split(/[\s,]+/)
+    .map(Number);
+  const width = box && box.length === 4 ? box[2] : NaN;
+  return Number.isFinite(width) && width > 0 ? Math.ceil(width) : null;
+}
+
 function mermaidErrorMessage(error: unknown): string {
   return esc((error as Error)?.message || String(error)).slice(0, 300);
 }
@@ -264,6 +281,14 @@ function mermaidErrorMessage(error: unknown): string {
 function renderMermaidFailure(item: MermaidItem, error: unknown): void {
   const card = renderMermaidError(item, mermaidErrorMessage(error), esc(item.code || ''));
   if (card) _rememberLiveVizCard?.(item.id, card);
+}
+
+/* The transcript queue never initialised Mermaid, so a first render used the
+   library's default lilac theme on the dark canvas. Initialise from the live
+   colour mode before every render; displayPrefs re-runs it on a mode switch. */
+function applyMermaidTheme(): void {
+  const dark = document.documentElement.getAttribute('data-mode') === 'dark';
+  mermaid.initialize?.({ startOnLoad: false, theme: dark ? 'dark' : 'neutral' });
 }
 
 function renderPendingMermaidItem(item: MermaidItem): void {
@@ -280,6 +305,7 @@ function renderPendingMermaidItem(item: MermaidItem): void {
   }
   if (_mermaidInFlight[item.id]) return;
   try {
+    applyMermaidTheme();
     const inflight = mermaid.render('mermaid-svg-' + item.id, item.code);
     _mermaidInFlight[item.id] = inflight;
     inflight

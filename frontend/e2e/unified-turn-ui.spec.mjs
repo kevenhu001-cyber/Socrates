@@ -105,15 +105,16 @@ for (const mobile of [false, true]) {
       viewport: mobile ? WORKBENCH_VIEWPORTS.mobile : WORKBENCH_VIEWPORTS.desktop,
     });
     const toolbar = page.locator('.msg-toolbar[data-role="assistant"]');
-    await expect(toolbar.locator(':scope > button')).toHaveCount(3);
-    await expect(toolbar.getByRole('button', { name: 'Helpful', exact: true })).toHaveCount(
-      mobile ? 0 : 1,
-    );
+    /* 2026-11-26 reference answer row: copy · (like/dislike pair) · read aloud
+       · share · regenerate · more, the same on phones and desktop. */
+    await expect(toolbar.locator(':scope > button')).toHaveCount(5);
+    await expect(toolbar.getByRole('button', { name: 'Helpful', exact: true })).toHaveCount(1);
     const more = toolbar.getByRole('button', { name: 'More actions', exact: true });
     await more.click();
     const menu = page.getByRole('menu');
     await expect(menu).toBeVisible();
-    await expect(menu.getByRole('menuitem')).toHaveCount(mobile ? 6 : 4);
+    /* Branch and re-explain stay in the overflow. */
+    await expect(menu.getByRole('menuitem')).toHaveCount(2);
     await expect(menu.getByRole('menuitem').first()).toBeFocused();
     await page.keyboard.press('ArrowDown');
     await expect(menu.getByRole('menuitem').nth(1)).toBeFocused();
@@ -245,7 +246,6 @@ test('pending approvals remain visible with activity collapsed', async ({ page }
   ).toBe(false);
 });
 
-
 test('live activity keeps tool rows folded until requested', async ({ page }) => {
   await prepareChatWorkbench(page);
   await page.evaluate(async () => {
@@ -253,7 +253,13 @@ test('live activity keeps tool rows folded until requested', async ({ page }) =>
     for (const id of ['first', 'second', 'third']) {
       ctl.recordToolUse({ id, name: 'web_search', input: { query: id } });
       if (id !== 'third') {
-        ctl.recordToolResult({ id, name: 'web_search', ok: true, status: 'completed', output: 'Checked.' });
+        ctl.recordToolResult({
+          id,
+          name: 'web_search',
+          ok: true,
+          status: 'completed',
+          output: 'Checked.',
+        });
       }
     }
     window.__unifiedController = ctl;
@@ -267,7 +273,13 @@ test('live activity keeps tool rows folded until requested', async ({ page }) =>
   await burst.click();
   await page.evaluate(() => {
     const ctl = window.__unifiedController;
-    ctl.recordToolResult({ id: 'third', name: 'web_search', ok: true, status: 'completed', output: 'Checked.' });
+    ctl.recordToolResult({
+      id: 'third',
+      name: 'web_search',
+      ok: true,
+      status: 'completed',
+      output: 'Checked.',
+    });
     ctl.append('The answer.');
     ctl.finish();
   });
@@ -275,15 +287,33 @@ test('live activity keeps tool rows folded until requested', async ({ page }) =>
   await expect(page.locator('[data-testid="turn-activity-toggle"]')).toBeVisible();
 });
 
-
 test('live workspace steps stay behind the row disclosure', async ({ page }) => {
   await prepareChatWorkbench(page);
   await page.evaluate(async () => {
     const ctl = await window.addStreamingMessage({ userPrompt: 'Read project files.' });
     window.__unifiedController = ctl;
-    ctl.recordToolUse({ id: 'agent', name: 'workspace_agent', input: { task: 'Read project files.' } });
-    ctl.recordAgentStep({ type: 'step', id: 'agent', runId: 'run-preview', stepId: 'read', kind: 'read', status: 'done' });
-    ctl.recordAgentStep({ type: 'step', id: 'agent', runId: 'run-preview', stepId: 'command', kind: 'command', status: 'running', command: 'npm test' });
+    ctl.recordToolUse({
+      id: 'agent',
+      name: 'workspace_agent',
+      input: { task: 'Read project files.' },
+    });
+    ctl.recordAgentStep({
+      type: 'step',
+      id: 'agent',
+      runId: 'run-preview',
+      stepId: 'read',
+      kind: 'read',
+      status: 'done',
+    });
+    ctl.recordAgentStep({
+      type: 'step',
+      id: 'agent',
+      runId: 'run-preview',
+      stepId: 'command',
+      kind: 'command',
+      status: 'running',
+      command: 'npm test',
+    });
   });
   const preview = page.getByTestId('agent-activity-preview');
   await expect(preview).toHaveCount(0);
@@ -296,32 +326,41 @@ test('live workspace steps stay behind the row disclosure', async ({ page }) => 
   await expect(page.locator('.agent-step')).toHaveCount(0);
   await page.evaluate(() => {
     const ctl = window.__unifiedController;
-    ctl.recordToolResult({ id: 'agent', name: 'workspace_agent', status: 'completed', ok: true, output: 'Done.' });
+    ctl.recordToolResult({
+      id: 'agent',
+      name: 'workspace_agent',
+      status: 'completed',
+      ok: true,
+      output: 'Done.',
+    });
     ctl.append('Finished.');
     ctl.finish();
   });
   await expect(preview).toHaveCount(0);
 });
 
-
 test('stopped workspace steps retain an unconfirmed outcome', async ({ page }) => {
   await prepareChatWorkbench(page, {
-    messages: [{
-      clientId: 'cancelled-agent',
-      role: 'assistant',
-      rawText: 'Stopped.',
-      toolCalls: [{
-        id: 'cancelled',
-        name: 'workspace_agent',
-        textOffset: 0,
-        status: 'cancelled',
-        runId: 'cancelled-run',
-        steps: [
-          { stepId: 'read', kind: 'read', status: 'done' },
-          { stepId: 'command', kind: 'command', status: 'running', command: 'npm test' },
+    messages: [
+      {
+        clientId: 'cancelled-agent',
+        role: 'assistant',
+        rawText: 'Stopped.',
+        toolCalls: [
+          {
+            id: 'cancelled',
+            name: 'workspace_agent',
+            textOffset: 0,
+            status: 'cancelled',
+            runId: 'cancelled-run',
+            steps: [
+              { stepId: 'read', kind: 'read', status: 'done' },
+              { stepId: 'command', kind: 'command', status: 'running', command: 'npm test' },
+            ],
+          },
         ],
-      }],
-    }],
+      },
+    ],
   });
   await openActivity(page);
   await toolRow(page, 'cancelled').click();
@@ -334,26 +373,31 @@ test('stopped workspace steps retain an unconfirmed outcome', async ({ page }) =
   await expect(run.locator('[data-step-id="command"] .agent-step-meta')).toContainText('Stopped');
 });
 
-
 test('collapsed search activity preserves three unique site favicons', async ({ page }) => {
-  await prepareChatWorkbench(page, { messages: [{
-    clientId: 'search-favicons',
-    role: 'assistant',
-    rawText: 'Search complete.',
-    toolCalls: [{
-      id: 'search-favicons-call',
-      name: 'web_search',
-      textOffset: 0,
-      status: 'completed',
-      input: { query: 'sources' },
-      results: [
-        { title: 'A', url: 'https://openai.com/a' },
-        { title: 'A again', url: 'https://openai.com/b' },
-        { title: 'B', url: 'https://github.com/b' },
-        { title: 'C', url: 'https://vercel.com/c' },
-      ],
-    }],
-  }] });
+  await prepareChatWorkbench(page, {
+    messages: [
+      {
+        clientId: 'search-favicons',
+        role: 'assistant',
+        rawText: 'Search complete.',
+        toolCalls: [
+          {
+            id: 'search-favicons-call',
+            name: 'web_search',
+            textOffset: 0,
+            status: 'completed',
+            input: { query: 'sources' },
+            results: [
+              { title: 'A', url: 'https://openai.com/a' },
+              { title: 'A again', url: 'https://openai.com/b' },
+              { title: 'B', url: 'https://github.com/b' },
+              { title: 'C', url: 'https://vercel.com/c' },
+            ],
+          },
+        ],
+      },
+    ],
+  });
   const toggle = page.getByTestId('turn-activity-toggle');
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   await expect(toggle.getByTestId('tool-site-mark')).toHaveCount(3);

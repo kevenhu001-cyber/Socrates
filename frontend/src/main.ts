@@ -31,8 +31,6 @@ import { initChatComposerReserve } from './legacy/scroll.ts';
 import { initKeyboardLift } from './legacy/keyboard/index.ts';
 import { initAndroidBridge } from './native/androidBridge.ts';
 import { initTopicFocusAssist } from './legacy/topicFocusAssist.ts';
-import './legacy/composerAnim.js';
-import { installComposerShapeMirror } from './legacy/composerShape.ts';
 import { installKeyboardShortcuts } from './legacy/keyboardShortcuts.ts';
 import { initSidebarDrag } from './legacy/sidebarResize.ts';
 import { initSidebarChrome } from './legacy/sidebarChrome.ts';
@@ -48,7 +46,6 @@ import { initTheme, loadDisplayPrefs } from './displayPrefs.ts';
 import { syncWebSearchUI } from './chat/webSearchToggle.ts';
 import { bootstrapApp } from './app/bootstrap.ts';
 import { installWidgetRuntime } from './app/widgetSetup.ts';
-import { installTestState } from './app/testState.ts';
 import { loadTonePreset } from './config/tonePresets.ts';
 import { installAuthHooks } from './util/api/index.ts';
 import { syncAppModeUI, syncSidebarForMode } from './config/providers.ts';
@@ -57,8 +54,6 @@ initCookieConsent({ privacyUrl: 'https://topodrive.top/privacy' });
 initLinkFavicons();
 
 installLayoutStateMirror();
-
-installComposerShapeMirror();
 
 wireScrollPill();
 
@@ -128,20 +123,40 @@ installDiagnosticFlowActions();
 installLiveTurnRetryListener();
 
 installWidgetRuntime();
-installTestState();
 
 /* Install auth recovery before bootstrap can start API-backed work. */
 installAuthHooks({ on401: handleAuthExpired, isInGraceWindow: isInAuthGraceWindow });
 
 
-/* Wire the extracted feature modules into the auth-aware app bootstrap. */
-bootstrapApp({
-  syncWebSearchUI: syncWebSearchUI,
-  syncAppModeUI: syncAppModeUI,
-  syncSidebarForMode: syncSidebarForMode,
-  loadTonePreset: loadTonePreset,
-  loadMemories: loadMemories,
-});
+function startApplication(): void {
+  bootstrapApp({
+    syncWebSearchUI,
+    syncAppModeUI,
+    syncSidebarForMode,
+    loadTonePreset,
+    loadMemories,
+  });
+  // Warm charts only when a visualization tool appears.
+  preloadRenderRuntime();
+}
 
-/* Charts and formulas load on first use; warm them while the page is idle. */
-preloadRenderRuntime();
+/* Browser automation installs its receiver before navigation. Ordinary
+ * production visits never load the test-only state/action graph. Keep
+ * fixture installation ahead of app bootstrap for deterministic E2E setup. */
+if (
+  typeof (window as Window & { __installSocratesTestState?: unknown })
+    .__installSocratesTestState === 'function'
+) {
+  void import('./app/testState.ts').then(
+    ({ installTestState }) => {
+      installTestState();
+      startApplication();
+    },
+    (error: unknown) => {
+      console.error('[test-state] failed to initialize', error);
+      startApplication();
+    },
+  );
+} else {
+  startApplication();
+}

@@ -43,9 +43,7 @@
   letter-spacing: -0.015em;
   overflow-wrap: anywhere;
 }
-.msg.assistant
-  .msg-body.is-declarative
-  :is(.intui-panel-description, .intui-callout-text) {
+.intui :is(.intui-panel-description, .intui-callout-text) {
   color: var(--ui-text-secondary);
   font-size: var(--ui-font-size-sm);
   line-height: var(--ui-line-height-relaxed);
@@ -186,9 +184,7 @@
   color: var(--ui-text-secondary);
   font-size: var(--ui-font-size-sm);
 }
-.msg.assistant
-  .msg-body.is-declarative
-  :is(.intui-control-head output, .intui-progress-head > :last-child) {
+.intui :is(.intui-control-head output, .intui-progress-head > :last-child) {
   color: var(--ui-text-primary);
   font-variant-numeric: tabular-nums;
   font-weight: var(--ui-font-weight-medium);
@@ -321,6 +317,9 @@
 /* Controls carry their own fill, border and state from the shadcn primitive;
    this file only pins the chip geometry the transcript uses. */
 .intui-choice-options button {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
   border-radius: var(--ui-radius-pill);
   font: var(--ui-font-weight-medium) var(--ui-font-size-xs) / 1 var(--font-sans);
   touch-action: manipulation;
@@ -401,7 +400,10 @@
 .ds-table-wrap,
 .intui-table-wrap {
   min-width: 0;
+  width: 100%;
   max-width: 100%;
+  border: 0;
+  border-radius: 0;
   overflow-x: auto;
   overscroll-behavior-x: contain;
   -webkit-overflow-scrolling: touch;
@@ -427,9 +429,8 @@
 }
 .ds-table-wrap > table.ds-table,
 .intui-table {
-  width: max-content;
-  min-width: 0;
-  max-width: 100%;
+  width: 100%;
+  min-width: 100%;
   border-collapse: collapse;
   border-spacing: 0;
   color: var(--ui-text-primary);
@@ -483,10 +484,6 @@
 .ds-table-wrap > table.ds-table tbody tr:last-child td,
 .intui-table tbody tr:last-child td {
   border-bottom: 0;
-}
-.intui-table-wrap {
-  border: 0;
-  border-radius: 0;
 }
 .intui-stream-dot {
   position: absolute;
@@ -1718,11 +1715,12 @@
   align-items: center;
   justify-content: center;
   padding: 2px 8px;
-  border-radius: var(--ui-radius-control, 9999px);
+  border-radius: var(--ui-radius-pill);
   font-size: var(--ui-font-size-xxs);
   font-weight: var(--ui-font-weight-medium);
   line-height: 1.25;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
   vertical-align: middle;
 }
 .intui-badge.is-subtle.is-neutral {

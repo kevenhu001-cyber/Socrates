@@ -11,6 +11,7 @@ import {
 import type { TurnRuntime } from '@socrates/contracts';
 import { i18n } from '../../ui/legacyI18n.ts';
 import { SourceAvatar } from '../sources/SourceAvatar';
+import { faviconProxyUrl } from '../../legacy/faviconProxy';
 import { MathText } from '../rn/useInlineMath';
 import { TurnSources } from './TurnSources';
 
@@ -50,14 +51,121 @@ function resolvePreviewSources(
     );
   }
   if (preview?.claimId?.startsWith('source-')) {
-    return sources.filter((source, idx) => {
-      const key = preview.claimId.slice('source-'.length);
-      const num = Number(key);
-      if (Number.isSafeInteger(num) && num > 0) return idx === num - 1;
-      return source.id === key || source.id === preview.claimId;
-    });
+    // A merged chip previews every source of its run ("source-1,2").
+    const keys = preview.claimId.slice('source-'.length).split(',');
+    return sources.filter((source, idx) =>
+      keys.some((key) => {
+        const num = Number(key);
+        if (Number.isSafeInteger(num) && num > 0) return idx === num - 1;
+        return source.id === key || source.id === preview.claimId;
+      }),
+    );
   }
   return [];
+}
+
+function displayHost(url: string): string {
+  return safeHostname(url).replace(/^www\./i, '');
+}
+
+function isCitationAnchor(node: Node | null): node is HTMLAnchorElement {
+  return (
+    node instanceof HTMLAnchorElement && (node.getAttribute('href') || '').startsWith(PREFIX)
+  );
+}
+
+/** The next citation anchor separated from `anchor` only by whitespace. */
+function adjacentCitation(anchor: HTMLAnchorElement): HTMLAnchorElement | null {
+  let node = anchor.nextSibling;
+  while (node && node.nodeType === Node.TEXT_NODE && !(node.textContent || '').trim())
+    node = node.nextSibling;
+  return isCitationAnchor(node) ? node : null;
+}
+
+function chipFavicon(url: string, host: string): HTMLSpanElement {
+  const box = document.createElement('span');
+  box.className = 'turn-citation-chip-icon';
+  box.setAttribute('aria-hidden', 'true');
+  // The monogram is drawn from an attribute so it never joins the link text.
+  box.dataset.glyph = host.charAt(0).toUpperCase() || '?';
+  const src = faviconProxyUrl(url);
+  if (src) {
+    const img = document.createElement('img');
+    img.alt = '';
+    img.decoding = 'async';
+    img.referrerPolicy = 'no-referrer';
+    img.src = src;
+    // Missing favicons keep the monogram glyph underneath.
+    img.addEventListener('error', () => img.remove(), { once: true });
+    box.append(img);
+  }
+  return box;
+}
+
+/* Inline citations render as a ChatGPT-style source pill: the first cited
+   source's favicon and domain plus "+N" for the rest cited at that point.
+   The markdown keeps app-authored [n](#socrates-citation-*) links (so
+   validation and stripping are unchanged); this only re-dresses them. A run
+   of adjacent single-source markers ([1][2]) collapses into one pill whose
+   preview lists every source in the run. */
+function decorateCitationChips(
+  root: HTMLElement,
+  chipSources: (claimId: string) => TurnSourceItem[],
+) {
+  const anchors = Array.from(root.querySelectorAll<HTMLAnchorElement>(`a[href^="${PREFIX}"]`));
+  const merged = new Set<HTMLAnchorElement>();
+  for (const anchor of anchors) {
+    if (merged.has(anchor)) continue;
+    const claimId = anchor.getAttribute('href')!.slice(PREFIX.length);
+    const group = [anchor];
+    if (claimId.startsWith('source-') && !claimId.includes(',')) {
+      for (let next = adjacentCitation(anchor); next; next = adjacentCitation(next)) {
+        const nextId = next.getAttribute('href')!.slice(PREFIX.length);
+        if (!nextId.startsWith('source-')) break;
+        group.push(next);
+      }
+    }
+    const groupKey =
+      group.length > 1
+        ? 'source-' + group.map((a) => a.getAttribute('href')!.slice(PREFIX.length + 7)).join(',')
+        : claimId;
+    const list = chipSources(groupKey);
+    if (!list.length) continue;
+    const first = list[0];
+    const host = displayHost(first.url);
+    const extra = list.length - 1;
+    const signature = `${groupKey}|${first.url}|${list.length}`;
+    for (const rest of group.slice(1)) {
+      merged.add(rest);
+      if (rest.dataset.citationMerged !== '1') {
+        rest.dataset.citationMerged = '1';
+        rest.setAttribute('aria-hidden', 'true');
+        rest.tabIndex = -1;
+      }
+    }
+    if (anchor.dataset.citationChip === signature) continue;
+    anchor.dataset.citationChip = signature;
+    if (group.length > 1) anchor.dataset.citationGroup = groupKey;
+    else delete anchor.dataset.citationGroup;
+    const label =
+      extra > 0
+        ? i18n('citation.chipMore', 'Source: {host}, and {n} more')
+            .replace('{host}', host)
+            .replace('{n}', String(extra))
+        : i18n('citation.chip', 'Source: {host}').replace('{host}', host);
+    anchor.setAttribute('aria-label', label);
+    const name = document.createElement('span');
+    name.className = 'turn-citation-chip-host';
+    name.textContent = host;
+    const parts: Node[] = [chipFavicon(first.url, host), name];
+    if (extra > 0) {
+      const more = document.createElement('span');
+      more.className = 'turn-citation-chip-more';
+      more.textContent = `+${extra}`;
+      parts.push(more);
+    }
+    anchor.replaceChildren(...parts);
+  }
 }
 
 function useSourcePreviewDismiss(
@@ -201,6 +309,31 @@ function SourcePreviewDialog({
   );
 }
 
+/* Prose arrives as sanitized HTML (settled and streaming), so chips are
+   re-applied whenever that subtree changes. Decoration is idempotent via the
+   data-citation-chip signature, so its own writes settle the observer. */
+function useCitationChips(
+  rootRef: React.RefObject<HTMLDivElement | null>,
+  chipSources: (claimId: string) => TurnSourceItem[],
+) {
+  const latest = useRef(chipSources);
+  latest.current = chipSources;
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    decorateCitationChips(root, (id) => latest.current(id));
+  });
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+    if (!root || typeof MutationObserver === 'undefined') return;
+    const observer = new MutationObserver(() =>
+      decorateCitationChips(root, (id) => latest.current(id)),
+    );
+    observer.observe(root, { childList: true, subtree: true, characterData: true });
+    return () => observer.disconnect();
+  }, [rootRef]);
+}
+
 /** Links are inserted from validated annotations, never guessed from [n] text. */
 export function TurnEvidence({
   runtime,
@@ -214,6 +347,7 @@ export function TurnEvidence({
   children: ReactNode;
 }) {
   const [preview, setPreview] = useState<PreviewState | null>(null);
+  const rootRef = useRef<HTMLDivElement | null>(null);
   const dialogRef = useRef<HTMLElement | null>(null);
   const anchorRef = useRef<HTMLAnchorElement | null>(null);
   const suppressFocus = useRef(false);
@@ -238,13 +372,22 @@ export function TurnEvidence({
   const previewSources = resolvePreviewSources(sources, citations, validClaims, preview);
 
   useSourcePreviewDismiss(preview, dialogRef, anchorRef, suppressFocus, setPreview);
+  useCitationChips(rootRef, (claimId) =>
+    resolvePreviewSources(sources, citations, validClaims, {
+      claimId,
+      left: 0,
+      top: 0,
+      pinned: false,
+    }),
+  );
   useSourcePreviewPosition(preview, dialogRef, anchorRef, setPreview);
 
   const show = (event: SyntheticEvent, pinned = false) => {
     if (suppressFocus.current || !(event.target instanceof Element)) return;
     const anchor = event.target.closest<HTMLAnchorElement>(`a[href^="${PREFIX}"]`);
     if (!anchor) return;
-    const claimId = anchor.getAttribute('href')!.slice(PREFIX.length);
+    const claimId =
+      anchor.dataset.citationGroup || anchor.getAttribute('href')!.slice(PREFIX.length);
     const isDirectSource = claimId.startsWith('source-') && sources.length > 0;
     if (!validClaims.some((entry) => entry.id === claimId) && !isDirectSource) return;
     if (pinned) {
@@ -279,6 +422,7 @@ export function TurnEvidence({
 
   return (
     <div
+      ref={rootRef}
       className="turn-evidence"
       onClick={(event) => show(event, true)}
       onMouseOver={show}

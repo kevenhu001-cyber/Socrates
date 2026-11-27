@@ -5,12 +5,12 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { i18n } from './composerToolsMenuData';
 import type { ComposerToolsAction } from './types';
 import { loadPluginCatalog, type PluginCatalogEntry } from '../../composer/pluginCatalog.ts';
-import { getConnectorIconMarkupFn } from '../legacy/gateway.ts';
+import { connectorIconWithFallback } from '../../sidebar/connectorIconLoader.ts';
 import { useComposerPluginSelectionSnapshot } from './useComposerPluginSelection';
 import { toggleComposerPlugin } from '../../composer/pluginSelection.ts';
 
 function pluginIconMarkup(id: string): string {
-  return getConnectorIconMarkupFn()?.(id) || '';
+  return connectorIconWithFallback(id);
 }
 
 function PluginMark({ plugin }: { plugin: PluginCatalogEntry }) {

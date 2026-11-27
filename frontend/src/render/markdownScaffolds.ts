@@ -12,7 +12,7 @@ import {
   hasScaffoldMarkup,
   SCAFFOLD_TAGS,
   type ScaffoldTag,
-} from '@socrates/core';
+} from '@socrates/core/learn';
 
 /* Stream-time scaffold plugins. */
 interface StreamScaffoldPlugin {

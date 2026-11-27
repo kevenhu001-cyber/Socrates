@@ -52,7 +52,14 @@ for (const theme of ['light', 'dark'])
       const bubble = page.locator('#msgList .msg.assistant').last();
       const inline = bubble.locator('a[href="#socrates-citation-claim-1"]');
       await expect(inline).toBeVisible();
-      await expect(inline).toHaveText('1');
+      // Inline citation is a source pill: favicon + domain, named for AT.
+      await expect(inline).toHaveText('example.test');
+      await expect(inline).toHaveAttribute('aria-label', /example\.test/);
+      await expect(inline.locator('.turn-citation-chip-icon img')).toHaveCount(1);
+      await expect(inline.locator('.turn-citation-chip-more')).toHaveCount(0);
+      const chipBox = await inline.boundingBox();
+      expect(chipBox.height).toBeGreaterThanOrEqual(20);
+      expect(chipBox.height).toBeLessThanOrEqual(24);
       await inline.hover();
       const preview = page.getByRole('dialog', { name: 'Source preview' });
       await expect(preview).toContainText(source.title);
@@ -174,4 +181,52 @@ test('historical evidence restores; stale and unsafe metadata cannot create refe
     page.locator('[data-client-id="changed-citation"] a[href^="#socrates-citation-"]'),
   ).toHaveCount(0);
   await expect(page.locator('[data-client-id="changed-citation"] .turn-sources')).toHaveCount(0);
+});
+
+test('adjacent source markers collapse into one pill with +N and a glyph fallback', async ({
+  page,
+}) => {
+  await page.route(/\/api\/favicons\?/, (route) => route.fulfill({ status: 404, body: '' }));
+  const second = {
+    id: 'source-2',
+    url: 'https://www.second.test/a',
+    title: 'Second source',
+    snippet: 'Another excerpt.',
+  };
+  const runtime = {
+    version: 1,
+    turnId: 'markers',
+    seq: 2,
+    lifecycle: 'done',
+    generation: 'done',
+    activities: [],
+    uiSurfaces: [],
+    sources: [source, second],
+    citations: [],
+    claims: [],
+  };
+  await prepareChatWorkbench(page, {
+    messages: [
+      {
+        clientId: 'marker-citation',
+        role: 'assistant',
+        rawText: 'Both reports agree on the figure [1, 2].',
+        turnRuntime: runtime,
+      },
+    ],
+  });
+  const bubble = page.locator('[data-client-id="marker-citation"]');
+  const chips = bubble.locator('a[href^="#socrates-citation-"]:visible');
+  await expect(chips).toHaveCount(1);
+  await expect(chips.first()).toHaveText('example.test+1');
+  await expect(chips.first().locator('.turn-citation-chip-more')).toHaveText('+1');
+  await expect(chips.first().locator('.turn-citation-chip-icon')).toHaveAttribute(
+    'data-glyph',
+    'E',
+  );
+  await expect(chips.first().locator('img')).toHaveCount(0);
+  await chips.first().click();
+  const preview = page.getByRole('dialog', { name: 'Source preview' });
+  await expect(preview).toContainText(source.title);
+  await expect(preview).toContainText(second.title);
 });

@@ -1,20 +1,20 @@
 import { useEffect, useReducer } from 'react';
 
 import { ComposerPluginItems } from './ComposerPluginItems';
-import { MenuItem, MobileTileItem, MobileToolRow } from './ComposerToolItems';
+import { MenuItem, MobileToolRow } from './ComposerToolItems';
 import {
   i18n,
   menuCopy,
   MOBILE_GROUP_ORDER,
   MOBILE_THINKING_SPEC,
-  MOBILE_TILES,
+  MOBILE_MEDIA_ACTIONS,
   TOOL_GROUPS,
   toolDefinitions,
+  workflowGlyph,
   type MenuItemSpec,
 } from './composerToolsMenuData';
 import { useStoredReasoningEffort } from '../chat-configuration/useChatConfigurationLabels';
 import { effortLabel } from '../chat-configuration/ChatConfigurationPanels';
-import { interfaceIcon } from '../../legacy/icons/interfaceIcons';
 import type { ComposerToolsAction } from './types';
 
 export function ComposerToolMenuItems({
@@ -80,45 +80,40 @@ export function ComposerToolMenuItems({
         <div className="composer-tools-group-label">
           {i18n('composer.tools.group.context', 'Add context')}
         </div>
-        {/* 4-Tile Grid: 拍照, 照片, 本地文件, 微信文件 */}
-        <div className="composer-tools-tiles">
-          {MOBILE_TILES.map((tile) => (
-            <MobileTileItem
-              key={tile.action}
-              action={tile.action}
-              labelKey={tile.labelKey}
-              label={tile.label}
-              iconName={tile.iconName}
+        <div className="composer-tools-mobile-list">
+          {MOBILE_MEDIA_ACTIONS.map((item) => (
+            <MobileToolRow
+              key={item.action}
+              action={item.action}
+              iconName={item.iconName}
+              title={i18n(item.labelKey, item.label)}
               onPick={onPick}
             />
           ))}
-        </div>
-        {/* Mobile Rows List: 插件, 技能, 联网搜索, and workflows */}
-        <div className="composer-tools-mobile-list">
           <MobileToolRow
             action="reasoningEffort"
-            iconHtml={interfaceIcon('analyze', 22)}
+            iconName="analyze"
             title={i18n('chatconfig.effort', 'Reasoning effort')}
             rightText={effortLabel(effort)}
             onPick={onPick}
           />
           <MobileToolRow
             action="managePlugins"
-            iconHtml={interfaceIcon('plug', 22)}
+            iconName="plug"
             title={i18n('composer.tools.plugins', '插件')}
             subtitle={i18n('composer.tools.plugins.desc', '接入 App 和数据库，帮你自动操作')}
             onPick={onPick}
           />
           <MobileToolRow
             action="skills"
-            iconHtml={interfaceIcon('skillsBadge', 22)}
+            iconName="skillsBadge"
             title={i18n('extensions.skills.name', '技能')}
             subtitle={i18n('composer.tools.skills.desc', '复用专业能力，稳定处理特定任务')}
             onPick={onPick}
           />
           <MobileToolRow
             action="webSearch"
-            iconHtml={interfaceIcon('webSearch', 22)}
+            iconName="webSearch"
             title={i18n('composer.tools.webSearch', '联网搜索')}
             rightText={i18n('composer.tools.webSearch.auto', '自动')}
             active={activeKey === 'webSearch'}
@@ -131,7 +126,7 @@ export function ComposerToolMenuItems({
               <MobileToolRow
                 key={spec.key}
                 action={spec.key as ComposerToolsAction}
-                iconHtml={spec.icon}
+                iconName={workflowGlyph(spec.key)}
                 title={label}
                 subtitle={description}
                 active={spec.key === activeKey}

@@ -30,6 +30,8 @@ const THUMB = [
 ];
 
 const GLYPHS = {
+  // Two-line conversation menu from the supplied phone reference.
+  menuCompact: [path('M4 8h16'), path('M4 16h11')],
   knowledge: [
     circle(6, 6, 2.5),
     circle(18, 8, 2.5),

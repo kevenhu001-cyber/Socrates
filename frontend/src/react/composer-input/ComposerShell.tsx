@@ -7,7 +7,7 @@ import {
   useSyncExternalStore,
 } from 'react';
 import { NativeControl } from '../ui/NativeControl';
-import { ComposerFrame } from '@socrates/ui/composer';
+import { WebComposerFrame } from './WebComposerFrame';
 import { WebUiTheme } from '../rn/WebUiTheme';
 import { i18n } from '../../ui/legacyI18n.ts';
 import { ComposerAttachmentChips } from '../attachments/AttachmentChipsRow';
@@ -24,7 +24,10 @@ import { useStore } from 'zustand';
 import { useIsChatStreaming } from '../useChatRuntime';
 import { VoiceSpectrum } from './VoiceSpectrum';
 import { useStoredReasoningEffort } from '../chat-configuration/useChatConfigurationLabels';
-import { openChatConfiguration, useChatConfigurationSnapshot } from '../chat-configuration/chatConfiguration.bridge';
+import {
+  openChatConfiguration,
+  useChatConfigurationSnapshot,
+} from '../chat-configuration/chatConfiguration.bridge';
 import { effortLabel } from '../chat-configuration/ChatConfigurationPanels';
 import { useProviderConfigStore } from '../../config/providerConfig.store';
 import { resolveEffectiveEffort } from '../../config/effectiveEffort';
@@ -65,13 +68,19 @@ function useEditorFocus(keepControlsInPlace: boolean): boolean {
   useEffect(() => {
     const host = document.getElementById('composerInputWrap');
     if (!host) return undefined;
+    const isEditor = (target: EventTarget | null) =>
+      target instanceof Element && Boolean(target.closest('.rich-composer-editor'));
+    // Reconcile when a breakpoint changes while the editor already has focus.
+    setFocused((previous) =>
+      isEditor(document.activeElement) ||
+      (previous && keepControlsInPlace && host.contains(document.activeElement)),
+    );
     const onFocusIn = (event: FocusEvent) => {
-      const target = event.target;
-      if (target instanceof Element && target.matches('.rich-composer-editor')) {
-        setFocused(true);
-      }
+      if (isEditor(event.target)) setFocused(true);
+      else if (!keepControlsInPlace) setFocused(false);
     };
     const onFocusOut = (event: FocusEvent) => {
+      if (isEditor(event.relatedTarget)) return;
       if (keepControlsInPlace && host.contains(event.relatedTarget as Node | null)) return;
       setFocused(false);
     };
@@ -173,6 +182,13 @@ function usePrimaryClickHandler(
   };
 }
 
+function toggleVoice(): void {
+  const target = readComposerSurface();
+  void import('../../legacy/voiceInput.ts')
+    .then(({ toggleSpeechInput }) => toggleSpeechInput(target))
+    .catch((error) => reportSwallow(error, 'react/composer-input.voiceInput'));
+}
+
 function buildComposerControls(opts: {
   toolsLabel: string;
   composerTools: { isOpen: boolean; triggerId: string | null };
@@ -205,12 +221,7 @@ function buildComposerControls(opts: {
       timerLabel: opts.voiceTimerLabel,
       showTimer: !opts.phone,
       disabled: opts.voiceUnavailable !== null,
-      onPress: () => {
-        const target = readComposerSurface();
-        void import('../../legacy/voiceInput.ts')
-          .then(({ toggleSpeechInput }) => toggleSpeechInput(target))
-          .catch((error) => reportSwallow(error, 'react/composer-input.voiceInput'));
-      },
+      onPress: () => toggleVoice(),
     },
     primary: {
       mode: (opts.streaming ? 'stop' : 'send') as 'stop' | 'send',
@@ -218,30 +229,34 @@ function buildComposerControls(opts: {
       ready: opts.canSend,
       sending: opts.sending,
       onPress: opts.handlePrimaryClick,
+      /* Empty draft: the action disc starts dictation (reference voice disc).
+         Busy or unavailable dictation keeps the disabled send disc. */
+      voice:
+        opts.voicePhase === 'idle' && opts.voiceUnavailable === null
+          ? { label: opts.voiceLabel, onPress: () => toggleVoice() }
+          : null,
     },
   };
 }
 
 function useComposerEffortControl(phone: boolean) {
   const storedEffort = useStoredReasoningEffort();
-  const capabilities = useProviderConfigStore((state) =>
-    state.providers.find((provider) => provider.id === state.activeId)?.capabilities,
+  const capabilities = useProviderConfigStore(
+    (state) => state.providers.find((provider) => provider.id === state.activeId)?.capabilities,
   );
   const effort = resolveEffectiveEffort(storedEffort, capabilities);
   const configuration = useChatConfigurationSnapshot();
-  return (
-    phone && capabilities?.supportsEffort !== false
-      ? {
-          visible: true,
-          caption: i18n('chatconfig.effort', 'Reasoning effort'),
-          value: effortLabel(effort),
-          level: effort,
-          accessibilityLabel: `${i18n('chatconfig.effort', 'Reasoning effort')} · ${effortLabel(effort)}`,
-          expanded: configuration.open && configuration.triggerId === 'effortTrigger',
-          onPress: () => openChatConfiguration(anchor('effortTrigger')),
-        }
-      : undefined
-  );
+  return phone && capabilities?.supportsEffort !== false
+    ? {
+        visible: true,
+        caption: i18n('chatconfig.effort', 'Reasoning effort'),
+        value: effortLabel(effort),
+        level: effort,
+        accessibilityLabel: `${i18n('chatconfig.effort', 'Reasoning effort')} · ${effortLabel(effort)}`,
+        expanded: configuration.open && configuration.triggerId === 'effortTrigger',
+        onPress: () => openChatConfiguration(anchor('effortTrigger')),
+      }
+    : undefined;
 }
 
 /**
@@ -308,7 +323,10 @@ export function ComposerShell({
     else host.removeAttribute('data-voice-recording');
   }, [voiceRecording]);
 
-  useControlTitles(toolsLabel, voiceLabel, primaryLabel);
+  // The empty primary disc actually starts dictation; its hover label must
+  // describe the same action as the committed accessible name.
+  const primaryIsVoice = !streaming && !canSend && voicePhase === 'idle' && voiceUnavailable === null;
+  useControlTitles(toolsLabel, voiceLabel, primaryIsVoice ? voiceLabel : primaryLabel);
 
   /* The React composer exposes readiness as `data-ready` on the disc, but two
      older contracts still read the DOM classes: chat/turn/composer.ts uses
@@ -334,28 +352,19 @@ export function ComposerShell({
 
   return (
     <>
-      {/* RN-7: the question box is the shared RN frame (packages/ui/src/composer).
-          The web supplies two slots — the attachment row and the rich editor
-          (paste, shortcuts, IME, tokens unchanged); the frame draws the rest. */}
+      {/* One Web layout owns both rows; the editor and controls never remount
+          on a viewport change. Shared controls retain their real behavior. */}
       <WebUiTheme>
-        <ComposerFrame
+        <WebComposerFrame
           focused={focused}
           expanded={expanded}
           compact={phone}
-          layout={phone ? 'inline' : 'stacked'}
-          surface={phone ? 'var(--ui-bg-ask)' : 'var(--ui-bg-composer)'}
-          shadows={
-            phone
-              ? undefined
-              : {
-                  field: 'var(--ui-elevation-field)',
-                  fieldHover: 'var(--ui-elevation-field-hover)',
-                  fieldFocus: 'var(--ui-elevation-field-focus)',
-                }
-          }
           topVisible={attachments.length > 0}
           top={
-            <div className="attachment-chips hidden" id="composerAttachmentChips">
+            <div
+              className={attachments.length ? 'attachment-chips' : 'attachment-chips hidden'}
+              id="composerAttachmentChips"
+            >
               <ComposerAttachmentChips />
             </div>
           }

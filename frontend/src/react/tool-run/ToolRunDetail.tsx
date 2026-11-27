@@ -1,18 +1,15 @@
-import { DetailSection, ImageOutput, PlainDetail, sourceCardsOf } from '@socrates/ui/turn';
+import { DetailSection, ImageOutput, sourceCardsOf } from '@socrates/ui/turn';
 import { Button } from '../ui/shadcn/button';
 import { UiButton } from '@socrates/ui/primitives';
 import { SourceAvatar } from '../sources/SourceAvatar';
 import { basename, translate } from '../../legacy/toolPresentationModel.ts';
 import { openExternal } from './copyText';
-import { toolOutputsOf } from './toolOutputs';
+import type { PublicToolDetail } from './publicToolDetail';
 import { openSourcesPanel } from '../sources/mount';
-import type { DetailSection as Section, ToolCallRecord, ToolRunView } from './toolRunModel';
+import type { DetailSection as Section } from './toolRunModel';
 
 export interface ToolRunDetailProps {
-  view: ToolRunView;
-  call?: ToolCallRecord;
-  readOnly?: boolean;
-  inFlight?: boolean;
+  detail: PublicToolDetail;
 }
 
 function ResultSection({
@@ -101,21 +98,7 @@ function ResultSection({
   return null;
 }
 
-function imageOutputsOf(call: ToolCallRecord | undefined) {
-  return toolOutputsOf(call).flatMap((output) =>
-    output.kind === 'artifact' && /^image\//i.test(output.mimeType || '')
-      ? [
-          {
-            id: output.id,
-            uri: `/api/files/${encodeURIComponent(output.fileId)}/raw`,
-            name: output.name || '',
-          },
-        ]
-      : [],
-  );
-}
-
-function ToolImagesSection({ images }: { images: ReturnType<typeof imageOutputsOf> }) {
+function ToolImagesSection({ images }: { images: PublicToolDetail['images'] }) {
   if (!images.length) return null;
   return (
     <DetailSection title={translate('tool.detail.images', 'Images')} kind="images">
@@ -133,21 +116,14 @@ function ToolImagesSection({ images }: { images: ReturnType<typeof imageOutputsO
 /** Only explicitly structured public results may enter the transcript.
  * Raw arguments, stdout/stderr, JSON responses and technical diagnostics are
  * for the tool runtime, not an alternate user-facing answer. */
-export function ToolRunDetail({ view, call }: ToolRunDetailProps) {
-  const results = view.sections.filter(
-    (section) => section.kind === 'sources' || section.kind === 'files',
-  );
-  const images = imageOutputsOf(call);
-  const entryKey = call?.id || view.id;
+export function ToolRunDetail({ detail }: ToolRunDetailProps) {
+  const { sections: results, images, entryKey } = detail;
   return (
     <>
       {results.map((section, index) => (
         <ResultSection key={`${section.kind}-${index}`} section={section} entryKey={entryKey} />
       ))}
       <ToolImagesSection images={images} />
-      {!results.length && !images.length && !view.agentRun ? (
-        <PlainDetail text={view.label} />
-      ) : null}
     </>
   );
 }

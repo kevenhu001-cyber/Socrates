@@ -192,6 +192,9 @@ test('production entry keeps the static closure gzip transfer under budget', () 
      the static import closure. Keep this guard at its original limit; the
      total-closure cap below is unchanged. */
   expect(metrics.staticJsGzipBytes).toBeLessThan(360_000);
+  const testStateModule = report.modules.find((item) => item.id === 'src/app/testState.ts');
+  expect(testStateModule, 'test fixture must remain available to automation').toBeDefined();
+  expect(scripts.has(testStateModule.chunk), 'test-only state leaked into production entry').toBe(false);
   expect(metrics.linkedCssGzipBytes).toBeLessThan(210_000);
   expect(Object.values(metrics).reduce((sum, bytes) => sum + bytes, 0)).toBeLessThan(588_000);
 

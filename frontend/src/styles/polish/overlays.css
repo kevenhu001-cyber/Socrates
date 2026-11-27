@@ -309,67 +309,6 @@
   display: flex;
   flex-direction: column;
 }
-.cmd-k-input-row {
-  display: flex;
-  align-items: center;
-}
-.cmd-k-input-row .cmd-k-icon {
-  flex-shrink: 0;
-}
-.cmd-k-input-row input {
-  flex: 1;
-  background: transparent;
-  border: 0;
-  outline: none;
-  font: inherit;
-}
-.cmd-k-results {
-  flex: 1;
-  overflow-y: auto;
-}
-.cmd-k-section-label {
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-.cmd-k-row {
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  transition: background 0.1s;
-}
-.cmd-k-row-title {
-  font-weight: var(--ui-font-weight-medium);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.cmd-k-row-snippet {
-  line-height: 1.5;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.cmd-k-row-meta {
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-top: 2px;
-}
-.cmd-k-empty {
-  padding: 32px 16px;
-  text-align: center;
-}
-.cmd-k-empty kbd {
-  margin: 0 2px;
-}
-.cmd-k-foot {
-  display: flex;
-  gap: 18px;
-  padding: 8px 16px;
-}
-
 /* The confirm scrim used to be a 65% literal — the darkest of every dialog.
    Converged on the shared token so all dialogs dim by the same amount. */
 .confirm-dialog {
@@ -720,7 +659,6 @@
 
 /* ── Menus & popovers ── */
 .composer-tools-menu,
-.chat-config-pop,
 .sidebar-more-popover,
 .display-prefs-popover,
 .tag-editor-popover {
@@ -989,23 +927,26 @@ body.composer-tools-open.composer-tools-open::after {
   animation: ui-scrim-out var(--ui-duration-exit) var(--ui-ease-out) forwards;
 }
 
-/* ── CmdK palette (Geist) ────────────────────────────────────────────────
-   The palette is a Geist command surface, not a legacy skin: a 16px search
-   row on the hairline edge, 6px result rows on the raised surface, and kbd
-   chips cut from the control fill. The DOM still comes from the legacy
-   renderer, so every rule below re-projects that markup onto the Geist
-   scale — same selectors, later in the cascade than legacy/. */
+/* Global search: one owner for structure, typography and interactive paint. */
 .cmd-k-input-row {
+  display: flex;
+  align-items: center;
   gap: var(--ui-space-sm);
   padding: var(--ui-space-lg) var(--ui-space-lg);
   border-bottom: 1px solid var(--ui-border-default);
 }
 .cmd-k-input-row .cmd-k-icon {
+  flex-shrink: 0;
   width: 16px;
   height: 16px;
   color: var(--ui-text-tertiary);
 }
 .cmd-k-input-row input {
+  flex: 1;
+  background: transparent;
+  border: 0;
+  outline: none;
+  font: inherit;
   color: var(--ui-text-primary);
   font-size: var(--ui-font-size-md);
 }
@@ -1043,10 +984,14 @@ body.composer-tools-open.composer-tools-open::after {
   line-height: var(--ui-text-ui-line);
 }
 .cmd-k-results {
+  flex: 1;
+  overflow-y: auto;
   padding: 6px;
 }
 /* Section label — the quiet uppercase group heading of the Geist scale. */
 .cmd-k-section-label {
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   padding: var(--ui-space-sm) var(--ui-space-md) var(--ui-space-xxs);
   color: var(--ui-text-tertiary);
   font-size: var(--ui-font-size-xxs);
@@ -1058,6 +1003,11 @@ body.composer-tools-open.composer-tools-open::after {
    land within a hair of it — the hover wash and the selection would read
    as the same tone. */
 .cmd-k-row {
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transition: background 0.1s;
   padding: var(--ui-space-sm) var(--ui-space-md);
   border-radius: var(--ui-radius-sm);
 }
@@ -1069,22 +1019,38 @@ body.composer-tools-open.composer-tools-open::after {
   box-shadow: inset 0 0 0 1px var(--ui-border-default);
 }
 .cmd-k-row-title {
+  font-weight: var(--ui-font-weight-medium);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   color: var(--ui-text-primary);
   font-size: var(--ui-font-size-sm);
 }
 .cmd-k-row-snippet {
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
   color: var(--ui-text-secondary);
   font-size: var(--ui-font-size-xs);
 }
 .cmd-k-row-meta {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 2px;
   color: var(--ui-text-tertiary);
   font-size: var(--ui-font-size-xxs);
 }
 .cmd-k-empty {
+  padding: 32px 16px;
+  text-align: center;
   color: var(--ui-text-tertiary);
   font-size: var(--ui-font-size-xs);
 }
 .cmd-k-empty kbd {
+  margin: 0 2px;
   padding: 1px 5px;
   border: 1px solid var(--ui-border-strong);
   border-radius: var(--ui-radius-xs);
@@ -1093,6 +1059,9 @@ body.composer-tools-open.composer-tools-open::after {
   font-size: var(--ui-font-size-xxs);
 }
 .cmd-k-foot {
+  display: flex;
+  gap: 18px;
+  padding: 8px 16px;
   border-top: 1px solid var(--ui-border-default);
   color: var(--ui-text-tertiary);
   font-size: var(--ui-font-size-xxs);

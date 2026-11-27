@@ -1,5 +1,5 @@
 import { useId } from 'react';
-import { Chevron } from '@socrates/ui/turn';
+import { Icon } from '../../legacy/Icon';
 import { categoryIcon } from '../../legacy/icons/toolIcons.ts';
 import { toolCategory } from '../../render/toolCategory.ts';
 import { useLocaleRefresh, WebUiTheme } from '../rn/WebUiTheme';
@@ -85,7 +85,7 @@ export function ToolRunGroupRow({
             <span className="tool-run-group-meta">{meta.join(' · ')}</span>
           ) : null}
           {sites.length ? <ToolSiteMarks sites={sites} /> : null}
-          <Chevron open={disclosure.open} size={6} />
+          <Icon name={disclosure.open ? 'chevronUp' : 'chevronDown'} size={16} />
         </Button>
       </WebUiTheme>
       <div

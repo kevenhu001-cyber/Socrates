@@ -79,7 +79,7 @@ test('a rejected render_intelligent_ui call does not render an error card', asyn
   });
   await expect(page.locator('[data-viz-state="failed"]')).toHaveCount(0);
   await expect(page.locator('[data-tool-anchor="ui-failed"]')).toHaveCount(0);
-  await expect(page.getByTestId('tool-row-ui-failed')).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.getByTestId('tool-row-ui-failed')).not.toHaveAttribute('aria-expanded', /.+/);
   await expect(page.getByText('Here is the chart.')).toBeVisible();
 });
 

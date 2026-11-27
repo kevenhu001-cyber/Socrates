@@ -325,7 +325,7 @@ html[data-boot-state='auth'] .boot-loading {
   cursor: pointer;
 }
 
-.auth-gate :is(.auth-foot a, .auth-inline-link, .auth-back-link):hover {
+.auth-gate :is(.auth-foot a, .auth-inline-link, .auth-back-link):is(:hover, :focus-visible) {
   text-decoration: underline;
 }
 

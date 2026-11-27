@@ -115,7 +115,7 @@ function syncMermaidTheme(mode: ThemeMode) {
         ? (window as unknown as { mermaid?: { initialize?: (opts: unknown) => void } }).mermaid
         : undefined;
     if (mermaid && mermaid.initialize) {
-      mermaid.initialize({ startOnLoad: false, theme: mode === 'dark' ? 'dark' : 'default' });
+      mermaid.initialize({ startOnLoad: false, theme: mode === 'dark' ? 'dark' : 'neutral' });
     }
   } catch (_) {
     reportEmptyCatch(_, 'empty catch: displayPrefs.ts', 'expected');

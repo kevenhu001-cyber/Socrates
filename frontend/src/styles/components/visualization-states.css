@@ -863,3 +863,69 @@
     min-height: var(--ui-hit-area);
   }
 }
+
+/* 2026-11-26 reference Mermaid card: a 24px card whose header strip sits on
+   the elevated rung (glyph + "Mermaid" on the left, an icon segmented pill on
+   the right — source, then ▶ preview, the active segment the darker disc)
+   above a diagram body on the canvas with a hairline frame. */
+#appShell .viz[data-viz-kind='mermaid'] {
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-2xl);
+  background: var(--ui-bg-page);
+}
+#appShell .viz-mermaid-header {
+  min-height: 56px;
+  padding: 8px 8px 8px 16px;
+  border-bottom: 0;
+  background: var(--ui-bg-elevated);
+}
+/* Light runs the ladder the other way: the elevated rung is the paper the
+   card sits on, so the strip steps down to the panel rung to read as a
+   header (#f2f2f2 over the white diagram body) instead of vanishing. */
+html[data-mode='light'] #appShell .viz-mermaid-header {
+  background: var(--ui-bg-panel);
+}
+#appShell .viz-mermaid-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-md);
+  font-weight: var(--ui-font-weight-regular);
+}
+#appShell .viz-mermaid-glyph {
+  flex: none;
+}
+/* The reference header carries only the view pill at its right edge; the
+   hover-only "Interactive" status chip kept an invisible slot after it. */
+#appShell .viz[data-viz-kind='mermaid'] .viz-status {
+  display: none;
+}
+#appShell .viz[data-viz-kind='mermaid'] .viz-seg {
+  gap: 0;
+  padding: 3px;
+  border: 0;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-fill-hover);
+}
+#appShell .viz[data-viz-kind='mermaid'] .viz-seg-btn {
+  width: var(--ui-control-sm);
+  height: var(--ui-control-sm);
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ui-radius-pill);
+  background: transparent;
+  color: var(--ui-text-secondary);
+}
+#appShell .viz[data-viz-kind='mermaid'] .viz-seg-btn[aria-pressed='true'] {
+  background: var(--ui-bg-page);
+  color: var(--ui-text-primary);
+}
+#appShell .viz[data-viz-kind='mermaid'] .viz-seg-btn svg {
+  width: 18px;
+  height: 18px;
+}
+#appShell .viz[data-viz-kind='mermaid'] .viz-body {
+  padding: 20px 16px;
+}

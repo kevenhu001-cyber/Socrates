@@ -154,7 +154,22 @@ for (const [key, limit] of Object.entries(limits)) {
   if (entry[key] >= limit) { console.error(key + ': ' + entry[key] + ' >= ' + limit); process.exitCode = 1; }
 }
 if (staticTotal >= 588000) { console.error('Static entry exceeds 588000 gzip bytes'); process.exitCode = 1; }
-if (process.exitCode) process.exit(process.exitCode);
+if (process.exitCode) {
+  // Keep the gate strict; print actionable dependency paths from the exact
+  // production graph instead of guessing from filenames or source sizes.
+  console.error('\nLargest static entry chunks (actual gzip bytes):');
+  for (const file of [...scripts].sort((a, b) => chunks.get(b).gzipBytes - chunks.get(a).gzipBytes).slice(0, 12)) {
+    console.error(`  ${chunks.get(file).gzipBytes}  ${file}`);
+  }
+  console.error('\nLargest retained first-party modules in those static chunks (rendered bytes, not additive gzip):');
+  for (const module of graph.modules
+    .filter(module => scripts.has(module.chunk) && !module.id.includes('node_modules/'))
+    .sort((a, b) => b.renderedBytes - a.renderedBytes)
+    .slice(0, 30)) {
+    console.error(`  ${module.renderedBytes}  ${module.id}\n    ${module.staticPath?.join(' -> ') || 'chunk co-location, no direct source path'}`);
+  }
+  process.exit(process.exitCode);
+}
 
 // Dist inventory: include nested assets and files outside assets/ (fonts,
 // WASM, PDF support, etc.). Precompressed siblings are separate storage,

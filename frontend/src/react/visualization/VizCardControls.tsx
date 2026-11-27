@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Expand, FileCode2, RefreshCw } from 'lucide-react';
+import { Expand, FileCode2, Play, RefreshCw, SquareTerminal } from 'lucide-react';
 import { Button } from '../ui/shadcn/button';
 import { ToggleGroup, ToggleGroupItem } from '../ui/shadcn/toggle-group';
 
@@ -47,21 +47,28 @@ export function VizCardControls({
           className="viz-seg"
           onValueChange={changeView}
         >
-          <ToggleGroupItem
-            value="preview"
-            className="viz-seg-btn"
-            data-viz-card={cardId}
-            data-viz-view-opt="preview"
-          >
-            Preview
-          </ToggleGroupItem>
+          {/* 2026-11-26 reference: an icon segmented pill — source on the
+              left, preview (▶) on the right; the active segment is the
+              darker disc. Names stay on aria-label / title. */}
           <ToggleGroupItem
             value="code"
             className="viz-seg-btn"
             data-viz-card={cardId}
             data-viz-view-opt="code"
+            aria-label="Code"
+            title="Code"
           >
-            Code
+            <SquareTerminal aria-hidden="true" />
+          </ToggleGroupItem>
+          <ToggleGroupItem
+            value="preview"
+            className="viz-seg-btn"
+            data-viz-card={cardId}
+            data-viz-view-opt="preview"
+            aria-label="Preview"
+            title="Preview"
+          >
+            <Play aria-hidden="true" />
           </ToggleGroupItem>
         </ToggleGroup>
       )}
@@ -93,7 +100,7 @@ export function VizCardControls({
           onClick={onReload}
         >
           <RefreshCw aria-hidden="true" />
-          </Button>
+        </Button>
       )}
       {!diagram && (
         <Button
@@ -106,7 +113,7 @@ export function VizCardControls({
           onClick={onExpand}
         >
           <Expand aria-hidden="true" />
-          </Button>
+        </Button>
       )}
     </>
   );

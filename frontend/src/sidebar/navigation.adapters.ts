@@ -13,7 +13,8 @@ import {
   loadProjectsData,
 } from '../react/pages/workspace/workspace.service';
 import { loadScheduledTasks } from '../react/pages/scheduled/scheduled.service';
-import { ensureConnectorIcons, restoreConnectorReturnContext } from './nav.ts';
+import { restoreConnectorReturnContext } from './nav.ts';
+import { ensureConnectorIcons } from './connectorIconLoader.ts';
 import { getActiveDestination } from './navigation.store';
 import { setSidebarPanelView } from './sidebar.store';
 import { activateMainView } from '../legacy/mainViewController.ts';

@@ -110,28 +110,6 @@
     min-height: var(--ui-hit-area);
   }
 
-  /* ── Message toolbar buttons — 32 visual + 40 hit area ──
-     The 32px box, radius and ghost hover come from the primitive's
-     --ui-* utilities (src/react/message-list/ToolButton.tsx); only the
-     invisible tap extension and the phone glyph rung live here. */
-  /* Reference action row (copy · share · edit): 32px buttons set edge to
-     edge (a 32px pitch) with 18px glyphs. The tap extension grows only
-     vertically so neighbours never overlap. */
-  #appShell .msg-toolbar {
-    gap: 0;
-    height: var(--ui-control-sm);
-  }
-  #appShell .msg-toolbar-btn::before {
-    content: '';
-    position: absolute;
-    inset: -4px 0;
-    pointer-events: auto;
-  }
-  #appShell .msg-toolbar-btn svg {
-    width: 18px;
-    height: 18px;
-  }
-
   /* ── Composer controls hit area ─────────────────────────────────────────
      The hit-area ::before wrapper lives in
      parity/composer-unified.css — that file is the only owner of
@@ -216,52 +194,5 @@
   #appShell .sidebar-account-menu .user-identity {
     display: flex;
     flex-direction: column;
-  }
-}
-/* Mobile toolbar density retained from transcript compatibility rules. */
-@media (max-width: 768px) {
-  #appShell .msg-toolbar {
-    height: var(--ui-control-sm);
-    min-height: var(--ui-control-sm);
-    display: flex;
-    align-items: center;
-    overflow-x: auto;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-  }
-}
-@media (max-width: 768px) {
-  #appShell .msg-toolbar::-webkit-scrollbar {
-    display: none;
-  }
-}
-@media (max-width: 768px) {
-  #appShell .msg-toolbar-btn {
-    transition:
-      background-color var(--ui-duration-fast) ease,
-      color var(--ui-duration-fast) ease,
-      opacity var(--ui-duration-fast) ease;
-  }
-}
-@media (max-width: 768px) {
-  #appShell .msg-toolbar-btn:active {
-    opacity: var(--press-opacity, var(--ui-press-opacity-sm, 0.72));
-    background: var(--accent);
-    color: var(--foreground);
-  }
-}
-@media (max-width: 768px) {
-  #appShell .msg-toolbar-btn svg {
-    width: 20px;
-    height: 20px;
-  }
-}
-
-@media (max-width: 768px) {
-  #appShell .msg-toolbar-feedback {
-    display: none;
-  }
-  .msg-action-menu button {
-    min-height: var(--ui-control-touch);
   }
 }

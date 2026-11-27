@@ -11,10 +11,10 @@
  * `data-composer-control` so the host grid can place it.
  *
  * Look (site chrome): 36px pill controls, bare glyphs until touched — a 4%
- * fill on hover, 8% while a menu it owns is open — and the send disc, grey
- * when empty and ink once there is something to send. Phones follow the
- * reference instead: the effort control is plain text and the empty send
- * disc is the action colour at half strength. Focus is drawn by the host's
+ * fill on hover, 8% while a menu it owns is open — and the blue action disc
+ * (2026-11-26 reference): a waveform that starts dictation while the draft is
+ * empty, an arrow once there is something to send, a square while a turn
+ * streams. Phones draw the effort control as plain text. Focus is drawn by the host's
  * focus ring.
  */
 import type { ReactNode } from 'react';
@@ -74,6 +74,11 @@ export interface ComposerPrimaryControl {
   /** Short beat after a submit, before the stream starts. */
   sending: boolean;
   onPress: () => void;
+  /** Empty-draft voice affordance (2026-11-26 phone reference): with nothing
+   *  to send and no turn streaming, the action disc shows a waveform and
+   *  starts dictation instead of sitting disabled. Omitted, or `null` while
+   *  dictation is busy or unavailable, keeps the disabled send disc. */
+  voice?: { label: string; onPress: () => void } | null;
 }
 
 export interface ComposerControlsProps {
@@ -157,7 +162,9 @@ function RoundControl({
             : pressed
               ? colors.fillPressed
               : active
-                ? colors.fillHover
+                ? /* An open menu fills its trigger (the reference's filled
+                     + disc while the attach sheet is up). */
+                  colors.fillPressed
                 : hovered
                   ? colors.fillHover
                   : 'transparent',
@@ -182,7 +189,8 @@ export function ComposerControls({
   const effortPress = usePressFeedback();
   const primaryPress = usePressFeedback();
   const stop = primary.mode === 'stop';
-  const enabled = stop || primary.ready;
+  const voiceDisc = !stop && !primary.ready && primary.voice ? primary.voice : null;
+  const enabled = stop || primary.ready || voiceDisc !== null;
   const leading = part !== 'trailing';
   const trailing = part !== 'leading';
   return (
@@ -333,16 +341,17 @@ export function ComposerControls({
           <button
             type="button"
             id="composerPrimaryBtn"
-            aria-label={primary.label}
+            aria-label={voiceDisc ? voiceDisc.label : primary.label}
             aria-disabled={!enabled}
             disabled={!enabled}
-            onClick={primary.onPress}
+            onClick={voiceDisc ? voiceDisc.onPress : primary.onPress}
             {...primaryPress.handlers}
             {...dataAttributes({
               composerControl: 'send',
               stop: stop ? '1' : '0',
               ready: primary.ready ? 'true' : 'false',
               sending: primary.sending ? 'true' : 'false',
+              voice: voiceDisc ? 'true' : 'false',
             })}
             style={{
               display: 'flex',
@@ -356,9 +365,11 @@ export function ComposerControls({
               borderRadius: uiRadius.pill,
               alignItems: 'center',
               justifyContent: 'center',
-              /* The primary action is ink, not a colour: a solid disc in the
-             text colour reads as the one thing to press in both modes. */
-              backgroundColor: colors.ink,
+              /* 2026-11-26 reference: the primary action is the blue action
+                 disc in both modes — send, stop and the empty-draft voice
+                 affordance share one fill, so the rail has one coloured
+                 control. */
+              backgroundColor: colors.action,
               color: 'inherit',
               cursor: enabled ? 'pointer' : 'default',
               opacity: !enabled
@@ -373,7 +384,11 @@ export function ComposerControls({
             }}
           >
             <div id="composerPrimaryBtnContent">
-              <UiIcon name={stop ? 'stop' : 'arrow-up'} size={18} color={colors.onInk} />
+              <UiIcon
+                name={stop ? 'stop' : voiceDisc ? 'waveform' : 'arrow-up'}
+                size={voiceDisc ? 20 : 18}
+                color={colors.onAction}
+              />
             </div>
           </button>
         </>

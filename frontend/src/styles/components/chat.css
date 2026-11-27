@@ -643,6 +643,53 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
     shape-rendering: geometricPrecision;
   }
 }
+/* Mobile reference: 22px action glyphs on a 36px pitch. The complete
+ * toolbar contract lives here, not in a later mobile polish override. */
+@media (max-width: 768px) {
+  #appShell .msg-toolbar {
+    gap: var(--ui-step-50);
+    height: var(--ui-control-sm);
+    min-height: var(--ui-control-sm);
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  #appShell .msg-toolbar::-webkit-scrollbar {
+    display: none;
+  }
+  #appShell .msg-toolbar-feedback {
+    gap: var(--ui-step-50);
+  }
+  #appShell .msg-toolbar-btn {
+    flex-shrink: 0;
+    transition:
+      background-color var(--ui-duration-fast) ease,
+      color var(--ui-duration-fast) ease,
+      opacity var(--ui-duration-fast) ease;
+  }
+  #appShell .msg-toolbar-btn::before {
+    content: '';
+    position: absolute;
+    inset: -4px 0;
+    pointer-events: auto;
+  }
+  #appShell .msg-toolbar-btn svg {
+    width: 22px;
+    height: 22px;
+  }
+  #appShell .msg-toolbar-btn:active {
+    opacity: var(--press-opacity, var(--ui-press-opacity-sm, 0.72));
+    background: var(--accent);
+    color: var(--foreground);
+  }
+  #appShell .msg-toolbar-desktop-only {
+    display: none;
+  }
+  .msg-action-menu button {
+    min-height: var(--ui-control-touch);
+  }
+}
 #appShell .msg-toolbar-btn.is-copied svg {
   animation: checkmarkPop var(--ui-duration-fast) var(--ui-ease-spring-bouncy) forwards;
   transform-origin: center center;

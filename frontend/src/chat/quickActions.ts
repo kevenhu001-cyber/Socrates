@@ -7,7 +7,7 @@
 import { dispatchPatches, dispatchSession, kbBridge, sessionBridge } from '../store/index.ts';
 import { getMistakeBookUI } from '../app/widgetSetup.ts';
 import { submitChatMessage } from './sendPipeline.ts';
-import { parsePracticeInner } from '@socrates/core';
+import { parsePracticeInner } from '@socrates/core/learn';
 import { getExplanation, askNextQuestion } from '../tutor/socraticTurn.ts';
 import { saveCurrentSession } from '../session/persistence.ts';
 import { addMessage } from './messages.ts';

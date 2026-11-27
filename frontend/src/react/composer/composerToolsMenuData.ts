@@ -1,32 +1,33 @@
-import { interfaceIcon } from '../../legacy/icons/interfaceIcons';
 import { t as _t } from '../../ui/legacyI18n.ts';
 import { registry } from '../../extensions/registry';
 import { extensiveThinkingExtension } from '../../extensions/modules/extensiveThinking';
 import type { ExtensionDefinition } from '../../extensions/types';
 
+import type { IconName } from '../../legacy/iconRegistry';
+
 export type MenuItemSpec = ExtensionDefinition;
 
-export const MOBILE_MENU_ITEMS: ReadonlyArray<{
-  action: 'camera' | 'photos';
-  labelKey: string;
-  label: string;
-  icon: string;
-}> = [
-  {
-    action: 'camera',
-    labelKey: 'composer.tools.camera',
-    label: 'Camera',
-    icon: interfaceIcon('camera', 18),
-  },
-  {
-    action: 'photos',
-    labelKey: 'composer.tools.photos',
-    label: 'Photos',
-    icon: interfaceIcon('image', 18),
-  },
-];
+/** Built-in workflows share the same React glyph on both menu layouts.
+ * Extension text and execution remain owned by the registry. */
+const WORKFLOW_GLYPHS: ReadonlyMap<string, IconName> = new Map<string, IconName>([
+  ['upload', 'paperclip'],
+  ['webSearch', 'webSearch'],
+  ['explore', 'compass'],
+  ['deepResearch', 'research'],
+  ['write', 'edit'],
+  ['analyze', 'analyze'],
+  ['createImage', 'image'],
+  ['createSite', 'site'],
+  ['exam', 'exam'],
+  ['skills', 'skills'],
+  ['extensiveThinking', 'thinking'],
+]);
 
-export const MOBILE_TILES: ReadonlyArray<{
+export function workflowGlyph(key: string): IconName {
+  return WORKFLOW_GLYPHS.get(key) ?? 'document';
+}
+
+export const MOBILE_MEDIA_ACTIONS: ReadonlyArray<{
   action: 'camera' | 'photos' | 'upload' | 'wechatFiles';
   labelKey: string;
   label: string;
