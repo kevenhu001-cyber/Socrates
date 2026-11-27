@@ -10,3 +10,7 @@ Reference: docs/design/chatgpt-web-reference-2026-11-26.md and the supplied phon
 ## Pass 2 — meaningful tool disclosure
 
 Only nonempty public source/file sections, image artifacts and actual agent steps create an expandable row. Approvals retain their independent prompt. Removed the fallback detail which merely repeated the row label; raw logs/arguments/error data remain in the runtime and never become a user-facing detail. A shared public projection drives both the arrow and the body. Keep tests for real search disclosure, keyboard activation, group order and stable UI identities; rewrite old assertions that expected an empty or internal-only detail. No visual baseline changes.
+
+## Pass 3 — composer stability and accessibility
+
+Keep attachment strip height independent of focus (remove the phone 64px focus override that could clip 64px cards and their scrollbar). Bound long draft scrolling by the visible viewport using the existing normalized keyboard inset, without another viewport listener or controller. Keep the existing 86px empty-frame target and 220px normal maximum. Placeholder truncation is owned by the same rule on desktop and mobile, long unbroken drafts wrap, and the rich editor has an explicit multiline textbox role. Reconcile focus on breakpoint changes, recognize nested editor targets, and use the actual voice/send/stop label for the primary hover title. Add a browser contract with a simulated inherited keyboard inset; actual physical IME and screenshots remain unverified. No native source changes.

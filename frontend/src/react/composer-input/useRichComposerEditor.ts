@@ -74,6 +74,8 @@ export function useRichComposerEditor({
     editorProps: {
       attributes: {
         class: 'rich-composer-editor',
+        role: 'textbox',
+        'aria-multiline': 'true',
         'aria-label': activePlaceholder,
       },
       transformPastedHTML: (html) =>

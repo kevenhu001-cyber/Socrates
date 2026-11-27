@@ -68,13 +68,19 @@ function useEditorFocus(keepControlsInPlace: boolean): boolean {
   useEffect(() => {
     const host = document.getElementById('composerInputWrap');
     if (!host) return undefined;
+    const isEditor = (target: EventTarget | null) =>
+      target instanceof Element && Boolean(target.closest('.rich-composer-editor'));
+    // Reconcile when a breakpoint changes while the editor already has focus.
+    setFocused((previous) =>
+      isEditor(document.activeElement) ||
+      (previous && keepControlsInPlace && host.contains(document.activeElement)),
+    );
     const onFocusIn = (event: FocusEvent) => {
-      const target = event.target;
-      if (target instanceof Element && target.matches('.rich-composer-editor')) {
-        setFocused(true);
-      }
+      if (isEditor(event.target)) setFocused(true);
+      else if (!keepControlsInPlace) setFocused(false);
     };
     const onFocusOut = (event: FocusEvent) => {
+      if (isEditor(event.relatedTarget)) return;
       if (keepControlsInPlace && host.contains(event.relatedTarget as Node | null)) return;
       setFocused(false);
     };
@@ -317,7 +323,10 @@ export function ComposerShell({
     else host.removeAttribute('data-voice-recording');
   }, [voiceRecording]);
 
-  useControlTitles(toolsLabel, voiceLabel, primaryLabel);
+  // The empty primary disc actually starts dictation; its hover label must
+  // describe the same action as the committed accessible name.
+  const primaryIsVoice = !streaming && !canSend && voicePhase === 'idle' && voiceUnavailable === null;
+  useControlTitles(toolsLabel, voiceLabel, primaryIsVoice ? voiceLabel : primaryLabel);
 
   /* The React composer exposes readiness as `data-ready` on the disc, but two
      older contracts still read the DOM classes: chat/turn/composer.ts uses

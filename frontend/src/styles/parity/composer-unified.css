@@ -156,6 +156,7 @@
   font-weight: var(--ui-font-weight-regular);
   line-height: 26px;
   text-align: left;
+  overflow-wrap: anywhere;
   scrollbar-width: thin;
 }
 #appShell .composer-shell .rich-composer-editor[contenteditable='false'] {
@@ -229,13 +230,14 @@
 #appShell .composer-shell .rich-composer-editor p.is-editor-empty:first-child::before {
   content: var(--composer-placeholder);
   position: absolute;
-  inset-inline-start: 0;
+  inset-inline: 0;
   top: 0;
   float: none;
-  height: 0;
   color: var(--ui-ink-tertiary);
   opacity: 1;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   pointer-events: none;
 }
 
@@ -390,14 +392,10 @@
   }
   /* Reference phone question box: draft and placeholder at 16px. */
   #appShell .composer-shell .rich-composer-editor {
-    max-height: 220px;
+    /* Layout-resize browsers already shorten dvh; overlay keyboards use
+       the existing normalized inset. Cap only the editable scroll area. */
+    max-height: max(26px, min(220px, calc((100dvh - var(--keyboard-inset, 0px)) * 0.4)));
     font-size: var(--ui-font-size-md);
-  }
-  #appShell .composer-shell .rich-composer-editor p.is-editor-empty:first-child::before {
-    max-inline-size: 100%;
-    height: auto;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
   /* Add to the shared rail's 4px gap so the two 4px hit slop edges meet
      without overlapping. The painted discs stay 36px. */
