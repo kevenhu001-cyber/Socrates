@@ -40,7 +40,8 @@ const SECTIONS: Array<[string, Array<[string, string[]]>]> = [
       ['Keyboard shortcuts', ['⌘', '/']],
       ['Toggle sidebar', ['⌘', 'B']],
       ['Toggle sidebar (alt)', ['Ctrl', '\\']],
-      ['Open settings', ['⌘', '.']],
+      ['Open settings', ['⌘', ',']],
+      ['Open profile', ['⌘', '.']],
       ['New chat', ['⌘', '⇧', 'O']],
       ['Cycle project', ['⌘', '⇧', 'P']],
     ],
@@ -48,6 +49,7 @@ const SECTIONS: Array<[string, Array<[string, string[]]>]> = [
   [
     'Sharing & search',
     [
+      ['Copy last response', ['⌘', '⇧', 'C']],
       ['Share current chat', ['⌘', '⇧', 'S']],
       ['Open project picker', ['⌘', '⇧', 'A']],
       ['Find in conversation', ['⌘', 'F']],

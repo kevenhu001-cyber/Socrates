@@ -34,6 +34,22 @@ const CHIP_REMOVE_BOX = [
   'rounded-sm p-0 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors duration-150 [&_svg]:size-3.5',
 ].join(' ');
 
+const MOBILE_COMPOSER_QUERY = '(max-width: 768px)';
+
+function useIsMobileComposer(): boolean {
+  const [mobile, setMobile] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia(MOBILE_COMPOSER_QUERY).matches,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia(MOBILE_COMPOSER_QUERY);
+    const sync = () => setMobile(mq.matches);
+    mq.addEventListener('change', sync);
+    sync();
+    return () => mq.removeEventListener('change', sync);
+  }, []);
+  return mobile;
+}
+
 function useWebSearchOn(): boolean {
   const [on, setOn] = useState(isWebSearchOn);
   useEffect(() => {
@@ -77,9 +93,10 @@ function WebSearchChip() {
 
 function ComposerPluginChips({ surface }: { surface: ComposerSurface }) {
   const snapshot = useComposerPluginSelectionSnapshot();
-  const webSearchOn = useWebSearchOn();
+  const isMobile = useIsMobileComposer();
+  const showWebSearchChip = useWebSearchOn() && !isMobile;
   const plugins = snapshot[surface];
-  if (!plugins.length && !webSearchOn) return null;
+  if (!plugins.length && !showWebSearchChip) return null;
 
   const visiblePlugins = plugins.slice(0, 4);
   const hiddenCount = Math.max(0, plugins.length - visiblePlugins.length);
@@ -93,7 +110,7 @@ function ComposerPluginChips({ surface }: { surface: ComposerSurface }) {
       className="composer-plugin-chips"
       aria-label={i18n('composer.selectedPlugins', 'Selected plugins')}
     >
-      {webSearchOn ? <WebSearchChip /> : null}
+      {showWebSearchChip ? <WebSearchChip /> : null}
       {visiblePlugins.map((plugin) => (
         <Badge
           variant="secondary"

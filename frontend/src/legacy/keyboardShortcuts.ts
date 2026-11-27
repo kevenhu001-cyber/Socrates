@@ -15,7 +15,7 @@ import { openShareModal, closeShareModal } from './share.ts';
    the overlay can only be visible after the module mounted. */
 import { closeStorageModal } from './storage.js';
 import { closePromptTemplatesModal } from './promptTemplates.ts';
-/* Settings is a lazy React surface; the stable close command stays on window. */
+import { closeSettings, openSettings } from '../react/settings/settings.service.ts';
 import { closeProfile, openProfile, toggleProfileWebSearch } from './profile.ts';
 import {
   closeFindInSession,
@@ -26,6 +26,7 @@ import { closeCmdK, openCmdK } from './cmdK.ts';
 import { getComposerMarkdown, setComposerMarkdown, focusComposer } from '../composer/controller.ts';
 import { cycleActiveProject, closeTagEditor } from '../session/organizeRuntime.ts';
 import { findLastUserMessage } from '../render/markdown.ts';
+import { findLastAssistantMessage } from '../render/markdownText.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { t } from '../i18n/index.ts';
 import { startNewChat } from '../app/lifecycle/index.ts';
@@ -122,12 +123,35 @@ function handleSidebar(event: KeyboardEvent) {
   return true;
 }
 
+function handleSettings(event: KeyboardEvent) {
+  if (!isCommandShortcut(event, ',')) return false;
+  event.preventDefault();
+  if (isVisible('settingsPage')) closeSettings();
+  else openSettings();
+  return true;
+}
+
 function handleProfile(event: KeyboardEvent) {
   if (!isCommandShortcut(event, '.')) return false;
   event.preventDefault();
   if (typeof openProfile === 'function') {
     if (isVisible('profilePage')) closeProfile();
     else openProfile();
+  }
+  return true;
+}
+
+function handleCopyLastResponse(event: KeyboardEvent) {
+  if (!isCommandShortcut(event, 'c', true)) return false;
+  if (window.getSelection?.()?.toString()) return false;
+  const lastAssistantMessage = findLastAssistantMessage();
+  if (!lastAssistantMessage) return false;
+  event.preventDefault();
+  if (navigator.clipboard?.writeText) {
+    void navigator.clipboard.writeText(lastAssistantMessage).then(
+      () => showToast(t('clipboard.copied')),
+      () => showToast(t('clipboard.failed')),
+    );
   }
   return true;
 }
@@ -208,7 +232,9 @@ const SHORTCUT_HANDLERS = [
   handleFind,
   handleCheatsheet,
   handleSidebar,
+  handleSettings,
   handleProfile,
+  handleCopyLastResponse,
   handleNewChat,
   handleShare,
   handleTheme,

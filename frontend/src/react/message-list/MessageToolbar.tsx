@@ -389,6 +389,7 @@ function MessageToolbar({
       data-role={role}
       data-message-id={id}
       data-compact={compact ? 'true' : undefined}
+      style={!contextMenu && role === 'assistant' && isLatest ? { opacity: 1 } : undefined}
     >
       {hasBranches && callbacks.onSwitchBranch && (!contextMenu || isLatest === false) && (
         <MessageBranchSwitcher

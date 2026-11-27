@@ -84,24 +84,26 @@ export function syncIncognitoBtn() {
   }
 }
 
+let _incognitoToggleInFlight = false;
+
 export async function toggleIncognito() {
-  if (isIncognitoOn()) {
-    /* Leaving incognito — reset the view while the flag is STILL on so
-       saveCurrentSession() bails and the temporary chat is discarded,
-       then turn incognito off for future (saved) sessions. */
-    await resetApp();
-    setIncognitoOn(false);
+  if (_incognitoToggleInFlight) return;
+  _incognitoToggleInFlight = true;
+  try {
+    const leaving = isIncognitoOn();
+    /* Leaving incognito resets while the flag is still on so the temporary
+       chat is discarded; entering resets first so any prior real session is
+       saved before the flag flips. Abort if reset confirmation was cancelled. */
+    const didReset = await resetApp();
+    if (!didReset) return;
+    setIncognitoOn(!leaving);
     syncIncognitoBtn();
-    if (typeof showToast === 'function') showToast(_t('incognito.off'));
-    return;
+    if (typeof showToast === 'function') {
+      showToast(_t(leaving ? 'incognito.off' : 'incognito.on'));
+    }
+  } finally {
+    _incognitoToggleInFlight = false;
   }
-  /* Entering incognito — resetApp() saves any prior real session and
-     wipes the view, THEN we flip the flag so the fresh conversation is
-     never persisted. */
-  await resetApp();
-  setIncognitoOn(true);
-  syncIncognitoBtn();
-  if (typeof showToast === 'function') showToast(_t('incognito.on'));
 }
 
 export function setCurrentUser(user: UserRecord) {

@@ -43,3 +43,17 @@ export function findLastUserMessage(): string | null {
   }
   return null;
 }
+
+/* Returns the most recent assistant message's raw markdown text, or null.
+   Used by Cmd/Ctrl+Shift+C to copy the last response (ChatGPT shortcut). */
+export function findLastAssistantMessage(): string | null {
+  const list = (sessionBridge.getSnapshot().messages || []) as Array<{
+    role?: string;
+    rawText?: string;
+  }>;
+  for (let i = list.length - 1; i >= 0; i--) {
+    const raw = list[i].rawText;
+    if (list[i].role === 'assistant' && raw) return raw;
+  }
+  return null;
+}

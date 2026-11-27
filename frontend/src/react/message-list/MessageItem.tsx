@@ -221,7 +221,7 @@ function messageRowVisibility(
   const showContextMenu = !readOnly && !editing && !isLatestOfRole && !isLive;
   return {
     showContextMenu,
-    showHistoryToolbar: showContextMenu,
+    showHistoryToolbar: showContextMenu && !isDesktopHover,
     showToolbar:
       (isLatestOfRole || isDesktopHover) &&
       shouldShowToolbar(role, showSettledToolbar, isLive, readOnly, editing),
@@ -319,7 +319,7 @@ function MessageItemBase({
           message={message}
           role={toolbarRole(role)}
           pending={isLive}
-          isLatest={isLatest}
+          isLatest={Boolean(isLatestOfRole)}
           onEdit={onEdit}
         />
       ) : null}
