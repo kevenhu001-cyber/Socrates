@@ -59,20 +59,21 @@ test('live chat shows an inline tool status instead of a tool card', async ({ pa
   // Live chat must not have the legacy tool card chrome.
   await expect(page.locator('.agent-tool-card')).toHaveCount(0);
 
-  // The text reply landed, so the live row spinner is gone.
+  // The text reply landed, so the live spark is gone.
   await expect(bubble.locator(TURN.spinner)).toHaveCount(0);
 
+  const panel = await openActivity(bubble);
   const searchRow = toolRow(bubble, 'search-1');
   await expect(searchRow).toHaveAttribute('data-state', 'done');
   await expect(toolRowButton(bubble, 'search-1')).toHaveAttribute('aria-expanded', 'false');
 
   const detail = await openToolDetail(page, bubble, 'search-1');
-  await expect(detail.locator(TURN.source).first()).toContainText('Trusted source');
+  await expect(detail.locator(TURN.sourceTitle)).toHaveCount(0);
   /* Only the http(s) source becomes a link; javascript: never does. */
   const links = detail.locator(`${TURN.source}[role="link"]`);
   await expect(links).toHaveCount(1);
-  await expect(links).toContainText('Trusted source');
   await expect(links).toContainText('example.test');
+  await expect(panel.locator(TURN.source)).toHaveCount(2);
 });
 
 test('live Python image artifacts stay hidden until cited in assistant markdown', async ({
@@ -109,6 +110,7 @@ test('live Python image artifacts stay hidden until cited in assistant markdown'
   });
 
   const bubble = page.locator('.msg.assistant').last();
+  await openActivity(bubble);
   await expect(toolRow(bubble, 'code-plot')).toHaveAttribute('data-state', 'done');
   await expect(bubble.locator('.exec-artifact, .exec-artifact-image')).toHaveCount(0);
 });
@@ -145,9 +147,10 @@ test('tool activity lands behind its paragraph without splitting it', async ({ p
   });
 
   const bubble = page.locator('.msg.assistant').last();
+  const panel = await openActivity(bubble);
   const row = toolRow(bubble, 'boundary-search');
   await expect(row).toHaveCount(1);
-  await expect(bubble.locator(`.activity-timeline [data-tcid="boundary-search"]`)).toHaveCount(1);
+  await expect(panel.locator(`[data-tcid="boundary-search"]`)).toHaveCount(1);
   const prose = await bubble.locator('.tool-run-prose').allTextContents();
   expect(prose.join(' ').replace(/\s+/g, ' ')).toContain(
     '先说明结论。 然后继续检查这个模块的实现细节。 再给出修复方案。',
@@ -223,18 +226,17 @@ test('live chat shows a running search row while the model is searching', async 
   expect(await label.evaluate((node) => getComputedStyle(node).animationName)).toBe('none');
   await expect(row).toHaveAttribute('data-state', 'running');
   await expect(row.locator(TURN.spinner)).toHaveCount(1);
-  await expect(bubble.locator(TURN.spinner)).toHaveCount(1);
+  await expect(bubble.locator(TURN.spinner)).toHaveCount(0);
 
   await page.evaluate(() => window.__finishSearchStream());
   await expect(row).toHaveAttribute('data-state', 'done');
-  /* P_declarative-tool-run — the settled row still names its object, swaps its
-     search glyph and exposes the actual source row; complete details remain
-     available behind the per-call disclosure. */
+  /* The settled row keeps its search glyph and clean label; domain chips live inside the per-call disclosure. */
   await expect(row.locator(TURN.spinner)).toHaveCount(0);
   await expect(row.locator(TURN.stepTitle)).toContainText('weather today');
-  await expect(row.locator('.activity-source-preview [data-testid="tool-site-mark"]')).toHaveCount(1);
+  await expect(row.getByTestId('activity-source-preview')).toHaveCount(0);
   const detail = await openToolDetail(page, bubble, 'late-search');
   await expect(detail.locator(TURN.source)).toHaveCount(1);
+  await expect(detail.getByTestId('tool-source-title')).toHaveCount(0);
 });
 
 test('code execution streams live output into its row without thinking overlap', async ({
@@ -301,6 +303,7 @@ test('code execution streams live output into its row without thinking overlap',
   });
 
   const bubble = page.locator('.msg.assistant').last();
+  await openActivity(bubble);
   const row = toolRow(bubble, 'live-code');
   await expect(row).toHaveAttribute('data-state', 'running');
   await expect(row.locator(TURN.stepTitle)).toContainText('Executing code');
@@ -309,9 +312,8 @@ test('code execution streams live output into its row without thinking overlap',
   /* RN-2 dropped the phase relabel (Executing code → Analyzing data): the
      verb stays put and the stdout chunk shows up as live output instead. */
   await page.evaluate(() => window.__sendCodeProgress());
-  await openActivity(bubble);
   await expect(toolRowButton(bubble, 'live-code')).not.toHaveAttribute('aria-expanded', /.+/);
-  await expect(bubble.locator(TURN.detail)).toHaveCount(0);
+  await expect(page.locator('#thoughtsPanel').locator(TURN.detail)).toHaveCount(0);
   await page.evaluate(() => window.__finishCodeStream());
   await expect(row).toHaveAttribute('data-state', 'done');
   await expect(row.locator(TURN.spinner)).toHaveCount(0);
@@ -356,10 +358,12 @@ test('Tutor streams the same native tools and sends the tutor mode contract', as
 
   expect(requestMode).toBe('tutor');
   const bubble = page.locator('.msg.assistant').last();
+  await openActivity(bubble);
   const row = toolRow(bubble, 'tutor-search');
   await expect(row).toHaveAttribute('data-state', 'done');
   const detail = await openToolDetail(page, bubble, 'tutor-search');
-  await expect(detail.locator(TURN.sources)).toContainText('Primary source');
+  await expect(detail.locator(TURN.sources)).toContainText('example.test');
+  await expect(detail.locator(TURN.sourceTitle)).toHaveCount(0);
 });
 
 test('live chat keeps a burst in the reading flow and persists every call on finish', async ({
@@ -423,8 +427,8 @@ test('live chat keeps a burst in the reading flow and persists every call on fin
     expect(typeof offset, 'each persisted call records its split point').toBe('number');
   }
   const burst = page.locator('.msg.assistant').last();
-  await openToolGroups(burst);
-  await expect(burst.locator(TURN.row)).toHaveCount(3);
+  const panel = await openToolGroups(burst);
+  await expect(panel.locator(TURN.row)).toHaveCount(3);
 });
 
 test('consecutive tools stay one row each and open their own details', async ({ page }) => {
@@ -460,19 +464,21 @@ test('consecutive tools stay one row each and open their own details', async ({ 
   });
 
   const bubble = page.locator('.msg.assistant').last();
-  /* Each call keeps its own row inside the compact, expandable burst. */
+  /* Each call keeps its own row inside the Thoughts sheet/drawer. */
   const burstToggle = bubble.locator('[data-testid="turn-activity-toggle"]');
   await expect(burstToggle).toHaveAttribute('aria-expanded', 'false');
   await burstToggle.click();
-  await expect(bubble.locator(TURN.row)).toHaveCount(2);
+  const panel = page.locator('#thoughtsPanel');
+  await expect(panel.locator(TURN.row)).toHaveCount(2);
   for (const id of ['group-a', 'group-b']) await expect(toolRow(bubble, id)).toBeVisible();
   await expect(toolRow(bubble, 'group-a').locator(TURN.stepTitle)).toContainText('alpha');
   let detail = await openToolDetail(page, bubble, 'group-a');
-  await expect(detail.locator(TURN.sourceTitle)).toHaveCount(1);
+  await expect(detail.locator(TURN.sourceTitle)).toHaveCount(0);
+  await expect(detail.locator(TURN.sourceHost)).toHaveText(['example.test']);
   await toolRowButton(bubble, 'group-a').click();
-  await expect(page.locator(TURN.detail)).toHaveCount(0);
+  await expect(panel.locator(TURN.detail)).toHaveCount(0);
   detail = await openToolDetail(page, bubble, 'group-b');
-  await expect(detail.locator(TURN.sourceTitle)).toContainText('Beta');
+  await expect(detail.locator(TURN.sourceHost)).toHaveText(['example.test']);
 
   /* Same split-point contract as the burst test above: one record per call. */
   const groupCalls = await page.evaluate(() => {
@@ -522,15 +528,15 @@ test('a failed member keeps its own error row and detail', async ({ page }) => {
     await window.askChatTurn('Search');
   });
 
-  /* Failed actions remain visible beside successful actions. */
+  /* Failed actions remain visible beside successful actions inside Thoughts. */
   const bubble = page.locator('.msg.assistant').last();
+  const panel = await openActivity(bubble);
   const failed = toolRow(bubble, 'fail-b');
   await expect(failed).toHaveAttribute('data-state', 'error');
   await expect(failed).toHaveAttribute('data-error', '1');
-  await openActivity(bubble);
   await expect(toolRowButton(bubble, 'fail-b')).not.toHaveAttribute('aria-expanded', /.+/);
-  await expect(bubble.locator(TURN.detail)).toHaveCount(0);
-  await expect(bubble).not.toContainText('boom');
+  await expect(panel.locator(TURN.detail)).toHaveCount(0);
+  await expect(panel).not.toContainText('boom');
   /* The row that succeeded is not painted as a failure. */
   await expect(toolRow(bubble, 'fail-a')).toHaveAttribute('data-state', 'done');
 });

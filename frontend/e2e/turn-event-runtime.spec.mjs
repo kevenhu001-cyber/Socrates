@@ -164,9 +164,10 @@ test('nodes stream before tool_use, retain local state through commit, and coexi
     element.__sameNode = true;
   });
   await message.locator('[data-testid="turn-activity-toggle"]').click();
-  await expect(message.locator('[data-testid="thinking-timeline"]')).toContainText(
+  await expect(page.locator('#thoughtsPanel [data-testid="thinking-timeline"]')).toContainText(
     'Checking two official sources.',
   );
+  await page.keyboard.press('Escape');
   await expect(message.locator('.tool-run-prose').first()).toContainText('First finding.');
   await page.screenshot({ path: 'test-results/turn-event-progressive.png' });
 
@@ -304,7 +305,7 @@ test('completed checkpoint restores UI beyond the first event page and ignores o
   await expect(message.locator('.intui')).toBeVisible();
   await expect(message.locator('[data-intui-id="value"]')).toContainText('1');
   await message.locator('[data-testid="turn-activity-toggle"]').click();
-  await expect(message.locator('[data-testid="thinking-timeline"]')).toContainText(
+  await expect(page.locator('#thoughtsPanel [data-testid="thinking-timeline"]')).toContainText(
     'Compared the official sources.',
   );
   expect(

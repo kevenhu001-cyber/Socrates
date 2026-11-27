@@ -12,6 +12,7 @@ import type { TurnRuntime } from '@socrates/contracts';
 import { i18n } from '../../ui/legacyI18n.ts';
 import { SourceAvatar } from '../sources/SourceAvatar';
 import { faviconProxyUrl } from '../../legacy/faviconProxy';
+import { secondLevelDomainOf } from '../../legacy/toolPresentationModel.ts';
 import { MathText } from '../rn/useInlineMath';
 import { TurnSources } from './TurnSources';
 
@@ -65,13 +66,11 @@ function resolvePreviewSources(
 }
 
 function displayHost(url: string): string {
-  return safeHostname(url).replace(/^www\./i, '');
+  return secondLevelDomainOf(url) || safeHostname(url).replace(/^www\./i, '');
 }
 
 function isCitationAnchor(node: Node | null): node is HTMLAnchorElement {
-  return (
-    node instanceof HTMLAnchorElement && (node.getAttribute('href') || '').startsWith(PREFIX)
-  );
+  return node instanceof HTMLAnchorElement && (node.getAttribute('href') || '').startsWith(PREFIX);
 }
 
 /** The next citation anchor separated from `anchor` only by whitespace. */
@@ -230,9 +229,10 @@ function useSourcePreviewPosition(
     const gap = 8;
     const below = rect.bottom + gap;
     const maxTop = Math.max(16, window.innerHeight - height - 16);
-    const top = below + height > window.innerHeight - 16
-      ? Math.min(maxTop, Math.max(16, rect.top - gap - height))
-      : below;
+    const top =
+      below + height > window.innerHeight - 16
+        ? Math.min(maxTop, Math.max(16, rect.top - gap - height))
+        : below;
     if (top !== preview.top) setPreview((current) => (current ? { ...current, top } : current));
   }, [preview, dialogRef, anchorRef, setPreview]);
 }

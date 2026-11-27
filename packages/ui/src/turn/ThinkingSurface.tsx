@@ -29,6 +29,8 @@ const BUTTON_RESET: CSSProperties = {
 export interface ThinkingSurfaceProps {
   /** Current action, or a neutral settled disclosure label. */
   label: string;
+  /** Optional two-tone/rich content inside the caption text node. */
+  labelContent?: ReactNode;
   /** Quiet elapsed time; deliberately outside the status live region. */
   durationLabel?: string;
   live: boolean;
@@ -48,6 +50,9 @@ export interface ThinkingSurfaceProps {
   expandable: boolean;
   open: boolean;
   onToggle(): void;
+  /** Render the disclosure body inline (false when opening an external drawer/sheet). */
+  inlineBody?: boolean;
+  ariaHasPopup?: 'dialog';
   /** DOM id / nativeID for aria-controls. */
   bodyId: string;
   /** Host-owned disclosure classes and layout for web animation adapters. */
@@ -59,6 +64,7 @@ export interface ThinkingSurfaceProps {
 
 export function ThinkingSurface({
   label,
+  labelContent,
   durationLabel,
   labelClassName,
   durationClassName,
@@ -72,6 +78,8 @@ export function ThinkingSurface({
   expandable,
   open,
   onToggle,
+  inlineBody = true,
+  ariaHasPopup,
   bodyId,
   bodyClassName,
   bodyStyle,
@@ -89,6 +97,7 @@ export function ThinkingSurface({
         className="rn-turn-activity-toggle"
         role="button"
         disabled={!expandable}
+        aria-haspopup={ariaHasPopup}
         aria-expanded={expandable ? open : undefined}
         aria-controls={expandable ? bodyId : undefined}
         aria-disabled={!expandable}
@@ -106,10 +115,10 @@ export function ThinkingSurface({
              reads from the left edge like the reference ("已搜索… ⌄"). */
           justifyContent: 'flex-start',
           gap: S[75],
-          paddingInline: fullWidth ? 0 : S[75],
-          marginLeft: fullWidth ? 0 : -S[75],
+          paddingInline: fullWidth ? S[100] : 0,
+          marginLeft: 0,
           borderRadius: R.row,
-          backgroundColor: expandable && hovered ? colors.fill : 'transparent',
+          backgroundColor: fullWidth && expandable && hovered ? colors.fill : 'transparent',
           ...focusRing(colors, focused),
           ...transition('background-color', reduced),
           cursor: expandable ? 'pointer' : 'auto',
@@ -128,22 +137,20 @@ export function ThinkingSurface({
         <UiText
           testID="turn-activity-label"
           className={labelClassName}
-          variant={fullWidth ? 'body' : 'bodySm'}
-          tone="secondary"
+          variant="bodySm"
+          tone={fullWidth ? 'ink' : 'secondary'}
           role={live ? 'status' : undefined}
           numberOfLines={1}
           ellipsizeMode="tail"
           style={{
-            /* The disclosure chevron follows the caption ("Thought for 8s ⌄",
-               2026-11-26 reference) instead of parking at the far edge; the
-               button keeps its full-width hit area. */
-            flex: fullWidth ? '0 1 auto' : undefined,
+            flex: fullWidth ? '1 1 auto' : '0 1 auto',
             flexShrink: 1,
             minWidth: 0,
+            fontWeight: fullWidth ? 'var(--ui-font-weight-medium)' : undefined,
             fontVariant: ['tabular-nums'],
           }}
         >
-          {label}
+          {labelContent ?? label}
         </UiText>
         {durationLabel ? (
           <span
@@ -171,22 +178,24 @@ export function ThinkingSurface({
         {trailing}
         {expandable ? (disclosureIcon ?? <Chevron open={open} tone="tertiary" />) : null}
       </button>
-      <div
-        data-testid="turn-activity-body"
-        id={bodyId}
-        className={bodyClassName}
-        aria-hidden={!open}
-        inert={bodyInert}
-        style={{
-          display: open ? 'flex' : 'none',
-          flexDirection: 'column',
-          marginTop: S[50],
-          marginBottom: S[75],
-          ...bodyStyle,
-        }}
-      >
-        {children}
-      </div>
+      {inlineBody ? (
+        <div
+          data-testid="turn-activity-body"
+          id={bodyId}
+          className={bodyClassName}
+          aria-hidden={!open}
+          inert={bodyInert}
+          style={{
+            display: open ? 'flex' : 'none',
+            flexDirection: 'column',
+            marginTop: S[50],
+            marginBottom: S[75],
+            ...bodyStyle,
+          }}
+        >
+          {children}
+        </div>
+      ) : null}
     </div>
   );
 }

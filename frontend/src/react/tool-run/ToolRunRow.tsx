@@ -1,11 +1,17 @@
 import { memo, useId } from 'react';
 import { toolVerbOf } from '@socrates/ui/turn';
-import { basename, clip, filePathOf, hostOf, queryOf, translate, urlOf } from '../../legacy/toolPresentationModel.ts';
+import {
+  basename,
+  clip,
+  filePathOf,
+  hostOf,
+  queryOf,
+  translate,
+  urlOf,
+} from '../../legacy/toolPresentationModel.ts';
 import { Button } from '../ui/shadcn/button';
 import { Icon } from '../../legacy/Icon';
-import { SourceAvatar } from '../sources/SourceAvatar';
 import { isInlineSearchTool, toolCategory } from '../../render/toolCategory';
-import { openExternal } from './copyText';
 import { useLocaleRefresh, WebUiTheme } from '../rn/WebUiTheme';
 import { ToolActivityIcon, toolActivitySites } from './ToolActivityIcon';
 import { ToolRunAgentSteps } from './ToolRunAgentSteps';
@@ -15,7 +21,6 @@ import { publicToolDetailOf } from './publicToolDetail';
 import { useToolRunDisclosure } from './ToolRunDisclosure';
 import {
   agentRunStateOf,
-  normalizeSources,
   runStartedAt,
   toolRunView,
   type ToolCallRecord,
@@ -50,27 +55,17 @@ export const ToolRunRow = memo(function ToolRunRow({
   const { expandable } = detail;
   const testId = `tool-row-${view.id}`;
   const search = isInlineSearchTool(call.name);
-  const seenHosts = new Set<string>();
-  const sources = search
-    ? normalizeSources(call.results)
-        .filter((source) => {
-          if (!source.url || seenHosts.has(source.host)) return false;
-          seenHosts.add(source.host);
-          return true;
-        })
-        .slice(0, 2)
-    : [];
   const rowContent = (
     <>
       {running && search ? (
         <Icon
           name="activitySpinner"
-          size={18}
+          size={16}
           className="activity-step-glyph socrates-step-spinner"
           data-testid="thinking-step-spinner"
         />
       ) : search ? (
-        <Icon name="search" size={18} className="activity-step-glyph" />
+        <Icon name="search" size={16} className="activity-step-glyph" />
       ) : (
         <ToolActivityIcon name={view.name} sites={toolActivitySites(call)} />
       )}
@@ -122,32 +117,6 @@ export const ToolRunRow = memo(function ToolRunRow({
             {rowContent}
           </div>
         )}
-        {sources.length > 0 && !(expandable && disclosure.open) ? (
-          <div className="activity-source-preview" data-testid="activity-source-preview">
-            {sources.map((source) => (
-              <Button
-                variant="surface"
-                size="surface"
-                key={source.url}
-                type="button"
-                className="activity-source-row"
-                onClick={() => openExternal(source.url)}
-              >
-                <SourceAvatar
-                  url={source.url}
-                  host={source.host}
-                  className="tool-site-mark"
-                  testId="tool-site-mark"
-                  loadingFallback
-                />
-                <span className="activity-source-copy">
-                  <span className="activity-source-title">{source.title || source.url}</span>
-                  <span className="activity-source-host">{source.host}</span>
-                </span>
-              </Button>
-            ))}
-          </div>
-        ) : null}
         {disclosure.open && expandable ? (
           <div id={detailId} className="tool-run-detail-body" data-testid="tool-detail">
             <ToolRunDetail detail={detail} />
@@ -184,9 +153,13 @@ function executionStateLabel(state: ToolRunView['state'], live: boolean): string
 function toolActionLabel(call: ToolCallRecord): string {
   const verb = toolVerbOf(call.name);
   const category = toolCategory(call.name);
-  const target = category === 'search' ? queryOf(call.input)
-    : category === 'fetch' ? hostOf(urlOf(call.input))
-    : category === 'read' || category === 'write' ? basename(filePathOf(call.input))
-    : '';
+  const target =
+    category === 'search'
+      ? queryOf(call.input)
+      : category === 'fetch'
+        ? hostOf(urlOf(call.input))
+        : category === 'read' || category === 'write'
+          ? basename(filePathOf(call.input))
+          : '';
   return [translate(verb.key, verb.fallback), clip(target, 40)].filter(Boolean).join(' · ');
 }

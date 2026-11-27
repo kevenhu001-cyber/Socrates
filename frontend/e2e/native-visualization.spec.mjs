@@ -65,12 +65,9 @@ async function renderLn(page) {
     window.__testActivateMainView('chatView');
     await window.askChatTurn('draw y = ln(x)');
   });
-  /* RN-2 — each call is a row in the (collapsed) activity timeline; the
-     chart mounts in the transcript's anchored host, so waiting for the
-     settled row is enough. */
-  const row = page.locator('.rn-tool-row[data-tcid="visual-ln"]');
-  await expect(row).toHaveCount(1);
-  await expect(row).toHaveAttribute('data-state', 'done');
+  /* RN-2 — each settled call is listed in the turn's Thoughts panel while the
+     chart card mounts directly in the transcript's anchored host. */
+  await expect(page.getByTestId('turn-activity-toggle').last()).toBeVisible();
 }
 
 test('native function card renders an actual SVG curve for ln(x)', async ({ page }) => {

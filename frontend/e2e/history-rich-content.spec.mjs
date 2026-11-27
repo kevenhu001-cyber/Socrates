@@ -180,7 +180,9 @@ test('tool calls with textOffset restore as inline rows with the chart in place'
   await page.evaluate((id) => window.loadSession(id), INLINE_SESSION_ID);
 
   const body = page.locator('#msgList .msg.assistant .msg-body');
-  await expect(body.locator('.rn-tool-row[data-tcid="inline-viz-call"]')).toHaveCount(1);
+  await body.getByTestId('turn-activity-toggle').click();
+  await expect(page.locator('#thoughtsPanel .rn-tool-row[data-tcid="inline-viz-call"]')).toHaveCount(1);
+  await page.keyboard.press('Escape');
   await expect(body.locator('.visualization-card')).toContainText('Restored parabola');
   // The chart must sit in the anchored host right after its row, not at
   // the bubble bottom after the trailing text segment.
@@ -269,11 +271,12 @@ test('restored edit actions keep the answer intact inside the unified activity h
       (await body.locator('.tool-run-prose').allTextContents()).join('').replace(/\s/g, ''),
     )
     .toBe(rawText.replace(/\s/g, ''));
-  /* Each edit keeps its own row and names its file. */
-  await expect(body.locator('.rn-tool-row [data-testid="thinking-step-title"]')).toContainText([
-    'moe.py',
-    'router_v2.py',
-  ]);
+  /* Each edit keeps its own row and names its file inside Thoughts. */
+  await body.getByTestId('turn-activity-toggle').click();
+  await expect(
+    page.locator('#thoughtsPanel .rn-tool-row [data-testid="thinking-step-title"]'),
+  ).toContainText(['moe.py', 'router_v2.py']);
+  await page.keyboard.press('Escape');
   const flow = await body.locator('.turn-evidence > *').evaluateAll((nodes) =>
     nodes.map((node) => ({
       className: node.className,

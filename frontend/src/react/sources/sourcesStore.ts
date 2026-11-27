@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import { closeOtherPanels, registerExclusivePanel } from '../lib/exclusivePanel';
 
 export interface SourcesPanelItem {
   id: string;
@@ -31,6 +32,7 @@ function emit(): void {
 }
 
 export function openSources(entry: SourcesPanelEntry, trigger?: HTMLElement | null): void {
+  closeOtherPanels('sources');
   opener =
     trigger || (document.activeElement instanceof HTMLElement ? document.activeElement : null);
   state = { isOpen: true, entry };
@@ -47,6 +49,8 @@ export function closeSources(): void {
      hidden in the same commit. */
   if (target?.isConnected) target.focus({ preventScroll: true });
 }
+
+registerExclusivePanel('sources', closeSources);
 
 export function getSourcesPanelState(): SourcesPanelState {
   return state;

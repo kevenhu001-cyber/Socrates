@@ -218,11 +218,11 @@
 }
 
 /* ── Activity disclosure ────────────────────────────────────────────────
-   The shared ThinkingSurface owns the compact action + duration header.
-   The web host adds only the animated disclosure body and public activity
-   list; neither summaries nor tool details introduce another card surface. */
-.rn-turn-activity .thinking-step-summary,
-.rn-turn-activity .thinking-step-preview {
+   Flush-left inline trigger in the transcript; opening reveals the external
+   Thoughts drawer (desktop) or bottom sheet (mobile). Neither summary steps
+   nor tool disclosures introduce nested cards or timeline rails. */
+:is(.rn-turn-activity, .thoughts-timeline) .thinking-step-summary,
+:is(.rn-turn-activity, .thoughts-timeline) .thinking-step-preview {
   margin: 0;
   color: var(--ui-text-secondary);
   font-size: var(--ui-font-size-sm);
@@ -231,9 +231,7 @@
   overflow-wrap: anywhere;
 }
 
-.rn-turn-activity .thinking-step-summary {
-  /* Public summaries remain in the reading flow; only raw tool output
-     uses an independently scrollable region. */
+:is(.rn-turn-activity, .thoughts-timeline) .thinking-step-summary {
   max-height: none;
 }
 
@@ -248,8 +246,6 @@
   display: grid;
   place-items: center;
   flex: none;
-  /* A favicon fallback is a mark, not a stray letter: 16px tile, token corner,
-     10px semibold monogram. */
   width: 16px;
   height: 16px;
   border-radius: var(--ui-radius-xs);
@@ -282,14 +278,24 @@
   overflow-wrap: anywhere;
 }
 
-/* Public timeline entries remain still beneath the one live caption. */
+/* Live 3D rotating dotted constellation orb. */
+.thinking-spark {
+  position: relative;
+  display: inline-block;
+  flex: none;
+  color: var(--ui-text-secondary);
+}
+.thinking-spark-dot {
+  position: absolute;
+  border-radius: var(--ui-radius-pill);
+  background: currentColor;
+  will-change: transform, opacity;
+}
 
-/* Adapted from OpenAI Apps SDK UI ShimmerText (MIT), pinned upstream
-   0f00143c7a639906f1621fe58e1b6be7b5bea46d.
-   See legacy/icons/LICENSE.openai-apps-sdk-ui for the license.
-   Only the public current-action caption animates, never the whole turn. */
+/* Only plain generic captions shimmer; two-tone tool captions keep distinct inks. */
 @media (prefers-reduced-motion: no-preference) and (forced-colors: none) {
-  [data-turn-surface-part='activity'][data-live='true'] [data-testid='turn-activity-label'] {
+  [data-turn-surface-part='activity'][data-live='true']
+    [data-testid='turn-activity-label']:not(:has(.activity-caption-target)) {
     background: currentcolor
       linear-gradient(to left, currentcolor, var(--ui-text-primary) 50%, currentcolor);
     background-clip: text;
@@ -317,18 +323,19 @@
   }
 }
 
-/* The disclosure rows keep the shipped desktop density and use the phone
-   touch rung below the split, matching the rest of the shell. */
-.rn-turn-activity-toggle,
-.rn-thinking-step {
-  min-height: 32px;
+/* Flush-left borderless inline row matching the Grok trigger layout. */
+.rn-turn-activity {
+  --activity-step-height: var(--ui-control-sm);
+  align-self: flex-start;
+  max-width: 100%;
+  border: 0;
+  background: transparent;
 }
-@media (max-width: 768px) {
-  .rn-turn-activity-toggle,
-  .rn-thinking-step,
-  .rn-tool-row .tool-run-trigger {
-    min-height: var(--ui-control-touch);
-  }
+.rn-turn-activity-toggle {
+  min-height: var(--ui-control-sm);
+}
+.rn-thinking-step {
+  min-height: var(--ui-control-sm);
 }
 
 /* The 12px running-step arc. It lives in the host CSS so the shared component
@@ -341,14 +348,12 @@
     transform: rotate(360deg);
   }
 }
-@media (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: reduce), (forced-colors: active) {
   .socrates-step-spinner {
     animation: none;
   }
 }
 
-/* The sweep itself. Shared with the visualization card's skeleton
-   (components/visualization-states.css), which asks for the same band. */
 @keyframes thinking-text-shimmer {
   from {
     background-position: 100% 0;
@@ -358,7 +363,7 @@
   }
 }
 
-/* Web activity is a quiet transcript disclosure, not a separate card. */
+/* Content-hugging trigger: icon + caption + nearby `>` chevron. */
 .rn-turn-activity .rn-turn-activity-toggle {
   display: inline-flex;
   align-items: center;
@@ -372,12 +377,13 @@
   font-size: var(--ui-font-size-sm);
   line-height: var(--ui-text-ui-line);
   text-align: start;
+  transition: color var(--ui-duration-fast) var(--ui-ease-out);
 }
 .rn-turn-activity button.rn-turn-activity-toggle {
   cursor: pointer;
 }
 .rn-turn-activity button.rn-turn-activity-toggle:hover {
-  color: var(--foreground);
+  color: var(--ui-text-primary);
 }
 .rn-turn-activity button.rn-turn-activity-toggle:focus-visible {
   outline: none;
@@ -386,9 +392,9 @@
 }
 .rn-turn-activity .activity-duration {
   flex: none;
-  font-size: var(--ui-font-size-sm);
+  font-size: var(--ui-font-size-xs);
   font-variant-numeric: tabular-nums;
-  color: var(--ui-text-secondary);
+  color: var(--ui-text-tertiary);
 }
 .rn-turn-activity .activity-caption {
   min-width: 0;
@@ -396,49 +402,128 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.rn-turn-activity .activity-caption-verb {
+  color: var(--ui-text-secondary);
+  font-weight: var(--ui-font-weight-regular);
+}
+.rn-turn-activity .activity-caption-target {
+  color: var(--ui-text-primary);
+  font-weight: var(--ui-font-weight-medium);
+}
 .rn-turn-activity .rn-turn-activity-toggle .tool-inline-tool-icon {
   width: 16px;
   height: 16px;
   flex: none;
 }
-.activity-disclosure > .ui-collapse-inner {
-  opacity: 1;
-  transition: opacity var(--ui-duration-normal) var(--ui-ease-out);
+.activity-leading-glyph,
+.rn-turn-activity .activity-chevron {
+  color: var(--ui-text-secondary);
 }
-.activity-disclosure.collapsed > .ui-collapse-inner {
-  opacity: 0;
+.rn-turn-activity .activity-chevron {
+  flex: none;
+  color: var(--ui-text-tertiary);
+  transition:
+    transform var(--ui-duration-normal) var(--ui-ease-out),
+    color var(--ui-duration-fast) var(--ui-ease-out);
 }
+.rn-turn-activity button.rn-turn-activity-toggle:hover .activity-chevron {
+  color: var(--ui-text-primary);
+}
+.rn-turn-activity-toggle[aria-expanded='true'] .activity-chevron {
+  color: var(--ui-text-primary);
+  transform: translateX(1px);
+}
+.thoughts-timeline,
 .activity-timeline {
+  --activity-step-gap: var(--ui-space-sm);
+  --activity-glyph-size: 20px;
+  --activity-step-height: var(--ui-control-sm);
   display: flex;
   flex-direction: column;
-  gap: var(--ui-space-sm);
+  gap: var(--activity-step-gap);
   min-width: 0;
-  margin-block: var(--ui-space-sm) var(--ui-space-md);
-  /* The activity list shares the caption's text edge. A rail without nodes
-     reads as an accidental border, not as a meaningful timeline. */
-  padding-inline-start: 0;
-  border-inline-start: 0;
 }
 .activity-summary-step,
 .activity-current-step {
   display: grid;
-  grid-template-columns: 18px minmax(0, 1fr);
-  align-items: start;
+  grid-template-columns: var(--activity-glyph-size) minmax(0, 1fr);
   gap: var(--ui-space-sm);
-  min-height: var(--ui-control-sm);
-  padding-block: var(--ui-space-xs);
-  font-size: var(--prose-size, var(--ui-text-body));
+  align-items: start;
+}
+.activity-summary-step,
+.activity-current-step,
+.thoughts-timeline > .rn-tool-row > .tool-run-trigger,
+.thoughts-timeline > .tool-run-group > .tool-run-group-trigger,
+.activity-timeline > .rn-tool-row > .tool-run-trigger,
+.activity-timeline > .tool-run-group > .tool-run-group-trigger {
+  align-items: start;
+  box-sizing: border-box;
+  min-height: var(--activity-step-height);
+  font-size: var(--ui-font-size-sm);
   line-height: var(--ui-line-height-relaxed);
+  padding-block: max(0px, calc((var(--activity-step-height) - 1lh) / 2));
+}
+.thoughts-timeline > :is(.activity-summary-step, .activity-current-step) > svg,
+.activity-timeline > :is(.activity-summary-step, .activity-current-step) > svg {
+  align-self: start;
+  justify-self: center;
+  margin-block-start: max(0px, calc((1lh - 16px) / 2));
+}
+.thoughts-timeline > .rn-tool-row > .tool-run-trigger > svg.activity-step-glyph,
+.thoughts-timeline > .tool-run-group > .tool-run-group-trigger > svg.activity-step-glyph,
+.activity-timeline > .rn-tool-row > .tool-run-trigger > svg.activity-step-glyph,
+.activity-timeline > .tool-run-group > .tool-run-group-trigger > svg.activity-step-glyph {
+  align-self: start;
+  margin-inline: 2px;
+  margin-block-start: max(0px, calc((1lh - 16px) / 2));
+}
+.thoughts-timeline > .rn-tool-row > .tool-run-trigger > :first-child:not(svg),
+.thoughts-timeline > .tool-run-group > .tool-run-group-trigger > :first-child:not(svg),
+.activity-timeline > .rn-tool-row > .tool-run-trigger > :first-child:not(svg),
+.activity-timeline > .tool-run-group > .tool-run-group-trigger > :first-child:not(svg) {
+  align-self: start;
+  margin-block-start: max(0px, calc((1lh - 16px) / 2));
+}
+.thoughts-timeline > .rn-tool-row > .tool-run-detail-body,
+.activity-timeline > .rn-tool-row > .tool-run-detail-body {
+  margin-inline-start: calc(var(--activity-glyph-size) + var(--ui-space-sm));
+}
+@media (max-width: 768px) {
+  .rn-turn-activity,
+  .thoughts-timeline {
+    --activity-step-height: var(--ui-control-touch);
+  }
+  .rn-turn-activity-toggle,
+  .rn-thinking-step,
+  .rn-tool-row .tool-run-trigger,
+  .tool-run-group-trigger {
+    min-height: var(--ui-control-touch);
+  }
 }
 .activity-summary-copy {
   display: grid;
   min-width: 0;
-  gap: var(--ui-space-xs);
+  gap: var(--ui-space-sm);
 }
 .activity-summary-title {
   color: var(--ui-text-primary);
   font-weight: var(--ui-font-weight-regular);
   overflow-wrap: anywhere;
+}
+.activity-summary-detail {
+  display: grid;
+  grid-template-columns: var(--activity-glyph-size) minmax(0, 1fr);
+  gap: var(--ui-space-sm);
+  align-items: start;
+  margin-inline-start: calc(-1 * (var(--activity-glyph-size) + var(--ui-space-sm)));
+}
+.activity-step-bullet {
+  width: 4px;
+  height: 4px;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-text-secondary);
+  justify-self: center;
+  margin-block-start: calc((1lh - 4px) / 2);
 }
 .activity-step-glyph {
   flex: none;
@@ -451,32 +536,10 @@
 .activity-current-step > span {
   overflow-wrap: anywhere;
 }
-.rn-turn-activity .activity-summary-step .thinking-step-summary {
-  margin: 0;
-}
 @media (prefers-reduced-motion: reduce), (forced-colors: active) {
-  .rn-turn-activity .activity-chevron,
-  .activity-disclosure > .ui-collapse-inner {
+  .rn-turn-activity .activity-chevron {
     transition: none;
   }
-}
-
-/* Returned website marks stay visible on the compact activity caption. */
-.rn-turn-activity .rn-turn-activity-toggle .tool-site-marks {
-  flex: none;
-  gap: 0;
-  isolation: isolate;
-}
-.rn-turn-activity .rn-turn-activity-toggle .tool-site-mark {
-  box-sizing: border-box;
-  width: 20px;
-  height: 20px;
-  border: 1px solid var(--ui-bg-page);
-  border-radius: var(--ui-radius-pill);
-  overflow: hidden;
-}
-.rn-turn-activity .rn-turn-activity-toggle .tool-site-mark + .tool-site-mark {
-  margin-inline-start: 0;
 }
 
 /* Agent execution steps: one disclosure and one neutral palette. */

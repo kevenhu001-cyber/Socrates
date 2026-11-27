@@ -6,12 +6,7 @@ import { useLocaleRefresh, WebUiTheme } from '../rn/WebUiTheme';
 import { ToolRunRow } from './ToolRunRow';
 import { useToolRunDisclosure } from './ToolRunDisclosure';
 import { Button } from '../ui/shadcn/button';
-import {
-  groupViewOf,
-  type ToolCallRecord,
-  type TurnSegment,
-} from './toolRunModel';
-import { ToolSiteMarks, turnActivitySites } from './ToolActivityIcon';
+import { groupViewOf, type ToolCallRecord, type TurnSegment } from './toolRunModel';
 
 interface ToolRunGroupRowProps {
   calls: ReadonlyArray<ToolCallRecord>;
@@ -28,12 +23,7 @@ interface ToolRunGroupRowProps {
  * disclosure state. Only completed, non-agent bursts are grouped; active,
  * failed and approval entries remain independent rows.
  */
-export function ToolRunGroupRow({
-  calls,
-  messageId,
-  readOnly,
-  live,
-}: ToolRunGroupRowProps) {
+export function ToolRunGroupRow({ calls, messageId, readOnly, live }: ToolRunGroupRowProps) {
   useLocaleRefresh();
   const firstCall = calls[0];
   const groupId = `tool-group:${firstCall?.id || 'unknown'}`;
@@ -56,7 +46,6 @@ export function ToolRunGroupRow({
   // Group duration is the sum of member durations in the view model. That is
   // not wall-clock time for parallel calls, so expose only the action count.
   const meta = view.meta.slice(0, 1);
-  const sites = turnActivitySites(calls);
 
   return (
     <div
@@ -75,16 +64,17 @@ export function ToolRunGroupRow({
           aria-controls={bodyId}
           onClick={() => disclosure.setOpen(!disclosure.open)}
         >
-          <span
-            className="tool-inline-tool-icon tool-run-group-icon"
-            aria-hidden="true"
-            dangerouslySetInnerHTML={{ __html: categoryIcon(category) }}
-          />
+          {category === 'search' ? (
+            <Icon name="search" size={16} className="activity-step-glyph" />
+          ) : (
+            <span
+              className="tool-inline-tool-icon tool-run-group-icon"
+              aria-hidden="true"
+              dangerouslySetInnerHTML={{ __html: categoryIcon(category) }}
+            />
+          )}
           <span className="tool-run-group-label">{label}</span>
-          {meta.length ? (
-            <span className="tool-run-group-meta">{meta.join(' · ')}</span>
-          ) : null}
-          {sites.length ? <ToolSiteMarks sites={sites} /> : null}
+          {meta.length ? <span className="tool-run-group-meta">{meta.join(' · ')}</span> : null}
           <Icon name={disclosure.open ? 'chevronUp' : 'chevronDown'} size={16} />
         </Button>
       </WebUiTheme>

@@ -51,17 +51,17 @@ test('a large tool burst collapses to one summary and preserves individual detai
   });
 
   const turn = page.locator('.msg.assistant').last();
-  await expect(turn.locator('.rn-tool-row')).toHaveCount(1);
+  const thoughtsPanel = page.locator('#thoughtsPanel');
   const activityToggle = turn.getByTestId('turn-activity-toggle');
-  const activityBody = turn.getByTestId('turn-activity-body');
   await expect(activityToggle).toHaveAttribute('aria-expanded', 'false');
-  await expect(activityBody).toBeHidden();
+  await expect(thoughtsPanel).toBeHidden();
   // After completion the collapsed line still names the last event, including
   // a failure, rather than replacing it with an aggregate count.
   await expect(turn.getByTestId('turn-activity-label')).toContainText('Search failed: batch-error');
   await activityToggle.click();
+  await expect(thoughtsPanel).toBeVisible();
 
-  const group = turn.getByTestId('tool-group-batch-a');
+  const group = thoughtsPanel.getByTestId('tool-group-batch-a');
   await expect(group).toBeVisible();
   await expect(group).toHaveAttribute('aria-expanded', 'false');
   await expect(group).toContainText('4 actions');
@@ -69,15 +69,15 @@ test('a large tool burst collapses to one summary and preserves individual detai
   await expect(toolRow(turn, 'batch-error')).toHaveAttribute('data-state', 'error');
   await group.click();
 
-  await expect(turn.locator('.rn-tool-row')).toHaveCount(5);
+  await expect(thoughtsPanel.locator('.rn-tool-row')).toHaveCount(5);
   for (const id of ['batch-a', 'batch-b', 'batch-c', 'batch-d', 'batch-error']) {
     await expect(toolRowButton(turn, id)).toBeVisible();
   }
   const first = toolRowButton(turn, 'batch-a');
   await expect(first).toHaveAttribute('aria-expanded', 'false');
   await first.click();
-  await expect(turn.getByTestId('tool-detail')).toBeVisible();
+  await expect(thoughtsPanel.getByTestId('tool-detail')).toBeVisible();
   await first.click();
-  await expect(turn.getByTestId('tool-detail')).toHaveCount(0);
+  await expect(thoughtsPanel.getByTestId('tool-detail')).toHaveCount(0);
   await expect(toolRow(turn, 'batch-error')).toHaveAttribute('data-state', 'error');
 });

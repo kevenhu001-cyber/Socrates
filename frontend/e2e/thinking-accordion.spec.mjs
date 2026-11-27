@@ -29,22 +29,26 @@ test('thinking disclosure supports keyboard control and preserves intent through
   });
   const accordion = page.locator('.rn-turn-activity');
   const toggle = accordion.getByTestId('turn-activity-toggle');
-  const body = accordion.getByTestId('turn-activity-body');
+  const thoughtsPanel = page.locator('#thoughtsPanel');
   // The action leads; elapsed time is quiet metadata beside it.
   await expect(accordion.getByTestId('turn-activity-label')).toHaveText('Thinking…');
   await expect(accordion.getByTestId('turn-activity-duration')).toContainText(/\d/);
   await expect(accordion.getByTestId('thinking-step-spinner')).toHaveCount(0);
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-  await expect(body).toBeHidden();
+  await expect(thoughtsPanel).toBeHidden();
   await toggle.focus();
   await page.keyboard.press('Enter');
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-  await expect(body).toBeVisible();
-  await expect(body).not.toHaveAttribute('aria-hidden', 'true');
-  await expect(body.locator('.thinking-step-summary')).toHaveText('Checking both assumptions.');
-  await expect(body.getByTestId('thinking-step')).not.toHaveAttribute('aria-expanded');
+  await expect(thoughtsPanel).toBeVisible();
+  await expect(thoughtsPanel).not.toHaveAttribute('aria-hidden', 'true');
+  await expect(thoughtsPanel.locator('.thinking-step-summary')).toHaveText(
+    'Checking both assumptions.',
+  );
+  await expect(thoughtsPanel.getByTestId('thinking-step')).not.toHaveAttribute('aria-expanded');
+  await toggle.focus();
   await page.keyboard.press('Space');
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(thoughtsPanel).toBeHidden();
 
   await page.evaluate(() => {
     const messages = window.__socratesTestState.session().messages.map((message) => ({
@@ -55,12 +59,14 @@ test('thinking disclosure supports keyboard control and preserves intent through
     window.__socratesTestState.patch({ session: { messages: messages } });
   });
   await publishChatRuntime(page, { type: 'state-synced', reason: 'disclosure-update' });
-  await expect(accordion.getByTestId('thinking-step-title').first()).toHaveText(
-    'Checked the relevant sources.',
-  );
   await expect(accordion).not.toContainText('internal draft');
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await toggle.focus();
   await page.keyboard.press('Enter');
+  await expect(thoughtsPanel).toBeVisible();
+  await expect(thoughtsPanel.getByTestId('thinking-step-title').first()).toHaveText(
+    'Checked the relevant sources.',
+  );
   await page.evaluate(() => {
     const messages = window.__socratesTestState
       .session()
@@ -69,7 +75,7 @@ test('thinking disclosure supports keyboard control and preserves intent through
   });
   await publishChatRuntime(page, { type: 'state-synced', reason: 'disclosure-complete' });
   await expect(accordion).not.toHaveAttribute('data-live', 'true');
-  await expect(accordion.getByTestId('thinking-step-spinner')).toHaveCount(0);
+  await expect(thoughtsPanel.getByTestId('thinking-step-spinner')).toHaveCount(0);
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
   await setLang(page, 'zh');
   // The settled label is neutral; neither seconds nor summary counts are

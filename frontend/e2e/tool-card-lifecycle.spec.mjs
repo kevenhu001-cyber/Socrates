@@ -106,19 +106,10 @@ test('the declarative tool row runs and settles without exposing raw output', as
   await installToolStream(page);
   const bubble = await startTurn(page);
 
-  /* A finished paragraph first: a tool row mounts behind the prose that
-     introduced it, so the offset it carries is a real sentence boundary. */
+  /* A finished paragraph first: live execution status moves cleanly onto the
+     turn activity line while prose continues unobstructed. */
   await page.evaluate(() => window.__pushText('Running the snippet now.\n\n'));
   await page.evaluate(() => window.__pushToolUse());
-
-  const row = bubble.locator(`.rn-tool-row[data-tcid="${TOOL_ID}"]`);
-  const rowButton = row.getByTestId(`tool-row-${TOOL_ID}`);
-  await expect(row).toHaveCount(1);
-
-  // Running: the row carries the running state, a spinner, and nothing else.
-  await expect(row).toHaveAttribute('data-state', 'running');
-  await expect(row.getByTestId('thinking-step-spinner')).toHaveCount(1);
-  await expect(row.getByTestId('thinking-step-title')).toContainText('Executing code');
 
   // Only the secondary duration ticks; the current-action label is stable.
   await expect(bubble.getByTestId('turn-activity-label')).toContainText('Executing code');
@@ -129,16 +120,26 @@ test('the declarative tool row runs and settles without exposing raw output', as
   const firstReading = await readMeta();
   await expect.poll(readMeta, { timeout: 10_000 }).not.toBe(firstReading);
 
-  // The terminal frame settles the row.
+  const activityToggle = bubble.getByTestId('turn-activity-toggle');
+  await activityToggle.click();
+  const panel = page.locator('#thoughtsPanel');
+  const row = panel.locator(`.rn-tool-row[data-tcid="${TOOL_ID}"]`);
+  const rowButton = row.getByTestId(`tool-row-${TOOL_ID}`);
+  await expect(row).toHaveCount(1);
+
+  // Running: the row carries the running state, a spinner, and nothing else.
+  await expect(row).toHaveAttribute('data-state', 'running');
+  await expect(row.getByTestId('thinking-step-spinner')).toHaveCount(1);
+  await expect(row.getByTestId('thinking-step-title')).toContainText('Executing code');
+
+  // The terminal frame settles the row in place.
   await page.evaluate(() => window.__pushToolResult());
   await expect(row).toHaveAttribute('data-state', 'done');
   await expect(row.getByTestId('thinking-step-spinner')).toHaveCount(0);
 
   // Raw execution output does not create a disclosure, even after settling.
-  const activityToggle = bubble.getByTestId('turn-activity-toggle');
-  if ((await activityToggle.getAttribute('aria-expanded')) !== 'true') await activityToggle.click();
   await expect(rowButton).toBeVisible();
   await expect(rowButton).not.toHaveAttribute('aria-expanded', /.+/);
-  await expect(page.getByTestId('tool-detail')).toHaveCount(0);
-  await expect(page.getByTestId('tool-code-output')).toHaveCount(0);
+  await expect(panel.getByTestId('tool-detail')).toHaveCount(0);
+  await expect(panel.getByTestId('tool-code-output')).toHaveCount(0);
 });

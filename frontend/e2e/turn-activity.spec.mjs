@@ -40,7 +40,7 @@ test('activity hands the same message body to the first answer token', async ({ 
   await expect(status.getByTestId('turn-activity-label')).toHaveText('Waiting for the response.');
   await expect(status.getByTestId('turn-activity-duration')).toContainText(/\d/);
   await expect(status.getByTestId('thinking-step-spinner')).toHaveCount(0);
-  await expect(status.getByTestId('turn-activity-indicator')).toHaveCount(0);
+  await expect(status.getByTestId('turn-activity-indicator')).toHaveCount(1);
   await expect(status.getByTestId('turn-activity-label')).toHaveCSS(
     'animation-name',
     'socrates-caption-shimmer',
@@ -76,7 +76,7 @@ test('waiting time is separate from observed model reasoning', async ({ page }) 
   const status = message.locator('.rn-turn-activity.is-live');
   await expect(status).toHaveAttribute('data-phase', 'waiting');
   await expect(status.getByTestId('turn-activity-label')).toHaveText('Waiting for the response.');
-  await expect(status.getByTestId('turn-activity-indicator')).toHaveCount(0);
+  await expect(status.getByTestId('turn-activity-indicator')).toHaveCount(1);
   await expect(status.getByTestId('turn-activity-label')).toHaveCSS(
     'animation-name',
     'socrates-caption-shimmer',
@@ -88,7 +88,7 @@ test('waiting time is separate from observed model reasoning', async ({ page }) 
   await page.evaluate(() => window.__waitingController.appendThinking('PRIVATE REASONING'));
   await expect(status).toHaveAttribute('data-phase', 'thinking');
   await expect(status.getByTestId('turn-activity-label')).toHaveText('Thinking…');
-  await expect(status.getByTestId('turn-activity-indicator')).toHaveCount(0);
+  await expect(status.getByTestId('turn-activity-indicator')).toHaveCount(1);
   await expect(status.getByTestId('turn-activity-label')).toHaveCSS(
     'animation-name',
     'socrates-caption-shimmer',
@@ -150,24 +150,17 @@ test('streaming actions are absent and running tools own the activity surface', 
     });
     ctl.appendThinking('More private scratch work while searching.');
   });
-  await expect(message.locator('.rn-tool-row[data-state="running"]')).toHaveCount(1);
   await expect(message.locator('.rn-turn-activity.is-live')).toHaveCount(1);
   await expect(message.locator('.rn-turn-activity')).toHaveCount(1);
   const activityToggle = message.getByTestId('turn-activity-toggle');
-  const activityBody = message.getByTestId('turn-activity-body');
+  const thoughtsPanel = page.locator('#thoughtsPanel');
   await expect(activityToggle).toHaveAttribute('aria-expanded', 'false');
-  await expect(activityBody).toBeHidden();
-  // The collapsed header shows one current action, not the hidden timeline.
-  await expect(message.locator('.rn-tool-row[data-tcid="search"]')).toContainText(
-    'React Context rendering',
-  );
-  await expect(
-    message.locator('.rn-tool-row[data-tcid="search"]').getByTestId('thinking-step-spinner'),
-  ).toHaveCount(1);
+  await expect(thoughtsPanel).toBeHidden();
+  // The collapsed header shows one current action without pushing transcript layout.
   await expect(message.getByTestId('turn-activity-label')).toContainText('React Context rendering');
 
-  // A later-started parallel call becomes the sole headline; earlier calls
-  // remain in the expanded history, in their original timeline positions.
+  // A later-started parallel call becomes the sole headline; opening Thoughts
+  // shows both running calls live with their spinners and updates in place.
   await page.waitForTimeout(20);
   await page.evaluate(() => {
     const ctl = window.__activityController;
@@ -182,13 +175,16 @@ test('streaming actions are absent and running tools own the activity surface', 
       input: { query: 'latest API reference' },
     });
   });
-  await expect(message.locator('.rn-tool-row[data-state="running"]')).toHaveCount(2);
   await expect(message.getByTestId('turn-activity-label')).toContainText('latest API reference');
   await expect(message.getByTestId('turn-activity-duration')).toContainText(/\d/);
   await activityToggle.click();
   await expect(activityToggle).toHaveAttribute('aria-expanded', 'true');
-  await expect(activityBody).toBeVisible();
-  await expect(message.locator('.rn-tool-row[data-tcid="latest-search"]')).toBeVisible();
+  await expect(thoughtsPanel).toBeVisible();
+  await expect(thoughtsPanel.locator('.rn-tool-row[data-state="running"]')).toHaveCount(2);
+  await expect(
+    thoughtsPanel.locator('.rn-tool-row[data-tcid="search"]').getByTestId('thinking-step-spinner'),
+  ).toHaveCount(1);
+  await expect(thoughtsPanel.locator('.rn-tool-row[data-tcid="latest-search"]')).toBeVisible();
   await expect(message.locator('.msg-toolbar button')).toHaveCount(0);
   await page.screenshot({ path: 'test-results/turn-activity-running.png' });
 
@@ -293,8 +289,10 @@ test('detail-free rows are static and native UI output is outside disclosure', a
     });
   });
   await publishChatRuntime(page, { type: 'state-synced', reason: 'static-row-fixture' });
-  await expect(page.locator('.rn-tool-row[data-tcid="empty"]')).toHaveCount(1);
-  await expect(page.locator('[data-testid="tool-row-empty"][role="button"]')).toHaveCount(0);
+  await page.locator('#msgList .msg.assistant').last().getByTestId('turn-activity-toggle').click();
+  const panel = page.locator('#thoughtsPanel');
+  await expect(panel.locator('.rn-tool-row[data-tcid="empty"]')).toHaveCount(1);
+  await expect(panel.locator('[data-testid="tool-row-empty"][role="button"]')).toHaveCount(0);
 });
 
 test('native UI survives a tool-only settled turn and recovers raw streamed arguments', async ({
@@ -462,9 +460,11 @@ test('streamed observations and tool results are inspectable without exposing pr
   const toggle = message.getByTestId('turn-activity-toggle');
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   await toggle.click();
-  await expect(message.getByText('Reasoning finished')).toBeVisible();
-  await expect(message.locator('[data-tcid="search-1"]')).toBeVisible();
+  const thoughtsPanel = page.locator('#thoughtsPanel');
+  await expect(thoughtsPanel.getByText('Reasoning finished')).toBeVisible();
+  await expect(thoughtsPanel.locator('[data-tcid="search-1"]')).toBeVisible();
   await expect(message).not.toContainText('PRIVATE PROVIDER REASONING');
+  await expect(thoughtsPanel).not.toContainText('PRIVATE PROVIDER REASONING');
   await page.screenshot({ path: 'test-results/streamed-activity-mobile.png' });
 });
 

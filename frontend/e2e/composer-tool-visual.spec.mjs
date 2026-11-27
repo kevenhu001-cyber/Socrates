@@ -44,15 +44,19 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
     await window.askChatTurn('Explore Socratic learning');
   });
 
-  /* Reasoning and tool activity now live in one collapsed disclosure. Open it
-     before asserting the individual tool row. */
+  /* Reasoning and tool activity now live in one borderless disclosure trigger.
+     Open the Thoughts panel before asserting the individual tool row. */
   await page.locator('.rn-turn-activity-toggle').first().click();
-  const toolRow = page.locator('.msg.assistant .rn-tool-row[data-tcid="search-visual"]');
+  const thoughtsPanel = page.locator('#thoughtsPanel');
+  await expect(thoughtsPanel).toBeVisible();
+  const toolRow = thoughtsPanel.locator('.rn-tool-row[data-tcid="search-visual"]');
   await expect(toolRow).toBeVisible();
   await expect(toolRow.locator('[data-testid="thinking-step-title"]')).toContainText(
     'Socratic learning',
   );
   await expect(page.locator('.agent-tool-card')).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await expect(thoughtsPanel).toBeHidden();
 
   const chatComposer = page.locator('#composerInputWrap');
   await expect(chatComposer.locator('.rich-composer-toolbar')).toBeHidden();

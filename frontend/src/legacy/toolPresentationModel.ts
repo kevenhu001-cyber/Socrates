@@ -132,6 +132,102 @@ export function hostOf(url: string): string {
   return clip(noProto.split('/')[0], 32);
 }
 
+const SECOND_LEVEL_SUFFIXES = new Set(['co', 'com', 'org', 'net', 'edu', 'gov', 'ac', 'mil']);
+
+/** Registrable second-level domain (e.g. `docs.openai.com` -> `openai.com`). */
+export function secondLevelDomainOf(urlOrHost: string): string {
+  const host = hostOf(urlOrHost).toLowerCase().split(':')[0].replace(/\.+$/, '');
+  if (!host) return '';
+  if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(host) || host.includes(':')) return host;
+  const parts = host.split('.').filter(Boolean);
+  if (parts.length <= 2) return parts.join('.');
+  const last = parts[parts.length - 1];
+  const secondLast = parts[parts.length - 2];
+  if (SECOND_LEVEL_SUFFIXES.has(secondLast) && /^[a-z]{2}$/.test(last)) {
+    return parts.slice(-3).join('.');
+  }
+  return parts.slice(-2).join('.');
+}
+
+export interface LiveToolCaptionParts {
+  verb: string;
+  target?: string;
+}
+
+const LIVE_PART_HANDLERS = new Map<string, (call: ToolCallLike) => LiveToolCaptionParts>([
+  [
+    'image_search',
+    (call) => ({
+      verb: translate('tool.liveVerb.imageSearch', 'Searching images'),
+      target: queryOf(call.input) || undefined,
+    }),
+  ],
+  [
+    'web_fetch',
+    (call) => ({
+      verb: translate('tool.liveVerb.fetch', 'Reading'),
+      target: secondLevelDomainOf(urlOf(call.input)) || hostOf(urlOf(call.input)) || undefined,
+    }),
+  ],
+  [
+    'WebFetch',
+    (call) => ({
+      verb: translate('tool.liveVerb.fetch', 'Reading'),
+      target: secondLevelDomainOf(urlOf(call.input)) || hostOf(urlOf(call.input)) || undefined,
+    }),
+  ],
+  [
+    'Write',
+    (call) => ({
+      verb: translate('tool.liveVerb.write', 'Creating'),
+      target: basename(filePathOf(call.input)) || undefined,
+    }),
+  ],
+  [
+    'Edit',
+    (call) => ({
+      verb: translate('tool.liveVerb.edit', 'Editing'),
+      target: basename(filePathOf(call.input)) || undefined,
+    }),
+  ],
+  [
+    'read_attachment',
+    (call) => {
+      const { fileName } = attachmentInfo(call);
+      return {
+        verb: translate('tool.liveVerb.read', 'Reading'),
+        target: fileName ? clip(fileName, 40) : undefined,
+      };
+    },
+  ],
+]);
+
+function liveReadFileParts(call: ToolCallLike): LiveToolCaptionParts {
+  return {
+    verb: translate('tool.liveVerb.read', 'Reading'),
+    target: basename(filePathOf(call.input)) || clip(queryOf(call.input), 40) || undefined,
+  };
+}
+
+LIVE_PART_HANDLERS.set('Read', liveReadFileParts);
+LIVE_PART_HANDLERS.set('Glob', liveReadFileParts);
+LIVE_PART_HANDLERS.set('Grep', liveReadFileParts);
+
+/** Two-tone live activity parts (muted verb + primary target, without quotes or ellipsis). */
+export function liveToolParts(call: ToolCallLike | null | undefined): LiveToolCaptionParts | null {
+  if (!call?.name) return null;
+  const name = String(call.name);
+  const direct = LIVE_PART_HANDLERS.get(name);
+  if (direct) return direct(call);
+  if (isInlineSearchTool(name)) {
+    return {
+      verb: translate('tool.liveVerb.search', 'Searching'),
+      target: queryOf(call.input) || undefined,
+    };
+  }
+  return null;
+}
+
 export function resultCount(call: ToolCallLike | null | undefined): number {
   if (!call) return 0;
   return Array.isArray(call.results) ? call.results.length : 0;

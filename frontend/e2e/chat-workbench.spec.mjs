@@ -415,9 +415,8 @@ test('deterministic tool fixture preserves one durable row and finalized answer'
   await page.evaluate(() => window.askChatTurn('Search'));
   const answer = page.locator('#msgList .msg.assistant').last();
   await expect(answer).toContainText('A deterministic response.');
-  await expect(answer.locator('.rn-tool-row[data-tcid="fixture-search"]')).toHaveCount(1);
-  await expect(answer.locator('.rn-tool-row[data-tcid="fixture-search"]')).toHaveAttribute(
-    'data-state',
-    'done',
-  );
+  await answer.getByTestId('turn-activity-toggle').click();
+  const toolRow = page.locator('#thoughtsPanel .rn-tool-row[data-tcid="fixture-search"]');
+  await expect(toolRow).toHaveCount(1);
+  await expect(toolRow).toHaveAttribute('data-state', 'done');
 });

@@ -1,4 +1,4 @@
-import { useId, useMemo, useRef, useState, type ReactElement } from 'react';
+import { useEffect, useId, useMemo, useRef, type ReactElement } from 'react';
 import {
   ThinkingSurface,
   activityTimeline,
@@ -9,12 +9,13 @@ import {
 import type { TurnActivityEntry } from '@socrates/contracts';
 import type { TurnActivityStatus } from '../../legacy/turnActivityModel';
 import { i18n } from '../../ui/legacyI18n.ts';
-import { tf } from '../../legacy/toolPresentationModel.ts';
+import { clip, liveToolParts, tf } from '../../legacy/toolPresentationModel.ts';
 import { useLocaleRefresh, WebUiTheme } from '../rn/WebUiTheme';
 import { MathText } from '../rn/useInlineMath';
 import { Icon } from '../../legacy/Icon';
-import { ToolActivityIcon, ToolSiteMarks, toolActivitySites, turnActivitySites } from './ToolActivityIcon';
-import { isInlineSearchTool } from '../../render/toolCategory';
+import { ThinkingSpark } from './ThinkingSpark';
+import { toggleThoughtsPanel } from './mountThoughts';
+import { closeThoughtsIfKey, updateThoughts, useThoughtsPanel } from './thoughtsStore';
 import { ToolRunRow } from './ToolRunRow';
 import { ToolRunGroupRow } from './ToolRunGroupRow';
 import { useElapsed } from './useElapsed';
@@ -40,7 +41,7 @@ export interface TurnActivitySurfaceProps {
 function SummaryStep({ step }: { step: ThinkingStep }) {
   return (
     <div className="activity-summary-step" data-testid="thinking-step">
-      <Icon name={step.phase === 'done' ? 'check' : 'thinking'} size={18} className="activity-step-glyph" />
+      <Icon name="thinking" size={16} className="activity-step-glyph" />
       <div className="activity-summary-copy">
         {step.title ? (
           <div data-testid="thinking-step-title" className="activity-summary-title">
@@ -48,9 +49,12 @@ function SummaryStep({ step }: { step: ThinkingStep }) {
           </div>
         ) : null}
         {step.summary ? (
-          <p className="thinking-step-summary">
-            <MathText text={step.summary} />
-          </p>
+          <div className="activity-summary-detail">
+            <span className="activity-step-bullet" aria-hidden="true" />
+            <p className="thinking-step-summary">
+              <MathText text={step.summary} />
+            </p>
+          </div>
         ) : null}
       </div>
     </div>
@@ -59,6 +63,7 @@ function SummaryStep({ step }: { step: ThinkingStep }) {
 
 function activityLabel(
   props: TurnActivitySurfaceProps,
+  settledSeconds: number,
   hasSummary: boolean,
   latestStep?: ThinkingStep,
   latestTool?: ToolCallRecord,
@@ -66,15 +71,12 @@ function activityLabel(
   if (props.isLive) {
     return props.statusLabel || props.status?.label || i18n('think.thinking', 'Thinking…');
   }
-  // Once settled, keep the headline on the final event rather than turning it
-  // into a count of the entire hidden history.
-  if (latestTool) return toolRunView(latestTool).label;
-  const seconds = props.reasoningDurationSec;
-  if (typeof seconds === 'number' && Number.isFinite(seconds) && seconds > 0) {
+  if (settledSeconds) {
     return tf('think.thoughtDuration', 'Thought for {sec}s', {
-      sec: Math.max(1, Math.round(seconds)),
+      sec: Math.max(1, Math.round(settledSeconds)),
     });
   }
+  if (latestTool) return toolRunView(latestTool).label;
   if (hasSummary) {
     return latestStep?.title || i18n('think.reasoningSummary', 'Thinking summary');
   }
@@ -130,8 +132,7 @@ function toolActivityRows(
 
   for (const call of calls) {
     const view = toolRunView(call);
-    const canGroup =
-      toolRunStateOf(call) === 'done' && !view.agentRun && !view.approval;
+    const canGroup = toolRunStateOf(call) === 'done' && !view.agentRun && !view.approval;
     if (canGroup) {
       completedBurst.push(call);
       continue;
@@ -195,12 +196,77 @@ function useActivityTimeline(
   return { steps, timeline };
 }
 
-/** One stable disclosure per assistant turn. Tool artifacts and pending
- * approvals deliberately remain in the transcript, outside the activity log. */
+function buildSurfaceCaption(
+  props: TurnActivitySurfaceProps,
+  settledSeconds: number,
+  working: boolean,
+  headerTool: ToolCallRecord | undefined,
+  hasSummary: boolean,
+  latestStep?: ThinkingStep,
+  latestTool?: ToolCallRecord,
+) {
+  const liveParts = working ? liveToolParts(headerTool) : null;
+  if (!liveParts) {
+    return {
+      label: activityLabel(props, settledSeconds, hasSummary, latestStep, latestTool),
+      labelContent: undefined,
+    };
+  }
+  const label = liveParts.target
+    ? `${liveParts.verb} ${clip(liveParts.target, 72)}`
+    : liveParts.verb;
+  const labelContent = (
+    <>
+      <span className="activity-caption-verb">{liveParts.verb}</span>
+      {liveParts.target ? (
+        <>
+          {' '}
+          <span className="activity-caption-target">{liveParts.target}</span>
+        </>
+      ) : null}
+    </>
+  );
+  return { label, labelContent };
+}
+
+function activityPhaseKind(
+  live: boolean,
+  status: TurnActivityStatus | undefined,
+  latestTool: ToolCallRecord | undefined,
+  latestStep: ThinkingStep | undefined,
+): string {
+  if (live) return status?.phase || 'working';
+  if (latestTool) return 'tool';
+  return latestStep ? 'thinking' : 'complete';
+}
+
+function useThoughtsSync(
+  open: boolean,
+  entryKey: string,
+  panelTitle: string,
+  panelDurationLabel: string | undefined,
+  timelineContent: ReactElement,
+) {
+  useEffect(() => {
+    if (!open) return;
+    updateThoughts({
+      key: entryKey,
+      title: panelTitle,
+      durationLabel: panelDurationLabel,
+      content: timelineContent,
+    });
+  }, [open, entryKey, panelTitle, panelDurationLabel, timelineContent]);
+
+  useEffect(() => () => closeThoughtsIfKey(entryKey), [entryKey]);
+}
+
+/** One stable borderless activity trigger per assistant turn; opening reveals the
+ * external Thoughts drawer (desktop) or sheet (mobile). Pending approvals
+ * deliberately remain in the transcript, outside the activity log. */
 export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
   const { activities, calls, activeTool, status, messageId, readOnly } = props;
-  const [open, setOpen] = useState(false);
   const id = useId();
+  const rootRef = useRef<HTMLDivElement | null>(null);
   const intentRef = useRef('');
   useLocaleRefresh();
   if (props.intentSummary?.trim()) intentRef.current = props.intentSummary.trim();
@@ -210,47 +276,55 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
   const expandable = timeline.length > 0 || Boolean(intent);
   const latestEntry = timeline[timeline.length - 1];
   const latestStep = latestEntry?.kind === 'step' ? latestEntry.step : undefined;
-  const latestTools = latestEntry?.kind === 'tools' ? latestEntry.tools : undefined;
-  const latestTool = latestTools?.[latestTools.length - 1];
+  const latestTool =
+    latestEntry?.kind === 'tools' ? latestEntry.tools[latestEntry.tools.length - 1] : undefined;
   const live = Boolean(props.isLive);
-  const liveToolPhase = live && (status?.phase === 'tool-running' || status?.phase === 'tool-awaiting');
+  const reasoningSeconds = props.reasoningDurationSec ?? 0;
+  const settledSeconds =
+    !live && Number.isFinite(reasoningSeconds) ? Math.max(0, reasoningSeconds) : 0;
+  const liveToolPhase =
+    live && (status?.phase === 'tool-running' || status?.phase === 'tool-awaiting');
   const headerTool = live ? (liveToolPhase ? activeTool : undefined) : latestTool;
   const working = live && status?.phase !== 'answering' && status?.phase !== 'tool-awaiting';
   const startedAt =
     status?.phase === 'tool-running' ? runStartedAt(activeTool) : props.activityStartedAt || 0;
   const elapsedMs = useElapsed(startedAt, working);
   const elapsedSec = elapsedMs > 0 ? elapsedMs / 1000 : status?.elapsedSec;
-  const label = activityLabel(props, hasSummary, latestStep, latestTool);
-  const toolName = headerTool?.name || (liveToolPhase ? status?.toolName : undefined);
-  const sites = !toolName || isInlineSearchTool(toolName)
-    ? turnActivitySites(calls)
-    : toolActivitySites(headerTool, 3);
-  const headerIcon = sites.length ? (
-    <ToolSiteMarks sites={sites} />
-  ) : toolName ? (
-    <ToolActivityIcon name={toolName} />
-  ) : undefined;
-  const currentActivity = live
-    ? status?.phase || 'working'
-    : latestTool
-      ? 'tool'
-      : latestStep
-        ? 'thinking'
-        : 'complete';
-  // Keep the mounted timeline stable during elapsed-time ticks. Nested tool
-  // detail disclosures already mount their expensive output only when opened.
+  const { label, labelContent } = buildSurfaceCaption(
+    props,
+    settledSeconds,
+    working,
+    headerTool,
+    hasSummary,
+    latestStep,
+    latestTool,
+  );
+  const headerIcon = working ? undefined : (
+    <Icon name="thinking" size={16} className="activity-leading-glyph" />
+  );
+  const currentActivity = activityPhaseKind(live, status, latestTool, latestStep);
+  const entryKey = `thoughts:${messageId || id}`;
+  const thoughtsState = useThoughtsPanel();
+  const open = thoughtsState.isOpen && thoughtsState.entry?.key === entryKey;
+
+  const durationLabel =
+    working && elapsedSec
+      ? tf('think.rn.elapsed', '{sec}s', { sec: Math.max(1, Math.round(elapsedSec)) })
+      : undefined;
+  const panelTitle = i18n('think.thoughtsTitle', 'Thoughts');
+  const panelDurationLabel =
+    !live && settledSeconds > 0
+      ? tf('think.thoughtDuration', 'Thought for {sec}s', {
+          sec: Math.max(1, Math.round(settledSeconds)),
+        })
+      : durationLabel;
+
   const overviewTitle = i18n('think.taskOverview', 'Task overview');
   const history = useMemo(
     () => (
       <>
         {intent ? (
-          <SummaryStep
-            step={{
-              id: 'intent',
-              title: overviewTitle,
-              summary: intent,
-            }}
-          />
+          <SummaryStep step={{ id: 'intent', title: overviewTitle, summary: intent }} />
         ) : null}
         {timeline.flatMap((entry) =>
           entry.kind === 'step'
@@ -261,14 +335,32 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
     ),
     [intent, timeline, messageId, readOnly, live, overviewTitle],
   );
-  if (!live && !expandable && !props.reasoningDurationSec) return null;
-  const durationLabel =
-    working && elapsedSec
-      ? tf('think.rn.elapsed', '{sec}s', { sec: Math.max(1, Math.round(elapsedSec)) })
-      : undefined;
+  const timelineContent = useMemo(
+    () => (
+      <>
+        {history}
+        {working && !liveToolPhase ? (
+          <div className="activity-current-step" data-testid="activity-current-step">
+            <Icon
+              name="activitySpinner"
+              size={16}
+              className="activity-step-glyph socrates-step-spinner"
+            />
+            <span>{label}</span>
+          </div>
+        ) : null}
+      </>
+    ),
+    [history, working, liveToolPhase, label],
+  );
+
+  useThoughtsSync(open, entryKey, panelTitle, panelDurationLabel, timelineContent);
+
+  if (!live && !expandable && !settledSeconds) return null;
 
   return (
     <div
+      ref={rootRef}
       className={`rn-turn-activity${live ? ' is-live' : ''}`}
       data-turn-surface-part="activity"
       data-live={working ? 'true' : undefined}
@@ -281,37 +373,36 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
       <WebUiTheme>
         <ThinkingSurface
           label={label}
+          labelContent={labelContent}
           labelClassName="activity-caption"
           durationLabel={durationLabel}
           durationClassName="activity-duration"
           live={working}
+          indicator={working ? <ThinkingSpark size={16} /> : undefined}
           icon={headerIcon}
-          iconWidth={sites.length ? 22 * sites.length : 18}
-          fullWidth
-          disclosureIcon={<Icon name={open ? 'chevronUp' : 'chevronDown'} size={16} className="activity-chevron" />}
+          iconWidth={16}
+          fullWidth={false}
+          disclosureIcon={<Icon name="chevronRight" size={14} className="activity-chevron" />}
           expandable={expandable}
           open={open}
-          onToggle={() => setOpen((value) => !value)}
-          bodyId={id}
-          bodyClassName={`ui-collapse activity-disclosure${open ? '' : ' collapsed'}`}
-          bodyStyle={{ display: 'grid', marginTop: 0, marginBottom: 0 }}
-          bodyInert={!open}
-        >
-          <div className="ui-collapse-inner">
-            <div
-              className="activity-timeline"
-              data-testid="thinking-timeline"
-            >
-              {history}
-              {working && !liveToolPhase ? (
-                <div className="activity-current-step" data-testid="activity-current-step">
-                  <Icon name="activitySpinner" size={18} className="activity-step-glyph socrates-step-spinner" />
-                  <span>{label}</span>
-                </div>
-              ) : null}
-            </div>
-          </div>
-        </ThinkingSurface>
+          inlineBody={false}
+          ariaHasPopup={expandable ? 'dialog' : undefined}
+          onToggle={() => {
+            const trigger = rootRef.current?.querySelector<HTMLElement>(
+              '[data-testid="turn-activity-toggle"]',
+            );
+            toggleThoughtsPanel(
+              {
+                key: entryKey,
+                title: panelTitle,
+                durationLabel: panelDurationLabel,
+                content: timelineContent,
+              },
+              trigger,
+            );
+          }}
+          bodyId="thoughtsPanel"
+        />
       </WebUiTheme>
     </div>
   );

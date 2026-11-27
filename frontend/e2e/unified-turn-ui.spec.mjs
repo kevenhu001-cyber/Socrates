@@ -1,6 +1,6 @@
 import { test, expect } from './_state-fixture.mjs';
 import { prepareChatWorkbench, WORKBENCH_VIEWPORTS } from './_chat-workbench.mjs';
-import { TURN, openActivity, toolRow } from './_turn-ui.mjs';
+import { TURN, openActivity, toolRow, toolRowButton } from './_turn-ui.mjs';
 
 const nodes = [
   { id: 'panel', type: 'panel', title: 'Estimate', state: { count: 2 } },
@@ -75,24 +75,25 @@ test('public summaries and tool logs share one disclosure; results stay visible'
   await expect(page.locator('.tool-run-prose')).toContainText(message.rawText);
   await expect(page.locator('.msg-body')).not.toContainText(message.summary);
   await toggle.click();
-  await expect(activity.getByText('Checked the assumptions.')).toBeVisible();
+  const panel = page.locator(TURN.thoughtsPanel);
+  await expect(panel.getByText('Checked the assumptions.')).toBeVisible();
   await expect(toolRow(page, 'ui')).toBeVisible();
-  /* Tool activity uses a quieter type step than prose. */
+  /* Tool activity uses a quieter type step than prose inside Thoughts. */
+  const proseSize = await page
+    .locator('.tool-run-prose p')
+    .first()
+    .evaluate((node) => parseFloat(getComputedStyle(node).fontSize));
   const type = await toolRow(page, 'ui')
     .locator(TURN.stepTitle)
     .evaluate((node) => ({
       size: parseFloat(getComputedStyle(node).fontSize),
       line: parseFloat(getComputedStyle(node).lineHeight),
     }));
-  const proseSize = await page
-    .locator('.tool-run-prose p')
-    .first()
-    .evaluate((node) => parseFloat(getComputedStyle(node).fontSize));
   expect(type.size).toBeLessThanOrEqual(proseSize);
   expect(type.line).toBeGreaterThanOrEqual(type.size);
   await toggle.click();
   await expect(page.locator('.intui')).toBeVisible();
-  await expect(activity.locator(TURN.body)).toBeHidden();
+  await expect(page.locator(TURN.thoughtsPanel)).toBeHidden();
   await page.screenshot({ path: 'test-results/unified-turn-desktop.png' });
 });
 
@@ -174,14 +175,14 @@ test('a live tool names its action and spins once beside the public summary', as
   const activity = page.locator(TURN.surface);
   await expect(activity).toHaveCount(1);
   await expect(activity.locator('.turn-activity-dot')).toHaveCount(0);
+  await expect(activity.locator(TURN.indicator)).toHaveCount(1);
+  const panel = await openActivity(page);
   const row = toolRow(page, 'search');
   const label = row.locator(TURN.stepTitle);
   await expect(label).toContainText('official specifications');
-  await expect(activity.locator(TURN.indicator)).toHaveCount(0);
   const spinner = row.locator(TURN.spinner);
   await expect(spinner).toHaveCount(1);
-  await activity.locator(TURN.toggle).click();
-  await expect(activity.getByText('Compared the official specifications.').first()).toBeVisible();
+  await expect(panel.getByText('Compared the official specifications.').first()).toBeVisible();
   const pose = () =>
     spinner.evaluate((node) => {
       const computed = getComputedStyle(node).transform;
@@ -236,7 +237,8 @@ test('pending approvals remain visible with activity collapsed', async ({ page }
       },
     ],
   });
-  await expect(page.locator('.tool-run-trigger')).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.locator(TURN.toggle)).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.locator(TURN.thoughtsPanel)).toBeHidden();
   await expect(page.locator(TURN.approval)).toBeVisible();
   await expect(page.locator('[data-approval-action="accept"]')).toBeVisible();
   expect(
@@ -318,10 +320,10 @@ test('live workspace steps stay behind the row disclosure', async ({ page }) => 
   const preview = page.getByTestId('agent-activity-preview');
   await expect(preview).toHaveCount(0);
   await openActivity(page);
-  await toolRow(page, 'agent').click();
+  await toolRowButton(page, 'agent').click();
   await expect(preview).toHaveCount(0);
   await expect(page.locator('.agent-step')).toHaveCount(2);
-  await toolRow(page, 'agent').click();
+  await toolRowButton(page, 'agent').click();
   await expect(preview).toHaveCount(0);
   await expect(page.locator('.agent-step')).toHaveCount(0);
   await page.evaluate(() => {
@@ -373,7 +375,9 @@ test('stopped workspace steps retain an unconfirmed outcome', async ({ page }) =
   await expect(run.locator('[data-step-id="command"] .agent-step-meta')).toContainText('Stopped');
 });
 
-test('collapsed search activity preserves three unique site favicons', async ({ page }) => {
+test('collapsed search header stays free of site-mark pills and shows domain chips in detail', async ({
+  page,
+}) => {
   await prepareChatWorkbench(page, {
     messages: [
       {
@@ -388,8 +392,8 @@ test('collapsed search activity preserves three unique site favicons', async ({ 
             status: 'completed',
             input: { query: 'sources' },
             results: [
-              { title: 'A', url: 'https://openai.com/a' },
-              { title: 'A again', url: 'https://openai.com/b' },
+              { title: 'A', url: 'https://docs.openai.com/a' },
+              { title: 'A again', url: 'https://platform.openai.com/b' },
               { title: 'B', url: 'https://github.com/b' },
               { title: 'C', url: 'https://vercel.com/c' },
             ],
@@ -400,16 +404,21 @@ test('collapsed search activity preserves three unique site favicons', async ({ 
   });
   const toggle = page.getByTestId('turn-activity-toggle');
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-  await expect(toggle.getByTestId('tool-site-mark')).toHaveCount(3);
-  await expect(toggle.getByTestId('tool-site-mark').first()).toHaveAttribute('title', 'openai.com');
+  await expect(toggle.getByTestId('tool-site-mark')).toHaveCount(0);
   await expect(toolRow(page, 'search-favicons-call')).toBeHidden();
   await toggle.click();
   const row = toolRow(page, 'search-favicons-call');
   await expect(row).toBeVisible();
-  await expect(row.locator('.activity-source-row')).toHaveCount(2);
-  await expect(row.locator('.activity-source-title')).toHaveText(['A', 'B']);
-  await expect(row.locator('.activity-source-host')).toHaveText(['openai.com', 'github.com']);
+  await expect(row.locator('.activity-source-row')).toHaveCount(0);
   await expect(row.locator('.tool-run-trigger')).toHaveAttribute('aria-expanded', 'false');
+  await row.locator('.tool-run-trigger').click();
+  const sources = page.locator(TURN.thoughtsPanel).getByTestId('tool-sources');
+  await expect(sources.getByTestId('tool-source-host')).toHaveText([
+    'openai.com',
+    'github.com',
+    'vercel.com',
+  ]);
+  await expect(sources.getByTestId('tool-source-title')).toHaveCount(0);
   await toggle.click();
   await expect(row).toBeHidden();
 });

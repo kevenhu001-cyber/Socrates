@@ -145,48 +145,52 @@ async function loadFixtureSession(
   await page.evaluate((id) => window.loadSession(id), SESSION_ID);
   const body = page.locator('#msgList .msg.assistant').last().locator('.msg-body');
   if (expandBursts && toolCalls.length) {
-    await expect(body.locator('.rn-tool-row').first()).toBeAttached();
-    const collapsed = body.locator('[data-testid=\"turn-activity-toggle\"][aria-expanded="false"]');
-    while (await collapsed.count()) await collapsed.first().click();
+    const toggle = body.getByTestId('turn-activity-toggle').last();
+    await expect(toggle).toBeVisible();
+    if ((await toggle.getAttribute('aria-expanded')) !== 'true') await toggle.click();
+    await expect(page.locator('#thoughtsPanel')).toBeVisible();
   }
   return body;
 }
 
-async function openDetail(page, body, id) {
-  await body.getByTestId(`tool-row-${id}`).click();
-  const detail = page.getByTestId('tool-detail');
+async function openDetail(page, _body, id) {
+  const panel = page.locator('#thoughtsPanel');
+  await panel.getByTestId(`tool-row-${id}`).click();
+  const detail = panel.getByTestId('tool-detail');
   await expect(detail).toBeVisible();
   return detail;
 }
 
 test('expanded calls are visible in call order', async ({ page }) => {
-  const body = await loadFixtureSession(page);
-  await expect(body.locator('.rn-tool-row')).toHaveCount(6);
+  await loadFixtureSession(page);
+  const panel = page.locator('#thoughtsPanel');
+  await expect(panel.locator('.rn-tool-row')).toHaveCount(6);
   expect(
-    await body.locator('.rn-tool-row').evaluateAll((rows) => rows.map((row) => row.dataset.tcid)),
+    await panel.locator('.rn-tool-row').evaluateAll((rows) => rows.map((row) => row.dataset.tcid)),
   ).toEqual(['s1', 's2', 's3', 'f1', 'w1', 'w2']);
-  const s1 = body.getByTestId('tool-row-s1');
+  const s1 = panel.getByTestId('tool-row-s1');
   await expect(s1).toContainText('alpha theory');
-  await expect(body.getByTestId('tool-row-w1')).toContainText('router_v2.py');
-  await expect(body.getByTestId('tool-row-w2')).toContainText('moe.py');
+  await expect(panel.getByTestId('tool-row-w1')).toContainText('router_v2.py');
+  await expect(panel.getByTestId('tool-row-w2')).toContainText('moe.py');
   // A restored row with no recorded outcome shows a neutral status.
-  await expect(body.locator('.rn-tool-row[data-tcid="s3"]')).toHaveAttribute(
+  await expect(panel.locator('.rn-tool-row[data-tcid="s3"]')).toHaveAttribute(
     'data-state',
     'running',
   );
   await expect(
-    body.locator('.rn-tool-row[data-tcid="s3"]').getByTestId('thinking-step-spinner'),
+    panel.locator('.rn-tool-row[data-tcid="s3"]').getByTestId('thinking-step-spinner'),
   ).toHaveCount(0);
-  await expect(body.getByTestId('tool-row-s3').getByTestId('thinking-step-status')).toHaveText(
+  await expect(panel.getByTestId('tool-row-s3').getByTestId('thinking-step-status')).toHaveText(
     'Status unknown',
   );
   await expect(s1.getByTestId('thinking-step-spinner')).toHaveCount(0);
-  await expect(body.locator('.rn-tool-row[data-tcid="f1"]')).toHaveAttribute('data-state', 'error');
+  await expect(panel.locator('.rn-tool-row[data-tcid="f1"]')).toHaveAttribute('data-state', 'error');
 });
 
 test('a row opens its detail inline, and closes on a second press', async ({ page }) => {
   const body = await loadFixtureSession(page);
-  const row = body.getByTestId('tool-row-s1');
+  const panel = page.locator('#thoughtsPanel');
+  const row = panel.getByTestId('tool-row-s1');
   await expect(row).toHaveAttribute('aria-expanded', 'false');
   const detail = await openDetail(page, body, 's1');
   await expect(row).toHaveAttribute('aria-expanded', 'true');
@@ -194,28 +198,22 @@ test('a row opens its detail inline, and closes on a second press', async ({ pag
   await expect(detail.getByTestId('tool-detail-section-input')).toHaveCount(0);
   await expect(detail.getByTestId('tool-input-toggle')).toHaveCount(0);
   const sources = detail.getByTestId('tool-detail-section-sources');
-  await expect(sources.getByTestId('tool-source')).toHaveCount(2);
-  await expect(sources.getByTestId('tool-source-title').first()).toHaveText('Alpha one');
+  await expect(sources.getByTestId('tool-source')).toHaveCount(1);
+  await expect(sources.getByTestId('tool-source-title')).toHaveCount(0);
   await expect(sources.getByTestId('tool-source-host').first()).toHaveText('example.test');
   await expect(sources.getByTestId('tool-source').first()).toHaveAttribute('role', 'link');
-  await sources.getByTestId('tool-sources-open').click();
-  const panel = page.locator('#sourcesPanel');
-  await expect(panel).toBeVisible();
-  await expect(panel.locator('.source-card')).toHaveCount(2);
-  await expect(panel.locator('.source-card-title').first()).toHaveText('Alpha one');
-  await page.keyboard.press('Escape');
-  await expect(panel).toBeHidden();
-  // The panel sits inside the prose column, under its own row.
+  await expect(sources.getByTestId('tool-sources-open')).toHaveCount(0);
+  // The panel sits under its own row inside Thoughts.
   expect(await detail.evaluate((el) => Boolean(el.closest('.rn-tool-row[data-tcid="s1"]')))).toBe(
     true,
   );
   await row.click();
-  await expect(page.getByTestId('tool-detail')).toHaveCount(0);
+  await expect(panel.getByTestId('tool-detail')).toHaveCount(0);
 });
 
 test('keyboard activation toggles the row disclosure', async ({ page }) => {
-  const body = await loadFixtureSession(page);
-  const row = body.getByTestId('tool-row-s1');
+  await loadFixtureSession(page);
+  const row = page.locator('#thoughtsPanel').getByTestId('tool-row-s1');
   await row.focus();
   await page.keyboard.press('Enter');
   await expect(row).toHaveAttribute('aria-expanded', 'true');
@@ -232,95 +230,99 @@ test('raw Python output and search JSON never enter expanded tool details', asyn
       output: '{"raw":"private_json_probe"}' },
   ];
   const body = await loadFixtureSession(page, { toolCalls: calls });
-  await expect(body.getByTestId('tool-row-raw-python')).not.toHaveAttribute('aria-expanded', /.+/);
-  await expect(page.getByTestId('tool-detail')).toHaveCount(0);
+  const panel = page.locator('#thoughtsPanel');
+  await expect(panel.getByTestId('tool-row-raw-python')).not.toHaveAttribute('aria-expanded', /.+/);
+  await expect(panel.getByTestId('tool-detail')).toHaveCount(0);
   const detail = await openDetail(page, body, 'raw-search');
   await expect(detail.getByTestId('tool-code-output')).toHaveCount(0);
   await expect(detail.getByTestId('tool-input-toggle')).toHaveCount(0);
   await expect(detail.getByTestId('tool-source')).toHaveCount(1);
-  await body.getByTestId('tool-row-raw-search').click();
+  await panel.getByTestId('tool-row-raw-search').click();
+  await expect(panel).not.toContainText(/private_(python|stdout|arg|json)_probe/);
   await expect(body).not.toContainText(/private_(python|stdout|arg|json)_probe/);
 });
 
 test('tool failures remain visible as status without a technical disclosure', async ({ page }) => {
-  const body = await loadFixtureSession(page);
-  await expect(body.getByTestId('tool-error')).toHaveCount(0);
-  await expect(body.getByTestId('tool-error-retry')).toHaveCount(0);
-  await expect(body.getByText('Search upstream timed out after 30s')).toHaveCount(0);
-  await expect(body.locator('.rn-tool-row[data-tcid="f1"]')).toHaveAttribute('data-error', '1');
-  await expect(body.getByTestId('tool-row-f1')).not.toHaveAttribute('aria-expanded', /.+/);
-  await expect(page.getByTestId('tool-detail')).toHaveCount(0);
-  await expect(body).not.toContainText('Search upstream timed out after 30s');
-  await expect(body).not.toContainText('SEARCH_TIMEOUT');
+  await loadFixtureSession(page);
+  const panel = page.locator('#thoughtsPanel');
+  await expect(panel.getByTestId('tool-error')).toHaveCount(0);
+  await expect(panel.getByTestId('tool-error-retry')).toHaveCount(0);
+  await expect(panel.getByText('Search upstream timed out after 30s')).toHaveCount(0);
+  await expect(panel.locator('.rn-tool-row[data-tcid="f1"]')).toHaveAttribute('data-error', '1');
+  await expect(panel.getByTestId('tool-row-f1')).not.toHaveAttribute('aria-expanded', /.+/);
+  await expect(panel.getByTestId('tool-detail')).toHaveCount(0);
+  await expect(panel).not.toContainText('Search upstream timed out after 30s');
+  await expect(panel).not.toContainText('SEARCH_TIMEOUT');
 });
 
 test('each file action names its file without repeating its label in an empty detail', async ({ page }) => {
-  const body = await loadFixtureSession(page);
-  const w1 = body.getByTestId('tool-row-w1');
+  await loadFixtureSession(page);
+  const panel = page.locator('#thoughtsPanel');
+  const w1 = panel.getByTestId('tool-row-w1');
   await expect(w1).toContainText('router_v2.py');
-  const w2 = body.getByTestId('tool-row-w2');
+  const w2 = panel.getByTestId('tool-row-w2');
   await expect(w2).toContainText('moe.py');
   await expect(w1).not.toHaveAttribute('aria-expanded', /.+/);
   await expect(w2).not.toHaveAttribute('aria-expanded', /.+/);
-  await expect(page.getByTestId('tool-detail')).toHaveCount(0);
+  await expect(panel.getByTestId('tool-detail')).toHaveCount(0);
 });
 
 test('answer prose keeps its recorded order around the rows, with no baked-in duplicates', async ({
   page,
 }) => {
   const body = await loadFixtureSession(page);
-  const layout = await body.locator('.turn-evidence').evaluate((el) => {
-    const order = [];
-    for (const node of Array.from(el.querySelectorAll('.rn-tool-row, .tool-run-prose'))) {
-      if (node.classList.contains('rn-tool-row')) order.push(`tool:${node.dataset.tcid}`);
-      else order.push(`text:${(node.textContent || '').trim()}`);
-    }
-    return order;
-  });
-  expect(layout).toEqual([
-    'tool:s1',
-    'tool:s2',
-    'tool:s3',
-    'tool:f1',
-    'tool:w1',
-    'tool:w2',
+  const panel = page.locator('#thoughtsPanel');
+  const textOrder = await body.locator('.turn-evidence').evaluate((el) =>
+    Array.from(el.querySelectorAll('.rn-turn-activity, .tool-run-prose')).map((node) =>
+      node.classList.contains('rn-turn-activity')
+        ? 'activity'
+        : `text:${(node.textContent || '').trim()}`,
+    ),
+  );
+  expect(textOrder).toEqual([
+    'activity',
     'text:Lead paragraph.',
     'text:Middle paragraph.',
     'text:Tail paragraph.',
   ]);
+  expect(
+    await panel.locator('.rn-tool-row').evaluateAll((nodes) => nodes.map((n) => `tool:${n.dataset.tcid}`)),
+  ).toEqual(['tool:s1', 'tool:s2', 'tool:s3', 'tool:f1', 'tool:w1', 'tool:w2']);
+  await expect(panel.locator('.agent-tool-card')).toHaveCount(0);
   await expect(body.locator('.agent-tool-card')).toHaveCount(0);
-  await expect(body.locator('.rn-tool-row')).toHaveCount(6);
+  await expect(panel.locator('.rn-tool-row')).toHaveCount(6);
   await expect(body).not.toContainText('baked row');
 });
 
 test('narrow viewports keep the inline panel inside the transcript column', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   const body = await loadFixtureSession(page);
+  const panel = page.locator('#thoughtsPanel');
   const detail = await openDetail(page, body, 's1');
   const box = await detail.boundingBox();
   expect(box.width).toBeLessThanOrEqual(390);
-  const panel = await detail.evaluate((element) => ({
+  const metrics = await detail.evaluate((element) => ({
     scrollWidth: element.scrollWidth,
     clientWidth: element.clientWidth,
   }));
-  expect(panel.scrollWidth).toBeLessThanOrEqual(panel.clientWidth + 1);
-  await expect(detail.getByTestId('tool-source')).toHaveCount(2);
-  await expect(detail.locator('.tool-source-result').first()).toHaveCSS('border-top-width', '0px');
-  await expect(detail.locator('.tool-source-name').first()).toHaveCSS('overflow-wrap', 'anywhere');
-  await body.getByTestId('tool-row-s1').click();
-  await expect(page.getByTestId('tool-detail')).toHaveCount(0);
-  await expect(body.getByTestId('tool-row-s2')).toBeVisible();
+  expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth + 1);
+  await expect(detail.getByTestId('tool-source')).toHaveCount(1);
+  await expect(detail.getByTestId('tool-source-host').first()).toHaveText('example.test');
+  await panel.getByTestId('tool-row-s1').click();
+  await expect(panel.getByTestId('tool-detail')).toHaveCount(0);
+  await expect(panel.getByTestId('tool-row-s2')).toBeVisible();
 });
 
 test('phone rows stay horizontal, touch-height and one line', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 844 });
   const body = await loadFixtureSession(page, { theme: 'light', language: 'zh' });
+  const panel = page.locator('#thoughtsPanel');
 
-  const activity = body.locator('[data-testid=\"turn-activity-toggle\"]').first();
+  const activity = body.locator('[data-testid="turn-activity-toggle"]').first();
   await expect(activity).toBeVisible();
   expect((await activity.boundingBox()).height).toBeGreaterThanOrEqual(44);
 
-  const row = body.getByTestId('tool-row-s1');
+  const row = panel.getByTestId('tool-row-s1');
   const rowLayout = await row.evaluate((element) => ({
     direction: getComputedStyle(element).flexDirection,
     wrap: getComputedStyle(element).flexWrap,
@@ -333,7 +335,7 @@ test('phone rows stay horizontal, touch-height and one line', async ({ page }) =
   expect(rowLayout.scrollWidth).toBeLessThanOrEqual(rowLayout.width + 1);
   expect(rowLayout.height).toBeGreaterThanOrEqual(44);
   await body.scrollIntoViewIfNeeded();
-  await body.screenshot({ path: 'test-results/tool-run-group-mobile-320-open.png' });
+  await page.screenshot({ path: 'test-results/tool-run-group-mobile-320-open.png' });
 
   const detail = await openDetail(page, body, 's1');
   const detailLayout = await detail.evaluate((element) => ({
@@ -345,30 +347,30 @@ test('phone rows stay horizontal, touch-height and one line', async ({ page }) =
   expect(detailLayout.scrollWidth).toBeLessThanOrEqual(detailLayout.clientWidth + 1);
 });
 
-test('rows share one icon column and the prose column', async ({ page }) => {
+test('rows share one icon column inside Thoughts', async ({ page }) => {
   const body = await loadFixtureSession(page);
+  const panel = page.locator('#thoughtsPanel');
   await body.scrollIntoViewIfNeeded();
-  await body.screenshot({ path: 'test-results/tool-run-group-dark-open.png' });
-  const row = body.getByTestId('tool-row-s1');
+  await page.screenshot({ path: 'test-results/tool-run-group-dark-open.png' });
+  const row = panel.getByTestId('tool-row-s1');
   await expect(row).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
   await expect(row).toHaveCSS('border-top-width', '0px');
   await expect(row.getByTestId('thinking-step-status')).toHaveCount(0);
-  const prose = body.locator('.tool-run-prose p').first();
-  await expect(row).toHaveCSS(
-    'font-size',
-    await prose.evaluate((node) => getComputedStyle(node).fontSize),
-  );
-  expect((await row.boundingBox()).x).toBeGreaterThan((await prose.boundingBox()).x);
-  const icons = await body
+  const icons = await panel
     .locator('.rn-tool-row .tool-run-trigger > :is(.tool-inline-tool-icon, .tool-site-marks, .activity-step-glyph):first-child')
-    .evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().left));
+    .evaluateAll((nodes) => {
+      return nodes.map((node) => {
+        const rect = node.getBoundingClientRect();
+        return rect.left + rect.width / 2;
+      });
+    });
   expect(icons.length).toBe(6);
   await expect(
-    body.locator('.rn-tool-row[data-tcid="w1"] .tool-inline-tool-icon svg'),
+    panel.locator('.rn-tool-row[data-tcid="w1"] .tool-inline-tool-icon svg'),
   ).toBeVisible();
   expect(Math.max(...icons) - Math.min(...icons)).toBeLessThanOrEqual(1);
   await expect(
-    body.locator('.rn-tool-row[data-tcid="s3"]').getByTestId('thinking-step-spinner'),
+    panel.locator('.rn-tool-row[data-tcid="s3"]').getByTestId('thinking-step-spinner'),
   ).toHaveCount(0);
   const proseWidth = await body
     .locator('.tool-run-prose')
@@ -459,10 +461,11 @@ test('a running code call streams into the open panel and keeps it open on compl
   });
 
   const bubble = page.locator('.msg.assistant').last();
-  const row = bubble.locator('.rn-tool-row[data-tcid="live-code"]').last();
+  await bubble.getByTestId('turn-activity-toggle').click();
+  const panel = page.locator('#thoughtsPanel');
+  const row = panel.locator('.rn-tool-row[data-tcid="live-code"]').last();
   await expect(row).toHaveAttribute('data-state', 'running');
   await expect(row.getByTestId('thinking-step-title')).toContainText('Executing code');
-  await bubble.getByTestId('turn-activity-toggle').click();
   await expect(row.getByTestId('thinking-step-spinner')).toBeVisible();
 
   await page.evaluate(() => {
@@ -471,7 +474,7 @@ test('a running code call streams into the open panel and keeps it open on compl
   });
   const preview = page.getByTestId('tool-live-preview');
   await expect(preview).toHaveCount(0);
-  await expect(bubble.getByTestId('tool-row-live-code')).not.toHaveAttribute('aria-expanded', /.+/);
+  await expect(panel.getByTestId('tool-row-live-code')).not.toHaveAttribute('aria-expanded', /.+/);
   await expect(preview).toHaveCount(0);
   await expect(bubble).not.toContainText('step_39(data)');
   await page.evaluate(() => window.__streamStdout());
@@ -586,13 +589,12 @@ test('a pending approval stays visible in the transcript with pill decisions', a
     window.__approvalTurnPromise = window.askChatTurn('Run the tests');
   });
 
-  const row = page
-    .locator('.msg.assistant')
-    .last()
-    .locator('.rn-tool-row[data-tcid="approval-tool"]');
+  const assistant = page.locator('.msg.assistant').last();
+  await assistant.getByTestId('turn-activity-toggle').click();
+  const row = page.locator('#thoughtsPanel .rn-tool-row[data-tcid="approval-tool"]');
   await expect(row).toHaveAttribute('data-state', 'running');
   await page.evaluate(() => window.__requestToolApproval());
-  const prompt = page.locator('.rn-tool-approval');
+  const prompt = assistant.locator('.rn-tool-approval');
   await expect(row).toHaveAttribute('data-state', 'awaiting');
   await expect(row.getByTestId('thinking-step-status')).toHaveText('Waiting for your decision');
   await expect(page.getByTestId('turn-activity-indicator')).toHaveCount(0);
@@ -616,20 +618,20 @@ test('a pending approval stays visible in the transcript with pill decisions', a
 
 test('activity bursts start collapsed including failed and unknown rows', async ({ page }) => {
   const body = await loadFixtureSession(page, { expandBursts: false });
-  const burst = body.locator('[data-testid=\"turn-activity-toggle\"]').last();
+  const panel = page.locator('#thoughtsPanel');
+  const burst = body.locator('[data-testid="turn-activity-toggle"]').last();
   await expect(burst).toHaveAttribute('aria-expanded', 'false');
-  await expect(body.getByTestId('tool-row-w1')).toBeHidden();
-  await expect(body.getByTestId('tool-row-f1')).toBeHidden();
-  await expect(body.getByTestId('tool-row-f1')).not.toHaveAttribute('aria-expanded', /.+/);
-  await expect(body.getByTestId('tool-row-s3')).toBeHidden();
+  await expect(panel).toBeHidden();
+  await expect(panel.getByTestId('tool-row-w1')).toHaveCount(0);
+  await expect(panel.getByTestId('tool-row-f1')).toHaveCount(0);
+  await expect(panel.getByTestId('tool-row-s3')).toHaveCount(0);
   await burst.focus();
   await page.keyboard.press('Enter');
-  await expect(body.getByTestId('tool-row-w1')).toBeVisible();
-  const disclosure = body.locator('.activity-disclosure').last();
-  await expect(disclosure).toHaveCSS('visibility', 'visible');
-  await expect(disclosure).not.toHaveAttribute('inert', '');
-  await burst.click();
-  await expect(disclosure).toHaveAttribute('inert', '');
-  await expect(body.getByTestId('tool-row-w1')).toBeHidden();
-  await expect(disclosure).toHaveCSS('visibility', 'hidden');
+  await expect(panel).toBeVisible();
+  await expect(panel.getByTestId('tool-row-w1')).toBeVisible();
+  await expect(panel.getByTestId('tool-row-f1')).not.toHaveAttribute('aria-expanded', /.+/);
+  await panel.getByTestId('tool-row-w1').evaluate(() => true);
+  await page.keyboard.press('Escape');
+  await expect(panel).toBeHidden();
+  await expect(burst).toHaveAttribute('aria-expanded', 'false');
 });

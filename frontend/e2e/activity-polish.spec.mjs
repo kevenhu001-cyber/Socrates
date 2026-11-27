@@ -1,15 +1,16 @@
 import { test, expect } from './_state-fixture.mjs';
 import { prepareChatWorkbench } from './_chat-workbench.mjs';
 import { publishChatRuntime } from './_lib.mjs';
-import { TURN, toolRow } from './_turn-ui.mjs';
+import { TURN, openActivity, openToolDetail, thoughtsScope, toolRow } from './_turn-ui.mjs';
 
 const message = {
   clientId: 'activity-polish',
   role: 'assistant',
   rawText: 'The comparison is ready.',
+  reasoningDurationSec: 6,
   _activity: {
     type: 'public_reasoning_summary',
-    text: 'Compared the original sources and checked the result.',
+    text: '**Comparison**\n\nCompared the original sources and checked the result.',
   },
   toolCalls: [
     {
@@ -24,7 +25,7 @@ const message = {
 };
 
 for (const mobile of [false, true]) {
-  test(`activity disclosure settles without hidden space or overflow (${mobile ? 'mobile' : 'desktop'})`, async ({
+  test(`activity disclosure stays borderless inline and opens Thoughts sheet/drawer (${mobile ? 'mobile' : 'desktop'})`, async ({
     page,
   }) => {
     const errors = [];
@@ -35,39 +36,74 @@ for (const mobile of [false, true]) {
     });
     const surface = page.locator(TURN.surface);
     const toggle = surface.locator(TURN.toggle);
-    const body = surface.locator(TURN.body);
+    const label = surface.locator(TURN.label);
+    const arrow = toggle.locator('.activity-chevron');
+    const panel = thoughtsScope(page);
+
     await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    await expect.poll(() => body.evaluate((node) => node.getBoundingClientRect().height)).toBe(0);
-    expect((await toggle.boundingBox()).height).toBeGreaterThanOrEqual(32);
+    await expect(toggle).toHaveAttribute('aria-haspopup', 'dialog');
+    await expect(toggle).toHaveAttribute('aria-controls', 'thoughtsPanel');
+    await expect(label).toHaveText('Thought for 6s');
+    await expect(toggle.locator('.activity-leading-glyph')).toBeVisible();
+    await expect(toggle.getByTestId('tool-site-mark')).toHaveCount(0);
+    await expect(page.locator(TURN.body)).toHaveCount(0);
+    await expect(panel).toBeHidden();
+
+    // Borderless, backgroundless, content-hugging trigger with `>` beside text.
+    await expect(page.locator(TURN.wrapper)).toHaveCSS('border-top-width', '0px');
+    await expect(page.locator(TURN.wrapper)).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    expect((await toggle.boundingBox()).height).toBeGreaterThanOrEqual(mobile ? 44 : 32);
+    const triggerGeom = await Promise.all([
+      label.boundingBox(),
+      arrow.boundingBox(),
+      toggle.boundingBox(),
+      page.locator('.msg-body').last().boundingBox(),
+    ]);
+    expect(triggerGeom[1].x - (triggerGeom[0].x + triggerGeom[0].width)).toBeLessThan(24);
+    expect(triggerGeom[2].width).toBeLessThan(triggerGeom[3].width * 0.7);
+
     await toggle.click();
     await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    await expect(panel).toBeVisible();
+    await expect(panel.locator(TURN.thoughtsTitle)).toHaveText('Thoughts');
     await expect(toolRow(page, 'output-polish')).toBeVisible();
-    const timeline = body.locator('.activity-timeline');
-    const timelineGeometry = await timeline.evaluate((node) => {
-      const style = getComputedStyle(node);
+
+    if (mobile) {
+      await expect(page.locator(TURN.thoughtsBackdrop)).toBeVisible();
+      await expect(panel.locator('.thoughts-sheet-handle')).toBeVisible();
+      const radius = await panel.evaluate((el) => parseFloat(getComputedStyle(el).borderTopLeftRadius));
+      expect(radius).toBeGreaterThanOrEqual(16);
+    } else {
+      await expect(page.locator('#appShell')).toHaveClass(/has-thoughts-open/);
+    }
+
+    const timelineGeometry = await panel.locator(TURN.timeline).evaluate((node) => {
+      const summaryTitle = node.querySelector('.activity-summary-title').getBoundingClientRect();
+      const summaryDetail = node.querySelector('.thinking-step-summary').getBoundingClientRect();
+      const bullet = node.querySelector('.activity-step-bullet').getBoundingClientRect();
+      const glyph = node.querySelector('.activity-summary-step > svg').getBoundingClientRect();
+      const toolLabel = node.querySelector('.tool-run-label').getBoundingClientRect();
+      const connector = getComputedStyle(node.firstElementChild, '::after');
       return {
-        border: parseFloat(style.borderInlineStartWidth),
-        padding: parseFloat(style.paddingInlineStart),
+        labelOffset: Math.abs(summaryTitle.x - toolLabel.x),
+        detailOffset: Math.abs(summaryTitle.x - summaryDetail.x),
+        bulletAlign: Math.abs((bullet.x + bullet.width / 2) - (glyph.x + glyph.width / 2)),
+        connector: connector.borderInlineStartStyle,
       };
     });
-    expect(timelineGeometry.border).toBe(0);
-    expect(timelineGeometry.padding).toBe(0);
-    for (let i = 0; i < 4; i++) await toggle.click();
-    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-    await toggle.click();
-    await expect.poll(() => body.evaluate((node) => node.getBoundingClientRect().height)).toBe(0);
-    /* Collapsed content leaves the accessibility tree (was `inert`). */
-    await expect(body).toHaveAttribute('aria-hidden', 'true');
+    expect(timelineGeometry.labelOffset).toBeLessThanOrEqual(2);
+    expect(timelineGeometry.detailOffset).toBeLessThanOrEqual(1);
+    expect(timelineGeometry.bulletAlign).toBeLessThanOrEqual(1.5);
+    expect(timelineGeometry.connector).toBe('none');
+
+    await page.keyboard.press('Escape');
+    await expect(panel).toBeHidden();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+
     await page.emulateMedia({ reducedMotion: 'reduce' });
-    /* RNW reports the media change asynchronously; let it reach the RN
-       reduced-motion hook before the toggle is pressed. */
-    await page.waitForFunction(() => matchMedia('(prefers-reduced-motion: reduce)').matches);
-    await page.evaluate(
-      () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
-    );
+    await expect(arrow).toHaveCSS('transition-property', 'none');
     await toggle.click();
-    /* Reduced motion: the body is fully shown on the first frame, no reveal. */
-    expect(await body.evaluate((node) => getComputedStyle(node).opacity)).toBe('1');
+    await expect(panel).toBeVisible();
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
@@ -80,20 +116,20 @@ for (const mobile of [false, true]) {
 test('internal tool output has no copy button or empty detail panel', async ({ page }) => {
   await prepareChatWorkbench(page, { messages: [message] });
   const bubble = page.locator('.msg.assistant').last();
-  await bubble.locator(TURN.toggle).click();
-  const row = bubble.getByTestId('tool-row-output-polish');
+  const panel = await openActivity(bubble);
+  const row = panel.getByTestId('tool-row-output-polish');
   await expect(row).toBeVisible();
   await expect(row).not.toHaveAttribute('aria-expanded', /.+/);
-  await expect(bubble.locator(TURN.detail)).toHaveCount(0);
-  await expect(bubble.locator(TURN.codeCopy)).toHaveCount(0);
-  await expect(bubble).not.toContainText('A concise comparison from the original sources.');
+  await expect(panel.locator(TURN.detail)).toHaveCount(0);
+  await expect(panel.locator(TURN.codeCopy)).toHaveCount(0);
+  await expect(panel).not.toContainText('A concise comparison from the original sources.');
 });
 
 for (const mobile of [false, true]) {
-  test(`reference activity caption is quiet and stops animating on completion (${mobile ? 'mobile' : 'desktop'})`, async ({
+  test(`live spark + two-tone search caption + domain-only source chips (${mobile ? 'mobile' : 'desktop'})`, async ({
     page,
   }) => {
-    await page.addInitScript(() => localStorage.setItem('socrates-theme', 'light'));
+    await page.addInitScript(() => localStorage.setItem('socrates-theme', 'dark'));
     const lead = '我会先核对官方发布页与原始资料，再按相同口径整理对比结果。';
     await prepareChatWorkbench(page, {
       lang: 'zh',
@@ -102,19 +138,22 @@ for (const mobile of [false, true]) {
         {
           clientId: 'reference-question',
           role: 'user',
-          rawText: '帮我比较几种模型，并核对原始资料。',
+          rawText: '搜索一下今日的 AI 圈的新闻',
         },
         {
           ...message,
           type: 'streaming',
           _streamSettled: false,
           rawText: lead + '\n\n',
-          _activity: { type: 'public_reasoning_summary', text: '核对官方发布信息，统一比较口径。' },
+          _activity: {
+            type: 'public_reasoning_summary',
+            text: "**Summarizing today's AI news**\n\n整理今日 AI 圈热点新闻",
+          },
           toolCalls: [
             {
               id: 'reference-search',
               name: 'web_search',
-              input: { query: '模型官方发布与评测说明' },
+              input: { query: 'OpenAI Anthropic Google DeepMind latest AI news' },
               textOffset: lead.length + 2,
             },
           ],
@@ -124,24 +163,30 @@ for (const mobile of [false, true]) {
     const wrapper = page.locator(TURN.wrapper);
     const surface = page.locator(TURN.surface);
     const caption = surface.locator(TURN.label);
-    const row = toolRow(page, 'reference-search');
-    await expect(wrapper).not.toHaveAttribute('data-live', 'true');
-    await expect(row.locator(TURN.spinner)).toHaveCount(1);
-    await expect(surface.locator(TURN.spinner)).toHaveCount(0);
-    /* Status is spoken as words: no status dots anywhere in the activity. */
+    const toggle = surface.locator(TURN.toggle);
+
+    await expect(wrapper).toHaveAttribute('data-live', 'true');
+    await expect(toggle.locator(TURN.spark)).toBeVisible();
+    await expect(toggle.locator('.activity-caption-verb')).toHaveText('正在搜索');
+    await expect(toggle.locator('.activity-caption-target')).toHaveText(
+      'OpenAI Anthropic Google DeepMind latest AI news',
+    );
+    await expect(caption).not.toContainText('"');
+    await expect(toggle.locator(TURN.spinner)).toHaveCount(0);
     await expect(surface.locator('.turn-activity-dot')).toHaveCount(0);
+
     await page.mouse.move(0, 0);
-    if (mobile) await page.screenshot({ path: 'test-results/activity-polish-live-mobile.png' });
-    else await page.screenshot({ path: 'test-results/activity-polish-live-desktop.png' });
-    await surface.locator(TURN.toggle).click();
-    const step = surface.locator(TURN.step).first();
-    await expect(step).toBeVisible();
-    await expect(surface.locator('.activity-timeline')).toHaveCSS('padding-inline-start', '0px');
-    const summary = await step.boundingBox();
-    const surfaceBox = await surface.boundingBox();
-    /* The activity list starts at the caption's text edge; no decorative
-       rail or extra inset competes with the answer column. */
-    expect(summary.x - surfaceBox.x).toBeLessThanOrEqual(24);
+    if (mobile) {
+      await page.screenshot({ path: 'test-results/activity-polish-live-mobile.png' });
+    } else {
+      await page.screenshot({ path: 'test-results/activity-polish-live-desktop.png' });
+    }
+
+    const panel = await openActivity(page);
+    await expect(panel.locator(TURN.step).first()).toBeVisible();
+    const liveRow = toolRow(page, 'reference-search');
+    await expect(liveRow.locator(TURN.spinner)).toHaveCount(1);
+
     await page.evaluate(() => {
       const messages = window.__socratesTestState.session().messages.map((entry) =>
         entry.role === 'assistant'
@@ -153,6 +198,21 @@ for (const mobile of [false, true]) {
                 ...call,
                 status: 'completed',
                 output: '已完成资料核对。',
+                results: [
+                  {
+                    title: 'OpenAI API Overview — Should Not Appear',
+                    url: 'https://docs.openai.com/api/overview',
+                    snippet: 'Long snippet text that must not appear in search UI.',
+                  },
+                  {
+                    title: 'Anthropic Research',
+                    url: 'https://www.anthropic.com/news',
+                  },
+                  {
+                    title: 'BBC Technology',
+                    url: 'https://news.bbc.co.uk/technology',
+                  },
+                ],
               })),
             }
           : entry,
@@ -160,21 +220,36 @@ for (const mobile of [false, true]) {
       window.__socratesTestState.patch({ session: { messages: messages } });
     });
     await publishChatRuntime(page, { type: 'state-synced', reason: 'reference-complete' });
+
     await expect(wrapper).not.toHaveAttribute('data-live', 'true');
-    await expect(row.locator(TURN.spinner)).toHaveCount(0);
     await expect(caption).not.toHaveAttribute('role', 'status');
-    await expect(surface.locator('.activity-timeline')).toHaveCSS('padding-inline-start', '0px');
-    await expect(surface.locator(TURN.toggle)).toHaveAttribute('aria-expanded', 'true');
-    await page.mouse.move(0, 0);
-    if (mobile)
+    await expect(caption).toHaveText('思考了 6 秒');
+    await expect(liveRow.locator(TURN.spinner)).toHaveCount(0);
+    await expect(liveRow.getByTestId('activity-source-preview')).toHaveCount(0);
+
+    if (mobile) {
       await page.screenshot({
         path: 'test-results/activity-polish-complete-mobile.png',
         animations: 'disabled',
       });
-    else
+    } else {
       await page.screenshot({
         path: 'test-results/activity-polish-complete-desktop.png',
         animations: 'disabled',
       });
+    }
+
+    // Expanding search row reveals ONLY compact [favicon] + second-level domain chips.
+    const detail = await openToolDetail(page, page, 'reference-search');
+    await expect(detail.getByTestId('tool-source-title')).toHaveCount(0);
+    await expect(detail.getByTestId('tool-sources-open')).toHaveCount(0);
+    await expect(detail.getByTestId('tool-source-host')).toHaveText([
+      'openai.com',
+      'anthropic.com',
+      'bbc.co.uk',
+    ]);
+    await expect(detail).not.toContainText('Should Not Appear');
+    await expect(detail).not.toContainText('Long snippet text');
+    await expect(detail).not.toContainText('https://');
   });
 }

@@ -192,50 +192,50 @@ test('a shared turn lays its tool rows out declaratively, read-only', async ({ p
      activity-row pass hides — without it the turn renders but reads inert. */
   await expect(body).toHaveClass(/is-declarative/);
 
-  // Completed tool bursts start compact; expand before inspecting their rows.
+  // Completed tool bursts start compact; opening opens the Thoughts drawer/sheet.
   const burstToggle = body.locator('[data-testid="turn-activity-toggle"]');
   await expect(burstToggle).toHaveAttribute('aria-expanded', 'false');
   await burstToggle.click();
+  const panel = page.locator('#thoughtsPanel');
+  await expect(panel).toBeVisible();
 
-  // Each call is its own row in the shared transcript.
-  await expect(body.locator('.rn-tool-row').first()).toBeVisible();
-  await expect(body.locator('.rn-tool-row')).toHaveCount(2);
+  // Each call is its own row in the shared turn's Thoughts panel.
+  await expect(panel.locator('.rn-tool-row').first()).toBeVisible();
+  await expect(panel.locator('.rn-tool-row')).toHaveCount(2);
 
-  // Both calls split at offset 0, so the run is the first thing in the turn
-  // and the answer prose follows it as one segment — never re-baked rows.
-  // (Compared whitespace-collapsed: the markdown renderer's block output
-  // separates paragraphs with one newline in textContent, not the source's two.)
+  // Answer prose remains one clean segment in the transcript without re-baked rows.
   const oneLine = (text) => text.replace(/\s+/g, ' ').trim();
   const order = await body
     .locator('.turn-evidence')
     .evaluate((el) =>
-      Array.from(el.querySelectorAll('.rn-tool-row, .tool-run-prose')).map((node) =>
+      Array.from(el.querySelectorAll('.rn-turn-activity, .tool-run-prose')).map((node) =>
         node.classList.contains('tool-run-prose')
           ? 'text:' + (node.textContent || '').replace(/\s+/g, ' ').trim()
-          : node.classList.contains('rn-tool-row')
-            ? 'tool:' + node.dataset.tcid
-            : 'other',
+          : 'activity',
       ),
     );
-  expect(order).toEqual(['tool:shared-search', 'tool:shared-fetch', 'text:' + oneLine(SHARED_RAW)]);
+  expect(order).toEqual(['activity', 'text:' + oneLine(SHARED_RAW)]);
 
-  await expect(body.getByTestId('thinking-step-title')).toContainText([
+  await expect(panel.getByTestId('thinking-step-title')).toContainText([
     'inverse square law',
     'arxiv.org',
   ]);
-  await body.getByTestId('tool-row-shared-search').click();
-  // Sources are shown only inside their own action detail.
-  await expect(page.getByTestId('tool-detail').getByTestId('tool-source')).toHaveCount(2);
-  await body.getByTestId('tool-row-shared-search').click();
+  await panel.getByTestId('tool-row-shared-search').click();
+  // Sources are shown only inside their own action detail as domain chips.
+  expect(await panel.getByTestId('tool-detail').getByTestId('tool-source').count()).toBeGreaterThanOrEqual(1);
+  await expect(panel.getByTestId('tool-detail').getByTestId('tool-source-title')).toHaveCount(0);
+  await panel.getByTestId('tool-row-shared-search').click();
 
   /* Read-only: nothing in the turn can retry a call or answer a permission
      prompt, and the legacy card chrome must not come back alongside. */
-  await expect(body.getByTestId('tool-error-retry')).toHaveCount(0);
-  await expect(body.locator('[data-approval-action]')).toHaveCount(0);
+  await expect(panel.getByTestId('tool-error-retry')).toHaveCount(0);
+  await expect(panel.locator('[data-approval-action]')).toHaveCount(0);
   await expect(body.locator('.agent-tool-card')).toHaveCount(0);
+  await expect(panel.locator('.agent-tool-card')).toHaveCount(0);
 
-  // The stylesheet's declarative block was authored against the chat surface;
-  // this is the share view's own frame of the same turn, expanded.
+  // Close the Thoughts drawer so the shared transcript frame stays clean before screenshot.
+  await page.keyboard.press('Escape');
+  await expect(panel).toBeHidden();
   await body.screenshot({ path: 'test-results/share-turn-declarative.png' });
 });
 
@@ -299,7 +299,10 @@ test('late compatibility mounting preserves the read-only shared transcript', as
     window.__socratesMountReactCompatibility();
   });
   const turn = page.locator('#msgList .msg.assistant').last();
-  await expect(turn.locator('.rn-tool-row')).toHaveCount(2);
+  await expect(turn.getByTestId('turn-activity-toggle')).toHaveCount(1);
+  await turn.getByTestId('turn-activity-toggle').click();
+  await expect(page.locator('#thoughtsPanel .rn-tool-row')).toHaveCount(2);
+  await page.keyboard.press('Escape');
   await expect(page.locator('#msgList .msg')).toHaveCount(3);
   await expect(page.locator('#composerRoot')).toBeHidden();
   await expect(page.locator('#msgList .msg-toolbar')).toHaveCount(0);

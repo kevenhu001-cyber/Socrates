@@ -499,55 +499,6 @@
 .rn-tool-row.is-live .tool-run-label {
   color: var(--ui-text-secondary);
 }
-.activity-source-preview {
-  display: grid;
-  min-width: 0;
-  gap: var(--ui-space-xs);
-  padding-inline-start: calc(18px + var(--ui-space-sm));
-}
-.activity-source-row {
-  display: grid;
-  grid-template-columns: 20px minmax(0, 1fr);
-  align-items: center;
-  gap: var(--ui-space-sm);
-  width: 100%;
-  min-width: 0;
-  padding: var(--ui-space-xs) 0;
-  border: 0;
-  background: transparent;
-  color: var(--ui-text-primary);
-  text-align: start;
-  font: inherit;
-  cursor: pointer;
-}
-.activity-source-row:hover .activity-source-title {
-  text-decoration: underline;
-}
-.activity-source-row:focus-visible {
-  outline: none;
-  box-shadow: var(--ui-focus-shadow);
-  border-radius: var(--ui-radius-row);
-}
-.activity-source-copy {
-  display: grid;
-  min-width: 0;
-  gap: var(--ui-space-xxs);
-}
-.activity-source-title,
-.activity-source-host {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-.activity-source-title {
-  font-size: var(--ui-text-ui);
-  line-height: var(--ui-text-ui-line);
-}
-.activity-source-host {
-  color: var(--ui-text-secondary);
-  font-size: var(--ui-font-size-xs);
-  line-height: var(--ui-text-ui-line);
-}
 .tool-run-trigger .tool-run-state {
   flex: 0 1 auto;
   min-width: 0;

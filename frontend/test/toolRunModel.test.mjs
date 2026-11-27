@@ -24,7 +24,13 @@ import {
   toolRunView,
   visualizationSpecKey,
 } from '../src/react/tool-run/toolRunModel.ts';
-import { toolRunGroupLabel, toolRunLabel } from '../src/legacy/toolPresentationModel.ts';
+import {
+  hostOf,
+  liveToolParts,
+  secondLevelDomainOf,
+  toolRunGroupLabel,
+  toolRunLabel,
+} from '../src/legacy/toolPresentationModel.ts';
 import { connectorActivityOf, connectorToolIdOf } from '../src/legacy/toolActivity.ts';
 
 const RAW = 'First paragraph.\n\nSecond paragraph here.';
@@ -1012,5 +1018,30 @@ test('connector actions use service marks and descriptive workflow labels', () =
   assert.equal(
     toolRunLabel({ name: 'oc_github_get_job_logs' }, 'done').text,
     'Read GitHub Actions workflow logs',
+  );
+});
+
+test('secondLevelDomainOf extracts registrable second-level domains cleanly', () => {
+  assert.equal(secondLevelDomainOf('https://docs.openai.com/api/overview'), 'openai.com');
+  assert.equal(secondLevelDomainOf('https://www.anthropic.com/news'), 'anthropic.com');
+  assert.equal(secondLevelDomainOf('https://news.bbc.co.uk/world'), 'bbc.co.uk');
+  assert.equal(secondLevelDomainOf('https://tech.sina.com.cn/a/b'), 'sina.com.cn');
+  assert.equal(secondLevelDomainOf('sub.example.test'), 'example.test');
+  assert.equal(secondLevelDomainOf('localhost:3000'), 'localhost');
+  assert.equal(hostOf('https://docs.openai.com/api'), 'docs.openai.com');
+});
+
+test('liveToolParts returns unquoted verb and target for Grok-style live captions', () => {
+  assert.deepEqual(
+    liveToolParts({ name: 'web_search', input: { query: 'OpenAI Anthropic Google' } }),
+    { verb: 'Searching', target: 'OpenAI Anthropic Google' },
+  );
+  assert.deepEqual(
+    liveToolParts({ name: 'web_fetch', input: { url: 'https://docs.openai.com/index' } }),
+    { verb: 'Reading', target: 'openai.com' },
+  );
+  assert.deepEqual(
+    liveToolParts({ name: 'Edit', input: { file_path: 'src/app/main.ts' } }),
+    { verb: 'Editing', target: 'main.ts' },
   );
 });
