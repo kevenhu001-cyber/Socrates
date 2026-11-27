@@ -42,14 +42,14 @@ test('Composer tools menu React mode hydrates #composerToolsMenu eagerly', async
   const mobileActions = await page
     .locator('#composerToolsMenu .composer-tools-mobile-items [data-composer-action]')
     .evaluateAll((els) => els.map((el) => el.getAttribute('data-composer-action')));
-  /* The phone sheet mirrors the reference's flat ordering: media/context
-     first (camera, photos, upload, createImage), then search, then the
-     remaining workflows. */
+  /* The floating phone list keeps media actions first, followed by effort,
+     connected capabilities, search and the remaining workflows. */
   expect(mobileActions).toEqual([
     'camera',
     'photos',
     'upload',
     'wechatFiles',
+    'reasoningEffort',
     'managePlugins',
     'skills',
     'webSearch',

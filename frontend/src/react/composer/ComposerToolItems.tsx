@@ -98,7 +98,7 @@ export function MobileToolRow({
         ) : null}
         {active ? (
           <Icon name="check" className="composer-tools-check composer-tools-active-check" />
-        ) : rightText || action === 'managePlugins' || action === 'skills' ? (
+        ) : !isToggle && (rightText || action === 'managePlugins' || action === 'skills') ? (
           <Icon name="chevronRight" size={16} className="composer-tools-row-arrow" />
         ) : null}
       </span>
