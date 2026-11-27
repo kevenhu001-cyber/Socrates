@@ -128,6 +128,7 @@
 }
 #appShell .composer-shell .composer-queue-banner {
   order: 0;
+  grid-area: queue;
 }
 #appShell .composer-shell .rich-composer > .tiptap,
 #appShell
@@ -136,9 +137,6 @@
   > :not(.composer-plugin-chips):not(.rich-composer-toolbar):not(.composer-queue-banner) {
   order: 1;
   min-width: 0;
-}
-#appShell .composer-shell .composer-plugin-chips {
-  order: 2;
 }
 #appShell .composer-shell .rich-composer-toolbar {
   display: none;
@@ -247,6 +245,7 @@
 
 /* ── Chip strip (web search, connectors) — under the editor ───────────── */
 #appShell .composer-shell .composer-plugin-chips {
+  order: 2;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -524,9 +523,6 @@
 /* ── Prompt Queue Banner (ChatGPT-style queued messages) ────────────────
    The banner is a shadcn card + Badge + ghost Buttons in
    `ComposerQueueBanner.tsx`; only its grid slot is the shell's business. */
-#appShell .composer-shell .composer-queue-banner {
-  grid-area: queue;
-}
 
 /* RN-7 — one line weight for every outline glyph on this surface. The
    icons come from several sources (viewBox 16/20/24, stroke 1.6–2.2), so the

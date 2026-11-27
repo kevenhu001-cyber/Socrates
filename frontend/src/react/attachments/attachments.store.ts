@@ -1,4 +1,4 @@
-import { useBridge, useBridgeSelector } from '../../store/index.ts';
+import { useBridgeSelector } from '../../store/index.ts';
 import { attachmentsState } from '../../legacy/attachmentsState.ts';
 import { getLegacyActions } from '../legacy/gateway.ts';
 import type { AttachmentEntry, AttachmentsSnapshot } from '../../legacy/attachmentsState.ts';
@@ -9,10 +9,6 @@ export function getAttachmentsSnapshot(): AttachmentsSnapshot {
 
 export function subscribeToAttachments(listener: () => void): () => void {
   return attachmentsState.subscribe(listener);
-}
-
-export function useAttachmentsSnapshot(): AttachmentsSnapshot {
-  return useBridge(attachmentsState);
 }
 
 export function useAttachments(): ReadonlyArray<AttachmentEntry> {

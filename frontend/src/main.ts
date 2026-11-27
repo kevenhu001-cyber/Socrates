@@ -31,7 +31,6 @@ import { initChatComposerReserve } from './legacy/scroll.ts';
 import { initKeyboardLift } from './legacy/keyboard/index.ts';
 import { initAndroidBridge } from './native/androidBridge.ts';
 import { initTopicFocusAssist } from './legacy/topicFocusAssist.ts';
-import { installComposerShapeMirror } from './legacy/composerShape.ts';
 import { installKeyboardShortcuts } from './legacy/keyboardShortcuts.ts';
 import { initSidebarDrag } from './legacy/sidebarResize.ts';
 import { initSidebarChrome } from './legacy/sidebarChrome.ts';
@@ -55,8 +54,6 @@ initCookieConsent({ privacyUrl: 'https://topodrive.top/privacy' });
 initLinkFavicons();
 
 installLayoutStateMirror();
-
-installComposerShapeMirror();
 
 wireScrollPill();
 

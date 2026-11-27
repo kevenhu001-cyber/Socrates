@@ -453,3 +453,26 @@ test('scheduled recommendation cards have one stylesheet owner', async () => {
     assert.doesNotMatch(await read(file), /\.scheduled-recommendation(?:s|-[\w-]+)?\b/);
   }
 });
+
+
+test('composer attachment visibility is React-owned and retired shape mirrors stay removed', async () => {
+  for (const path of [
+    'src/legacy/composerShape.ts',
+    'src/legacy/composerAnim.ts',
+    'src/react/composer-input/useComposerPresentation.ts',
+  ]) {
+    await assert.rejects(access(new URL(path, root)));
+  }
+  const [main, shell, row, chips, queue] = await Promise.all([
+    read('src/main.ts'),
+    read('src/react/composer-input/ComposerShell.tsx'),
+    read('src/react/attachments/AttachmentChipsRow.tsx'),
+    read('src/react/composer-input/ComposerPluginChips.tsx'),
+    read('src/react/composer-input/ComposerQueueBanner.tsx'),
+  ]);
+  for (const source of [main, shell, row, chips, queue]) {
+    assert.doesNotMatch(source, /syncComposerShellFlags|installComposerShapeMirror|composerAnim/);
+  }
+  assert.match(shell, /attachments\.length \? 'attachment-chips' : 'attachment-chips hidden'/);
+  assert.doesNotMatch(row, /getElementById|classList|useLayoutEffect|MutationObserver/);
+});

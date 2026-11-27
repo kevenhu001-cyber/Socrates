@@ -352,7 +352,10 @@ export function ComposerShell({
           compact={phone}
           topVisible={attachments.length > 0}
           top={
-            <div className="attachment-chips hidden" id="composerAttachmentChips">
+            <div
+              className={attachments.length ? 'attachment-chips' : 'attachment-chips hidden'}
+              id="composerAttachmentChips"
+            >
               <ComposerAttachmentChips />
             </div>
           }
