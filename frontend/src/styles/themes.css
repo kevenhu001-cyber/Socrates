@@ -601,7 +601,7 @@ html[data-theme='philosophy'][data-mode='light'] {
   /* Warm tertiary, two steps darker than the first draft. The parchment
      page is rgb(247 244 238) and the sunken rung rgb(232 227 214); the old
      value (125 117 104) read at 4.14:1 and 3.62:1, under AA. This one clears
-     4.5:1 on all four rungs (page 5.31, card 5.74, sunken 4.64, bubble 4.82)
+     4.5:1 on all four rungs (page 5.31, card 5.64, sunken 4.55, bubble 4.82)
      while staying on the palette hue. */
   --ui-text-muted: rgb(108 100 88);
   --ui-text-tertiary: rgb(108 100 88);
