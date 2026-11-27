@@ -3,13 +3,6 @@
   width: 16px;
   height: calc(var(--ui-control-badge) - 4px);
 }
-[data-mode='dark'] .theme-toggle .theme-sun {
-  display: none;
-}
-[data-mode='light'] .theme-toggle .theme-moon {
-  display: none;
-}
-
 /*
  * polish/sidebar.css — shared sidebar affordances and account interactions.
  *
@@ -91,9 +84,7 @@
    Sun and moon used to swap through `display: none`, which is a cut. Both
    glyphs now stay in the tree, stacked in the control, and cross-fade with a
    quarter turn: the eye sees the same 20px slot change state instead of two
-   different marks appearing in place. The legacy `display: none` pair is
-   overridden by the id selector, so the hidden glyph is still removed from
-   the a11y tree by the button's own aria-label. */
+   different marks appearing in place. The button owns its accessible label. */
 #themeToggle {
   position: relative;
 }

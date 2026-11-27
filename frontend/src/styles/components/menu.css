@@ -1,11 +1,4 @@
 /* Compact action menu used by the + button in both rounded composers. */
-.composer-tools-menu {
-  position: fixed;
-  z-index: calc(var(--ui-z-sheet) - 2);
-  box-sizing: border-box;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
 .composer-tools-menu.hidden {
   display: none;
 }
@@ -64,7 +57,6 @@
 }
 
 
-.composer-tools-menu,
 .sidebar-more-popover,
 .display-prefs-popover,
 .tag-editor-popover {
@@ -119,9 +111,10 @@
 }
 
 body #composerToolsMenu.composer-tools-menu {
+  box-sizing: border-box;
   position: fixed;
   z-index: var(--ui-z-popover);
-  width: 260px;
+  width: 240px;
   min-width: 0;
   max-width: calc(100vw - 24px);
   max-height: min(75dvh, 520px);
@@ -405,10 +398,6 @@ body #composerToolsMenu.composer-tools-menu {
   #composerToolsMenu .composer-tools-mobile-items {
     display: none;
   }
-  body #composerToolsMenu.composer-tools-menu {
-    width: 240px;
-    min-width: 0;
-  }
 }
 
 @media (max-width: 768px) {
@@ -432,7 +421,6 @@ body #composerToolsMenu.composer-tools-menu {
     border-radius: var(--ui-radius-composer-desktop);
     background: var(--ui-bg-ask);
     box-shadow: var(--ui-shadow-popover);
-    transform-origin: center bottom;
   }
 
   /* Mobile Rows List */
@@ -559,6 +547,7 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side='above'] {
 body #composerToolsMenu.composer-tools-menu[data-menu-side='sheet'] {
   --_ct-dir: var(--ui-step-150);
   --_ct-scale: 1;
+  transform-origin: center bottom;
 }
 @starting-style {
   body #composerToolsMenu.composer-tools-menu:not(.hidden) {
