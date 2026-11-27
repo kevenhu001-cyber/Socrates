@@ -544,6 +544,10 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side='sheet'] {
   --_ct-scale: 1;
   transform-origin: center bottom;
 }
+body #composerToolsMenu.composer-tools-menu:is([data-menu-side='mobile-below'], [data-menu-side='mobile-overlay']) {
+  --_ct-scale: 1;
+  transform-origin: center top;
+}
 @starting-style {
   body #composerToolsMenu.composer-tools-menu:not(.hidden) {
     opacity: 0;

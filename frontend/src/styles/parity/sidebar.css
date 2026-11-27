@@ -776,6 +776,7 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
        doubled to the baseline's 6px. */
     padding: 6px 10px;
     border: 0;
+    border-radius: var(--ui-radius-row);
     background: transparent;
     /* The reference sets its destination labels in the primary ink, not a
        secondary grey: the rail is a list of places to go, and the rail's
@@ -1655,7 +1656,6 @@ html[data-detail-open='true'][data-detail-layout='docked'] #appShell .main {
   #appShell #sidebar .recent-item {
     gap: 0;
     padding-inline: 10px;
-    border-radius: var(--ui-radius-row);
     color: var(--foreground);
     transition:
       background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
