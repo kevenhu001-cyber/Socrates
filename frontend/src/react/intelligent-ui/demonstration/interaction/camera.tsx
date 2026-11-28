@@ -1,6 +1,6 @@
 import { useId, useState } from 'react';
 import { NativeControl } from '../../../ui/NativeControl';
-import { Label } from '../../../ui/shadcn/label';
+import { Label } from '../../../ui/v3';
 import { i18n } from '../../../../ui/legacyI18n.ts';
 
 export function useSurfaceCamera() {

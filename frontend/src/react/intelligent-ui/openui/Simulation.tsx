@@ -1,4 +1,4 @@
-import { Label } from '../../ui/shadcn/label';
+import { Label } from '../../ui/v3';
 import { NativeControl } from '../../ui/NativeControl';
 import { defineComponent } from '@openuidev/react-lang';
 import { useEffect, useId, useState } from 'react';

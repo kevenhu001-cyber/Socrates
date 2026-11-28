@@ -1,4 +1,4 @@
-import { Label as ShadcnLabel } from '../../ui/shadcn/label';
+import { Label as ShadcnLabel } from '../../ui/v3';
 import { Checkbox } from '../../ui/v3';
 import { Button as UiButton } from '../../ui/Button';
 import type { useWorkspaceDispatch } from './workspace.hooks';

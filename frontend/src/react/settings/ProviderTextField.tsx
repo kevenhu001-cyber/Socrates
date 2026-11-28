@@ -1,5 +1,5 @@
 import { Input } from '../ui/v3';
-import { Field, FieldError, FieldLabel } from '../ui/shadcn/field';
+import { Field, FieldError, FieldLabel } from '../ui/v3';
 interface ProviderTextFieldProps {
   id: string;
   field: 'label' | 'url' | 'key' | 'model';
