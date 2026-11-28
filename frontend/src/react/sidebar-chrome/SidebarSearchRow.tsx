@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '../ui/shadcn/button';
-import { Input } from '../ui/shadcn/input';
+import { Input } from '../ui/v3';
 import { Icon } from '../../legacy/Icon';
 import { i18n } from '../../ui/legacyI18n.ts';
 import { useAllSessionMistakes } from '../tutor/useAllSessionMistakes';

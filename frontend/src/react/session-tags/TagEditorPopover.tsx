@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { XIcon } from 'lucide-react';
 import { Badge } from '../ui/v3';
 import { Button } from '../ui/shadcn/button';
-import { Input } from '../ui/shadcn/input';
+import { Input } from '../ui/v3';
 
 export interface TagEditorLabels {
   title: string;

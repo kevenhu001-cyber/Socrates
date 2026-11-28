@@ -1,4 +1,4 @@
-import { Input as ShadcnInput } from '../ui/shadcn/input';
+import { Input as ShadcnInput } from '../ui/v3';
 import { Button as UiButton } from '../ui/Button';
 import React from 'react';
 import { t } from '../../ui/legacyI18n.ts';

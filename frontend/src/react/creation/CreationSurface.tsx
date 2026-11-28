@@ -5,15 +5,9 @@ import { nativeIslandFrameAttributes } from '../../ui/nativeIslandFrame';
 import { Badge } from '../ui/v3';
 import { Button } from '../ui/shadcn/button';
 import { Field, FieldGroup, FieldLabel } from '../ui/shadcn/field';
-import { Input } from '../ui/shadcn/input';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '../ui/shadcn/dropdown-menu';
-import { NativeSelect, NativeSelectOption } from '../ui/shadcn/native-select';
+import { Input } from '../ui/v3';
+import { Menu } from '../ui/v3';
+import { NativeSelect, NativeSelectOption } from '../ui/v3';
 import { Textarea } from '../ui/v3';
 import { PageViewToggle } from '../ui/page/PageTabs';
 import { PageEmptyState } from '../ui/page/PageEmptyState';
@@ -235,36 +229,31 @@ function CreationSitesTable({
               {visibility}
             </Badge>
             <div className="creation-row-actions">
-              <DropdownMenu modal={false}>
-                <DropdownMenuTrigger
-                  render={
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      aria-label={`${text.name}: ${item.title || ''}`}
-                    >
-                      <Icon name="more" size={16} data-icon="inline-start" />
-                    </Button>
-                  }
-                />
-                <DropdownMenuContent align="end" className="w-36">
-                  <DropdownMenuGroup>
-                    <DropdownMenuItem nativeButton onClick={() => onAction('preview', item.id)}>
-                      {text.preview}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem nativeButton onClick={() => onAction('edit', item.id)}>
-                      {text.edit}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      nativeButton
-                      variant="destructive"
-                      onClick={() => onAction('delete', item.id)}
-                    >
-                      {text.delete}
-                    </DropdownMenuItem>
-                  </DropdownMenuGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Menu modal={false}>
+                <Menu.Trigger>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={`${text.name}: ${item.title || ''}`}
+                  >
+                    <Icon name="more" size={16} data-icon="inline-start" />
+                  </Button>
+                </Menu.Trigger>
+                <Menu.Content align="end" minWidth={144}>
+                  <Menu.Item onSelect={() => onAction('preview', item.id)}>
+                    {text.preview}
+                  </Menu.Item>
+                  <Menu.Item onSelect={() => onAction('edit', item.id)}>
+                    {text.edit}
+                  </Menu.Item>
+                  <Menu.Item
+                    className="text-destructive"
+                    onSelect={() => onAction('delete', item.id)}
+                  >
+                    {text.delete}
+                  </Menu.Item>
+                </Menu.Content>
+              </Menu>
             </div>
           </div>
         );
