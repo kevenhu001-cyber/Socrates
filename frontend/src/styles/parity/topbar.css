@@ -26,7 +26,7 @@
   justify-content: center;
   width: 28px;
   height: var(--ui-control-sm);
-  border-radius: var(--ui-radius-xs);
+  border-radius: var(--ui-radius-row);
   color: var(--ui-text-primary);
   transition:
     background-color var(--ui-duration-fast) var(--ui-ease-out),
@@ -57,7 +57,7 @@ body.admin-active #shareBtn {
  * (packages/ui/src/shell/TopBar.tsx): the model switcher, the 聊天 / 辅导
  * segmented track, the tutor stage and practice capsules, find, share and
  * the phone new-chat action paint themselves from the site tokens. This
- * owner keeps what only the page can do: the 48px borderless bar,
+ * owner keeps what only the page can do: the 52px borderless bar,
  * the left / centre / right groups, the centred mode track, phone
  * placement, and hiding chat chrome on surfaces that are not the chat.
  */
@@ -186,12 +186,6 @@ html[data-main-view='settingsPage'] #appShell .top-bar {
       margin-left: 0;
     }
   }
-
-  /* ── Model switcher ──────────────────────────────────────────────────── */
-  /* The baseline above outranks the global :focus-visible contract, so the
-     ring is re-declared here against the same token. */
-  /* ── Right actions ───────────────────────────────────────────────────── */
-  /* Icon-only on desktop (sidebar-nav.spec contract). */
 
   /* Directory pages supply their own heading below the compact top bar. */
   html:is(

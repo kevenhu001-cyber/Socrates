@@ -1,5 +1,5 @@
 import { Switch } from '../ui/shadcn/switch';
-import { Field, FieldLabel } from '../ui/shadcn/field';
+import { SettingsRow } from '../layout/SettingsRow';
 import { useProviderListState } from './useProviderListState';
 import { useProviderConfigStore } from '../../config/providerConfig.store';
 import { toggleExternalApi } from './settings.service';
@@ -50,19 +50,20 @@ export function ModelsSettingsPane({
             )}
           </p>
         </div>
-        <div className="settings-card settings-card--toggle">
-          <Field orientation="horizontal">
-            <FieldLabel id="stgToggle" htmlFor={TRACK_ID} className="flex-1">
-              {label('使用外部 API', 'Use External API')}
-            </FieldLabel>
+        <SettingsRow
+          labelId="stgToggle"
+          htmlFor={TRACK_ID}
+          label={label('使用外部 API', 'Use External API')}
+          className="settings-choice settings-choice--switch"
+          control={
             <Switch
               id={TRACK_ID}
               aria-labelledby="stgToggle"
               checked={externalApiOn}
               onCheckedChange={toggleExternalApi}
             />
-          </Field>
-        </div>
+          }
+        />
       </section>
       <ModelsProviderSection
         externalApiOn={externalApiOn}

@@ -6,34 +6,27 @@
  */
 
 #appShell .sidebar-view-btn {
-  border-radius: var(--ui-radius-control, 8px);
+  border-radius: var(--ui-radius-row);
   color: var(--ui-text-tertiary);
 }
 #appShell .sidebar-view-btn:hover {
-  background: var(--accent);
-  color: var(--foreground);
+  background: var(--ui-bg-hover);
+  color: var(--ui-text-primary);
 }
 #appShell .sidebar-view-btn.active {
-  background: var(--ui-bg-surface);
-  color: var(--foreground);
+  background: var(--ui-bg-selected);
+  color: var(--ui-text-primary);
 }
 
 /* ── Recents — tighter rows, quieter labels ── */
-/* Reference drawer affordances: compose / overflow icons on the Recents
-   header. */
-/* The reference drawer footer is identity-only; theme/language/settings
-   stay available on the desktop footer and the profile surfaces. */
-/* Current session uses the same quiet tonal wash as primary navigation.
-   Removing the old accent stripe keeps the drawer monochrome and prevents
-   the selected conversation from competing with the transcript. */
 #appShell .recent-tag-pill {
-  border-radius: var(--ui-radius-sm, 6px);
+  border-radius: var(--ui-radius-row);
   font-size: var(--ui-font-size-xxs);
 }
 #appShell :is(.recent-item-tag-btn, .recent-item-archive, .recent-item-del) {
   width: 24px;
   height: 24px;
-  border-radius: var(--ui-radius-sm, 6px);
+  border-radius: var(--ui-radius-row);
 }
 #appShell :is(.recent-item-tag-btn, .recent-item-archive, .recent-item-del) svg {
   width: 14px;
@@ -45,9 +38,6 @@
 }
 
 /* ── Footer — hairline separation, compact identity row ── */
-/* The account row is a static identity label now — settings live behind
-   the gear button. Kill the button affordances on both the React-rendered
-   element and its .user-row host (legacy gives that row pointer + hover). */
 #appShell .sidebar-account-static {
   cursor: default;
 }
@@ -55,31 +45,19 @@
   background: transparent;
 }
 
-/* Free-tier upgrade pill — removed. The sidebar drawer footer no longer
-   carries an Upgrade button, and the account menu no longer carries the
-   pricing entry point either, so the drawer has no upgrade surface at all
-   (the pill had two competing presentations: solid blue in
-   parity/sidebar.css, outlined here). */
-
 /* ── More popover ── */
 #appShell .sidebar-more-popover {
   border-radius: var(--ui-radius-popover);
-  border: 1px solid var(--ui-border-subtle);
+  border: 1px solid var(--ui-border-default);
   box-shadow: var(--ui-shadow-menu);
   padding: 4px;
 }
 #appShell .sidebar-more-item {
-  border-radius: var(--ui-radius-control, 8px);
+  border-radius: var(--ui-radius-row);
   min-height: 34px;
 }
 
-/* ── Empty state (mobile) — centred text ── */
-
-/* ── Theme toggle: one icon changing meaning ─────────────────────────────
-   Sun and moon used to swap through `display: none`, which is a cut. Both
-   glyphs now stay in the tree, stacked in the control, and cross-fade with a
-   quarter turn: the eye sees the same 16px slot change state instead of two
-   different marks appearing in place. The button owns its accessible label. */
+/* ── Theme toggle: one icon changing meaning ───────────────────────────── */
 #themeToggle {
   position: relative;
 }
@@ -134,7 +112,7 @@
 }
 #appShell .sidebar-account-chevron {
   margin-inline-start: auto;
-  color: var(--foreground);
+  color: var(--ui-text-secondary);
 }
 #appShell .collapsed .sidebar-account-chevron {
   display: none;
@@ -152,7 +130,7 @@
 }
 #appShell .recents-page-status button {
   border: 0;
-  border-radius: var(--ui-radius-control);
+  border-radius: var(--ui-radius-row);
   background: transparent;
   color: var(--ui-text-secondary);
   cursor: pointer;
@@ -161,8 +139,8 @@
 }
 #appShell .recents-page-status button:hover,
 #appShell .recents-page-status button:focus-visible {
-  background: var(--ui-fill);
-  color: var(--foreground);
+  background: var(--ui-bg-hover);
+  color: var(--ui-text-primary);
 }
 @media (max-width: 768px) {
   #appShell .sidebar-quick-settings {
@@ -181,7 +159,7 @@
 #appShell .recents-search-all button {
   border: none;
   background: transparent;
-  color: var(--foreground);
+  color: var(--ui-text-primary);
   cursor: pointer;
   font: inherit;
   font-weight: var(--ui-font-weight-medium);

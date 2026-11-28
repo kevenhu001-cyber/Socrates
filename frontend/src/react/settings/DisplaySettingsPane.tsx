@@ -3,6 +3,7 @@ import { Switch } from '../ui/shadcn/switch';
 import { Label as ShadcnLabel } from '../ui/shadcn/label';
 import { NativeControl as ShadcnNativeControl } from '../ui/NativeControl';
 import { Button } from '../ui/shadcn/button';
+import { SettingsRow } from '../layout/SettingsRow';
 import {
   DISPLAY_FONT_STEPS,
   DISPLAY_WIDTH_STEPS,
@@ -34,87 +35,105 @@ export function DisplaySettingsPane({ hidden, label }: SettingsPaneProps) {
             )}
           </p>
         </div>
-        <div className="settings-choice settings-choice--segmented">
-          <span className="settings-choice-label" id="settings-font-size-label">
-            {label('文字大小', 'Text size')}
-          </span>
-          <PageTabs
-            ariaLabel={label('文字大小', 'Text size')}
-            value={String(display.font)}
-            onChange={(val) => settingsPreferenceActions.setFont(Number(val))}
-            items={DISPLAY_FONT_STEPS.map((step, index) => ({
-              value: String(step),
-              label: FONT_LABELS[index],
-            }))}
-          />
-        </div>
-        <div className="settings-choice settings-choice--segmented">
-          <span className="settings-choice-label" id="settings-content-width-label">
-            {label('内容宽度', 'Content width')}
-          </span>
-          <PageTabs
-            ariaLabel={label('内容宽度', 'Content width')}
-            value={String(display.width)}
-            onChange={(val) => settingsPreferenceActions.setWidth(Number(val))}
-            items={DISPLAY_WIDTH_STEPS.map((step, index) => ({
-              value: String(step),
-              label: WIDTH_LABELS[index],
-            }))}
-          />
-        </div>
-        <div className="settings-choice settings-choice--switch">
-          <ShadcnLabel htmlFor="settings-conversation-grid">{gridLabel}</ShadcnLabel>
-          <Switch
-            id="settings-conversation-grid"
-            aria-label={gridLabel}
-            checked={display.showGrid}
-            onCheckedChange={settingsPreferenceActions.setGrid}
-          />
-        </div>
-        <div className="settings-choice settings-choice--color">
-          <span className="settings-choice-label">{label('深色背景', 'Dark background')}</span>
-          <div className="settings-bg-pickers">
-            <ShadcnLabel className="settings-bg-picker">
-              <ShadcnNativeControl
-                type="color"
-                value={display.darkBg || '#09090b'}
-                onChange={(event) =>
-                  settingsPreferenceActions.setDarkBackground(event.target.value)
-                }
-              />
-              <span>{label('深色', 'Dark')}</span>
-            </ShadcnLabel>
-            <Button
-              variant="outline"
-              type="button"
-              onClick={() => settingsPreferenceActions.resetDarkBackground()}
-            >
-              {label('重置', 'Reset')}
-            </Button>
-          </div>
-        </div>
-        <div className="settings-choice settings-choice--color">
-          <span className="settings-choice-label">{label('浅色背景', 'Light background')}</span>
-          <div className="settings-bg-pickers">
-            <ShadcnLabel className="settings-bg-picker">
-              <ShadcnNativeControl
-                type="color"
-                value={display.lightBg || '#ffffff'}
-                onChange={(event) =>
-                  settingsPreferenceActions.setLightBackground(event.target.value)
-                }
-              />
-              <span>{label('浅色', 'Light')}</span>
-            </ShadcnLabel>
-            <Button
-              variant="outline"
-              type="button"
-              onClick={() => settingsPreferenceActions.resetLightBackground()}
-            >
-              {label('重置', 'Reset')}
-            </Button>
-          </div>
-        </div>
+        <SettingsRow
+          labelId="settings-font-size-label"
+          label={label('文字大小', 'Text size')}
+          labelClassName="settings-choice-label"
+          className="settings-choice settings-choice--segmented"
+          control={
+            <PageTabs
+              ariaLabel={label('文字大小', 'Text size')}
+              value={String(display.font)}
+              onChange={(val) => settingsPreferenceActions.setFont(Number(val))}
+              items={DISPLAY_FONT_STEPS.map((step, index) => ({
+                value: String(step),
+                label: FONT_LABELS[index],
+              }))}
+            />
+          }
+        />
+        <SettingsRow
+          labelId="settings-content-width-label"
+          label={label('内容宽度', 'Content width')}
+          labelClassName="settings-choice-label"
+          className="settings-choice settings-choice--segmented"
+          control={
+            <PageTabs
+              ariaLabel={label('内容宽度', 'Content width')}
+              value={String(display.width)}
+              onChange={(val) => settingsPreferenceActions.setWidth(Number(val))}
+              items={DISPLAY_WIDTH_STEPS.map((step, index) => ({
+                value: String(step),
+                label: WIDTH_LABELS[index],
+              }))}
+            />
+          }
+        />
+        <SettingsRow
+          htmlFor="settings-conversation-grid"
+          label={gridLabel}
+          className="settings-choice settings-choice--switch"
+          control={
+            <Switch
+              id="settings-conversation-grid"
+              aria-label={gridLabel}
+              checked={display.showGrid}
+              onCheckedChange={settingsPreferenceActions.setGrid}
+            />
+          }
+        />
+        <SettingsRow
+          label={label('深色背景', 'Dark background')}
+          labelClassName="settings-choice-label"
+          className="settings-choice settings-choice--color"
+          control={
+            <div className="settings-bg-pickers">
+              <ShadcnLabel className="settings-bg-picker">
+                <ShadcnNativeControl
+                  type="color"
+                  value={display.darkBg || '#09090b'}
+                  onChange={(event) =>
+                    settingsPreferenceActions.setDarkBackground(event.target.value)
+                  }
+                />
+                <span>{label('深色', 'Dark')}</span>
+              </ShadcnLabel>
+              <Button
+                variant="outline"
+                type="button"
+                onClick={() => settingsPreferenceActions.resetDarkBackground()}
+              >
+                {label('重置', 'Reset')}
+              </Button>
+            </div>
+          }
+        />
+        <SettingsRow
+          label={label('浅色背景', 'Light background')}
+          labelClassName="settings-choice-label"
+          className="settings-choice settings-choice--color"
+          control={
+            <div className="settings-bg-pickers">
+              <ShadcnLabel className="settings-bg-picker">
+                <ShadcnNativeControl
+                  type="color"
+                  value={display.lightBg || '#ffffff'}
+                  onChange={(event) =>
+                    settingsPreferenceActions.setLightBackground(event.target.value)
+                  }
+                />
+                <span>{label('浅色', 'Light')}</span>
+              </ShadcnLabel>
+              <Button
+                variant="outline"
+                type="button"
+                onClick={() => settingsPreferenceActions.resetLightBackground()}
+              >
+                {label('重置', 'Reset')}
+              </Button>
+            </div>
+          }
+        />
       </section>
     </section>
   );

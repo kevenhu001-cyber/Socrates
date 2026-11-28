@@ -5,11 +5,9 @@ import type { useWorkspaceDispatch } from './workspace.hooks';
 import type { ProjectItem } from './types';
 import { i18n, MoreIcon, projectMeta } from './workspaceUi';
 import { PageEmptyState } from '../../ui/page/PageEmptyState';
-import { PageFrame } from '../../ui/page/PageFrame';
-import { PageHeader } from '../../ui/page/PageHeader';
 import { PageSearchField } from '../../ui/page/PageSearchField';
 import { PageTabs } from '../../ui/page/PageTabs';
-import { PageToolbar } from '../../ui/page/PageToolbar';
+import { PageShell } from '../../layout/PageShell';
 
 type ProjectScope = 'all' | 'owned' | 'shared';
 
@@ -129,43 +127,46 @@ function ProjectsView({
   }
 
   return (
-    <PageFrame className="projects-directory" aria-labelledby="projects-directory-title">
-      <PageHeader
-        titleId="projects-directory-title"
-        title={i18n('sidebar.spaces.title', 'Projects')}
-        description={i18n(
-          'projects.directoryDesc',
-          'Keep related chats, files, and instructions together.',
-        )}
-        actions={
-          <Button
-            variant="default"
-            type="button"
-            className="projects-create-button"
-            onClick={() => dispatch.createProject()}
-          >
-            <Icon name="plus" size={18} />
-            <span>{i18n('projects.new', 'New')}</span>
-          </Button>
-        }
-      />
-      <PageToolbar>
-        <PageSearchField
-          label={i18n('projects.search', 'Search projects')}
-          query={query}
-          onQuery={setQuery}
-        />
-        <div className="ui-page-toolbar-end">
-          <PageTabs
-            items={scopeItems}
-            value={scope}
-            onChange={setScope}
-            ariaLabel={i18n('projects.filter', 'Project filter')}
+    <PageShell
+      titleId="projects-directory-title"
+      title={i18n('sidebar.spaces.title', 'Projects')}
+      description={i18n(
+        'projects.directoryDesc',
+        'Keep related chats, files, and instructions together.',
+      )}
+      maxWidth="wide"
+      className="projects-directory"
+      actions={
+        <Button
+          variant="default"
+          type="button"
+          className="projects-create-button"
+          onClick={() => dispatch.createProject()}
+        >
+          <Icon name="plus" size={18} />
+          <span>{i18n('projects.new', 'New')}</span>
+        </Button>
+      }
+      toolbar={
+        <>
+          <PageSearchField
+            label={i18n('projects.search', 'Search projects')}
+            query={query}
+            onQuery={setQuery}
           />
-        </div>
-      </PageToolbar>
+          <div className="ui-page-toolbar-end">
+            <PageTabs
+              items={scopeItems}
+              value={scope}
+              onChange={setScope}
+              ariaLabel={i18n('projects.filter', 'Project filter')}
+            />
+          </div>
+        </>
+      }
+    >
       {body}
-    </PageFrame>
+    </PageShell>
   );
 }
 

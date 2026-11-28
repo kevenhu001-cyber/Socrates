@@ -224,8 +224,8 @@ export const darkPalette: ThemePalette = {
     default: '0 0% 18.04%',
     strong: '0 0% 27.06%',
   },
-  danger: '1 80% 70%',
-  success: '90 58% 49%',
+  danger: '0 91% 71%',
+  success: '142 69% 58%',
   muted: '0 0% 60%',
   onAccent: '0 0% 3.92%',
 };

@@ -45,9 +45,9 @@
   width: 100%;
   padding: var(--ui-space-md);
   border: 1px solid var(--ui-border-default);
-  border-radius: var(--ui-radius-xl);
-  background: var(--ui-bg-raised);
-  box-shadow: var(--ui-elevation-raised);
+  border-radius: var(--ui-radius-md);
+  background: transparent;
+  box-shadow: none;
   overflow-wrap: anywhere;
 }
 .tool-approval-heading {
@@ -125,9 +125,9 @@
   padding: 0;
   overflow: hidden;
   border: 1px solid var(--ui-border-default);
-  border-radius: var(--ui-radius-xl);
-  background: var(--ui-bg-raised);
-  box-shadow: var(--ui-elevation-raised);
+  border-radius: var(--ui-radius-md);
+  background: transparent;
+  box-shadow: none;
 }
 .exec-artifact-html-frame {
   display: block;

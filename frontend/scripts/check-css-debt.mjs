@@ -85,7 +85,11 @@ const NESTED_MANIFESTS = {
 
 // These build-time imports are expanded by Tailwind, not loaded over the
 // network. Keep the list explicit so the split-load proof includes them.
-const PACKAGE_CSS = new Set(['tailwindcss/theme.css', 'tailwindcss/utilities.css']);
+const PACKAGE_CSS = new Set([
+  'tailwindcss/theme.css',
+  'tailwindcss/utilities.css',
+  '@openai/apps-sdk-ui/css',
+]);
 
 /* The pinned children of a stylesheet: the aggregate manifest if it has one,
  * the nested manifest if it has one, nothing if it is a leaf. */

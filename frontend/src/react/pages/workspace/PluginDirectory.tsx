@@ -15,11 +15,9 @@ import {
   pluginDescription,
 } from './pluginDetailContent';
 import { PageEmptyState } from '../../ui/page/PageEmptyState';
-import { PageFrame } from '../../ui/page/PageFrame';
-import { PageHeader } from '../../ui/page/PageHeader';
 import { PageSearchField } from '../../ui/page/PageSearchField';
 import { PageTabs } from '../../ui/page/PageTabs';
-import { PageToolbar } from '../../ui/page/PageToolbar';
+import { PageShell } from '../../layout/PageShell';
 
 interface PluginDirectoryProps {
   readonly plugins: ReadonlyArray<PluginItem>;
@@ -171,38 +169,36 @@ export function PluginDirectory({
   const searchLabel = i18n('plugins.search', 'Search plugins');
 
   return (
-    <PageFrame className="plugin-directory" aria-labelledby="plugin-directory-title">
-      <PageHeader
-        titleId="plugin-directory-title"
-        title={i18n('sidebar.plugins.title', 'Plugins')}
-        description={i18n(
-          'plugins.directoryDesc',
-          'Connect apps so Socrates can use them in chat.',
-        )}
-        actions={<PluginDirectoryAddAction setQuery={setQuery} setScope={setScope} />}
-      />
-
-      <PageToolbar>
-        <PageSearchField
-          className="plugin-directory-search"
-          label={searchLabel}
-          query={query}
-          onQuery={setQuery}
-        />
-        <div className="ui-page-toolbar-end">
-          <PageTabs
-            className="plugin-directory-tabs"
-            items={[
-              { value: 'public', label: i18n('plugins.public', 'Public') },
-              { value: 'personal', label: i18n('plugins.personal', 'Personal') },
-            ]}
-            value={scope}
-            onChange={setScope}
-            ariaLabel={i18n('plugins.allPlugins', 'All plugins')}
+    <PageShell
+      titleId="plugin-directory-title"
+      title={i18n('sidebar.plugins.title', 'Plugins')}
+      description={i18n('plugins.directoryDesc', 'Connect apps so Socrates can use them in chat.')}
+      maxWidth="wide"
+      className="plugin-directory"
+      actions={<PluginDirectoryAddAction setQuery={setQuery} setScope={setScope} />}
+      toolbar={
+        <>
+          <PageSearchField
+            className="plugin-directory-search"
+            label={searchLabel}
+            query={query}
+            onQuery={setQuery}
           />
-        </div>
-      </PageToolbar>
-
+          <div className="ui-page-toolbar-end">
+            <PageTabs
+              className="plugin-directory-tabs"
+              items={[
+                { value: 'public', label: i18n('plugins.public', 'Public') },
+                { value: 'personal', label: i18n('plugins.personal', 'Personal') },
+              ]}
+              value={scope}
+              onChange={setScope}
+              ariaLabel={i18n('plugins.allPlugins', 'All plugins')}
+            />
+          </div>
+        </>
+      }
+    >
       {browse ? (
         <InstalledPluginStrip
           plugins={installedPlugins}
@@ -232,7 +228,7 @@ export function PluginDirectory({
           {i18n('plugins.serverSetupNeeded', 'Connector service needs setup')}
         </p>
       ) : null}
-    </PageFrame>
+    </PageShell>
   );
 }
 

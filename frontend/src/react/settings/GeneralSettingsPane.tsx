@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { FieldGroup } from '../ui/shadcn/field';
-import { Label } from '../ui/shadcn/label';
 import { Switch } from '../ui/shadcn/switch';
 import { PreferenceSelect } from './PreferenceSelect';
+import { SettingsRow } from '../layout/SettingsRow';
 import { settingsPreferenceActions, useSettingsPreferencesStore } from './settings.store';
 import {
   getReplyLanguage,
@@ -61,16 +61,20 @@ export function GeneralSettingsPane({
           ]}
           onValueChange={onLanguageChange}
         />
-        <div className="settings-choice settings-choice--switch">
-          <Label htmlFor="settings-show-math">{mathLabel}</Label>
-          <Switch
-            id="settings-show-math"
-            className="settings-math-switch"
-            aria-label={mathLabel}
-            checked={showMath}
-            onCheckedChange={settingsPreferenceActions.setShowMath}
-          />
-        </div>
+        <SettingsRow
+          htmlFor="settings-show-math"
+          label={mathLabel}
+          className="settings-choice settings-choice--switch"
+          control={
+            <Switch
+              id="settings-show-math"
+              className="settings-math-switch"
+              aria-label={mathLabel}
+              checked={showMath}
+              onCheckedChange={settingsPreferenceActions.setShowMath}
+            />
+          }
+        />
       </FieldGroup>
       <details className="settings-general-more">
         <summary>{label('更多外观与语言选项', 'More appearance and language options')}</summary>

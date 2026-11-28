@@ -3,7 +3,7 @@ import { Icon } from '../../../legacy/Icon';
 import { Button } from '../../ui/shadcn/button';
 import { i18n } from './workspaceUi';
 import { getLegacyActions } from '../../legacy/gateway.ts';
-import { PageFrame } from '../../ui/page/PageFrame';
+import { PageCollectionCard, PageShell } from '../../layout/PageShell';
 import { focusComposer, setComposerMarkdown } from '../../composer-input';
 import { toggleComposerPlugin } from '../../../composer/pluginSelection.ts';
 import { getConnectorIconMarkup } from '../../../connector-icons';
@@ -87,22 +87,24 @@ export function PluginDetailView({
   };
 
   return (
-    <PageFrame
+    <PageShell
+      titleId="plugin-detail-title"
+      hideHeader
+      maxWidth="reading"
       className="workspace-surface plugin-detail-view"
-      aria-labelledby="plugin-detail-title"
     >
       <Button
         type="button"
         variant="ghost"
         size="sm"
-        className="plugin-detail-back-btn"
+        className="plugin-detail-back-btn w-fit"
         onClick={onBack}
         aria-label={i18n('plugins.detail.back', 'Back to plugins')}
       >
         <Icon name="chevronLeft" size={18} />
         <span>{i18n('plugins.detail.backLabel', 'Plugins')}</span>
       </Button>
-      <div className="plugin-detail-card">
+      <PageCollectionCard className="plugin-detail-card">
         <PluginDetailHeader
           plugin={plugin}
           connectable={connectable}
@@ -130,8 +132,8 @@ export function PluginDetailView({
               : undefined
           }
         />
-      </div>
-    </PageFrame>
+      </PageCollectionCard>
+    </PageShell>
   );
 }
 

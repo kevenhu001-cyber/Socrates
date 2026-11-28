@@ -62,7 +62,7 @@ html[data-theme='socrates'][data-mode]:lang(zh) {
   --accent-foreground: var(--foreground);
   --destructive: var(--ui-danger);
   --destructive-foreground: var(--background);
-  --border: var(--geist-gray-400);
+  --border: var(--geist-gray-alpha-200);
   --input: var(--border);
   --ring: var(--geist-blue-900);
   --sidebar: var(--geist-gray-100);
@@ -181,9 +181,9 @@ html[data-theme='socrates'][data-mode]:lang(zh) {
 
   /* Border / mask roles. Geist's own mapping: gray-400 is the default
    * border, gray-500 the hover border, gray-600 the active border. */
-  --ui-border-subtle: var(--ui-bg-elevated);
+  --ui-border-subtle: var(--geist-gray-alpha-100);
   --ui-border-default: var(--border);
-  --ui-border-strong: var(--geist-gray-500);
+  --ui-border-strong: var(--geist-gray-alpha-400);
   --ui-backdrop: rgb(0 0 0 / 44%);
 
   /* Geist's monochrome primary + semantic status colors. */
@@ -196,11 +196,15 @@ html[data-theme='socrates'][data-mode]:lang(zh) {
      lightest dark rung as well as on the canvas. The old Lobe value
      (rgb(233 83 80)) cleared the near-black page but sat at 4.03:1 on
      the new elevated rung (#292929); this one clears it on every rung
-     (5.3:1 on the control fill). */
-  --ui-danger: rgb(240 119 117);
-  --ui-success: rgb(128 201 51);
-  --ui-thinking-accent: rgb(255 190 69);
-  --ui-info: rgb(76 179 255);
+     (5.29:1 on the elevated fill, synced with @socrates/theme). */
+  --ui-danger: rgb(248 114 114);
+  --ui-success: rgb(74 222 128);
+  --ui-thinking-accent: rgb(251 191 36);
+  --ui-info: rgb(96 165 250);
+  --ui-bg-success-subtle: rgb(34 197 94 / 14%);
+  --ui-bg-info-subtle: rgb(59 130 246 / 16%);
+  --ui-bg-warning-subtle: rgb(245 158 11 / 14%);
+  --ui-bg-danger-subtle: rgb(239 68 68 / 14%);
   --ui-warning: var(--ui-thinking-accent);
   --ui-link: var(--ui-info);
 
@@ -216,13 +220,13 @@ html[data-theme='socrates'][data-mode]:lang(zh) {
   --ui-bg-segment-active: var(--ui-bg-selected);
   --ui-shadow-control: 0 1px 2px rgb(0 0 0 / 24%), 0 0 0 1px rgb(255 255 255 / 6%);
   --ui-shadow-popover:
-    0 0 0 1px rgb(255 255 255 / 8%), inset 0 1px 0 0 rgb(255 255 255 / 6%),
-    0 12px 32px -4px rgb(0 0 0 / 45%), 0 4px 12px -2px rgb(0 0 0 / 25%);
+    0 0 0 1px var(--geist-gray-alpha-200),
+    0 12px 32px -4px rgb(0 0 0 / 48%), 0 4px 12px -2px rgb(0 0 0 / 24%);
   --ui-shadow-dialog:
-    0 0 0 1px rgb(255 255 255 / 10%), inset 0 1px 0 0 rgb(255 255 255 / 8%),
-    0 24px 64px -8px rgb(0 0 0 / 60%), 0 8px 24px -4px rgb(0 0 0 / 30%);
-  --ui-composer-border: rgb(255 255 255 / 15%);
-  --ui-composer-shadow: inset 0 1px 0 0 rgb(255 255 255 / 8%), inset 0 0 1px rgb(255 255 255 / 15%);
+    0 0 0 1px var(--geist-gray-alpha-200),
+    0 24px 64px -8px rgb(0 0 0 / 60%), 0 8px 24px -4px rgb(0 0 0 / 28%);
+  --ui-composer-border: var(--geist-gray-alpha-200);
+  --ui-composer-shadow: none;
   --ui-bubble-shadow: none;
   --ui-tool-chip-text: var(--ui-text-secondary);
   --ui-tool-chip-hover-bg: var(--ui-bg-hover);
@@ -387,6 +391,10 @@ html[data-theme='socrates'][data-mode]:lang(zh) {
   --ui-info: rgb(0 92 184);
   --ui-warning: rgb(125 82 0);
   --ui-link: rgb(0 96 204);
+  --ui-bg-success-subtle: rgb(12 110 51 / 10%);
+  --ui-bg-info-subtle: rgb(0 92 184 / 10%);
+  --ui-bg-warning-subtle: rgb(125 82 0 / 10%);
+  --ui-bg-danger-subtle: rgb(176 45 28 / 10%);
 
   /* Blue focus remains distinct from neutral hover fills. */
   --ui-focus-ring: var(--ring);

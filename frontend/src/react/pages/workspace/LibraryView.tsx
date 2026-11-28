@@ -8,7 +8,7 @@ import { LibraryCategoryTabs } from './LibraryCategoryTabs';
 import { LibraryEmptyState } from './LibraryEmptyState';
 import { LibrarySelectionBar } from './LibrarySelectionBar';
 import { LibraryToolbar } from './LibraryToolbar';
-import { PageFrame } from '../../ui/page/PageFrame';
+import { PageCollectionCard, PageShell } from '../../layout/PageShell';
 
 function LibraryView({
   data,
@@ -59,7 +59,12 @@ function LibraryView({
   const anySelected = items.some((item) => !!data.selection[item.id]);
 
   return (
-    <PageFrame className="library-directory" aria-labelledby="library-directory-title">
+    <PageShell
+      titleId="library-directory-title"
+      hideHeader
+      maxWidth="wide"
+      className="library-directory"
+    >
       <LibraryToolbar
         query={data.query}
         dispatch={dispatch}
@@ -91,7 +96,7 @@ function LibraryView({
           }
         />
       ) : (
-        <div className={`ui-collection workspace-table library-list view-${viewMode}`}>
+        <PageCollectionCard className={`ui-collection workspace-table library-list view-${viewMode}`}>
           <div className="ui-collection-head workspace-table-head library-desktop-table-head">
             <span>{i18n('library.columnName', 'Name')}</span>
             <span>{i18n('library.columnModified', 'Modified')}</span>
@@ -111,9 +116,9 @@ function LibraryView({
               />
             ))}
           </div>
-        </div>
+        </PageCollectionCard>
       )}
-    </PageFrame>
+    </PageShell>
   );
 }
 
