@@ -2,7 +2,7 @@ import { useState, type Ref, type SyntheticEvent } from 'react';
 import { PanelsTopLeft, Trash2, X } from 'lucide-react';
 import { Icon } from '../../legacy/Icon';
 import { nativeIslandFrameAttributes } from '../../ui/nativeIslandFrame';
-import { Badge } from '../ui/shadcn/badge';
+import { Badge } from '../ui/v3';
 import { Button } from '../ui/shadcn/button';
 import { Field, FieldGroup, FieldLabel } from '../ui/shadcn/field';
 import { Input } from '../ui/shadcn/input';
@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from '../ui/shadcn/dropdown-menu';
 import { NativeSelect, NativeSelectOption } from '../ui/shadcn/native-select';
-import { Textarea } from '../ui/shadcn/textarea';
+import { Textarea } from '../ui/v3';
 import { PageViewToggle } from '../ui/page/PageTabs';
 import { PageEmptyState } from '../ui/page/PageEmptyState';
 import { PageFrame } from '../ui/page/PageFrame';
