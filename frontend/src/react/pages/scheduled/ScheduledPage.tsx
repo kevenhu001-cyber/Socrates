@@ -1,8 +1,6 @@
 import { Plus } from 'lucide-react';
-import { Tabs, TabsList, TabsTrigger } from '../../ui/shadcn/tabs';
 import { Alert } from '../../ui/v3';
 import { Button } from '../../ui/shadcn/button';
-import { cn } from 'cn';
 import { createRootSlot } from '../../lib/boot/ownedRoot';
 import { useMemo, useState } from 'react';
 
@@ -15,6 +13,7 @@ import { ScheduledTaskList } from './ScheduledTaskList';
 import { scheduledText } from './scheduled.copy';
 import { WorkspaceLoadingView } from '../workspace/WorkspaceLoadingView';
 import { PageSearchField } from '../../ui/page/PageSearchField';
+import { PageTabs } from '../../ui/page/PageTabs';
 import { PageShell } from '../../layout/PageShell';
 
 const PANEL_ID = 'scheduledPanel';
@@ -78,27 +77,16 @@ export function ScheduledPage() {
             onQuery={setQuery}
           />
           <div className="ui-page-toolbar-end">
-            <Tabs value={scope} onValueChange={(value) => setScope(value as typeof scope)}>
-              <TabsList
-                className="ui-page-tabs scheduled-filter-tabs"
-                aria-label={scheduledText('scheduled.filter', 'Task filter')}
-              >
-                <TabsTrigger
-                  type="button"
-                  value="all"
-                  className={cn('ui-page-tab', scope === 'all' && 'active')}
-                >
-                  {scheduledText('scheduled.all', 'All')}
-                </TabsTrigger>
-                <TabsTrigger
-                  type="button"
-                  value="active"
-                  className={cn('ui-page-tab', scope === 'active' && 'active')}
-                >
-                  {scheduledText('scheduled.activeOnly', 'Active')}
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
+            <PageTabs
+              className="scheduled-filter-tabs"
+              ariaLabel={scheduledText('scheduled.filter', 'Task filter')}
+              value={scope}
+              items={[
+                { value: 'all', label: scheduledText('scheduled.all', 'All') },
+                { value: 'active', label: scheduledText('scheduled.activeOnly', 'Active') },
+              ]}
+              onChange={setScope}
+            />
           </div>
         </>
       }

@@ -1,4 +1,4 @@
-import { Input } from '../ui/shadcn/input';
+import { Input } from '../ui/v3';
 
 export function MediaPickerInput({
   id,

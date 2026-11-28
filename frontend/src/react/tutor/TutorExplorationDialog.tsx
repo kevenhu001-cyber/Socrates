@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Button } from '../ui/shadcn/button';
-import { Input } from '../ui/shadcn/input';
+import { Input } from '../ui/v3';
 import { Label } from '../ui/shadcn/label';
 
 export interface TutorExplorationDialogProps {

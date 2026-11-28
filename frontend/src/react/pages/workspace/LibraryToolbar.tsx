@@ -1,12 +1,5 @@
 import { Button } from '../../ui/shadcn/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from '../../ui/shadcn/dropdown-menu';
+import { Menu } from '../../ui/v3';
 import { PageViewToggle } from '../../ui/page/PageTabs';
 import { t as translate } from '../../../ui/legacyI18n.ts';
 import type { useWorkspaceDispatch } from './workspace.hooks';
@@ -37,17 +30,17 @@ export interface LibraryToolbarProps {
 
 function LibraryNewAction() {
   return (
-    <DropdownMenu modal={false}>
-      <DropdownMenuTrigger render={<Button className="library-new-pill" />}>
-        <span>{i18n('library.new', '新建')}</span>
-        <ChevronDownIcon />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="library-new-menu">
-        <DropdownMenuItem className="min-h-(--ui-control-sm)" onClick={triggerLibraryUpload}>
-          {i18n('library.upload', '上传文件')}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <Menu modal={false}>
+      <Menu.Trigger>
+        <Button className="library-new-pill">
+          <span>{i18n('library.new', '新建')}</span>
+          <ChevronDownIcon />
+        </Button>
+      </Menu.Trigger>
+      <Menu.Content align="end" minWidth={144}>
+        <Menu.Item onSelect={triggerLibraryUpload}>{i18n('library.upload', '上传文件')}</Menu.Item>
+      </Menu.Content>
+    </Menu>
   );
 }
 
@@ -67,35 +60,28 @@ function LibraryTypeFilter({
       : `${filterLabel} · ${i18n(activeFilter.labelKey, activeFilter.fallback)}`;
 
   return (
-    <DropdownMenu modal={false}>
-      <DropdownMenuTrigger
-        render={
-          <Button
-            variant={typeFilter === 'all' ? 'ghost' : 'secondary'}
-            size="icon-lg"
-            className="library-tool-btn"
-          />
-        }
-        aria-label={triggerLabel}
-        title={triggerLabel}
-      >
-        <FilterIcon />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent aria-label={filterLabel} className="w-auto min-w-36">
-        <DropdownMenuRadioGroup value={typeFilter} onValueChange={onTypeFilterChange}>
+    <Menu modal={false}>
+      <Menu.Trigger>
+        <Button
+          variant={typeFilter === 'all' ? 'ghost' : 'secondary'}
+          size="icon-lg"
+          className="library-tool-btn"
+          aria-label={triggerLabel}
+          title={triggerLabel}
+        >
+          <FilterIcon />
+        </Button>
+      </Menu.Trigger>
+      <Menu.Content align="end" minWidth={156}>
+        <Menu.RadioGroup value={typeFilter} onChange={onTypeFilterChange}>
           {FILE_TYPE_FILTERS.map((filter) => (
-            <DropdownMenuRadioItem
-              key={filter.id}
-              value={filter.id}
-              closeOnClick
-              className="min-h-(--ui-control-sm)"
-            >
+            <Menu.RadioItem key={filter.id} value={filter.id}>
               {i18n(filter.labelKey, filter.fallback)}
-            </DropdownMenuRadioItem>
+            </Menu.RadioItem>
           ))}
-        </DropdownMenuRadioGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
+        </Menu.RadioGroup>
+      </Menu.Content>
+    </Menu>
   );
 }
 

@@ -23,6 +23,7 @@ import {
   Textarea as AppsSdkTextarea,
   type TextareaProps as AppsSdkTextareaProps,
 } from '@openai/apps-sdk-ui/components/Textarea';
+import { ChevronDownIcon } from 'lucide-react';
 import { cn } from 'cn';
 
 export { AppsSDKUIProvider } from '@openai/apps-sdk-ui/components/AppsSDKUIProvider';
@@ -49,7 +50,11 @@ export {
   SegmentedControl,
   type SegmentedControlProps,
 } from '@openai/apps-sdk-ui/components/SegmentedControl';
-export { Select, type Option as SelectOption, type SelectProps } from '@openai/apps-sdk-ui/components/Select';
+export {
+  Select,
+  type Option as SelectOption,
+  type SelectProps,
+} from '@openai/apps-sdk-ui/components/Select';
 export { Slider, type SliderProps } from '@openai/apps-sdk-ui/components/Slider';
 export { Tooltip, type TooltipProps } from '@openai/apps-sdk-ui/components/Tooltip';
 
@@ -118,9 +123,11 @@ export function Input({
   ...props
 }: InputProps) {
   if (type === 'file' || hidden) {
-    return <input type={type} hidden={hidden} ref={ref} {...props} />;
+    return <input data-slot="input" type={type} hidden={hidden} ref={ref} {...props} />;
   }
-  return <AppsSdkInput type={type} variant={variant} size={size} ref={ref} {...props} />;
+  return (
+    <AppsSdkInput data-slot="input" type={type} variant={variant} size={size} ref={ref} {...props} />
+  );
 }
 
 export type TextareaProps = Omit<ComponentPropsWithRef<'textarea'>, 'size'> & {
@@ -164,6 +171,55 @@ export function Skeleton({ className, ...props }: ComponentPropsWithRef<'div'>) 
     <div
       data-slot="skeleton"
       className={cn('skeleton-shimmer rounded-md bg-muted', className)}
+      {...props}
+    />
+  );
+}
+
+export type NativeSelectProps = Omit<ComponentPropsWithRef<'select'>, 'size'> & {
+  size?: 'sm' | 'default';
+};
+
+export function NativeSelect({ className, size = 'default', ...props }: NativeSelectProps) {
+  return (
+    <div
+      className="group/native-select relative min-w-0 w-fit has-[select:disabled]:opacity-50"
+      data-slot="native-select-wrapper"
+      data-size={size}
+    >
+      <select
+        data-slot="native-select"
+        data-size={size}
+        className={cn(
+          'h-(--ui-control-desktop) w-full min-w-0 appearance-none rounded-lg border border-border bg-transparent py-1 pr-8 pl-2.5 text-sm transition-colors select-none focus-visible:border-ring disabled:pointer-events-none disabled:cursor-not-allowed aria-invalid:border-destructive data-[size=sm]:h-(--ui-control-sm) data-[size=sm]:rounded-md data-[size=sm]:py-0.5',
+          className,
+        )}
+        {...props}
+      />
+      <ChevronDownIcon
+        className="pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2 text-muted-foreground select-none"
+        aria-hidden="true"
+        data-slot="native-select-icon"
+      />
+    </div>
+  );
+}
+
+export function NativeSelectOption({ className, ...props }: ComponentPropsWithRef<'option'>) {
+  return (
+    <option
+      data-slot="native-select-option"
+      className={cn('bg-[Canvas] text-[CanvasText]', className)}
+      {...props}
+    />
+  );
+}
+
+export function NativeSelectOptGroup({ className, ...props }: ComponentPropsWithRef<'optgroup'>) {
+  return (
+    <optgroup
+      data-slot="native-select-optgroup"
+      className={cn('bg-[Canvas] text-[CanvasText]', className)}
       {...props}
     />
   );

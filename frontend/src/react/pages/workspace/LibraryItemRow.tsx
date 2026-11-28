@@ -1,16 +1,10 @@
-import { Input as ShadcnInput } from '../../ui/shadcn/input';
+import { Input as ShadcnInput } from '../../ui/v3';
 import { Label as ShadcnLabel } from '../../ui/shadcn/label';
 import { Checkbox } from '../../ui/v3';
 import { Button as UiButton } from '../../ui/Button';
 import { Download } from 'lucide-react';
 import { Icon } from '../../../legacy/Icon';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLink,
-  DropdownMenuTrigger,
-} from '../../ui/shadcn/dropdown-menu';
+import { Menu } from '../../ui/v3';
 import type { useWorkspaceDispatch } from './workspace.hooks';
 import type { LibraryDisplayItem } from './library.types';
 import { getFileTypeCategory, fileTypeGlyph } from './libraryFileTypes';
@@ -76,43 +70,41 @@ function LibraryRowActions({
 }>) {
   const label = `${name}: ${i18n('sidebar.nav.more', 'More')}`;
   return (
-    <DropdownMenu modal={false}>
-      <DropdownMenuTrigger
-        render={<UiButton type="button" className="library-row-more-btn" />}
-        aria-label={label}
-      >
-        <MoreIcon />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="library-row-menu w-auto min-w-44">
-        <DropdownMenuItem
-          className="min-h-(--ui-control-touch)"
-          onClick={() => dispatch.startRename(item.id, itemKey)}
+    <Menu modal={false}>
+      <Menu.Trigger>
+        <UiButton type="button" className="library-row-more-btn" aria-label={label}>
+          <MoreIcon />
+        </UiButton>
+      </Menu.Trigger>
+      <Menu.Content align="end" minWidth={176}>
+        <Menu.Item
+          className="flex items-center gap-2"
+          onSelect={() => dispatch.startRename(item.id, itemKey)}
         >
           <Icon name="edit" size={16} />
           {i18n('library.rename', 'Rename')}
-        </DropdownMenuItem>
+        </Menu.Item>
         {tab === 'files' && (
           <>
-            <DropdownMenuLink
-              className="library-row-menu-link flex min-h-(--ui-control-touch) items-center gap-2 rounded-md px-2 text-sm"
+            <Menu.Link
+              className="library-row-menu-link flex items-center gap-2"
               href={'/api/v2/files/' + encodeURIComponent(item.id) + '/raw'}
               download={name}
             >
               <Download size={16} aria-hidden="true" />
               {i18n('library.download', 'Download original')}
-            </DropdownMenuLink>
-            <DropdownMenuItem
-              className="min-h-(--ui-control-touch)"
-              variant="destructive"
-              onClick={() => dispatch.deleteFile(item.id)}
+            </Menu.Link>
+            <Menu.Item
+              className="flex items-center gap-2 text-destructive"
+              onSelect={() => dispatch.deleteFile(item.id)}
             >
               <Icon name="trash" size={16} />
               {i18n('common.delete', 'Delete')}
-            </DropdownMenuItem>
+            </Menu.Item>
           </>
         )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+      </Menu.Content>
+    </Menu>
   );
 }
 
