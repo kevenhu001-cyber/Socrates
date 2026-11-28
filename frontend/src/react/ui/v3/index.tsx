@@ -23,6 +23,7 @@ import {
   Textarea as AppsSdkTextarea,
   type TextareaProps as AppsSdkTextareaProps,
 } from '@openai/apps-sdk-ui/components/Textarea';
+import { cn } from 'cn';
 
 export { AppsSDKUIProvider } from '@openai/apps-sdk-ui/components/AppsSDKUIProvider';
 export { Alert, type AlertProps } from '@openai/apps-sdk-ui/components/Alert';
@@ -48,7 +49,7 @@ export {
   SegmentedControl,
   type SegmentedControlProps,
 } from '@openai/apps-sdk-ui/components/SegmentedControl';
-export { Select, type SelectProps } from '@openai/apps-sdk-ui/components/Select';
+export { Select, type Option as SelectOption, type SelectProps } from '@openai/apps-sdk-ui/components/Select';
 export { Slider, type SliderProps } from '@openai/apps-sdk-ui/components/Slider';
 export { Tooltip, type TooltipProps } from '@openai/apps-sdk-ui/components/Tooltip';
 
@@ -156,4 +157,14 @@ export type CheckboxProps = Omit<AppsSdkCheckboxProps, 'checked'> &
 export function Checkbox({ checked, indeterminate, ...rest }: CheckboxProps) {
   const resolvedChecked = indeterminate ? 'indeterminate' : checked;
   return <AppsSdkCheckbox checked={resolvedChecked} {...rest} />;
+}
+
+export function Skeleton({ className, ...props }: ComponentPropsWithRef<'div'>) {
+  return (
+    <div
+      data-slot="skeleton"
+      className={cn('skeleton-shimmer rounded-md bg-muted', className)}
+      {...props}
+    />
+  );
 }

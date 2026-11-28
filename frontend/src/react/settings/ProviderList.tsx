@@ -1,16 +1,7 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { CheckIcon } from 'lucide-react';
 import { Button } from '../ui/shadcn/button';
-import { RadioGroup, RadioGroupItem } from '../ui/shadcn/radio-group';
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardAction,
-} from '../ui/shadcn/card';
-import { Badge } from '../ui/v3';
+import { Badge, RadioGroup } from '../ui/v3';
 import { i18n } from '../../ui/legacyI18n.ts';
 import { ProviderRow } from './ProviderRow';
 import type { ProviderListProps, SettingsProviderSnapshot } from './types';
@@ -82,42 +73,39 @@ function BuiltInProviderCard({
   selectedId: string | null;
   hasCustomProviders: boolean;
 }) {
+  const activeLabel = builtIn.isActive
+    ? i18n('settings.activeModel', 'Active model')
+    : i18n('settings.setActiveModel', 'Set as active');
+
   return (
     <div
       id={`provider-editor-${builtIn.id}`}
       className="provider-editor"
       hidden={selectedId !== builtIn.id}
     >
-      <Card
-        className={`provider-row built-in-row${builtIn.isActive ? ' active' : ''}`}
+      <div
+        className={`provider-row built-in-row flex flex-col gap-3 rounded-xl border border-border bg-transparent p-4${builtIn.isActive ? ' active' : ''}`}
         data-id={builtIn.id}
       >
-        <CardHeader>
-          <CardTitle>{builtIn.label || builtIn.model || 'Built-in AI'}</CardTitle>
-          <CardDescription>{builtIn.model}</CardDescription>
-          <CardAction>
-            <RadioGroupItem
-              value={builtIn.id}
-              className="provider-active-btn"
-              title={
-                builtIn.isActive
-                  ? i18n('settings.activeModel', 'Active model')
-                  : i18n('settings.setActiveModel', 'Set as active')
-              }
-              aria-label={
-                builtIn.isActive
-                  ? i18n('settings.activeModel', 'Active model')
-                  : i18n('settings.setActiveModel', 'Set as active')
-              }
-            />
-          </CardAction>
-        </CardHeader>
-        <CardContent>
-          {builtIn.isActive ? (
-            <Badge variant="secondary">{i18n('settings.builtInTag', 'Built-in · Active')}</Badge>
-          ) : null}
-        </CardContent>
-      </Card>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="text-sm font-medium text-foreground">
+              {builtIn.label || builtIn.model || 'Built-in AI'}
+            </div>
+            {builtIn.model ? (
+              <div className="mt-0.5 text-xs text-muted-foreground">{builtIn.model}</div>
+            ) : null}
+          </div>
+          <RadioGroup.Item value={builtIn.id} className="provider-active-btn shrink-0">
+            {activeLabel}
+          </RadioGroup.Item>
+        </div>
+        {builtIn.isActive ? (
+          <div>
+            <Badge variant="soft">{i18n('settings.builtInTag', 'Built-in · Active')}</Badge>
+          </div>
+        ) : null}
+      </div>
       {!hasCustomProviders ? (
         <div className="provider-empty">
           {i18n('settings.noCustomProviders', 'No custom providers yet.')}
@@ -172,10 +160,11 @@ export function ProviderList({
             onSelect={setSelectedId}
           />
           <RadioGroup
+            direction="col"
             className="provider-workbench-detail"
             aria-label={i18n('settings.models', 'Models')}
-            value={activeId}
-            onValueChange={(next) => {
+            value={activeId ?? undefined}
+            onChange={(next) => {
               if (typeof next === 'string') onSetActive(next);
             }}
           >
