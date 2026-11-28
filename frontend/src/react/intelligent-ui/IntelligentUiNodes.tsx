@@ -4,7 +4,7 @@ import { LazyLearningNode } from './LazyLearningNode';
 import { NativeVisualization } from './NativeVisualization';
 import { Demonstration } from './demonstration/Demonstration';
 import { Label as ShadcnLabel } from '../ui/shadcn/label';
-import { Switch as ShadcnSwitch } from '../ui/shadcn/switch';
+import { Switch as ShadcnSwitch } from '../ui/v3';
 import { NativeControl as ShadcnNativeControl } from '../ui/NativeControl';
 import { Separator as ShadcnSeparator } from '../ui/Separator';
 import { Button as BaseButton } from '../ui/Button';
