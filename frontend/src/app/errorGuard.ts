@@ -100,7 +100,7 @@ function showBanner(correl: string, hint: string | null) {
     const el = ensureBanner();
     // Clear any previous banner content first (multiple errors
     // before the user dismisses — keep the latest).
-    while (el.firstChild) el.removeChild(el.firstChild);
+    while (el.firstChild) el.firstChild.remove();
 
     const msg = document.createElement('span');
     msg.textContent = hint;
@@ -112,7 +112,7 @@ function showBanner(correl: string, hint: string | null) {
     const btnHost = document.createElement('span');
     btnHost.className = 'global-error-banner-dismiss-host';
     renderDismissButton(btnHost, () => {
-      if (el.parentNode) el.parentNode.removeChild(el);
+      el.remove();
     });
 
     el.appendChild(msg);
@@ -120,7 +120,7 @@ function showBanner(correl: string, hint: string | null) {
     el.appendChild(btnHost);
     // Auto-dismiss after 12 s so it doesn't pile up.
     setTimeout(() => {
-      if (el.parentNode) el.parentNode.removeChild(el);
+      el.remove();
     }, 12000);
   } catch (_) {
     reportEmptyCatch(_, 'empty catch: app/errorGuard.ts');

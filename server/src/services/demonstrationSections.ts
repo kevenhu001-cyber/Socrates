@@ -16,13 +16,13 @@ export const DEMONSTRATION_SECTIONS = {
 } as const;
 export type DemonstrationSection = keyof typeof DEMONSTRATION_SECTIONS;
 const GUIDES = {
-  basics: `Build a new algorithmic demonstration without choosing a preset physics model. Arguments are JSON, not markup: every list is a JSON array, every numeric field is a JSON number, and program.version is the number 1. Never encode a list as {"item": [...]}, never wrap an array in tags, and never send "1" where a number belongs.
+  basics: String.raw`Build a new algorithmic demonstration without choosing a preset physics model. Arguments are JSON, not markup: every list is a JSON array, every numeric field is a JSON number, and program.version is the number 1. Never encode a list as {"item": [...]}, never wrap an array in tags, and never send "1" where a number belongs.
 
 A demonstration node is {"id":"demo","type":"demonstration","title":"...","program":{"version":1,"parameters":[],"definitions":{},"views":[]}}. views has 1-8 entries. Required per view: plot -> x, y and 1-6 curves; field -> x, y and expression; trajectory -> x, y, horizontal, vertical and program.dynamics; scene -> x, y and 1-32 objects; metrics -> 1-6 values; controls -> nothing. At most one controls, two field views and twelve curves total. The compact schema marks per-kind fields optional; semantic validation still requires them. Fix every field named in an error in one corrected call.
 
 Up to 12 parameters (id, label, value, min, max; optional step, unit, advanced) and 24 definitions. IDs are case-sensitive ASCII identifiers. All views share parameters, definitions, time t and optional ODE state. To drive an existing demonstration from the conversation, patch its program with changed parameter value fields: edited defaults apply immediately while unrelated manual control values survive. Set or change the optional resetKey string to restore all declared defaults, including a value equal to a previous default. This is the preferred route for novel mathematical/physical demonstrations and custom compositions.
 
-Display labels and units use inline LaTeX for formulas and symbols. In JSON use dollar delimiters and escape each backslash, for example {"xLabel":"$t\\\\,(\\\\mathrm{s})$","yLabel":"$I/I_0$","unit":"$\\\\theta_R$"}. Keep expressions in executable mathematical syntax (see expressions section).
+Display labels and units use inline LaTeX for formulas and symbols. In JSON use dollar delimiters and escape each backslash, for example {"xLabel":"$t\\,(\\mathrm{s})$","yLabel":"$I/I_0$","unit":"$\\theta_R$"}. Keep expressions in executable mathematical syntax (see expressions section).
 
 Views are ordered freely (1–8). Every view has "kind" (not "type"). Axis bounds are a two-element JSON array [min,max] of finite numbers or expressions evaluated at the current time with x=y=0; use parameter-dependent bounds to keep important features visible, for example "y":[0,"max(1.12,1.12*total)"]. Bounds must remain finite, increasing and within ±1e6:
 
@@ -101,7 +101,7 @@ For 3D scalar isosurfaces set field presentation:'isosurface', expression:'x^2+y
     'Editable electromagnetic example:',
     JSON.stringify(PHYSICS_EXAMPLES.chargedParticle),
     'Editable diffraction-grating example:',
-    `{"version":1,"parameters":[{"id":"N","label":"Slits N","value":6,"min":2,"max":12,"step":1},{"id":"ratio","label":"d / a","value":4,"min":1,"max":8,"step":0.1},{"id":"gamma","label":"Display gamma","value":0.4,"min":0.2,"max":1,"step":0.05,"advanced":true}],"definitions":{"envelope":"sinc(pi*x/ratio)^2","intensity":"envelope*sinratio(N,pi*x)^2"},"views":[{"kind":"controls"},{"kind":"plot","x":[-3.3,3.3],"y":[0,1.08],"xLabel":"$d\\\\sin\\\\theta / \\\\lambda$","yLabel":"$I/I_0$","curves":[{"expression":"intensity","label":"Total intensity","color":"blue"},{"expression":"envelope","label":"Single-slit envelope","color":"muted","dashed":true}]},{"kind":"field","x":[-3.3,3.3],"y":[-1,1],"expression":"intensity","gamma":"gamma","tint":[0.55,1,0.08],"height":96}]}`,
+    String.raw`{"version":1,"parameters":[{"id":"N","label":"Slits N","value":6,"min":2,"max":12,"step":1},{"id":"ratio","label":"d / a","value":4,"min":1,"max":8,"step":0.1},{"id":"gamma","label":"Display gamma","value":0.4,"min":0.2,"max":1,"step":0.05,"advanced":true}],"definitions":{"envelope":"sinc(pi*x/ratio)^2","intensity":"envelope*sinratio(N,pi*x)^2"},"views":[{"kind":"controls"},{"kind":"plot","x":[-3.3,3.3],"y":[0,1.08],"xLabel":"$d\\sin\\theta / \\lambda$","yLabel":"$I/I_0$","curves":[{"expression":"intensity","label":"Total intensity","color":"blue"},{"expression":"envelope","label":"Single-slit envelope","color":"muted","dashed":true}]},{"kind":"field","x":[-3.3,3.3],"y":[-1,1],"expression":"intensity","gamma":"gamma","tint":[0.55,1,0.08],"height":96}]}`,
   ].join('\n'),
 } as const;
 

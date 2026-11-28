@@ -92,11 +92,11 @@ function MenuItem({
   spec,
   onPick,
   incognito,
-}: {
+}: Readonly<{
   spec: MenuItemSpec;
   incognito: boolean;
   onPick: (action: MorePopoverAction) => void;
-}) {
+}>) {
   const label = i18n(spec.labelKey, spec.labelFallback);
   const className = spec.danger
     ? 'sidebar-more-item sidebar-more-item-danger'

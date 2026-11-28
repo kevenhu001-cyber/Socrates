@@ -7,7 +7,7 @@ export function inspectCompilation(input) {
     parsed = new Map();
   const validation = inspectProgram(input, solver, parsed);
   if (!validation.ok) {
-    const error = Error(validation.error);
+    const error = new Error(validation.error);
     if (validation.path) error.path = validation.path;
     throw error;
   }

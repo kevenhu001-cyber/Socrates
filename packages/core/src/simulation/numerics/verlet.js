@@ -22,10 +22,10 @@ function* integrateVerlet(d, s, state, derivative, warnings) {
         next[q.velocity] = current[q.velocity] + (h * a[q.velocity]) / 2;
         next[q.position] = current[q.position] + h * next[q.velocity];
       }
-      if (!valid(next)) throw Error('Nonfinite Verlet predictor');
+      if (!valid(next)) throw new Error('Nonfinite Verlet predictor');
       const b = derivative(next, i * h);
       for (const q of coords) next[q.velocity] += (h * b[q.velocity]) / 2;
-      if (!valid(next)) throw Error('Nonfinite Verlet step');
+      if (!valid(next)) throw new Error('Nonfinite Verlet step');
       store(i, next);
       completed = i;
       current = next;

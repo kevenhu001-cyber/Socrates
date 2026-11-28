@@ -1,5 +1,5 @@
-import { budgetError, finite, at } from '../foundation.js';
-import { unary, functions, extraFunctions, name } from './functions.js';
+import { budgetError, finite } from '../foundation.js';
+import { unary, functions, extraFunctions } from './functions.js';
 import { DEMONSTRATION_LOOP_LIMIT } from './parser.js';
 
 /* ---------- Evaluator ---------- */
@@ -18,7 +18,7 @@ function lookup(scope, name) {
       if (definition !== undefined) return definition;
     }
   }
-  throw Error(`Unknown variable: ${name}`);
+  throw new Error(`Unknown variable: ${name}`);
 }
 /** Forward-mode directional AD for smooth, explicitly authored scalar ASTs.
  * Unsupported or nondifferentiable operations return NaN tangent; callers
@@ -318,10 +318,10 @@ function evaluateDemonstrationExpression(ast, scope, budget = { remaining: 20000
       case '!=':
         return +(a !== b);
     }
-    throw Error(`Unknown operator ${ast.op}`);
+    throw new Error(`Unknown operator ${ast.op}`);
   }
   if (ast.name === 'sparseAt') {
-    if (!scope[sparseReader]) throw Error('sparseAt requires a sparse system');
+    if (!scope[sparseReader]) throw new Error('sparseAt requires a sparse system');
     return scope[sparseReader](run(ast.args[0]));
   }
   if (ast.name === 'if') return run(ast.args[0]) ? run(ast.args[1]) : run(ast.args[2]);
@@ -329,24 +329,24 @@ function evaluateDemonstrationExpression(ast, scope, budget = { remaining: 20000
     const key = ast.args[0].name,
       local = Object.create(scope),
       start = run(ast.args[1]);
-    if (!finite(start)) throw Error('Calculus bounds must be finite');
+    if (!finite(start)) throw new Error('Calculus bounds must be finite');
     Object.defineProperty(local, key, { value: start, writable: true, enumerable: true });
     if (ast.name === 'diff') {
       const [value, slope] = dualExpression(ast.args[2], local, key, budget);
       if (!finite(value) || !finite(slope))
-        throw Error('Derivative undefined or unsupported; use smooth explicit expression');
+        throw new Error('Derivative undefined or unsupported; use smooth explicit expression');
       return slope;
     }
     const end = run(ast.args[2]),
       n = 128,
       h = (end - start) / n;
-    if (!finite(end) || !finite(h)) throw Error('Integral bounds must be finite');
+    if (!finite(end) || !finite(h)) throw new Error('Integral bounds must be finite');
     if (start === end) return 0;
     let total = 0;
     for (let i = 0; i <= n; i++) {
       local[key] = i === n ? end : start + i * h;
       const v = evaluatePreparedExpression(ast.args[3], local, budget);
-      if (!finite(v)) throw Error('Nonfinite quadrature sample');
+      if (!finite(v)) throw new Error('Nonfinite quadrature sample');
       total += (i === 0 || i === n ? 1 : i % 2 ? 4 : 2) * v;
     }
     return (total * h) / 3;
@@ -366,9 +366,9 @@ function evaluateDemonstrationExpression(ast, scope, budget = { remaining: 20000
       const start = Math.ceil(run(ast.args[1])),
         end = Math.floor(run(ast.args[2]));
       if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end))
-        throw Error('sum bounds must be finite integers');
+        throw new Error('sum bounds must be finite integers');
       if (end - start >= DEMONSTRATION_LOOP_LIMIT)
-        throw Error(`sum supports at most ${DEMONSTRATION_LOOP_LIMIT} terms`);
+        throw new Error(`sum supports at most ${DEMONSTRATION_LOOP_LIMIT} terms`);
       let result = 0;
       for (let i = start; i <= end; i++) {
         local[key] = i;
@@ -378,10 +378,10 @@ function evaluateDemonstrationExpression(ast, scope, budget = { remaining: 20000
     }
     let result = run(ast.args[1]);
     const raw = Math.floor(run(ast.args[2]));
-    if (!Number.isFinite(raw)) throw Error('iterate count must be a finite number');
+    if (!Number.isFinite(raw)) throw new Error('iterate count must be a finite number');
     const count = Math.max(0, raw);
     if (count > DEMONSTRATION_LOOP_LIMIT)
-      throw Error(`iterate supports 0–${DEMONSTRATION_LOOP_LIMIT} steps`);
+      throw new Error(`iterate supports 0–${DEMONSTRATION_LOOP_LIMIT} steps`);
     for (let i = 0; i < count; i++) {
       local[key] = result;
       result = evaluatePreparedExpression(ast.args[3], local, budget);
@@ -391,7 +391,7 @@ function evaluateDemonstrationExpression(ast, scope, budget = { remaining: 20000
   if (ast.name === 'solveN') {
     const n = run(ast.args[1]);
     if (!Number.isInteger(n) || n < 1 || n > 6 || ast.args.length !== n * n + n + 2)
-      throw Error('solveN expects index, n, n*n coefficients and n RHS values');
+      throw new Error('solveN expects index, n, n*n coefficients and n RHS values');
     budget.remaining -= n ** 3;
     if (budget.remaining < 0) throw budgetError();
     return extraFunctions.solveN(run(ast.args[0]), n, ...ast.args.slice(2).map(run));
@@ -409,14 +409,14 @@ function evaluateDemonstrationExpression(ast, scope, budget = { remaining: 20000
     : Object.hasOwn(extraFunctions, ast.name)
       ? extraFunctions[ast.name]
       : null;
-  if (!fn) throw Error(`Unknown mathematical function: ${ast.name}`);
+  if (!fn) throw new Error(`Unknown mathematical function: ${ast.name}`);
   return fn(...ast.args.map(run));
 }
 function expressionNames(ast, allowed, used) {
   if (ast.kind === 'variable' && ast.name !== 'pi' && ast.name !== 'e') {
     if (!allowed.has(ast.name)) {
       const hint = [...allowed].find((name) => name.toLowerCase() === ast.name.toLowerCase());
-      throw Error(`Unknown variable: ${ast.name}${hint ? ` (did you mean ${hint}?)` : ''}`);
+      throw new Error(`Unknown variable: ${ast.name}${hint ? ` (did you mean ${hint}?)` : ''}`);
     }
     used?.add(ast.name);
   }
@@ -427,7 +427,7 @@ function expressionNames(ast, allowed, used) {
   if (ast.kind === 'unary') expressionNames(ast.arg, allowed, used);
   if (ast.kind === 'call') {
     if (ast.name === 'sparseAt' && !allowed.has('sparseValue'))
-      throw Error('sparseAt requires a sparse system');
+      throw new Error('sparseAt requires a sparse system');
     if (ast.name === 'diff') {
       expressionNames(ast.args[1], allowed, used);
       expressionNames(ast.args[2], new Set([...allowed, ast.args[0].name]), used);

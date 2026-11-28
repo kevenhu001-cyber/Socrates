@@ -15,11 +15,11 @@ export function DemoSurface({
   sample,
   label,
   style = 'wireframe',
-}: {
+}: Readonly<{
   sample?: SurfaceSample;
   label?: string;
   style?: 'wireframe' | 'shaded';
-}) {
+}>) {
   const camera = useSurfaceCamera();
   const a = (camera.azimuth * Math.PI) / 180,
     e = (camera.elevation * Math.PI) / 180;

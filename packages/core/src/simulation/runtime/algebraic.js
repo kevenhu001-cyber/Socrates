@@ -7,7 +7,7 @@ export function createConsistentState(dynamics, base, scopeAt, evalRaw) {
   const algebraicIds = Object.keys(algebraic?.guess ?? {});
   const initialGuess = algebraicIds.map((id) => evalRaw(algebraic.guess[id], base));
   if (!initialGuess.every(finite))
-    throw located('dynamics.algebraic.guess', Error('Non-finite algebraic initial guess'));
+    throw located('dynamics.algebraic.guess', new Error('Non-finite algebraic initial guess'));
   function consistentState(s, t, evaluate) {
     if (!algebraicIds.length) return s;
     const n = algebraicIds.length;
@@ -51,7 +51,7 @@ export function createConsistentState(dynamics, base, scopeAt, evalRaw) {
     if (norm(residual(z)) <= tolerance) return merged(z);
     throw located(
       'dynamics.algebraic',
-      Error(
+      new Error(
         'Algebraic Newton solve did not converge; check constraints, scaling and initial guess',
       ),
     );

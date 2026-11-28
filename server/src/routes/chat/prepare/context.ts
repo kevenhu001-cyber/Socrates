@@ -58,13 +58,13 @@ export async function resolveRagContext(
   let query = '';
   for (let i = messages.length - 1; i >= 0; i--) {
     const m = messages[i];
-    if (m && m.role === 'user') {
+    if (m?.role === 'user') {
       query =
         typeof m.content === 'string'
           ? m.content
           : Array.isArray(m.content)
             ? m.content
-                .filter((p) => p && p.type === 'text')
+                .filter((p) => p?.type === 'text')
                 .map((p) => (p as { text?: string }).text || '')
                 .join(' ')
             : '';

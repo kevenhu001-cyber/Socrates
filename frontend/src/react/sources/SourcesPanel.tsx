@@ -26,7 +26,7 @@ function hostOf(item: SourcesPanelItem): string {
   }
 }
 
-function SourceCard({ item, index }: { item: SourcesPanelItem; index: number }) {
+function SourceCard({ item, index }: Readonly<{ item: SourcesPanelItem; index: number }>) {
   const host = hostOf(item);
   return (
     <li className="sources-list-item">

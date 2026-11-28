@@ -24,7 +24,7 @@ function translate(key: string): string {
   return i18n(key, key);
 }
 
-function StepIcon({ kind }: { kind: string }) {
+function StepIcon({ kind }: Readonly<{ kind: string }>) {
   return (
     <span
       className="agent-step-icon"
@@ -34,7 +34,7 @@ function StepIcon({ kind }: { kind: string }) {
   );
 }
 
-function AgentPlan({ plan }: { plan: AgentPlanData }) {
+function AgentPlan({ plan }: Readonly<{ plan: AgentPlanData }>) {
   if (!plan.steps.length) return null;
   const done = plan.steps.filter((step) => step.status === 'done').length;
   const title = translate('agent.stepPlan');
@@ -118,7 +118,12 @@ function AgentStep({
   );
 }
 
-export function ToolRunAgentSteps({ run, live, state, startedAt = 0 }: ToolRunAgentStepsProps) {
+export function ToolRunAgentSteps({
+  run,
+  live,
+  state,
+  startedAt = 0,
+}: Readonly<ToolRunAgentStepsProps>) {
   const [now, setNow] = useState(() => Date.now());
   const [open, setOpen] = useState(true);
 

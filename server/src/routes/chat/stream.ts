@@ -199,8 +199,7 @@ async function resolveTurnBinding(
       .from(chatTurns)
       .where(and(eq(chatTurns.id, rawTurnId), eq(chatTurns.userId, req.userId!)))
       .limit(1);
-    if (!owned || owned.sessionId !== sessionId)
-      throw new NotFound('Chat turn not found for this session');
+    if (owned?.sessionId !== sessionId) throw new NotFound('Chat turn not found for this session');
     return owned.id;
   }
   const clientTurn = req.body?.clientTurn;

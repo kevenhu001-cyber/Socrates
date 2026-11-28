@@ -9,7 +9,7 @@ export function sliceRuntime(
   if (!view.slicePlane) return { runtime, slice: undefined };
   const { axis, at } = view.slicePlane,
     position = runtime.evaluate(at, time);
-  if (!Number.isFinite(position)) throw Error('Slice coordinate must be finite');
+  if (!Number.isFinite(position)) throw new Error('Slice coordinate must be finite');
   const map = (u: number, v: number): Point3 =>
     axis === 'x' ? [position, u, v] : axis === 'y' ? [u, position, v] : [u, v, position];
   const projected: DemonstrationRuntime = {

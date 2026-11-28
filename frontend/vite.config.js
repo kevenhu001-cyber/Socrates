@@ -239,7 +239,7 @@ export default defineConfig({
           postcssPlugin: 'strip-woff-fallback',
           Declaration(decl) {
             if (decl.prop === 'src' && decl.value.includes('.woff')) {
-              decl.value = decl.value.replace(/,\s*url\([^)]+\.woff\)\s*format\([^\)]+\)/g, '');
+              decl.value = decl.value.replace(/,\s*url\([^)]+\.woff\)\s*format\([^)]+\)/g, '');
             }
           },
         },
@@ -405,9 +405,10 @@ export default defineConfig({
     rollupOptions: {
       preserveEntrySignatures: false,
       onwarn(warning, defaultHandler) {
-        const source = String(
-          warning.id || (warning.loc && warning.loc.file) || warning.message || '',
-        ).replace(/\\/g, '/');
+        const source = String(warning.id || warning.loc?.file || warning.message || '').replaceAll(
+          '\\',
+          '/',
+        );
         /* Client-only React packages publish a `use client` boundary for
            frameworks with server components. This Vite SPA bundles every
            imported module for the browser, so Rollup drops that directive
@@ -440,7 +441,7 @@ export default defineConfig({
             {
               debugName: 'explicit-vendors',
               name(id) {
-                const f = id.split('\\').join('/');
+                const f = id.replaceAll('\\', '/');
                 if (f.includes('@oxc-project') && f.includes('/helpers/')) return 'vendor-runtime';
                 // The shared preload helper must not pull a lazy vendor into boot.
                 if (f.includes('vite/preload-helper')) {
@@ -499,7 +500,7 @@ export default defineConfig({
             : 'assets/[name]-[hash][extname]';
         },
         chunkFileNames(chunkInfo) {
-          if (chunkInfo.name && chunkInfo.name.startsWith('vendor-')) {
+          if (chunkInfo.name?.startsWith('vendor-')) {
             return 'assets/[name]-[hash].js';
           }
           return 'assets/chunk-[hash].js';

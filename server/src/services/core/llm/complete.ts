@@ -40,7 +40,7 @@ export async function callChatCompletion(opts: ChatCompletionRequestOptions) {
        turn, and each was a chance to lose the turn to a rate limit the
        streaming path would simply have ridden out. */
     for (let attempt = 0; ; attempt++) {
-      if (signal && signal.aborted) throw new Error('LLM request aborted');
+      if (signal?.aborted) throw new Error('LLM request aborted');
       markLlmActivity();
       try {
         response = await fetch(endpoint, {

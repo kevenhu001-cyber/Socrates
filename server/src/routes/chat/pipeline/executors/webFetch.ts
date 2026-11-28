@@ -207,7 +207,7 @@ export const executeWebFetch: ToolExecutor = async (
   if (!batch) {
     const targetUrl = urls[0];
     const page = pages.get(targetUrl);
-    if (page && page.ok) {
+    if (page?.ok) {
       const rawContent = String(page.content || '');
       if (offset > 0 && offset >= rawContent.length) {
         return failEmit(
@@ -248,8 +248,8 @@ export const executeWebFetch: ToolExecutor = async (
       });
       return { result };
     }
-    const reason = (page && page.reason) || 'fetch_failed';
-    const errorCode = (page && page.code) || 'web_fetch_failed';
+    const reason = (page?.reason) || 'fetch_failed';
+    const errorCode = (page?.code) || 'web_fetch_failed';
     return failEmit(ctx, call, errorCode, true, reason, '无法抓取该网页。');
   }
 
@@ -265,7 +265,7 @@ export const executeWebFetch: ToolExecutor = async (
   urls.forEach((url, i) => {
     const page = pages.get(url);
     const prefix = urls.length > 1 ? `[page ${i + 1}/${urls.length}]\n` : '';
-    if (page && page.ok) {
+    if (page?.ok) {
       anyOk = true;
       const { block, end, hasMore } = formatPageBlock(page, url, 0, perPageChars);
       const source = ctx.publicRuntime?.registerSources([
@@ -288,8 +288,8 @@ export const executeWebFetch: ToolExecutor = async (
         ...(page.pageCount ? { pageCount: page.pageCount } : {}),
       });
     } else {
-      const reason = (page && page.reason) || 'fetch_failed';
-      const code = (page && page.code) || 'web_fetch_failed';
+      const reason = (page?.reason) || 'fetch_failed';
+      const code = (page?.code) || 'web_fetch_failed';
       blocks.push(`${prefix}[url: ${url}]\n[error: ${code} — ${reason}]`);
       summary.push({ url, ok: false, error: code, reason });
     }

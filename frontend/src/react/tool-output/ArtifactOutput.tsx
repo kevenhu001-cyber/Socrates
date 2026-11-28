@@ -88,11 +88,11 @@ function ArtifactErrorView({
   output,
   url,
   onRetry,
-}: {
+}: Readonly<{
   output: ArtifactOutputData;
   url: string;
   onRetry: () => void;
-}) {
+}>) {
   return (
     <div className="artifact-error" data-artifact-id={output.fileId} role="status">
       {ArtifactErrorIcon}
@@ -114,7 +114,7 @@ function ArtifactErrorView({
   );
 }
 
-export function ArtifactOutput({ output }: ArtifactOutputProps) {
+export function ArtifactOutput({ output }: Readonly<ArtifactOutputProps>) {
   const mimeType = output.mimeType || 'application/octet-stream';
   const url = artifactUrl(output.fileId);
   const isHtml = mimeType.toLowerCase().startsWith('text/html');

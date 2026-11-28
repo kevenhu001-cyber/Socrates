@@ -175,7 +175,7 @@ async function executeChatStreamPipeline(
         .from(chatTurns)
         .where(eq(chatTurns.id, turnId))
         .limit(1);
-      if (row && row.status === 'interrupted') {
+      if (row?.status === 'interrupted') {
         abortController.abort('turn_interrupted');
       }
     } catch {

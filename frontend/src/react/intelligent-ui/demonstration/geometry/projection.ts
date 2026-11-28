@@ -45,7 +45,7 @@ export function projectSurfaceFaces(
     for (let i = 0; i < size - 1; i++) {
       const k = j * size + i;
       const corners = [vertices[k], vertices[k + 1], vertices[k + 1 + size], vertices[k + size]];
-      if (corners.some((v) => v === null)) continue;
+      if (corners.includes(null)) continue;
       const valid = corners.filter((v) => v !== null);
       const h = valid.reduce((sum, v) => sum + v.height, 0) / 4;
       result.push({

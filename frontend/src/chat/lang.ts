@@ -16,8 +16,8 @@ function detectLanguage(text: string): string {
   if (!text) return 'en';
   let cjkRun = 0,
     bestCjkRun = 0;
-  for (let i = 0; i < text.length; i++) {
-    if (/[\u4e00-\u9fff\u3400-\u4dbf]/.test(text[i])) {
+  for (const char of text) {
+    if (/[\u4e00-\u9fff\u3400-\u4dbf]/.test(char)) {
       cjkRun++;
       if (cjkRun > bestCjkRun) bestCjkRun = cjkRun;
     } else {

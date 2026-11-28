@@ -3,6 +3,7 @@ import { getActiveApiKey } from '../../services/core/apiKey.js';
 import { streamChatCompletion } from '../../services/core/llm/stream.js';
 import { callChatCompletion } from '../../services/core/llm/complete.js';
 import {
+  estimateContextMessageTokens,
   estimateMessageTokens,
   estimateTokens,
   recordUsage,
@@ -23,19 +24,19 @@ import {
 } from '../chat/prepare/clientSystem.js';
 import { transformMessagesForModel } from '../chat/prepare/wire.js';
 import { SSE_PRIME } from '../chat/prepare/sse.js';
-import { appendFinalOutputConstraints, injectUserContext } from '../../lib/chatPolicy.js';
-import { isUuid } from '../../lib/validate.js';
-import { BadRequest } from '../../lib/errors.js';
-import { resolveSessionPromptOrAssemble } from '../../services/core/sessionPromptSnapshot.js';
-import { splitPromptContext, appendTurnContext } from '../../lib/chatPromptContext.js';
 import {
+  appendFinalOutputConstraints,
+  injectUserContext,
   insertProviderIdentity,
   insertResponseTypography,
   refreshServerPrompt,
   refreshSnapshotBlock,
 } from '../../lib/chatPolicy.js';
+import { isUuid } from '../../lib/validate.js';
+import { BadRequest } from '../../lib/errors.js';
+import { resolveSessionPromptOrAssemble } from '../../services/core/sessionPromptSnapshot.js';
+import { splitPromptContext, appendTurnContext } from '../../lib/chatPromptContext.js';
 import { resolveContextBudget } from '../../lib/modelCapabilities.js';
-import { estimateContextMessageTokens } from '../../services/core/usageTracker.js';
 import { compressSessionMessages } from '../../services/embeddings/sessionCompressor.js';
 import { DEFAULT_MAX_TOKENS } from '../../services/core/llm/types.js';
 import type { ProviderMessage } from '../../lib/providerMessageSchema.js';
@@ -63,7 +64,7 @@ const router = Router();
 router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, next) => {
   try {
     const provider = await getActiveApiKey(null); // null userId → built-in
-    if (!provider || !provider.keyPlaintext) {
+    if (!provider?.keyPlaintext) {
       return res.status(503).json({
         code: 'NO_BUILT_IN_PROVIDER',
         message: 'Built-in LLM provider is not configured on this server',

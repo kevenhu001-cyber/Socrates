@@ -1,5 +1,4 @@
 import { record, finite, located } from '../foundation.js';
-import { name } from '../expression/functions.js';
 import { parseDemonstrationExpression } from '../expression/parser.js';
 import { expressionNames } from '../expression/evaluate.js';
 
@@ -10,7 +9,7 @@ function finiteElementSpec(program) {
   const s = program.finiteElement;
   if (s === undefined) return null;
   const fail = (m) => {
-    throw located('finiteElement', Error(m));
+    throw located('finiteElement', new Error(m));
   };
   if (
     !record(s) ||

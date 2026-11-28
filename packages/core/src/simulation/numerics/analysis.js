@@ -1,5 +1,4 @@
-import { DYNAMICS_BUDGET, finite, range, located, at } from '../foundation.js';
-import { name } from '../expression/functions.js';
+import { DYNAMICS_BUDGET, finite, located } from '../foundation.js';
 import { evaluatePreparedExpression } from '../expression/evaluate.js';
 
 function linearSample(array, u) {
@@ -50,7 +49,7 @@ function fftInPlace(re, im, inverse = false) {
 }
 function* prepareScientificAnalysis(s, runtime, params, compile, compileSource) {
   const fail = (m) => {
-    throw located('analysis', Error(m));
+    throw located('analysis', new Error(m));
   };
   const scope = Object.assign(Object.create(null), params),
     budget = { remaining: DYNAMICS_BUDGET };

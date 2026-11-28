@@ -8,7 +8,7 @@ function* solveOptimization(s, params, compile) {
   const objective = compile(s.objective),
     sign = s.goal === 'max' ? -1 : 1;
   const fail = (m) => {
-    throw located('optimization', Error(m));
+    throw located('optimization', new Error(m));
   };
   const clamp = (v) => Math.max(0, Math.min(1, v));
   const widths = s.variables.map((v) => v.max - v.min);

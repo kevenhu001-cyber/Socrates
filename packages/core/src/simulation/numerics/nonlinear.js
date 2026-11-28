@@ -7,7 +7,7 @@ function* solveNonlinearSystem(s, params, compile) {
     budget = { remaining: DYNAMICS_BUDGET },
     scope = Object.assign(Object.create(null), params);
   const fail = (m) => {
-    throw located('nonlinearSystem', Error(m));
+    throw located('nonlinearSystem', new Error(m));
   };
   const read = (expr) => evaluateDemonstrationExpression(compile(expr), scope, budget);
   let z = Float64Array.from(s.ids, (id) => read(s.guess[id])),

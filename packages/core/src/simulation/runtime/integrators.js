@@ -37,6 +37,6 @@ export function selectIntegrator(dynamics, solver, algorithms) {
     : solver.reactionSSA
       ? 'ssa'
       : (dynamics.method ?? 'rk4');
-  if (!Object.hasOwn(integrators, method)) throw Error('Unknown time integrator: ' + method);
+  if (!Object.hasOwn(integrators, method)) throw new Error('Unknown time integrator: ' + method);
   return { method, integrate: (context) => integrators[method]({ ...context, algorithms }) };
 }

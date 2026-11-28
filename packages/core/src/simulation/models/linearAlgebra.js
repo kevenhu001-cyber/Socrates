@@ -6,7 +6,7 @@ import { name } from '../expression/functions.js';
 function lowerLinearAlgebra(program) {
   if (program.linearAlgebra === undefined) return program;
   const fail = (message) => {
-    throw located('linearAlgebra', Error(message));
+    throw located('linearAlgebra', new Error(message));
   };
   if (
     !Array.isArray(program.linearAlgebra) ||
@@ -121,7 +121,8 @@ function lowerLinearAlgebra(program) {
     components.vector = vector;
     arrays.set(id, components);
   }
-  const { linearAlgebra: _linearAlgebra, ...rest } = program;
+  const rest = { ...program };
+  delete rest.linearAlgebra;
   return { ...rest, definitions };
 }
 

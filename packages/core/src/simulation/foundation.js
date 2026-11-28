@@ -1,6 +1,6 @@
 const BUDGET = 4000000,
   DYNAMICS_BUDGET = 12000000;
-const budgetError = () => Error('Demonstration calculation budget exceeded');
+const budgetError = () => new Error('Demonstration calculation budget exceeded');
 /** True for the resource-limit error, which callers retry at a coarser resolution. */
 function isDemonstrationBudgetError(error) {
   return error instanceof Error && error.message.includes('budget exceeded');
@@ -17,7 +17,7 @@ const text = (value) => value === undefined || (typeof value === 'string' && val
 /** An error that remembers which part of the program it belongs to. */
 function located(path, error) {
   const message = error instanceof Error ? error.message : String(error);
-  const result = Error(`${path}: ${message}`);
+  const result = new Error(`${path}: ${message}`);
   result.path = path;
   result.detail = message;
   return result;

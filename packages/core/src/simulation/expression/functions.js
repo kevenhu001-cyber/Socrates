@@ -1,6 +1,6 @@
 import { solveSmallSystem } from '../numerics/dense.js';
 
-const SAFE = /^[A-Za-z][A-Za-z0-9_]{0,39}$/;
+const SAFE = /^[A-Za-z]\w{0,39}$/;
 const RESERVED = new Set(['x', 'y', 't', 'pi', 'e', 'constructor', 'prototype', '__proto__']);
 const unary = {
   sin: Math.sin,

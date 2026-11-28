@@ -29,7 +29,7 @@ function patchFirstTurnAttachments(clientId: string, topic: string, attachments:
   if (!attachments.length || !clientId) return;
   const messages = sessionStore.getState().messages as Array<{ clientId?: string }>;
   for (let index = messages.length - 1; index >= 0; index -= 1) {
-    if (!messages[index] || messages[index].clientId !== clientId) continue;
+    if (messages[index]?.clientId !== clientId) continue;
     dispatchSession({
       type: 'session/update-message',
       index,
@@ -105,8 +105,8 @@ async function assembleAndSendFirstTurn(
     if (!isExpectedTurnAbort(error)) {
       try {
         console.error('[chat] start turn failed:', error);
-      } catch (caught) {
-        reportSwallow(caught, 'chat/sessionBootstrap.firstTurn.logFailure');
+      } catch (error_) {
+        reportSwallow(error_, 'chat/sessionBootstrap.firstTurn.logFailure');
       }
     }
   }

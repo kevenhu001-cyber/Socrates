@@ -82,8 +82,8 @@ function emptyCancelledResult() {
 function cancelledStreamResult(processor: ProcessorView) {
   return {
     text: processor.full || '',
-    html: (processor.formattedHtml && processor.formattedHtml.html) || null,
-    widgets: (processor.formattedHtml && processor.formattedHtml.widgets) || [],
+    html: processor.formattedHtml?.html || null,
+    widgets: processor.formattedHtml?.widgets || [],
     cancelled: true,
   };
 }
@@ -127,11 +127,7 @@ function buildRequestBody(context: StreamAttemptContext) {
   try {
     if (context.opts && typeof context.opts.turnId === 'string' && context.opts.turnId) {
       body.turnId = context.opts.turnId;
-    } else if (
-      context.opts &&
-      context.opts.clientTurn &&
-      typeof context.opts.clientTurn.id === 'string'
-    ) {
+    } else if (context.opts?.clientTurn && typeof context.opts.clientTurn.id === 'string') {
       body.clientTurn = context.opts.clientTurn;
     }
   } catch (error) {
@@ -146,7 +142,7 @@ function buildRequestBody(context: StreamAttemptContext) {
 }
 
 function resetClaimedTurn(context: StreamAttemptContext) {
-  if (context.opts && context.opts.clientTurn && typeof context.opts.clientTurn === 'object') {
+  if (context.opts?.clientTurn && typeof context.opts.clientTurn === 'object') {
     context.opts.clientTurn.id = newClientTurnId();
   }
   context.activeTurn.current = null;
@@ -165,16 +161,16 @@ async function recoverClaimConflict(
 }
 
 function makeRequestError(error: ChatApiError, signal: AbortSignal) {
-  const status = error && error.status;
+  const status = error?.status;
   const aborted = error && (error.name === 'AbortError' || signal.aborted);
   const requestError = makeStreamError(
     aborted
       ? 'request was interrupted'
-      : (status ? status + ' ' : 'network: ') + ((error && error.message) || error),
+      : (status ? status + ' ' : 'network: ') + (error?.message || error),
     status,
-    error && error.body,
+    error?.body,
   );
-  requestError.code = error && error.code;
+  requestError.code = error?.code;
   requestError.reason = signal.reason;
   return requestError;
 }
@@ -238,20 +234,15 @@ async function resolveRecoveryTurnId(error: ChatApiError | null, context: Stream
   if (!turnId && context.opts && typeof context.opts.turnId === 'string' && context.opts.turnId) {
     turnId = context.opts.turnId;
   }
-  if (
-    !turnId &&
-    context.opts &&
-    context.opts.clientTurn &&
-    typeof context.opts.clientTurn.id === 'string'
-  ) {
+  if (!turnId && context.opts?.clientTurn && typeof context.opts.clientTurn.id === 'string') {
     try {
       const existing = await createChatTurn({
         clientTurnId: context.opts.clientTurn.id,
         sessionId: context.opts.sessionId ?? null,
       });
-      if (existing && existing.turn && existing.turn.id) turnId = existing.turn.id;
-    } catch (caught) {
-      reportSwallow(caught, 'chat/stream.createChatTurn');
+      if (existing?.turn?.id) turnId = existing.turn.id;
+    } catch (error_) {
+      reportSwallow(error_, 'chat/stream.createChatTurn');
     }
   }
   return turnId;
@@ -261,8 +252,8 @@ function notifyTurnBound(context: StreamAttemptContext, turnId: string) {
   if (context.opts && typeof context.opts.onTurnBound === 'function') {
     try {
       context.opts.onTurnBound(turnId);
-    } catch (caught) {
-      reportSwallow(caught, 'chat/streamAttempt.onTurnBound');
+    } catch (error_) {
+      reportSwallow(error_, 'chat/streamAttempt.onTurnBound');
     }
   }
 }
@@ -295,8 +286,8 @@ async function recoverAfterReadError(
       opts: context.opts,
       signal: context.turnSignal,
     });
-  } catch (caught) {
-    console.warn('[API stream] detached recovery failed:', caught);
+  } catch (error_) {
+    console.warn('[API stream] detached recovery failed:', error_);
     return null;
   }
 }
@@ -331,13 +322,13 @@ async function handleAbortReadError(
         console.warn('[API stream]', attemptError.message + ', retrying before visible output');
         try {
           await reader.cancel();
-        } catch (caught) {
-          reportSwallow(caught, 'chat/streamAttempt.cancelRetryReader');
+        } catch (error_) {
+          reportSwallow(error_, 'chat/streamAttempt.cancelRetryReader');
         }
         try {
           reader.releaseLock();
-        } catch (caught) {
-          reportSwallow(caught, 'chat/streamAttempt.releaseRetryReader');
+        } catch (error_) {
+          reportSwallow(error_, 'chat/streamAttempt.releaseRetryReader');
         }
       }
       return retryOutcome;
@@ -364,7 +355,7 @@ async function handleReadError(
     const outcome = await handleAbortReadError(error, reader, processor, context);
     if (outcome) return outcome;
   } else {
-    context.setLastCallError(String((error && error.message) || error));
+    context.setLastCallError(String(error?.message || error));
   }
 
   const recovered = await recoverAfterReadError(error, processor, context);
@@ -390,7 +381,7 @@ async function consumeStream(reader: Reader, processor: Processor) {
     }
     buffer += decoder.decode();
     /* A server may close without its final SSE delimiter. */
-    if (buffer && buffer.indexOf('data:') >= 0) processor.processFrame(buffer);
+    if (buffer && buffer.includes('data:')) processor.processFrame(buffer);
     processor.finish();
     return { bytesReceived, gotAnyData, error: null };
   } catch (error) {
@@ -433,8 +424,8 @@ async function finishEmptyStream(
   if (processor.hasToolOutput) {
     return completed({
       text: processor.full || '',
-      html: (processor.formattedHtml && processor.formattedHtml.html) || null,
-      widgets: (processor.formattedHtml && processor.formattedHtml.widgets) || [],
+      html: processor.formattedHtml?.html || null,
+      widgets: processor.formattedHtml?.widgets || [],
       cancelled: false,
       semanticActivity: true,
     });
@@ -465,15 +456,15 @@ async function finishStreamResponse(
 
   return completed({
     text: processor.full,
-    html: (processor.formattedHtml && processor.formattedHtml.html) || null,
-    widgets: (processor.formattedHtml && processor.formattedHtml.widgets) || [],
+    html: processor.formattedHtml?.html || null,
+    widgets: processor.formattedHtml?.widgets || [],
     cancelled: false,
     semanticActivity: processor.semanticActivity,
   });
 }
 
 async function readStreamResponse(response: Response, context: StreamAttemptContext) {
-  if (!response.body || !response.body.getReader) return handleNoStreamBody(context);
+  if (!response.body?.getReader) return handleNoStreamBody(context);
 
   const reader = response.body.getReader();
   const processor = createStreamFrameProcessor({

@@ -370,8 +370,7 @@
     });
 
     /* Toast */
-    function showToast(msg, type) {
-      type = type || 'info';
+    function showToast(msg, type = 'info') {
       var host = document.getElementById('toastHost');
       var t = document.createElement('div');
       t.className = 'ed-toast is-' + type;
@@ -380,7 +379,7 @@
       t.querySelector('.ed-toast-close').addEventListener('click', function(){ dismiss(t); });
       setTimeout(function(){ dismiss(t); }, 4000);
     }
-    function dismiss(t) { t.style.animation = 'edToastOut .2s var(--ed-ease) forwards'; setTimeout(function(){ if (t.parentNode) t.parentNode.removeChild(t); }, 220); }
+    function dismiss(t) { t.style.animation = 'edToastOut .2s var(--ed-ease) forwards'; setTimeout(function(){ t.remove(); }, 220); }
 
     /* Confirm modal */
     function showConfirm(title, msg, opts) {
@@ -407,7 +406,7 @@
 
     /* Helpers */
     function getCookie(name) {
-      var m = document.cookie.match(new RegExp('(?:^|;)\\s*' + name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '=([^;]*)'));
+      var m = document.cookie.match(new RegExp(String.raw`(?:^|;)\s*` + name.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`) + '=([^;]*)'));
       return m ? m[1] : null;
     }
     function esc(s) { return String(s).replace(/[&<>"]/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]}); }
@@ -564,7 +563,7 @@
         var ta = document.createElement('textarea');
         ta.value = text; document.body.appendChild(ta); ta.select();
         try { document.execCommand('copy'); showToast('Credential copied.', 'success'); } catch (_) {}
-        document.body.removeChild(ta);
+        ta.remove();
       }
     }
 
@@ -642,7 +641,7 @@
       function selectOption(option) {
         options.forEach(function(o){ o.classList.remove('is-selected') });
         option.classList.add('is-selected');
-        hiddenInput.value = option.getAttribute('data-value');
+        hiddenInput.value = option.dataset.value;
         updateTrigger(option);
         if (hiddenInput.value === '') { customWrap.classList.add('is-open'); document.getElementById('keyUrlCustom').focus(); }
         else { customWrap.classList.remove('is-open'); }

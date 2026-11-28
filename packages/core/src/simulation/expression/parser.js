@@ -1,5 +1,4 @@
-import { finite, text } from '../foundation.js';
-import { SAFE, RESERVED, unary, callable, expectedArity, name } from './functions.js';
+import { SAFE, RESERVED, unary, callable, expectedArity } from './functions.js';
 
 const precedence = {
   '||': 1,
@@ -79,7 +78,7 @@ const GREEK = {
 };
 const GREEK_PATTERN = new RegExp(`[${Object.keys(GREEK).join('')}π]`, 'g');
 const letter = (char) => Boolean(char) && /[A-Za-z]/.test(char);
-const alnum = (char) => Boolean(char) && /[A-Za-z0-9_]/.test(char);
+const alnum = (char) => Boolean(char) && /\w/.test(char);
 function transliterate(text, spaced) {
   return text.replace(GREEK_PATTERN, (char, offset, whole) => {
     const name = char === 'π' ? 'pi' : GREEK[char];
@@ -114,20 +113,20 @@ function normalizeDemonstrationExpression(source) {
     .replace(/[−–—‒﹣]/g, '-')
     .replace(/≤|⩽/g, '<=')
     .replace(/≥|⩾/g, '>=')
-    .replace(/≠/g, '!=');
+    .replaceAll('≠', '!=');
   text = transliterate(text, true);
   text = text
     .replace(/√\s*\(/g, 'sqrt(')
     .replace(/√\s*([A-Za-z0-9_.]+)/g, 'sqrt($1)')
     .replace(/∛\s*\(/g, 'cbrt(')
     .replace(/∛\s*([A-Za-z0-9_.]+)/g, 'cbrt($1)');
-  text = text.replace(/°/g, '*(pi/180)');
+  text = text.replaceAll('°', '*(pi/180)');
   text = text
     .replace(/\bMath\.PI\b/g, 'pi')
     .replace(/\bMath\.E\b/g, 'e')
     .replace(/\bMath\.([A-Za-z]\w*)/g, '$1')
     .replace(/\bPI\b/g, 'pi');
-  text = text.replace(/\*\*/g, '^').replace(/===/g, '==').replace(/!==/g, '!=');
+  text = text.replaceAll('**', '^').replaceAll('===', '==').replaceAll('!==', '!=');
   // "y = sin(x)" or "f(x) = x^2": keep the right-hand side.
   text = text.replace(/^\s*(?:y|[A-Za-z]\w*\s*\([^()]*\))\s*=(?!=)/, '');
   return text.replace(/;\s*$/, '').trim();
@@ -142,38 +141,38 @@ function normalizeDemonstrationIdentifier(value) {
 function parseDemonstrationExpression(input) {
   if (typeof input === 'number') {
     if (Number.isFinite(input)) return { kind: 'number', value: input };
-    throw Error('Numeric literal must be finite');
+    throw new Error('Numeric literal must be finite');
   }
   if (typeof input !== 'string' || !input.trim())
-    throw Error('Expression must be a number or a non-empty mathematical string');
+    throw new Error('Expression must be a number or a non-empty mathematical string');
   const source = normalizeDemonstrationExpression(input);
   if (!source || source.length > 1600)
-    throw Error('Expression must be 1–1600 mathematical characters');
+    throw new Error('Expression must be 1–1600 mathematical characters');
   const tokens = [];
   let offset = 0;
   while (offset < source.length) {
     const match =
-      /^\s*(?:(\d+\.?\d*(?:[eE][+-]?\d+)?|\.\d+(?:[eE][+-]?\d+)?)|([A-Za-z][A-Za-z0-9_]*)|(<=|>=|==|!=|&&|\|\||[+\-*/%^(),<>?:!]))/.exec(
+      /^\s*(?:(\d+\.?\d*(?:[eE][+-]?\d+)?|\.\d+(?:[eE][+-]?\d+)?)|([A-Za-z]\w*)|(<=|>=|==|!=|&&|\|\||[+\-*/%^(),<>?:!]))/.exec(
         source.slice(offset),
       );
     if (!match) {
       if (source.slice(offset).trim() === '') break;
-      throw Error(
+      throw new Error(
         `Unsupported expression syntax near "${source.slice(offset).trim().slice(0, 12)}"`,
       );
     }
     if (match[1] && !Number.isFinite(Number(match[1])))
-      throw Error('Numeric literal must be finite');
+      throw new Error('Numeric literal must be finite');
     tokens.push(
       match[1] ? { number: Number(match[1]) } : match[2] ? { name: match[2] } : { op: match[3] },
     );
     offset += match[0].length;
-    if (tokens.length > 320) throw Error('Expression token budget exceeded');
+    if (tokens.length > 320) throw new Error('Expression token budget exceeded');
   }
   let index = 0,
     depth = 0;
   const consume = (op) => {
-    if (tokens[index]?.op !== op) throw Error(`Expected ${op}`);
+    if (tokens[index]?.op !== op) throw new Error(`Expected ${op}`);
     index++;
   };
   const startsValue = (token) =>
@@ -185,7 +184,7 @@ function parseDemonstrationExpression(input) {
       token.op === '+');
   function primary() {
     const token = tokens[index++];
-    if (!token) throw Error('Incomplete expression');
+    if (!token) throw new Error('Incomplete expression');
     if (token.number !== undefined) return { kind: 'number', value: token.number };
     if (token.op === '+' || token.op === '-' || token.op === '!')
       return { kind: 'unary', op: token.op, arg: expression(7) };
@@ -221,7 +220,7 @@ function parseDemonstrationExpression(input) {
               left: { kind: 'variable', name: written },
               right: args[0],
             };
-          throw Error(`Unknown mathematical function: ${written}`);
+          throw new Error(`Unknown mathematical function: ${written}`);
         }
         const expected = expectedArity(name);
         if (
@@ -231,14 +230,14 @@ function parseDemonstrationExpression(input) {
               ? args.length === 0 || args.length > 8
               : args.length !== expected
         )
-          throw Error(
+          throw new Error(
             `Wrong argument count: ${written} takes ${expected ?? '1–8'} argument${expected === 1 ? '' : 's'}`,
           );
         if (
           ['sum', 'iterate', 'diff', 'integral'].includes(name) &&
           (args[0]?.kind !== 'variable' || !SAFE.test(args[0].name) || RESERVED.has(args[0].name))
         )
-          throw Error(
+          throw new Error(
             'sum/iterate/diff/integral needs a safe local variable as its first argument',
           );
         return { kind: 'call', name, args };
@@ -248,10 +247,10 @@ function parseDemonstrationExpression(input) {
         return { kind: 'call', name: written, args: [expression(IMPLICIT)] };
       return { kind: 'variable', name: written };
     }
-    throw Error(`Expected a mathematical value${token.op ? ` before "${token.op}"` : ''}`);
+    throw new Error(`Expected a mathematical value${token.op ? ` before "${token.op}"` : ''}`);
   }
   function expression(min = 0) {
-    if (++depth > 32) throw Error('Expression nesting budget exceeded');
+    if (++depth > 32) throw new Error('Expression nesting budget exceeded');
     let node = primary();
     for (;;) {
       const token = tokens[index];
@@ -290,7 +289,7 @@ function parseDemonstrationExpression(input) {
   const ast = expression();
   if (index !== tokens.length) {
     const token = tokens[index];
-    throw Error(
+    throw new Error(
       `Unexpected ${token.op ? `"${token.op}"` : (token.name ?? token.number)} after a complete expression`,
     );
   }

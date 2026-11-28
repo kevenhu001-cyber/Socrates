@@ -7,7 +7,7 @@ function nonlinearSpec(program) {
   const s = program.nonlinearSystem;
   if (s === undefined) return null;
   const fail = (m) => {
-    throw located('nonlinearSystem', Error(m));
+    throw located('nonlinearSystem', new Error(m));
   };
   if (
     !record(s) ||

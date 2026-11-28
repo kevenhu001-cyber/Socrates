@@ -1,5 +1,4 @@
-import { record, finite, range, located, at } from '../foundation.js';
-import { name } from '../expression/functions.js';
+import { record, finite } from '../foundation.js';
 import {
   normalizeDemonstrationExpression,
   normalizeDemonstrationIdentifier,

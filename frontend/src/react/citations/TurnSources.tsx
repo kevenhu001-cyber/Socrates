@@ -9,7 +9,10 @@ import type { SourcesPanelItem } from '../sources/sourcesStore';
  * The compact "Sources · n" pill under an answer. It opens the reader in the
  * transcript's second column instead of expanding a list in place.
  */
-export function TurnSources({ entryId, items }: { entryId: string; items: SourcesPanelItem[] }) {
+export function TurnSources({
+  entryId,
+  items,
+}: Readonly<{ entryId: string; items: SourcesPanelItem[] }>) {
   const panel = useSourcesPanel();
   const isOpen = panel.isOpen && panel.entry?.key === entryId;
   if (!items.length) return null;

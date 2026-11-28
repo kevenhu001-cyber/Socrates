@@ -86,8 +86,7 @@ export function looksTruncatedToolArguments(text: unknown): boolean {
   let depth = 0;
   let inString = false;
   let escaped = false;
-  for (let index = 0; index < source.length; index++) {
-    const char = source[index];
+  for (const char of source) {
     if (inString) {
       if (escaped) {
         escaped = false;
@@ -196,7 +195,7 @@ export function parseToolArguments(
      Repair only those unambiguous transport mistakes—never attempt a broad
      JavaScript/single-quote parser at this execution boundary. */
   let candidate = raw.replace(/^\uFEFF/, '').trim();
-  const fenced = candidate.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+  const fenced = /^```(?:json)?\s*([\s\S]*?)\s*```$/i.exec(candidate);
   if (fenced) candidate = fenced[1].trim();
   candidate = candidate.replace(/^(?:arguments?|input)\s*[:=]\s*/i, '').trim();
 
@@ -372,7 +371,7 @@ export function repairToolArguments(
   } else if (options.toolName === 'patch_intelligent_ui') {
     candidate = normalizeIntelligentUiPatchArgs(candidate) as Record<string, unknown>;
   }
-  if (schema && schema.properties) {
+  if (schema?.properties) {
     candidate = coerceObjectToSchema(candidate, schema, repairs, '', 0, dropUnknown) as Record<
       string,
       unknown
@@ -467,7 +466,7 @@ function unwrapArgumentWrapper(
 function parseLooseObjectLiteral(raw: string): Record<string, unknown> | null {
   let source = raw.replace(/^\uFEFF/, '').trim();
   if (source.length > MAX_TOOL_ARGUMENT_CHARS) return null;
-  const fenced = source.match(/^```(?:json|javascript|python)?\s*([\s\S]*?)\s*```$/i);
+  const fenced = /^```(?:json|javascript|python)?\s*([\s\S]*?)\s*```$/i.exec(source);
   if (fenced) source = fenced[1].trim();
   source = source.replace(/^(?:arguments?|input|parameters?|params)\s*[:=]\s*/i, '').trim();
   const firstObject = source.indexOf('{');
@@ -570,7 +569,7 @@ function readStringLiteral(
       if (next === 'u') {
         const hex = source.slice(index + 2, index + 6);
         if (/^[0-9a-fA-F]{4}$/.test(hex)) {
-          value += String.fromCharCode(parseInt(hex, 16));
+          value += String.fromCodePoint(Number.parseInt(hex, 16));
           index += 5;
           continue;
         }
@@ -1160,7 +1159,7 @@ export function validateToolArguments(
   value: Record<string, unknown>,
   schema: JsonSchemaNode | null | undefined,
 ): { ok: boolean; fieldErrors: string[] } {
-  if (!schema || !schema.properties) return { ok: true, fieldErrors: [] };
+  if (!schema?.properties) return { ok: true, fieldErrors: [] };
   const errors: string[] = [];
   validateObjectAgainstSchema(value, schema, '', 0, errors);
   return { ok: errors.length === 0, fieldErrors: errors };
@@ -1193,7 +1192,9 @@ export function wrapUntrustedToolResult(toolName: string | undefined, content: u
     /* Escape every angle bracket in the matched tag, not just the first
        two: a single `.replace('<', …)` leaves the rest of an attribute
        value able to close the wrapper tag. */
-    .replace(/<\/?tool_data\b[^>]*>/gi, (tag) => tag.replace(/</g, '&lt;').replace(/>/g, '&gt;'));
+    .replace(/<\/?tool_data\b[^>]*>/gi, (tag) =>
+      tag.replaceAll('<', '&lt;').replaceAll('>', '&gt;'),
+    );
   const label = String(toolName || 'tool')
     .replace(/[^a-zA-Z0-9_.:-]/g, '_')
     .slice(0, 128);

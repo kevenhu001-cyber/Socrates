@@ -10,7 +10,7 @@ export interface WorkspaceLoadingViewProps {
   page: string;
 }
 
-function SkeletonBlock({ className }: { className: string }) {
+function SkeletonBlock({ className }: Readonly<{ className: string }>) {
   return <Skeleton className={cn('workspace-skeleton-shimmer', className)} />;
 }
 
@@ -180,7 +180,7 @@ function loadingCopy(page: string): { title: string; description: string } {
   }
 }
 
-export function WorkspaceLoadingView({ page }: WorkspaceLoadingViewProps) {
+export function WorkspaceLoadingView({ page }: Readonly<WorkspaceLoadingViewProps>) {
   const { title, description } = loadingCopy(page);
   const titleId = `workspace-loading-${page}-title`;
   return (

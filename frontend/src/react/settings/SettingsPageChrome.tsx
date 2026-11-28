@@ -26,7 +26,10 @@ const settingsGroups = [
   ['data', 'account'],
 ] as const;
 
-function SettingsIdentity({ label, onOpen }: { label: SettingsLabel; onOpen: () => void }) {
+function SettingsIdentity({
+  label,
+  onOpen,
+}: Readonly<{ label: SettingsLabel; onOpen: () => void }>) {
   const user = useUserInfo();
   const free = user.tier === 'diophantus' || user.tier === 'free';
   return (
@@ -60,10 +63,10 @@ function SettingsIdentity({ label, onOpen }: { label: SettingsLabel; onOpen: () 
 function MobileAppearance({
   label,
   savePreference,
-}: {
+}: Readonly<{
   label: SettingsLabel;
   savePreference: SaveSettingsPreference;
-}) {
+}>) {
   const appearance = useSettingsPreferencesStore((state) => state.theme);
   const title = label('颜色模式', 'Color mode');
   const modes = [
@@ -98,11 +101,11 @@ export function SettingsMobileSearch({
   label,
   open,
   onToggle,
-}: {
+}: Readonly<{
   label: SettingsLabel;
   open: boolean;
   onToggle: () => void;
-}) {
+}>) {
   return (
     <Button
       variant="ghost"
@@ -121,10 +124,10 @@ export function SettingsMobileSearch({
 export function SettingsMobileBack({
   label,
   onBack,
-}: {
+}: Readonly<{
   label: SettingsLabel;
   onBack: () => void;
-}) {
+}>) {
   return (
     <Button
       id="settingsMobileBack"
@@ -149,7 +152,7 @@ export function SettingsNavigation({
   savePreference,
   onQueryChange,
   onSectionChange,
-}: {
+}: Readonly<{
   categories: SettingsCategory[];
   label: SettingsLabel;
   query: string;
@@ -159,7 +162,7 @@ export function SettingsNavigation({
   savePreference: SaveSettingsPreference;
   onQueryChange: (query: string) => void;
   onSectionChange: (section: SettingsSection) => void;
-}) {
+}>) {
   /* Arrow keys walk the rail like a tab list: the categories are one
      control group, so moving between them should not require Tab through
      every row. Focus follows the selection, matching the visual state. */
@@ -172,7 +175,7 @@ export function SettingsNavigation({
     if (!items.length) return;
     event.preventDefault();
     const current = items.findIndex((item) => item === document.activeElement);
-    const index = current < 0 ? 0 : current;
+    const index = Math.max(0, current);
     const next =
       event.key === 'Home'
         ? 0

@@ -1,5 +1,4 @@
-import { finite, at } from '../foundation.js';
-import { name } from '../expression/functions.js';
+import { finite } from '../foundation.js';
 import { solveSmallSystem } from './dense.js';
 
 // Dormand–Prince 5(4) embedded pair. Keep a bounded trajectory of accepted
@@ -87,7 +86,7 @@ function* integrateAdaptive(
   const toState = (v) => Object.fromEntries(names.map((name, i) => [name, v[i]]));
   const checked = (v) => {
     if (!v.every((x) => finite(x) && Math.abs(x) <= 1e12))
-      throw Error('Non-finite or divergent state');
+      throw new Error('Non-finite or divergent state');
     return v;
   };
   const interpolate = (segment, time) => {
@@ -105,7 +104,7 @@ function* integrateAdaptive(
   const events = dynamics.events ?? [];
   const readEvent = (event, time, value) => {
     const result = eventValue(event, time, toState(value));
-    if (!finite(result)) throw Error('Event expression is not finite');
+    if (!finite(result)) throw new Error('Event expression is not finite');
     return result;
   };
   let eventCount = 0,
@@ -123,7 +122,7 @@ function* integrateAdaptive(
   const implicit = stiff ? createImplicitStepper(n, rhsVector, rtol, atol) : null;
   try {
     for (let attempt = 0; t < dynamics.duration; attempt++) {
-      if (attempt >= 10000) throw Error('Adaptive integration step budget exceeded');
+      if (attempt >= 10000) throw new Error('Adaptive integration step budget exceeded');
       if (attempt % 16 === 0) yield;
       const remaining = dynamics.duration - t;
       h = Math.min(h, remaining);
@@ -133,7 +132,7 @@ function* integrateAdaptive(
         Math.min(h * 1e-6, 4 * (attempt + 1) * Number.EPSILON * Math.max(1, dynamics.duration))
       )
         h = remaining;
-      if (t + h === t) throw Error('Adaptive step underflow');
+      if (t + h === t) throw new Error('Adaptive step underflow');
       let next,
         err = 0,
         k0,
@@ -171,7 +170,7 @@ function* integrateAdaptive(
         k0 = stages[0].slice();
         k1 = stages[6].slice();
       }
-      if (!finite(err)) throw Error('Non-finite integration error');
+      if (!finite(err)) throw new Error('Non-finite integration error');
       const factor =
         err === 0 ? 5 : Math.max(0.2, Math.min(5, 0.9 * err ** (stiff ? -1 / 3 : -0.2)));
       if (err > 1) {
@@ -232,7 +231,7 @@ function* integrateAdaptive(
       for (const item of rearm) if (item.time <= (hit?.time ?? t + h)) disarmed.delete(item.event);
       if (hit) {
         if (++eventCount > 128)
-          throw Error('Event budget exceeded; possible chattering or repeated contact');
+          throw new Error('Event budget exceeded; possible chattering or repeated contact');
         const before = interpolate(segment, hit.time);
         const prior = toState(before);
         const reset = { ...prior };
@@ -245,7 +244,7 @@ function* integrateAdaptive(
           const result = eventReset(event, hit.time, prior);
           for (const key of Object.keys(event.reset ?? {})) {
             if (assigned.has(key))
-              throw Error('Simultaneous events reset the same state; combine their reset maps');
+              throw new Error('Simultaneous events reset the same state; combine their reset maps');
             assigned.add(key);
             reset[key] = result[key];
           }

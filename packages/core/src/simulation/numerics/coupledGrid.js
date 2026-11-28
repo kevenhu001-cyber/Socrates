@@ -19,7 +19,7 @@ function* prepareCoupledGrid(g, params, compile, warnings) {
     (f.advection ?? (two ? [0, 0] : [0])).map((v) => read(compile(v))),
   );
   const fail = (m) => {
-    throw located('dynamics.coupledFields', Error(m));
+    throw located('dynamics.coupledFields', new Error(m));
   };
   if (alpha.some((v) => !finite(v) || v < 0)) fail('Diffusivity must be finite and nonnegative');
   const cfl = Math.max(...alpha) * dt * (1 / dx ** 2 + (two ? 1 / dy ** 2 : 0));

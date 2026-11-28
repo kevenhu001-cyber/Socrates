@@ -21,12 +21,12 @@ export function PersonalizationMemorySection({
   memories,
   onChange,
   reportSaveError,
-}: {
+}: Readonly<{
   label: SettingsLabel;
   memories: SettingsMemory[];
   onChange: (memories: SettingsMemory[]) => void;
   reportSaveError: (message: string) => void;
-}) {
+}>) {
   const refreshMemories = () => onChange(getAllMemories());
   const syncMemoryChange = (request: () => Promise<unknown>) => {
     try {

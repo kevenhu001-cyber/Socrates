@@ -1,5 +1,4 @@
-import { record, finite, located, at } from '../foundation.js';
-import { name } from '../expression/functions.js';
+import { record, finite, located } from '../foundation.js';
 import { normalizeDemonstrationExpression } from '../expression/parser.js';
 
 // A deliberately bounded method-of-lines frontend for 1D diffusion/reaction.
@@ -10,7 +9,7 @@ import { normalizeDemonstrationExpression } from '../expression/parser.js';
 // Boundary expressions are evaluated at each node, not at the plotting point.
 function lowerSpatial2D(program, dynamics, spec) {
   const invalid = (message) => {
-    throw located('dynamics.spatial', Error(message));
+    throw located('dynamics.spatial', new Error(message));
   };
   const {
     nx,
@@ -68,9 +67,9 @@ function lowerSpatial2D(program, dynamics, spec) {
   const edge = (i, j) => i === 0 || i === nx - 1 || j === 0 || j === ny - 1;
   const local = (value, i, j, allowU) =>
     String(normalizeDemonstrationExpression(value))
-      .replace(/(?<![A-Za-z_])x(?![A-Za-z0-9_])/g, `(${xDomain[0] + i * dx})`)
-      .replace(/(?<![A-Za-z_])y(?![A-Za-z0-9_])/g, `(${yDomain[0] + j * dy})`)
-      .replace(/(?<![A-Za-z_])u(?![A-Za-z0-9_])/g, allowU ? id(i, j) : 'u');
+      .replace(/(?<![A-Za-z_])x(?!\w)/g, `(${xDomain[0] + i * dx})`)
+      .replace(/(?<![A-Za-z_])y(?!\w)/g, `(${yDomain[0] + j * dy})`)
+      .replace(/(?<![A-Za-z_])u(?!\w)/g, allowU ? id(i, j) : 'u');
   const value = (i, j) => (edge(i, j) ? `(${local(boundary, i, j, false)})` : id(i, j));
   const initialStates = {},
     derivatives = {};
@@ -92,7 +91,8 @@ function lowerSpatial2D(program, dynamics, spec) {
     { length: ny },
     (_, j) => `${rowId(j)}*max(0,1-abs((y-(${yDomain[0]}))/(${dy})-${j}))`,
   ).join('+')},sqrt(-1))`;
-  const { spatial: _spatial, ...rest } = dynamics;
+  const rest = { ...dynamics };
+  delete rest.spatial;
   return { ...program, definitions, dynamics: { ...rest, initial: initialStates, derivatives } };
 }
 
@@ -109,7 +109,7 @@ function lowerSpatialProgram(program) {
   const spec = dynamics.spatial;
   if (record(spec) && spec.dimension === 2) return lowerSpatial2D(program, dynamics, spec);
   const invalid = (message) => {
-    throw located('dynamics.spatial', Error(message));
+    throw located('dynamics.spatial', new Error(message));
   };
   if (
     !record(spec) ||
@@ -189,8 +189,8 @@ function lowerSpatialProgram(program) {
   // Explicit variable tokens only; the parser will validate every lowered expression.
   const local = (expression, i, allowU) =>
     String(normalizeDemonstrationExpression(expression))
-      .replace(/(?<![A-Za-z_])x(?![A-Za-z0-9_])/g, `(${domain[0] + i * dx})`)
-      .replace(/(?<![A-Za-z_])u(?![A-Za-z0-9_])/g, allowU ? stateName(i) : 'u');
+      .replace(/(?<![A-Za-z_])x(?!\w)/g, `(${domain[0] + i * dx})`)
+      .replace(/(?<![A-Za-z_])u(?!\w)/g, allowU ? stateName(i) : 'u');
   definitions.grid0 = local(left, 0, false);
   definitions[stateName(nodes - 1)] = local(right, nodes - 1, false);
   for (let i = 1; i < nodes - 1; i++) {
@@ -216,7 +216,8 @@ function lowerSpatialProgram(program) {
     definitions[parts[part]] = terms.join('+');
   }
   definitions.gridValue = `if(x>=${domain[0]}&&x<=${domain[1]},${parts.join('+')},sqrt(-1))`;
-  const { spatial: _spatial, ...rest } = dynamics;
+  const rest = { ...dynamics };
+  delete rest.spatial;
   return { ...program, definitions, dynamics: { ...rest, initial: initialStates, derivatives } };
 }
 

@@ -53,7 +53,7 @@ export async function compileDemonstrationRuntimeAsync(input) {
   ]);
   // Sweep source is independently validated and compiled before execution.
   return createCompiledFactory(plan, Object.fromEntries(entries), () => {
-    if (!source) throw Error('No compiled analysis source');
+    if (!source) throw new Error('No compiled analysis source');
     return source;
   });
 }

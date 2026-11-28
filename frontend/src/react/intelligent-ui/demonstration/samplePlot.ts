@@ -32,7 +32,7 @@ function axisValue(domain: Domain, fraction: number, scale: AxisScale = 'linear'
 }
 function positiveDomain(domain: Domain, scale: AxisScale, axis: string) {
   if (scale === 'log' && domain[0] <= 0)
-    throw Error(`Logarithmic ${axis} axis needs positive bounds`);
+    throw new Error(`Logarithmic ${axis} axis needs positive bounds`);
 }
 export interface Issue {
   part: 'curve' | 'marker';
@@ -175,7 +175,7 @@ function* sample(
   positiveDomain(xDomain, xScale, 'x');
   const slice =
     view.kind === 'plot' && view.sliceY !== undefined ? runtime.evaluate(view.sliceY, time) : 0;
-  if (!Number.isFinite(slice)) throw Error('Slice coordinate must be finite');
+  if (!Number.isFinite(slice)) throw new Error('Slice coordinate must be finite');
   const read = (expression: DemonstrationValue, t: number, x: number) =>
     runtime.evaluate(expression, t, x, slice);
   const sources =
@@ -292,5 +292,5 @@ export function* samplePlot(
         throw error;
     }
   }
-  throw Error('Unreachable');
+  throw new Error('Unreachable');
 }

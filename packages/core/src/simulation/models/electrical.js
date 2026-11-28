@@ -1,4 +1,4 @@
-import { record, finite, located, at } from '../foundation.js';
+import { record, finite, located } from '../foundation.js';
 import { SAFE, name } from '../expression/functions.js';
 import {
   normalizeDemonstrationExpression,
@@ -11,7 +11,7 @@ function lowerStateSpace(program) {
   if (!record(dynamics) || dynamics.stateSpace === undefined) return program;
   const spec = dynamics.stateSpace;
   const invalid = (message) => {
-    throw located('dynamics.stateSpace', Error(message));
+    throw located('dynamics.stateSpace', new Error(message));
   };
   if (
     !record(spec) ||
@@ -80,7 +80,8 @@ function lowerStateSpace(program) {
   outputs.forEach((id, i) => {
     definitions[id] = combine(formula(C[i], states), formula(D[i], inputs));
   });
-  const { stateSpace: _stateSpace, ...rest } = dynamics;
+  const rest = { ...dynamics };
+  delete rest.stateSpace;
   return {
     ...program,
     definitions,
@@ -97,7 +98,7 @@ function lowerCircuitProgram(program) {
   if (!record(dynamics) || dynamics.circuit === undefined) return program;
   const spec = dynamics.circuit;
   const invalid = (message) => {
-    throw located('dynamics.circuit', Error(message));
+    throw located('dynamics.circuit', new Error(message));
   };
   if (
     !record(spec) ||
@@ -177,11 +178,11 @@ function lowerCircuitProgram(program) {
     ...elements.map(valueId),
     ...states.map(stateId),
   ];
-  const used = [
+  const used = new Set([
     ...(program.parameters ?? []).map((p) => p?.id),
     ...Object.keys(program.definitions ?? {}),
-  ];
-  if (generated.some((id) => id.length > 40 || used.includes(id)))
+  ]);
+  if (generated.some((id) => id.length > 40 || used.has(id)))
     invalid('Circuit-generated names collide or exceed identifier length');
   const definitions = { ...program.definitions },
     initial = {},
@@ -242,7 +243,8 @@ function lowerCircuitProgram(program) {
   branches.forEach((e, i) => {
     definitions[currentId(e)] = `solveN(${nodes.length + i + 1},${n},${args})`;
   });
-  const { circuit: _circuit, ...rest } = dynamics;
+  const rest = { ...dynamics };
+  delete rest.circuit;
   return { ...program, definitions, dynamics: { ...rest, initial, derivatives } };
 }
 

@@ -7,7 +7,7 @@ function optimizationSpec(program) {
   const s = program.optimization;
   if (s === undefined) return null;
   const fail = (m) => {
-    throw located('optimization', Error(m));
+    throw located('optimization', new Error(m));
   };
   if (
     !record(s) ||

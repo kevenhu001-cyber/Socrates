@@ -26,12 +26,12 @@ function parsedUrl(rawUrl: unknown) {
    from the hostname instead: same-origin bytes, no round trip, and it
    still identifies the site. */
 function fallbackFavicon(url: URL | null) {
-  const host = String((url && url.hostname) || '').replace(/^www\./i, '');
+  const host = String(url?.hostname || '').replace(/^www\./i, '');
   const letter = /^[a-z0-9]/i.test(host) ? host.charAt(0).toUpperCase() : '?';
   /* Stable hue per host so the same site keeps the same colour. */
   let hue = 7;
   for (let index = 0; index < host.length; index++) {
-    hue = (hue * 31 + host.charCodeAt(index)) % 360;
+    hue = (hue * 31 + (host.codePointAt(index) ?? 0)) % 360;
   }
   const svg =
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">' +
@@ -104,7 +104,7 @@ export function decorateExternalLinks(root?: ParentNode | null) {
     decorateLink(scope);
   }
   const links = scope.querySelectorAll<HTMLElement>(EXTERNAL_LINK_SELECTOR);
-  for (let index = 0; index < links.length; index++) decorateLink(links[index]);
+  for (const link of links) decorateLink(link);
 }
 
 /* Past this many inserted roots in one frame a single document scan is
@@ -144,10 +144,9 @@ export function initLinkFavicons() {
     requestAnimationFrame(flush);
   };
   const observer = new MutationObserver(function (records) {
-    for (let r = 0; r < records.length; r++) {
-      const added = records[r].addedNodes;
-      for (let i = 0; i < added.length; i++) {
-        const node = added[i];
+    for (const record of records) {
+      const added = record.addedNodes;
+      for (const node of added) {
         if (node instanceof Element) pending.add(node);
         /* A text node landing inside an existing anchor cannot create a new
            link; nothing to scan. */

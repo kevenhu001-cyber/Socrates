@@ -13,10 +13,10 @@ export function* sampleIsosurface(
   preview: boolean,
 ): Generator<void, SurfaceSample, void> {
   if (!view.zRange || view.isoLevel === undefined)
-    throw Error('Isosurface requires bounds and level');
+    throw new Error('Isosurface requires bounds and level');
   const z = demonstrationDomain(view.zRange, runtime, time),
     level = runtime.evaluate(view.isoLevel, time);
-  if (!Number.isFinite(level)) throw Error('Isosurface level must be finite');
+  if (!Number.isFinite(level)) throw new Error('Isosurface level must be finite');
   const ranges = [x, y, z],
     size = preview ? 11 : 17,
     values = new Float64Array(size ** 3);
@@ -37,6 +37,7 @@ export function* sampleIsosurface(
       yield;
     }
   const triangles = yield* extractIsosurface(values, size, level);
-  if (!triangles.length) throw Error('No isosurface intersects the sampled volume at this level');
+  if (!triangles.length)
+    throw new Error('No isosurface intersects the sampled volume at this level');
   return { size: 0, values: [], x, y, z, triangles, isoLevel: level };
 }

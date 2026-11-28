@@ -40,7 +40,12 @@ const DECISIONS: ReadonlyArray<{
   { decision: 'stop', key: 'tool.stopRun', fallback: 'Stop run', variant: 'ghost' },
 ];
 
-export function ToolRunApproval({ view, messageId, toolCallId, readOnly }: ToolRunApprovalProps) {
+export function ToolRunApproval({
+  view,
+  messageId,
+  toolCallId,
+  readOnly,
+}: Readonly<ToolRunApprovalProps>) {
   const decide = async (decision: ApprovalDecision) => {
     try {
       await getLegacyActions().liveTurn?.decideApproval(messageId, toolCallId, decision);

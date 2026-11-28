@@ -59,7 +59,7 @@ function nextParameterValues(
     (program?.parameters ?? []).map((parameter) => {
       const old = prior?.parameters?.find((item) => item.id === parameter.id);
       const value =
-        reset || !old || old.value !== parameter.value ? parameter.value : previous[parameter.id];
+        reset || old?.value !== parameter.value ? parameter.value : previous[parameter.id];
       return [
         parameter.id,
         Number.isFinite(value)
@@ -75,12 +75,12 @@ function ParameterControl({
   value,
   id,
   onChange,
-}: {
+}: Readonly<{
   parameter: DemonstrationParameter;
   value: number;
   id: string;
   onChange: (key: string, value: number) => void;
-}) {
+}>) {
   const controlId = `${id}-${parameter.id}`;
   return (
     <div className="demo-control" key={parameter.id}>
@@ -144,12 +144,12 @@ function AdvancedParameters({
   values,
   id,
   onChange,
-}: {
+}: Readonly<{
   program: DemonstrationProgram;
   values: Record<string, number>;
   id: string;
   onChange: (key: string, value: number) => void;
-}) {
+}>) {
   if (!program.parameters?.some((parameter) => parameter.advanced)) return null;
   return (
     <details className="demo-advanced">
@@ -163,11 +163,11 @@ function PresetButtons({
   program,
   preset,
   onPreset,
-}: {
+}: Readonly<{
   program: DemonstrationProgram;
   preset: Preset;
   onPreset: (values: Record<string, number>) => void;
-}) {
+}>) {
   const [error, setError] = useState('');
   if (!program.presets?.length) return null;
   return (
@@ -206,7 +206,7 @@ function TimeControls({
   setTime,
   setPlaying,
   onScrub,
-}: {
+}: Readonly<{
   duration: number;
   time: number;
   playing: boolean;
@@ -214,7 +214,7 @@ function TimeControls({
   onScrub: (time: number) => void;
   setTime: (time: number) => void;
   setPlaying: (playing: boolean | ((previous: boolean) => boolean)) => void;
-}) {
+}>) {
   if (duration <= 0) return null;
   return (
     <div className="demo-time">
@@ -248,11 +248,11 @@ function FailureState({
   streaming,
   error,
   path,
-}: {
+}: Readonly<{
   streaming: boolean;
   error: string;
   path: string;
-}) {
+}>) {
   if (streaming)
     return (
       <section className="demonstration" aria-busy="true">
@@ -271,10 +271,10 @@ const restoreLabel = () => i18n('intui.demo.reset', 'Restore defaults');
 function RuntimeWarning({
   warnings,
   onRestore,
-}: {
+}: Readonly<{
   warnings: DemonstrationWarning[];
   onRestore: () => void;
-}) {
+}>) {
   const warning = warnings[0];
   if (!warning) return null;
   const headline = i18n(
@@ -465,7 +465,7 @@ const diagnosticLabels: [keyof Omit<DemonstrationDiagnostics, 'method'>, string,
   ['eigenOrthogonality', 'eigenOrthogonality', 'Orthogonality error'],
   ['eigenIterations', 'eigenIterations', 'Eigen rotations'],
 ];
-function SolverDiagnostics({ value }: { value: DemonstrationDiagnostics }) {
+function SolverDiagnostics({ value }: Readonly<{ value: DemonstrationDiagnostics }>) {
   return (
     <details className="demo-advanced">
       <summary>
@@ -490,12 +490,12 @@ function DemonstrationBody({
   title,
   id,
   state,
-}: {
+}: Readonly<{
   program: DemonstrationProgram;
   title?: string;
   id: string;
   state: ReturnType<typeof useDemonstrationState>;
-}) {
+}>) {
   const {
     values,
     time,
@@ -563,11 +563,11 @@ export function Demonstration({
   program: input,
   title,
   streaming = false,
-}: {
+}: Readonly<{
   program: unknown;
   title?: string;
   streaming?: boolean;
-}) {
+}>) {
   const host = useRef<HTMLElement>(null);
   const id = useId();
   const serialized = useMemo(() => JSON.stringify(input) ?? 'null', [input]);

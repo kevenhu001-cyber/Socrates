@@ -10,7 +10,7 @@ function coupledGridSpec(program) {
   if (!record(d) || d.coupledFields === undefined) return null;
   const s = d.coupledFields,
     fail = (m) => {
-      throw located('dynamics.coupledFields', Error(m));
+      throw located('dynamics.coupledFields', new Error(m));
     };
   if (
     !record(s) ||
@@ -116,7 +116,8 @@ function coupledGridSpec(program) {
 }
 function lowerCoupledGrid(program, g = coupledGridSpec(program)) {
   if (!g) return program;
-  const { coupledFields: _coupled, ...rest } = program.dynamics;
+  const rest = { ...program.dynamics };
+  delete rest.coupledFields;
   const defs = { ...program.definitions };
   for (const id of g.ids) {
     defs[id] = '0*x+0*y+0*t';

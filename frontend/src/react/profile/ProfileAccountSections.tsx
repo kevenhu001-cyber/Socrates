@@ -4,7 +4,7 @@ import { SectionCard } from '../ui/page/SectionCard';
 
 import { buttonVariants } from '../ui/shadcn/button';
 
-export function ProfileAccountSection({ user }: { user: ProfileUserSnapshot }) {
+export function ProfileAccountSection({ user }: Readonly<{ user: ProfileUserSnapshot }>) {
   return (
     <SectionCard className="profile-section" title={profileText('profile.account', 'Account')}>
       <div className="profile-row">
@@ -33,7 +33,7 @@ export function ProfileAccountSection({ user }: { user: ProfileUserSnapshot }) {
   );
 }
 
-export function ProfileSubscriptionSection({ user }: { user: ProfileUserSnapshot }) {
+export function ProfileSubscriptionSection({ user }: Readonly<{ user: ProfileUserSnapshot }>) {
   const tierLabel =
     user.tier === 'diophantus' || user.tier === 'free'
       ? profileText('profile.freePlan', 'Free')

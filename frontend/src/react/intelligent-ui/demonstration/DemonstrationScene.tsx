@@ -44,7 +44,7 @@ function engineeringSymbol(kind: string, from: Point, to: Point, color: string):
   const dx = to[0] - from[0],
     dy = to[1] - from[1],
     length = Math.hypot(dx, dy);
-  if (length < 0.01) throw Error('Symbol endpoints must be distinct');
+  if (length < 0.01) throw new Error('Symbol endpoints must be distinct');
   const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
   const mid = length / 2,
     r = Math.min(length * 0.23, 16),
@@ -167,9 +167,9 @@ function drawSceneObject({
   let labelAt: Point;
   const size = (value: DemonstrationValue) => {
     const result = read(value);
-    if (result <= 0) throw Error('Object size must be positive');
+    if (result <= 0) throw new Error('Object size must be positive');
     const pixels = result * scale;
-    if (!Number.isFinite(pixels)) throw Error('Object size exceeds the display range');
+    if (!Number.isFinite(pixels)) throw new Error('Object size exceeds the display range');
     return pixels;
   };
   if (object.kind === 'path') {
@@ -332,14 +332,14 @@ function SceneGridTicks({
   bottom,
   x,
   y,
-}: {
+}: Readonly<{
   left: number;
   right: number;
   top: number;
   bottom: number;
   x: [number, number];
   y: [number, number];
-}) {
+}>) {
   return (
     <>
       {[0, 1, 2, 3, 4].map((index) => {
@@ -409,7 +409,7 @@ export const DemoScene = memo(function DemoScene({
   const issues: string[] = [];
   const evaluate = (expression: DemonstrationValue) => {
     const value = sample?.get(expression);
-    if (typeof value === 'string') throw Error(value);
+    if (typeof value === 'string') throw new Error(value);
     return value ?? Number.NaN;
   };
   let content: ReactNode;
@@ -419,13 +419,13 @@ export const DemoScene = memo(function DemoScene({
         y = demonstrationDomain(view.y, { evaluate });
       const scale = Math.min((WIDTH - 2 * PAD) / (x[1] - x[0]), (HEIGHT - 2 * PAD) / (y[1] - y[0]));
       if (!Number.isFinite(scale) || scale <= 0)
-        throw Error('Scene axis range cannot be displayed');
+        throw new Error('Scene axis range cannot be displayed');
       const left = (WIDTH - (x[1] - x[0]) * scale) / 2,
         bottom = (HEIGHT + (y[1] - y[0]) * scale) / 2;
       const read = (value: DemonstrationValue) => {
         const result = evaluate(value);
         if (!Number.isFinite(result) || Math.abs(result) > 1e6)
-          throw Error('Scene values must be finite and within ±1e6');
+          throw new Error('Scene values must be finite and within ±1e6');
         return result;
       };
       const project = (point: [DemonstrationValue, DemonstrationValue]): Point => {
@@ -434,7 +434,7 @@ export const DemoScene = memo(function DemoScene({
           bottom - (read(point[1]) - y[0]) * scale,
         ];
         if (!projected.every(Number.isFinite))
-          throw Error('Object coordinates exceed the display range');
+          throw new Error('Object coordinates exceed the display range');
         return projected;
       };
       const top = bottom - (y[1] - y[0]) * scale,

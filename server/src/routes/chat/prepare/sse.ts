@@ -1,10 +1,3 @@
-/**
- * SSE priming and typed error frames for the chat stream.
- *
- * The 32 KB prime defeats intermediary first-chunk buffers; the error frame
- * keeps a post-header failure on the SSE protocol instead of emitting JSON.
- */
-import { ApiError } from '../../../lib/errors.js';
 import { buildSseErrorFrame } from '../../../lib/sseErrorFrame.js';
 import type { ErrorLocale } from '../../../lib/errorMessages.js';
 import { startSseKeepalive } from '../../../lib/sse.js';

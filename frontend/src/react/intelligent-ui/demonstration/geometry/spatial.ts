@@ -55,5 +55,5 @@ export function* sampleSpatialField(
       markers: [],
     };
   }
-  throw Error('Unsupported spatial field presentation');
+  throw new Error('Unsupported spatial field presentation');
 }

@@ -19,7 +19,7 @@ interface KatexLike {
 
 /** Code samples are literal; only prose math delimiters can demand KaTeX. */
 export function hasMathDelimiters(text: string): boolean {
-  const prose = text.replace(/```[\s\S]*?(?:```|$)|`[^`\n]*`/g, '').replace(/\\\$/g, '');
+  const prose = text.replace(/```[\s\S]*?(?:```|$)|`[^`\n]*`/g, '').replaceAll('\\$', '');
   return /\$|\\[([]/.test(prose);
 }
 
@@ -82,9 +82,9 @@ export function normalizeMathSource(math: string, displayMode: boolean): string 
   let source = String(math).trim();
   source = source
     .replace(/^[ \t]*>[ \t]?/gm, '')
-    .replace(/\\begin\{eqnarray\*?\}/g, '\\begin{aligned}')
-    .replace(/\\end\{eqnarray\*?\}/g, '\\end{aligned}')
-    .replace(/\\begin\{alignedat\}(?!\{)/g, '\\begin{alignedat}{2}')
+    .replace(/\\begin\{eqnarray\*?\}/g, String.raw`\begin{aligned}`)
+    .replace(/\\end\{eqnarray\*?\}/g, String.raw`\end{aligned}`)
+    .replace(/\\begin\{alignedat\}(?!\{)/g, String.raw`\begin{alignedat}{2}`)
     .replace(/\\label\{[^}]*\}/g, '');
   if (!displayMode) source = source.replace(/\\tag\*?\{[^}]*\}/g, '');
   return source;
@@ -106,7 +106,7 @@ function balanceStreamingMath(src: string): string {
   let out = src + '}'.repeat(depth);
   const lefts = (src.match(/\\left(?![A-Za-z])/g) || []).length;
   const rights = (src.match(/\\right(?![A-Za-z])/g) || []).length;
-  for (let k = rights; k < lefts; k += 1) out += '\\right.';
+  for (let k = rights; k < lefts; k += 1) out += String.raw`\right.`;
   return closeUnclosedEnvironments(out);
 }
 
@@ -132,7 +132,7 @@ export function streamingMathPrefixes(src: string): string[] {
 }
 
 function neutralizeKatexErrors(html: string): string {
-  if (html.indexOf('katex-error') === -1) return html;
+  if (!html.includes('katex-error')) return html;
   return html.replace(
     /<span class="katex-error"([^>]*)>([\s\S]*?)<\/span>/g,
     function (_m, attrs: string, inner: string) {
@@ -228,8 +228,8 @@ const NUMERIC_MATH_BAD_EDGE_RE = /^[*/^_=<>,:+]|[+\-*/^_=<>,:\u2212]$/;
 
 export function _looksLikeNumericMath(raw: string, next: string): boolean {
   if (!raw || /^\s|\s$/.test(raw)) return false;
-  if (/[0-9]/.test(next || '')) return false;
-  if (!NUMERIC_MATH_CHARS_RE.test(raw) || !/[0-9]/.test(raw)) return false;
+  if (/\d/.test(next || '')) return false;
+  if (!NUMERIC_MATH_CHARS_RE.test(raw) || !/\d/.test(raw)) return false;
   return !NUMERIC_MATH_BAD_EDGE_RE.test(raw);
 }
 

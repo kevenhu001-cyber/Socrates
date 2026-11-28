@@ -177,7 +177,7 @@ export function startSseKeepalive(res: Response, opts: SseKeepaliveOpts = {}) {
  * exiting will just leak a single number that resets next boot.
  */
 export function trackSseConnection(app: Application, delta: unknown) {
-  if (!app || !app.locals) return;
+  if (!app?.locals) return;
   const cur = Number.isFinite(app.locals.sseCount) ? app.locals.sseCount : 0;
   app.locals.sseCount = Math.max(0, cur + (delta as number));
 }

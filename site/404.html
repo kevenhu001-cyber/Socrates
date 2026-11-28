@@ -13,7 +13,7 @@
   <!-- Like locale.js on every other page (which this page cannot load: it
        would rewrite a missing URL), tell CSS at first paint that scripts are
        coming, so the header never paints in its no-JS layout and jumps. -->
-  <script>document.documentElement.setAttribute('data-site-js', '');</script>
+  <script>document.documentElement.dataset.siteJs = '';</script>
   <link rel="stylesheet" href="/modules.css?cb=20261128q1">
   <style>
     .nf { display: grid; justify-items: center; gap: var(--space-200); padding: clamp(80px, 14vh, 160px) var(--site-gutter) var(--space-900); text-align: center; }

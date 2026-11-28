@@ -13,7 +13,7 @@ export function* extractIsosurface(
     values.length !== size ** 3 ||
     !Number.isFinite(level)
   )
-    throw Error('Isosurface requires a finite level and a cubic grid of 2–17 samples per axis');
+    throw new Error('Isosurface requires a finite level and a cubic grid of 2–17 samples per axis');
   const at = (i: number, j: number, k: number) => (k * size + j) * size + i;
   const corners = [
     [0, 0, 0],
@@ -44,7 +44,7 @@ export function* extractIsosurface(
     )
       return;
     if (triangles.length >= 6000)
-      throw Error('Isosurface triangle budget exceeded; narrow bounds or simplify field');
+      throw new Error('Isosurface triangle budget exceeded; narrow bounds or simplify field');
     triangles.push([a, b, c]);
   };
   for (let k = 0; k < size - 1; k++)

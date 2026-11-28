@@ -18,7 +18,7 @@ export function* samplePlanarField(
   const { runtime: projected, slice } = sliceRuntime(view, runtime, time);
   const colorRange = view.colorRange?.map((v) => runtime.evaluate(v, time)) as Domain | undefined;
   if (colorRange && (!colorRange.every(Number.isFinite) || colorRange[0] >= colorRange[1]))
-    throw Error('Color range must be finite and increasing');
+    throw new Error('Color range must be finite and increasing');
   for (const stride of preview ? [4, 8, 1, 2] : [1, 2, 4, 8]) {
     try {
       const pixels = yield* sampleGrid(view, projected, time, x, y, stride, colorRange);
@@ -73,5 +73,5 @@ export function* samplePlanarField(
       if (!isDemonstrationBudgetError(error)) throw error;
     }
   }
-  throw Error('Demonstration calculation budget exceeded');
+  throw new Error('Demonstration calculation budget exceeded');
 }

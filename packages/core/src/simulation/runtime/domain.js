@@ -13,7 +13,7 @@ export function demonstrationDomain(bounds, runtime, time = 0, fallback) {
   });
   if (values.some((value) => !Number.isFinite(value) || Math.abs(value) > 1e6)) {
     if (fallback) return fallback;
-    throw Error(`Axis bounds must be finite and within ±1e6${problem ? ` (${problem})` : ''}`);
+    throw new Error(`Axis bounds must be finite and within ±1e6${problem ? ` (${problem})` : ''}`);
   }
   let [a, b] = values;
   if (a > b) [a, b] = [b, a];

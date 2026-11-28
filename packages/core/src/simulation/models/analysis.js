@@ -1,4 +1,4 @@
-import { record, finite, range, located, at } from '../foundation.js';
+import { record, finite, located } from '../foundation.js';
 import { parseDemonstrationExpression } from '../expression/parser.js';
 import { expressionNames } from '../expression/evaluate.js';
 
@@ -9,7 +9,7 @@ function scientificAnalysisSpec(program, validateSource) {
   const a = program.analysis;
   if (a === undefined) return null;
   const fail = (m) => {
-    throw located('analysis', Error(m));
+    throw located('analysis', new Error(m));
   };
   if (!record(a) || !['fft', 'eigen', 'sweep'].includes(a.kind))
     fail('Use fft, eigen or sweep analysis');

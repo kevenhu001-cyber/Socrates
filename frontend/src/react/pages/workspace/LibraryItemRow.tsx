@@ -22,13 +22,13 @@ function LibraryItemName({
   item,
   itemKey,
   dispatch,
-}: {
+}: Readonly<{
   isRenaming: boolean;
   name: string;
   item: LibraryDisplayItem;
   itemKey: string;
   dispatch: ReturnType<typeof useWorkspaceDispatch>;
-}) {
+}>) {
   if (isRenaming) {
     return (
       <ShadcnInput
@@ -67,13 +67,13 @@ function LibraryRowActions({
   itemKey,
   tab,
   dispatch,
-}: {
+}: Readonly<{
   name: string;
   item: LibraryDisplayItem;
   itemKey: string;
   tab: string;
   dispatch: ReturnType<typeof useWorkspaceDispatch>;
-}) {
+}>) {
   const label = `${name}: ${i18n('sidebar.nav.more', 'More')}`;
   return (
     <DropdownMenu modal={false}>
@@ -123,14 +123,14 @@ function LibraryItemRow({
   selection,
   renameItem,
   dispatch,
-}: {
+}: Readonly<{
   item: LibraryDisplayItem;
   itemKey: string;
   tab: string;
   selection: Record<string, boolean>;
   renameItem: string | null;
   dispatch: ReturnType<typeof useWorkspaceDispatch>;
-}) {
+}>) {
   const name = item.name || item.title || i18n('library.untitled', 'Untitled');
   const isSelected = !!selection[item.id];
   const isRenaming = renameItem === item.id;

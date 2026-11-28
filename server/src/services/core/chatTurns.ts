@@ -76,7 +76,7 @@ export function subscribeToChatTurn(turnId: string, listener: RuntimeSubscriber)
   set.add(listener);
   return () => {
     set?.delete(listener);
-    if (set && set.size === 0) subscribers.delete(turnId);
+    if (set?.size === 0) subscribers.delete(turnId);
   };
 }
 

@@ -132,7 +132,7 @@ function createPendingClientTurn(
       clientId?: string | null;
     }>;
     for (let index = messages.length - 1; index >= 0; index -= 1) {
-      if (messages[index] && messages[index].role === 'user') {
+      if (messages[index]?.role === 'user') {
         clientTurn.userClientId = messages[index].clientId || null;
         break;
       }
@@ -206,7 +206,7 @@ function finishChatTurn(
 }
 
 function finishTurnFeedback(result: StreamResult | null): void {
-  publishActiveWorkflowFinish(Boolean(result && result.text && String(result.text).trim()));
+  publishActiveWorkflowFinish(Boolean(result?.text?.trim()));
 }
 
 function saveSessionAfterTurn(controller: StreamingTurnController): void {
@@ -240,8 +240,7 @@ export async function askChatTurn(
   const topicValue = sessionStore.getState().topic;
   const topic = topicValue ? String(topicValue) : '';
   const userMessage = userText || `Let's talk about ${String(topicValue)}.`;
-  const userContent =
-    pendingContent !== undefined && pendingContent !== null ? pendingContent : userMessage;
+  const userContent = pendingContent ?? userMessage;
   const controller = await createTurnController(retryTurn, precreated);
   const isCancelled = () => turnWasCancelled(ownerSessionId, controller);
   if (isCancelled()) return;

@@ -85,7 +85,7 @@ const EVENT_HANDLERS = new Map<string, FrameHandler>([
     'turn_event',
     (data, _state, context) => {
       invoke(
-        context.opts && context.opts.onTurnEvent,
+        context.opts?.onTurnEvent,
         [data],
         'chat/detachedTurnRecovery.onTurnEvent',
       );
@@ -125,7 +125,7 @@ const EVENT_HANDLERS = new Map<string, FrameHandler>([
       const calls = toolCallsFromEvent(data);
       if (!calls.length) return;
       invoke(
-        context.opts && context.opts.onToolUse,
+        context.opts?.onToolUse,
         [calls],
         'chat/detachedTurnRecovery.onToolUse',
       );
@@ -138,7 +138,7 @@ const EVENT_HANDLERS = new Map<string, FrameHandler>([
         state.hasToolOutput = true;
       }
       invoke(
-        context.opts && context.opts.onToolResult,
+        context.opts?.onToolResult,
         [data],
         'chat/detachedTurnRecovery.onToolResult',
       );
@@ -184,7 +184,7 @@ function completedTurnResult(
   state: RecoveryState,
   context: DetachedRecoveryContext,
 ): RecoveryResult | null {
-  if (!turn || turn.status !== 'completed') return null;
+  if (turn?.status !== 'completed') return null;
   const remainingReasoning = turn.fullReasoning?.slice(state.reasoning.length);
   if (remainingReasoning) {
     state.reasoning += remainingReasoning;
@@ -228,7 +228,7 @@ function snapshotPollOutcome(
   if (!snapshot?.turn) return null;
   if (snapshot.turn.turnRuntime) {
     invoke(
-      context.opts && context.opts.onTurnSnapshot,
+      context.opts?.onTurnSnapshot,
       [snapshot.turn.turnRuntime],
       'chat/detachedTurnRecovery.runtimeSnapshot',
     );
@@ -236,7 +236,7 @@ function snapshotPollOutcome(
   for (const frame of snapshot.events || []) {
     if (frame.event === 'turn_event') {
       invoke(
-        context.opts && context.opts.onTurnEvent,
+        context.opts?.onTurnEvent,
         [frame.data],
         'chat/detachedTurnRecovery.snapshot',
       );
@@ -295,7 +295,7 @@ async function pollDetachedTurn(
   controller: AbortController,
 ): Promise<RecoveryResult | null> {
   for (let attempt = 0; attempt < 120 && !state.done && !state.failed; attempt += 1) {
-    if (context.signal && context.signal.aborted) break;
+    if (context.signal?.aborted) break;
     const outcome = await pollDetachedAttempt(turnId, state, context, controller);
     if (outcome.terminal) return outcome.value;
   }

@@ -124,11 +124,11 @@ export function renderExtension(
     '<script>(' +
     visualizationSandboxMath.toString() +
     ')(' +
-    JSON.stringify(cardId).replace(/</g, '\\u003c') +
+    JSON.stringify(cardId).replace(/</g, String.raw`\u003c`) +
     ',' +
     JSON.stringify(nonce) +
     ',' +
-    JSON.stringify(MATH_LABEL_TRIGGER.source).replace(/</g, '\\u003c') +
+    JSON.stringify(MATH_LABEL_TRIGGER.source).replace(/</g, String.raw`\u003c`) +
     ')</script>';
   const documentSource =
     '<!doctype html><meta http-equiv="Content-Security-Policy" content="' +
@@ -159,9 +159,9 @@ export function renderExtension(
 function extensionRepairPrompt(spec: ExtensionSpec | null | undefined, errMsg: unknown): string {
   let msg =
     'The Visualization card "' +
-    String((spec && spec.title) || '').slice(0, 80) +
+    String(spec?.title || '').slice(0, 80) +
     '" (template: ' +
-    (spec && spec.template) +
+    spec?.template +
     ') failed to render in the client: ' +
     String(errMsg || 'render error').slice(0, 300) +
     '. Rebuild it with render_intelligent_ui using one native node {id, type: "visualization", template, title, payload, accessibilitySummary} inside {version:1,nodes:[...]} — fix the payload, or switch to a simpler built-in template (chart/graph templates are more reliable than extension templates).';

@@ -383,10 +383,10 @@ async function cjkSubsets() {
     .map(([, body]) => body)
     .filter((body) => /font-family:\s*['"]Noto Sans SC['"]/.test(body))
     .map((body) => ({
-      url: body.match(/src:\s*url\(['"]?([^'")]+)/)[1],
-      ranges: (body.match(/unicode-range:\s*([^;]+)/)?.[1] ?? '').split(',').map((part) => {
+      url: /src:\s*url\(['"]?([^'")]+)/.exec(body)[1],
+      ranges: (/unicode-range:\s*([^;]+)/.exec(body)?.[1] ?? '').split(',').map((part) => {
         const [from, to = from] = part.trim().replace(/^U\+/i, '').split('-');
-        return [parseInt(from, 16), parseInt(to, 16)];
+        return [Number.parseInt(from, 16), Number.parseInt(to, 16)];
       }),
     }));
   return notoSansSubsets;
@@ -395,7 +395,7 @@ let consentCopy;
 async function zhConsentText() {
   if (consentCopy !== undefined) return consentCopy;
   const script = await readFile(join(root, 'locale.js'), 'utf8');
-  consentCopy = script.match(/LOCALES\.zh \? \{([\s\S]*?)\}/)?.[1] ?? '';
+  consentCopy = /LOCALES\.zh \? \{([\s\S]*?)\}/.exec(script)?.[1] ?? '';
   return consentCopy;
 }
 async function cjkPreloads(html) {
@@ -467,9 +467,9 @@ export async function syncChrome({ check = false } = {}) {
     const preloads = locale === 'zh' ? await cjkPreloads(withChrome) : '';
     const next = withChrome
       .replace(/[ \t]*<link rel="preload"[^>]*data-cjk-preload>\r?\n?/g, '')
-      .replace(/[ \t]*<link rel="stylesheet" href="\/chrome\.css[^\"]*">\r?\n?/g, '')
-      .replace(/[ \t]*<link rel="stylesheet" href="\/public\.css[^\"]*">\r?\n?/g, '')
-      .replace(/[ \t]*<link rel="stylesheet" href="[^\"]*fonts\.css[^\"]*">\r?\n?/g, (tag) =>
+      .replace(/[ \t]*<link rel="stylesheet" href="\/chrome\.css[^"]*">\r?\n?/g, '')
+      .replace(/[ \t]*<link rel="stylesheet" href="\/public\.css[^"]*">\r?\n?/g, '')
+      .replace(/[ \t]*<link rel="stylesheet" href="[^"]*fonts\.css[^"]*">\r?\n?/g, (tag) =>
         locale === 'zh' ? '' : tag,
       )
       // English pages that keep a fonts.css link still need the current
@@ -479,13 +479,13 @@ export async function syncChrome({ check = false } = {}) {
         /(<link rel="stylesheet" href="[^"]*fonts\.css)\?(?:[^"]*)(")/g,
         `$1?cb=${version}$2`,
       )
-      .replace(/[ \t]*<script src="\/chrome\.js[^\"]*"><\/script>\r?\n?/g, '')
-      .replace(/[ \t]*<script src="\/motion\.js[^\"]*"><\/script>\r?\n?/g, '')
+      .replace(/[ \t]*<script src="\/chrome\.js[^"]*"><\/script>\r?\n?/g, '')
+      .replace(/[ \t]*<script src="\/motion\.js[^"]*"><\/script>\r?\n?/g, '')
       .replace(/<body\b(?![^>]*\bdata-site-public)([^>]*)>/, '<body$1 data-site-public>')
-      .replace(/(<script src="[^\"]*locale\.js)(?:\?[^\"]*)?(")/g, `$1?cb=${version}$2`)
-      .replace(/(<script src="[^\"]*editorial\.js)(?:\?[^\"]*)?(")/g, `$1?cb=${version}$2`)
+      .replace(/(<script src="[^"]*locale\.js)(?:\?[^"]*)?(")/g, `$1?cb=${version}$2`)
+      .replace(/(<script src="[^"]*editorial\.js)(?:\?[^"]*)?(")/g, `$1?cb=${version}$2`)
       .replace(
-        /(<link rel="stylesheet" href="[^\"]*(?:inner|account|page-media)\.css)(?:\?[^\"]*)?(")/g,
+        /(<link rel="stylesheet" href="[^"]*(?:inner|account|page-media)\.css)(?:\?[^"]*)?(")/g,
         `$1?cb=${version}$2`,
       )
       .replace(/[ \t]*<meta name="theme-color"[^>]*>\r?\n?/g, '')

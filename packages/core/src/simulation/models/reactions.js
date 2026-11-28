@@ -1,4 +1,4 @@
-import { record, finite, located, at } from '../foundation.js';
+import { record, finite, located } from '../foundation.js';
 import { name } from '../expression/functions.js';
 import { parseDemonstrationExpression } from '../expression/parser.js';
 import { expressionNames } from '../expression/evaluate.js';
@@ -13,7 +13,7 @@ function lowerReactionNetwork(program) {
   if (!record(d) || d.reactionNetwork === undefined) return program;
   const s = d.reactionNetwork,
     fail = (message) => {
-      throw located('dynamics.reactionNetwork', Error(message));
+      throw located('dynamics.reactionNetwork', new Error(message));
     };
   if (
     !record(s) ||
@@ -169,7 +169,8 @@ function lowerReactionNetwork(program) {
         .map((v) => `${v.composition[e]}*${v.id}`)
         .join('+') || '0',
     );
-  const { reactionNetwork: _reactionNetwork, ...rest } = d;
+  const rest = { ...d };
+  delete rest.reactionNetwork;
   return {
     ...program,
     definitions,

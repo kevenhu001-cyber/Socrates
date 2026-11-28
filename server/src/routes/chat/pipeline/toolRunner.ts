@@ -21,10 +21,7 @@ import {
   wrapUntrustedToolResult,
 } from '../../../services/tools/toolCallSafety.js';
 import { recordToolOutcome } from '../../../lib/telemetry.js';
-import {
-  intelligentUiExample,
-  inferIntelligentUiExample,
-} from '../../../services/intelligentUiExamples.js';
+import { inferIntelligentUiExample } from '../../../services/intelligentUiExamples.js';
 
 /** Every code that means "the arguments were wrong", for logging. */
 const ARGUMENT_ERROR_CODES: ReadonlySet<string> = new Set<string>([

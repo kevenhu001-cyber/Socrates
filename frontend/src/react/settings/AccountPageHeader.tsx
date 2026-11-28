@@ -12,7 +12,7 @@ export function AccountPageHeader({
   backIcon = 'chevronLeft',
   onBack,
   children,
-}: {
+}: Readonly<{
   title: string;
   titleId: string;
   backLabel: string;
@@ -20,7 +20,7 @@ export function AccountPageHeader({
   backIcon?: IconProps['name'];
   onBack: () => void;
   children?: ReactNode;
-}) {
+}>) {
   return (
     <PageHeader
       variant="account"

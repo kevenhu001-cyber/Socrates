@@ -89,7 +89,7 @@ function sliderDisplay(props: SliderDisplayProps, fieldValue: unknown) {
   return { min, max, step, value, readout, marks, progress };
 }
 
-function Field({ label, children: content }: { label?: string; children: ReactNode }) {
+function Field({ label, children: content }: Readonly<{ label?: string; children: ReactNode }>) {
   if (!label) return <>{content}</>;
   return (
     <ShadcnLabel className="iui-field">

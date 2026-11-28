@@ -9,7 +9,7 @@ function implicitGridSpec(program) {
   if (!record(d) || d.method !== 'grid-implicit') return null;
   const s = d.spatial;
   const fail = (message) => {
-    throw located('dynamics.spatial', Error(message));
+    throw located('dynamics.spatial', new Error(message));
   };
   if (
     !record(s) ||
@@ -92,7 +92,8 @@ function implicitGridSpec(program) {
 
 function lowerImplicitGrid(program, grid = implicitGridSpec(program)) {
   if (!grid) return program;
-  const { spatial: _spatial, ...rest } = program.dynamics;
+  const rest = { ...program.dynamics };
+  delete rest.spatial;
   // Validation uses symbolic placeholders only. At runtime gridValue and
   // gridMean are resolved by the numerical grid, never by these expressions.
   return {

@@ -220,13 +220,13 @@ function stripComments(text) {
  * `[...]` (length-preserving) so the selectors this guard looks for match
  * regardless of formatting. */
 function normalizeAttributeQuotes(css) {
-  return css.replace(/\[[^\]]*\]/g, (selector) => selector.replace(/'/g, '"'));
+  return css.replace(/\[[^\]]*\]/g, (selector) => selector.replaceAll("'", '"'));
 }
 
 function ruleBody(css, selector) {
   const normalized = normalizeAttributeQuotes(css);
-  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const pattern = new RegExp('(^|[}\\n])\\s*' + escaped + '\\s*\\{', 'm');
+  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
+  const pattern = new RegExp(String.raw`(^|[}\n])\s*` + escaped + String.raw`\s*\{`, 'm');
   const match = pattern.exec(normalized);
   if (!match) return null;
   const start = normalized.indexOf('{', match.index);
@@ -275,7 +275,7 @@ function resolveValue(value, vars, seen = new Set()) {
 function hexToRgb(hex) {
   const clean = hex.trim().replace('#', '');
   if (!/^[0-9a-fA-F]{6}$/.test(clean)) return null;
-  return [0, 2, 4].map((i) => parseInt(clean.slice(i, i + 2), 16));
+  return [0, 2, 4].map((i) => Number.parseInt(clean.slice(i, i + 2), 16));
 }
 
 /* Parse a colour literal into RGB. Both hex and the modern
@@ -333,7 +333,7 @@ function hslToHex(value) {
 
 /* Read the `bg` group out of a `darkPalette` / `lightPalette` declaration. */
 function parseSharedPalette(source, constName) {
-  const constBody = new RegExp(`const ${constName}[^=]*= \\{([\\s\\S]*?)\\n\\};`).exec(source);
+  const constBody = new RegExp(String.raw`const ${constName}[^=]*= \{([\s\S]*?)\n\};`).exec(source);
   if (!constBody) return {};
   const bgBody = /\bbg:\s*\{([\s\S]*?)\n\s*\}/.exec(constBody[1]);
   if (!bgBody) return {};
@@ -345,7 +345,7 @@ function parseSharedPalette(source, constName) {
 }
 
 function parseRnPalette(source, constName) {
-  const block = new RegExp(`const ${constName}[^=]*= \\{([\\s\\S]*?)\\n\\};`).exec(source);
+  const block = new RegExp(String.raw`const ${constName}[^=]*= \{([\s\S]*?)\n\};`).exec(source);
   if (!block) return {};
   const out = {};
   for (const match of block[1].matchAll(
@@ -357,7 +357,7 @@ function parseRnPalette(source, constName) {
 }
 
 function parseRnSurfaces(source, constName) {
-  const block = new RegExp(`const ${constName}[^=]*= \\{([\\s\\S]*?)\\n\\};`).exec(source);
+  const block = new RegExp(String.raw`const ${constName}[^=]*= \{([\s\S]*?)\n\};`).exec(source);
   if (!block) return {};
   const out = {};
   for (const match of block[1].matchAll(
@@ -769,6 +769,6 @@ function main() {
   console.log(`surface-ladder check passed (${summary}).`);
 }
 
-if (process.argv[1] && process.argv[1].endsWith('check-surface-ladder.mjs')) {
+if (process.argv[1]?.endsWith('check-surface-ladder.mjs')) {
   main();
 }

@@ -15,7 +15,7 @@ function* integrateReactionSSA(spec, dynamics, names, initial, readRate, warning
   if (!state.every((v) => Number.isSafeInteger(v) && v >= 0 && v <= 1e8))
     throw located(
       'dynamics.reactionNetwork',
-      Error('SSA requires nonnegative integer initial counts at selected parameter values'),
+      new Error('SSA requires nonnegative integer initial counts at selected parameter values'),
     );
   const channels = spec.reactions.map((r) => ({
     k: readRate(r.rateConstant),
@@ -25,7 +25,7 @@ function* integrateReactionSSA(spec, dynamics, names, initial, readRate, warning
   if (channels.some((c) => !finite(c.k) || c.k < 0))
     throw located(
       'dynamics.reactionNetwork',
-      Error('SSA rate constants must be finite and nonnegative'),
+      new Error('SSA rate constants must be finite and nonnegative'),
     );
   const times = [0],
     states = [state.slice()],
@@ -35,7 +35,7 @@ function* integrateReactionSSA(spec, dynamics, names, initial, readRate, warning
     duration = dynamics.duration;
   try {
     while (t < duration) {
-      if (events >= 10000) throw Error('SSA reaction event limit reached');
+      if (events >= 10000) throw new Error('SSA reaction event limit reached');
       let sum = 0;
       for (let j = 0; j < channels.length; j++) {
         const c = channels[j];
@@ -48,14 +48,14 @@ function* integrateReactionSSA(spec, dynamics, names, initial, readRate, warning
           for (let k = 0; k < n; k++) a *= (state[i] - k) / (k + 1);
         }
         if (!finite(a) || a < 0 || a > 1e12)
-          throw Error('SSA propensity exceeds finite resource bounds');
+          throw new Error('SSA propensity exceeds finite resource bounds');
         rates[j] = a;
         sum += a;
       }
       if (sum === 0) break;
       const next = t - Math.log(random()) / sum;
       if (next > duration) break;
-      if (!(next > t)) throw Error('SSA time increment underflow');
+      if (!(next > t)) throw new Error('SSA time increment underflow');
       let choice = random() * sum,
         j = 0;
       while (j < rates.length - 1 && choice >= rates[j]) {
@@ -65,7 +65,7 @@ function* integrateReactionSSA(spec, dynamics, names, initial, readRate, warning
       const delta = channels[j].delta,
         updated = state.map((v, i) => v + delta[i]);
       if (!updated.every((v) => Number.isSafeInteger(v) && v >= 0 && v <= 1e8))
-        throw Error('SSA count exceeds physical/resource bounds');
+        throw new Error('SSA count exceeds physical/resource bounds');
       state.set(updated);
       t = next;
       times.push(t);

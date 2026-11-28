@@ -47,7 +47,7 @@ function bodyField(body: unknown, key: string): unknown {
 function isEventStreamResponse(response: Response): boolean {
   try {
     const type =
-      response && response.headers && typeof response.headers.get === 'function'
+      typeof response?.headers?.get === 'function'
         ? String(response.headers.get('content-type') || '')
         : '';
     return /text\/event-stream/i.test(type);
@@ -107,8 +107,8 @@ function makeJsonResponseError(response: Response, body: unknown): ApiError {
         ? response.headers.get('X-Request-Id')
         : null;
     if (requestId) error.requestId = requestId;
-  } catch (caught) {
-    reportSwallow(caught, 'util/api.jsonError.requestId');
+  } catch (error_) {
+    reportSwallow(error_, 'util/api.jsonError.requestId');
   }
   return error;
 }
@@ -119,15 +119,13 @@ export async function apiFetchRaw(path: string, opts: ApiRequestOptions = {}): P
   const linkedSignal = linkAbortSignal(opts.signal, 'util/api.apiFetchRaw');
   let response: Response;
   try {
-    response = await fetch(
-      request.path,
-      Object.assign({}, request.opts, {
-        signal: linkedSignal.controller.signal,
-      }) as RequestInit,
-    );
-  } catch (caught) {
+    response = await fetch(request.path, {
+      ...request.opts,
+      signal: linkedSignal.controller.signal,
+    } as RequestInit);
+  } catch (error_) {
     linkedSignal.detach();
-    const failure = caught as { name?: string } | null;
+    const failure = error_ as { name?: string } | null;
     if (failure?.name === 'AbortError' || linkedSignal.controller.signal.aborted) {
       throw abortedRequestError();
     }
@@ -147,7 +145,7 @@ export async function apiFetchRaw(path: string, opts: ApiRequestOptions = {}): P
       }
       const refreshController = new AbortController();
       await refreshCsrfToken(refreshController.signal, 'util/api.apiFetchRaw');
-      return apiFetchRaw(request.path, Object.assign({}, opts, { _csrfRetried: true }));
+      return apiFetchRaw(request.path, { ...opts, _csrfRetried: true });
     }
     await throwRawResponseError(response);
   }
@@ -171,14 +169,12 @@ export async function apiFetch<T = unknown>(
   let body: unknown;
   try {
     try {
-      response = await fetch(
-        request.path,
-        Object.assign({}, request.opts, {
-          signal: linkedSignal.controller.signal,
-        }) as RequestInit,
-      );
-    } catch (caught) {
-      const failure = caught as { name?: string } | null;
+      response = await fetch(request.path, {
+        ...request.opts,
+        signal: linkedSignal.controller.signal,
+      } as RequestInit);
+    } catch (error_) {
+      const failure = error_ as { name?: string } | null;
       if (failure?.name === 'AbortError' || linkedSignal.controller.signal.aborted)
         throw abortedRequestError();
       throw makeApiError(0, '网络异常，请检查连接后重试', null, 'NETWORK', 0);
@@ -198,7 +194,7 @@ export async function apiFetch<T = unknown>(
        prevent CSRF refresh and turn the replay into another 403. */
     const refreshController = new AbortController();
     await refreshCsrfToken(refreshController.signal, 'util/api.apiFetch');
-    return apiFetch<T>(request.path, Object.assign({}, opts, { _csrfRetried: true }));
+    return apiFetch<T>(request.path, { ...opts, _csrfRetried: true });
   }
   throw error;
 }

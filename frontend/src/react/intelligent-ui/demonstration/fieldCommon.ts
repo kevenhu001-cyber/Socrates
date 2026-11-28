@@ -1,5 +1,8 @@
-import type { DemonstrationField, DemonstrationRuntime } from '@socrates/core/demonstration';
-import type { DemonstrationValue } from '@socrates/core/demonstration';
+import type {
+  DemonstrationField,
+  DemonstrationRuntime,
+  DemonstrationValue,
+} from '@socrates/core/demonstration';
 
 export const FIELD_WIDTH = 320;
 export function fieldHeight(view: DemonstrationField) {

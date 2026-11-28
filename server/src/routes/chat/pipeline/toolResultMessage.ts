@@ -19,23 +19,27 @@ export function formatToolResultContent(toolName: string, result: ToolResult): s
     (!toolName.startsWith('oc_') || isOpenConnectorActionRetryable(toolName));
   if (toolName === 'code_interpreter') {
     const lines = [];
-    lines.push(`[status: ${result.status || 'unknown'}]`);
-    lines.push(`[exit_code: ${result.exitCode ?? 'n/a'}]`);
-    lines.push(`[duration_ms: ${result.durationMs ?? 'n/a'}]`);
+    lines.push(
+      `[status: ${result.status || 'unknown'}]`,
+      `[exit_code: ${result.exitCode ?? 'n/a'}]`,
+      `[duration_ms: ${result.durationMs ?? 'n/a'}]`,
+    );
     const artifactList = (result.artifactFileIds || [])
       .map((a) => `${a.name}${a.mimeType ? ` (${a.mimeType})` : ''}${a.id ? ` [id:${a.id}]` : ''}`)
       .join(', ');
     lines.push(`[artifacts: ${artifactList || 'none'}]`);
     if ((result.artifactFileIds || []).some((a) => /^image\//i.test(a.mimeType || ''))) {
-      lines.push('');
       lines.push(
+        '',
         'Image artifacts are NOT rendered automatically. The image is optional: include it only when it materially helps the answer, using exactly `![short description](/api/files/<fileId>/raw)` with an id above. Otherwise describe the result in prose.',
       );
     }
     if (result.status !== 'completed') {
-      lines.push(`[error_code: ${result.errorCode || result.errorMessage || 'execution_failed'}]`);
-      lines.push(`[retryable: ${retryable ? 'yes' : 'no'}]`);
-      lines.push(`[error: ${result.errorMessage || result.error || result.status}]`);
+      lines.push(
+        `[error_code: ${result.errorCode || result.errorMessage || 'execution_failed'}]`,
+        `[retryable: ${retryable ? 'yes' : 'no'}]`,
+        `[error: ${result.errorMessage || result.error || result.status}]`,
+      );
       if (!retryable) {
         lines.push(
           'This call is not retryable. STOP retrying this exact code. Do not quote internal diagnostics in your answer. Continue with a corrected approach in prose, or state the limitation in one plain sentence.',
@@ -88,8 +92,7 @@ export function formatToolResultContent(toolName: string, result: ToolResult): s
         'Treat diagnostics as internal feedback; retry safely if permitted, otherwise state only a material limitation.',
       );
     }
-    lines.push('--- stdout ---');
-    lines.push(result.stdout || '(empty)');
+    lines.push('--- stdout ---', result.stdout || '(empty)');
     if (result.stderr) {
       const stderrLines = String(result.stderr).split(/\r?\n/);
       const tail = stderrLines.slice(-20).join('\n');
@@ -97,8 +100,7 @@ export function formatToolResultContent(toolName: string, result: ToolResult): s
         stderrLines.length > 20
           ? `…(${stderrLines.length - 20} earlier stderr lines truncated)\n`
           : '';
-      lines.push('--- stderr (tail, last 20 lines) ---');
-      lines.push(prefix + tail);
+      lines.push('--- stderr (tail, last 20 lines) ---', prefix + tail);
     }
     return lines.join('\n');
   }

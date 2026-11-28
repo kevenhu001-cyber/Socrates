@@ -12,9 +12,9 @@ export function* sampleSurface(
   size: number,
 ): Generator<void, SurfaceSample, void> {
   runtime.resetBudget();
-  if (!view.zRange) throw Error('Surface requires z bounds');
+  if (!view.zRange) throw new Error('Surface requires z bounds');
   const z = view.zRange.map((v) => runtime.evaluate(v, time)) as Domain;
-  if (!z.every(Number.isFinite) || z[1] <= z[0]) throw Error('Surface z bounds must increase');
+  if (!z.every(Number.isFinite) || z[1] <= z[0]) throw new Error('Surface z bounds must increase');
   const values: number[] = [];
   for (let j = 0; j < size; j++) {
     for (let i = 0; i < size; i++) {
@@ -33,7 +33,7 @@ export function* sampleSurface(
     }
     yield;
   }
-  if (!values.some(Number.isFinite)) throw Error('No finite surface samples in z range');
+  if (!values.some(Number.isFinite)) throw new Error('No finite surface samples in z range');
   return { size, values, x, y, z };
 }
 
@@ -45,7 +45,7 @@ export function* sampleSpace(
   y: Domain,
   preview: boolean,
 ): Generator<void, SurfaceSample, void> {
-  if (!view.zRange) throw Error('3D view requires z bounds');
+  if (!view.zRange) throw new Error('3D view requires z bounds');
   const z = demonstrationDomain(view.zRange, runtime, time);
   const ranges = [x, y, z];
   const normalize = (p: Point3): Point3 =>
@@ -83,7 +83,7 @@ export function* sampleSpace(
       yield;
     }
     if (!vertices.some(Boolean))
-      throw Error('No finite parametric surface points within declared bounds');
+      throw new Error('No finite parametric surface points within declared bounds');
     result.size = size;
     result.vertices = vertices;
   } else if (view.presentation === 'curve3d' && view.curve3d) {
@@ -109,12 +109,12 @@ export function* sampleSpace(
       }
       if (i % 32 === 0) yield;
     }
-    if (!curve.some(Boolean)) throw Error('No finite curve points in declared ranges');
+    if (!curve.some(Boolean)) throw new Error('No finite curve points in declared ranges');
     result.curve = curve;
   } else if (view.vector3d && view.vectorScale !== undefined) {
     const reference = runtime.evaluate(view.vectorScale, time);
     if (!Number.isFinite(reference) || reference <= 0)
-      throw Error('Vector reference magnitude must be positive');
+      throw new Error('Vector reference magnitude must be positive');
     const size = preview ? 4 : 7,
       arrows: NonNullable<SurfaceSample['arrows3d']> = [];
     for (let k = 0; k < size; k++)

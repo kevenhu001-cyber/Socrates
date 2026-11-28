@@ -69,7 +69,7 @@ function* sampleView(
   switch (view.kind) {
     case 'field': {
       const sampler = isSpatialField(view) ? state.spatial : state.planar;
-      if (!sampler) throw Error('Field sampler not loaded');
+      if (!sampler) throw new Error('Field sampler not loaded');
       return { kind: 'field', sample: yield* sampler(view, runtime, time, preview) };
     }
     case 'plot':
@@ -103,7 +103,7 @@ function calculatePreset(
 ): WorkerReply {
   const state = card.state;
   const preset = card.program.presets?.[request.index];
-  if (!state || state.revision !== request.revision || !preset)
+  if (state?.revision !== request.revision || !preset)
     return { ...reply, type: 'cancelled' };
   const runtime = state.runtime;
   runtime.resetBudget();
@@ -112,7 +112,7 @@ function calculatePreset(
       const value = runtime.evaluate(expression);
       const parameter = card.program.parameters?.find((item) => item.id === key);
       if (!parameter || !Number.isFinite(value) || value < parameter.min || value > parameter.max)
-        throw Error(`Preset ${key}: value must be finite and within its parameter range`);
+        throw new Error(`Preset ${key}: value must be finite and within its parameter range`);
       return [key, value];
     }),
   );
@@ -124,8 +124,8 @@ function* ensureCardState(
   input: Extract<JobRequest, { type: 'frame' }>['input'],
 ): Generator<void, NonNullable<Card['state']>, void> {
   let state = card.state;
-  if (!state || state.revision !== input.revision) {
-    if (!card.prepare) throw Error('Simulation compiler not loaded');
+  if (state?.revision !== input.revision) {
+    if (!card.prepare) throw new Error('Simulation compiler not loaded');
     const runtime = yield* card.prepare(input.values);
     state = {
       runtime,
@@ -227,7 +227,7 @@ function tick() {
   const [id, job] = next.value;
   pending.delete(id);
   const card = cards.get(id);
-  if (!card || card.job !== job || !job.work) return schedule();
+  if (card?.job !== job || !job.work) return schedule();
   const deadline = performance.now() + 8;
   try {
     do {

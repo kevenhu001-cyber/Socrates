@@ -18,7 +18,10 @@ function isZhLocale(): boolean {
   return typeof document !== 'undefined' && (document.documentElement.lang || '').startsWith('zh');
 }
 
-function CheatsheetSection({ title, rows }: { title: string; rows: Array<[string, string[]]> }) {
+function CheatsheetSection({
+  title,
+  rows,
+}: Readonly<{ title: string; rows: Array<[string, string[]]> }>) {
   return (
     <div className="cheatsheet-section">
       <div className="cmd-k-section-label">{title}</div>

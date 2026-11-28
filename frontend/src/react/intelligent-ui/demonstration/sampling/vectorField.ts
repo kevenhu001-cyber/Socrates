@@ -15,7 +15,7 @@ export function* sampleVectors(
   const reference =
     view.vectorScale === undefined ? undefined : runtime.evaluate(view.vectorScale, time);
   if (reference !== undefined && (!Number.isFinite(reference) || reference <= 0))
-    throw Error('Vector scale must be positive and finite');
+    throw new Error('Vector scale must be positive and finite');
   const width = FIELD_WIDTH,
     height = fieldHeight(view);
   for (let y = 9; y < height; y += 16) {

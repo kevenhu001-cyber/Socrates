@@ -1,4 +1,4 @@
-import { record, finite, range, located } from '../foundation.js';
+import { record, finite, located } from '../foundation.js';
 import { parseDemonstrationExpression } from '../expression/parser.js';
 import { expressionNames } from '../expression/evaluate.js';
 
@@ -8,7 +8,7 @@ function sparseSystemSpec(program) {
   const s = program.sparseSystem;
   if (s === undefined) return null;
   const fail = (message) => {
-    throw located('sparseSystem', Error(message));
+    throw located('sparseSystem', new Error(message));
   };
   if (
     !record(s) ||
@@ -29,8 +29,8 @@ function sparseSystemSpec(program) {
   if (program.definitions !== undefined && !record(program.definitions))
     fail('Invalid definitions');
   const scope = new Set((program.parameters ?? []).map((p) => p?.id));
-  const reserved = ['sparseValue', 'sparseResidual', 'sparseIterations'];
-  if ([...scope, ...Object.keys(program.definitions ?? {})].some((id) => reserved.includes(id)))
+  const reserved = new Set(['sparseValue', 'sparseResidual', 'sparseIterations']);
+  if ([...scope, ...Object.keys(program.definitions ?? {})].some((id) => reserved.has(id)))
     fail('Sparse result names are reserved');
   const check = (v) => {
     try {

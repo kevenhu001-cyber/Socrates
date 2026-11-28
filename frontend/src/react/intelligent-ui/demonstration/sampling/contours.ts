@@ -16,7 +16,8 @@ export function* sampleContours(
   if (!view.contours?.length) return [];
   runtime.resetBudget();
   const levels = view.contours.map((level) => runtime.evaluate(level, time));
-  if (levels.some((level) => !Number.isFinite(level))) throw Error('Contour levels must be finite');
+  if (levels.some((level) => !Number.isFinite(level)))
+    throw new Error('Contour levels must be finite');
   const spacing = Math.max(5, stride * 2);
   const nx = Math.max(2, Math.ceil((FIELD_WIDTH - 1) / spacing) + 1);
   const height = fieldHeight(view);

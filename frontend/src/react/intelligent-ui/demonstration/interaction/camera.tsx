@@ -13,7 +13,7 @@ export function CameraControls({
   elevation,
   setAzimuth,
   setElevation,
-}: ReturnType<typeof useSurfaceCamera>) {
+}: Readonly<ReturnType<typeof useSurfaceCamera>>) {
   const id = useId();
   return (
     <div className="demo-controls">

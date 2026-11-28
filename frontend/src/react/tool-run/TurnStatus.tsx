@@ -16,7 +16,7 @@ export interface TurnStatusProps {
   readOnly?: boolean;
 }
 
-function FailedLine({ status, messageId, readOnly }: TurnStatusProps) {
+function FailedLine({ status, messageId, readOnly }: Readonly<TurnStatusProps>) {
   const message = normalizeChineseProse(status.error || status.label || '');
   const retry = () => {
     if (status.retryMode === 'restored') retryRecoveredTurn(messageId);
@@ -52,7 +52,7 @@ function FailedLine({ status, messageId, readOnly }: TurnStatusProps) {
 }
 
 /** A turn the reader stopped. Same slot, Resend instead of Retry. */
-function StoppedLine({ status, messageId, readOnly }: TurnStatusProps) {
+function StoppedLine({ status, messageId, readOnly }: Readonly<TurnStatusProps>) {
   const resend = () => {
     retryLiveTurn(messageId);
   };
@@ -85,9 +85,9 @@ function StoppedLine({ status, messageId, readOnly }: TurnStatusProps) {
   );
 }
 
-export function TurnStatus(props: TurnStatusProps) {
+export function TurnStatus(props: Readonly<TurnStatusProps>) {
   const { status } = props;
-  if (!status || !status.phase) return null;
+  if (!status?.phase) return null;
   if (status.phase === 'error') return <FailedLine {...props} />;
   if (status.phase === 'stopped') return <StoppedLine {...props} />;
   if (!status.label) return null;

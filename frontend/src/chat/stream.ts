@@ -101,18 +101,15 @@ function createRetryHooks(
 } {
   async function waitForRetry(attempt: number, error: unknown): Promise<boolean> {
     try {
-      return await waitForAIRetry(
-        attempt,
-        error,
-        Object.assign({}, retryOptions, {
-          signal: turnController.signal,
-        }),
-      );
-    } catch (caught) {
-      if (isUserAbort(caught, turnController.signal) || isUserAbort(caught, retryOptions.signal)) {
+      return await waitForAIRetry(attempt, error, {
+        ...retryOptions,
+        signal: turnController.signal,
+      });
+    } catch (error_) {
+      if (isUserAbort(error_, turnController.signal) || isUserAbort(error_, retryOptions.signal)) {
         return false;
       }
-      throw caught;
+      throw error_;
     }
   }
   return {
@@ -193,7 +190,7 @@ async function executeStreamAttempts(args: {
     return null;
   }
   /* Keep an error visible when every retryable attempt was exhausted. */
-  setLastCallError((lastError && lastError.message) || 'Stream failed after all retries');
+  setLastCallError(lastError?.message || 'Stream failed after all retries');
   return null;
 }
 
@@ -210,10 +207,11 @@ export async function callAPIStream(
   opts?: StreamCallOptions | null,
 ): Promise<StreamResult | null> {
   const maxAttempts = maxStreamAttempts(opts);
-  const retryOptions: AIRequestOptions = Object.assign({}, opts || {}, {
+  const retryOptions: AIRequestOptions = {
+    ...(opts || {}),
     source: 'chat',
     maxRetries: maxAttempts - 1,
-  });
+  };
 
   if (!getActiveProvider()) {
     setLastCallError('no provider');

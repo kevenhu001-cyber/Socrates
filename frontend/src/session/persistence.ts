@@ -123,7 +123,7 @@ function _t(key: string, fallback?: string): string {
   } catch {
     /* empty-catch: intentional — translation is best-effort */
   }
-  return fallback != null ? fallback : key;
+  return fallback ?? key;
 }
 /* keep the Recents list in step with the server after a
    save without re-reading all 200 rows. */
@@ -132,7 +132,7 @@ function _applySavedRow(
   payload: SessionPostPayload,
   sentId: string,
 ): void {
-  if (!saved || !saved.id) return;
+  if (!saved?.id) return;
   try {
     serverCache.sessions = patchSessionRow(serverCache.sessions, saved, payload, sentId);
   } catch {
@@ -156,25 +156,23 @@ function commitAcknowledgedSave(
   /* Only acknowledged rows advance the watermark; any earlier failure
      leaves them eligible for the next save attempt. */
   commitSynced(_syncedFor(capturedSessionId), sentMessages, _fingerprints);
-  if (response && response.id && response.id !== originalSessionId) {
+  if (response?.id && response.id !== originalSessionId) {
     _rekeySynced(capturedSessionId, response.id);
   }
 
   /* Fold exactly the acknowledged delta into both old and adopted ids. */
-  const cachedId = (response && response.id) || capturedSessionId;
+  const cachedId = response?.id || capturedSessionId;
   detailCache.foldSave(cachedId, response, sentMessages as MessageLike[]);
-  if (response && response.id && response.id !== capturedSessionId) {
+  if (response?.id && response.id !== capturedSessionId) {
     detailCache.foldSave(capturedSessionId, response, sentMessages as MessageLike[]);
   }
 
   /* If the user deleted this draft while POST was in flight, only rewrite a
      pending snapshot; the tombstone still prevents state adoption below. */
   if (
-    response &&
-    response.id &&
+    response?.id &&
     response.id !== originalSessionId &&
-    saveState.pendingSnapshot &&
-    saveState.pendingSnapshot.id === originalSessionId
+    saveState.pendingSnapshot?.id === originalSessionId
   ) {
     saveState.pendingSnapshot.id = response.id;
   }
@@ -194,8 +192,7 @@ function publishAcknowledgedSave(
      the server id while that session is still active. */
   if (
     sessionStore.getState().currentSessionId === capturedSessionId &&
-    response &&
-    response.id &&
+    response?.id &&
     response.id !== originalSessionId
   ) {
     dispatchSession({ type: 'session/set', key: 'currentSessionId', value: response.id });
@@ -203,7 +200,7 @@ function publishAcknowledgedSave(
   }
 
   /* Clear server streaming markers after the durable save. */
-  const targetSid = (response && response.id) || capturedSessionId;
+  const targetSid = response?.id || capturedSessionId;
   if (targetSid) {
     apiFetch('/api/sessions/' + encodeURIComponent(targetSid), {
       method: 'PATCH',
@@ -361,7 +358,7 @@ export function saveSessionBeforeReset(): Promise<unknown> | null {
   if (!saveState.saveDirty && _lastPosted.id === sid) {
     const curMsgs = (sessionStore.getState().messages as unknown[]) || [];
     const synced = _syncedFor(sid);
-    if (synced && synced.size === curMsgs.length) {
+    if (synced?.size === curMsgs.length) {
       return null;
     }
   }
@@ -564,7 +561,7 @@ const _SYNCED_SESSION_CAP = 8;
 const _fingerprints = createFingerprintCache();
 
 function _syncedFor(sessionId: string | null | undefined): Map<string, string> {
-  const key = sessionId || '';
+  const key = sessionId ?? '';
   let got = _syncedBySession.get(key);
   if (!got) {
     got = new Map<string, string>();
@@ -611,7 +608,7 @@ function _rekeySynced(fromId: string | null | undefined, toId: string | null | u
 function payloadSignature(payload: SessionPostPayload): string {
   const msgs = Array.isArray(payload.messages) ? payload.messages : [];
   let parts = '';
-  for (let i = 0; i < msgs.length; i++) {
+  for (const msg of msgs) {
     /* this used to be
      *   clientId + ':' + html.length + ':' + rawText.length
      * i.e. a LENGTH-ONLY comparison. A message rewritten to a different
@@ -619,7 +616,7 @@ function payloadSignature(payload: SessionPostPayload): string {
      * "skip an identical re-save" short-circuit below silently dropped
      * the edit. Reuse the same memoised content fingerprint the delta
      * uses, so an unchanged message still costs one pointer compare. */
-    parts += _fingerprints.of(msgs[i] || {}) + ';';
+    parts += _fingerprints.of(msg || {}) + ';';
   }
   /* the signature drives the "skip an identical
      re-save" short-circuit, so ANY field whose change must reach the
@@ -776,7 +773,7 @@ export function installUnloadSave(): void {
      (available during page teardown). Same pattern as getCsrfToken in
      util/api/index.ts but inlined to avoid an import dependency. */
   function _beaconCsrf(): string | null {
-    const m = document.cookie.match(/\bcsrf=([^;]+)/);
+    const m = /\bcsrf=([^;]+)/.exec(document.cookie);
     return m ? m[1] : null;
   }
   function _beaconSave(): void {

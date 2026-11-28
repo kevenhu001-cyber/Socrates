@@ -207,8 +207,7 @@
     });
 
     /* Toast */
-    function showToast(msg, type) {
-      type = type || 'info';
+    function showToast(msg, type = 'info') {
       var host = document.getElementById('toastHost');
       var t = document.createElement('div');
       t.className = 'ed-toast is-' + type;
@@ -218,7 +217,7 @@
       t.querySelector('.ed-toast-close').addEventListener('click', function(){ dismiss(t); });
       setTimeout(function(){ dismiss(t); }, 4000);
     }
-    function dismiss(t) { t.style.animation = 'edToastOut .2s var(--ed-ease) forwards'; setTimeout(function(){ if (t.parentNode) t.parentNode.removeChild(t); }, 220); }
+    function dismiss(t) { t.style.animation = 'edToastOut .2s var(--ed-ease) forwards'; setTimeout(function(){ t.remove(); }, 220); }
 
     /* Confirm dialog */
     function showConfirm(title, msg, opts) {
@@ -253,7 +252,7 @@
 
     /* Cookie helpers */
     function getCookie(name) {
-      var m = document.cookie.match(new RegExp('(?:^|;)\\s*' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '=([^;]*)'));
+      var m = document.cookie.match(new RegExp(String.raw`(?:^|;)\s*` + name.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`) + '=([^;]*)'));
       return m ? m[1] : null;
     }
 
@@ -318,7 +317,7 @@
         var daysLeft = '—';
         if (u.subscriptionEnd) {
           var dl = Math.ceil((u.subscriptionEnd - Date.now()) / (1000 * 60 * 60 * 24));
-          daysLeft = dl > 0 ? dl : 0;
+          daysLeft = Math.max(0, dl);
         }
 
         var tierLabels = ['Free', 'Basic', 'Standard', 'Premium'];
@@ -335,7 +334,7 @@
 
         var maxS = isUnlimited ? 'Unlimited' : p.maxSessions;
         var sPct = isUnlimited ? 100 : Math.min((usage.sessionCount / p.maxSessions) * 100, 100);
-        var kMax = p.maxKeys >= 999 ? 999 : p.maxKeys;
+        var kMax = Math.min(p.maxKeys, 999);
         var kPct = Math.min((usage.providerCount / kMax) * 100, 100);
 
         var nextMonth = new Date(); nextMonth.setMonth(nextMonth.getMonth() + 1); nextMonth.setDate(1);
@@ -650,14 +649,14 @@
       var buckets = data.buckets || [];
       var p95 = Math.max(data.p95 || 0, 1);
       var byDayHour = {};
-      for (var i = 0; i < buckets.length; i++) {
-        var d = new Date(buckets[i].hour);
+      for (const bucket of buckets) {
+        var d = new Date(bucket.hour);
         var y = d.getFullYear();
         var m = String(d.getMonth() + 1).padStart(2, '0');
         var day = String(d.getDate()).padStart(2, '0');
         var key = y + '-' + m + '-' + day;
         if (!byDayHour[key]) byDayHour[key] = {};
-        byDayHour[key][d.getHours()] = buckets[i].tokens;
+        byDayHour[key][d.getHours()] = bucket.tokens;
       }
       var today = new Date(); today.setHours(0, 0, 0, 0);
       var days = [];

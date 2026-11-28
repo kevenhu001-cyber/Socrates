@@ -1,5 +1,4 @@
-import { DYNAMICS_BUDGET, finite, located, at } from '../foundation.js';
-import { name } from '../expression/functions.js';
+import { DYNAMICS_BUDGET, finite, located } from '../foundation.js';
 import { evaluatePreparedExpression } from '../expression/evaluate.js';
 
 function* solveFiniteElement(s, params, compile) {
@@ -13,7 +12,7 @@ function* solveFiniteElement(s, params, compile) {
     budget = { remaining: DYNAMICS_BUDGET },
     read = (expr) => evaluatePreparedExpression(compile(expr), scope, budget);
   const fail = (m) => {
-    throw located('finiteElement', Error(m));
+    throw located('finiteElement', new Error(m));
   };
   u[0] = read(s.left);
   u[n - 1] = read(s.right);

@@ -46,15 +46,12 @@ export function toolResultBudgetEnabled(): boolean {
 /** Offsets are UTF-16 character offsets, as in existing page tools. Avoid
  * splitting a surrogate pair; report actual returned offsets. */
 function safeEnd(text: string, end: number): number {
-  if (
-    end > 0 &&
-    end < text.length &&
-    text.charCodeAt(end - 1) >= 0xd800 &&
-    text.charCodeAt(end - 1) <= 0xdbff &&
-    text.charCodeAt(end) >= 0xdc00 &&
-    text.charCodeAt(end) <= 0xdfff
-  )
-    return end - 1;
+  if (end > 0 && end < text.length) {
+    const codePoint = text.codePointAt(end - 1);
+    /* A code point above the BMP means end - 1 starts a surrogate pair, so
+       cutting at end would split it. */
+    if (codePoint !== undefined && codePoint > 0xffff) return end - 1;
+  }
   return end;
 }
 

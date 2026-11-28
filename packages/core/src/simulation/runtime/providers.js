@@ -9,7 +9,7 @@ function createResultStore() {
   return {
     register(provider) {
       for (const [name, read] of Object.entries(provider.outputs ?? {})) {
-        if (readers.has(name)) throw Error('Duplicate numerical output: ' + name);
+        if (readers.has(name)) throw new Error('Duplicate numerical output: ' + name);
         readers.set(name, read);
       }
       if (provider.indexedReader) indexedReader = provider.indexedReader;

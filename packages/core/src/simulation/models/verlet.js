@@ -11,7 +11,7 @@ function verletSpec(program) {
   if (!record(d) || d.mechanics === undefined) return null;
   const s = d.mechanics,
     fail = (m) => {
-      throw located('dynamics.mechanics', Error(m));
+      throw located('dynamics.mechanics', new Error(m));
     };
   if (
     d.method !== 'verlet' ||
@@ -78,8 +78,9 @@ function verletSpec(program) {
 }
 function lowerVerlet(program, s = verletSpec(program)) {
   if (!s) return program;
-  const { mechanics: _m, ...d } = program.dynamics,
-    initial = {},
+  const d = { ...program.dynamics };
+  delete d.mechanics;
+  const initial = {},
     derivatives = {};
   for (const q of s.coordinates) {
     initial[q.position] = q.initialPosition;

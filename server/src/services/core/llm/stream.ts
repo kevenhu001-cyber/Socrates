@@ -3,10 +3,8 @@
  */
 import { randomUUID } from 'node:crypto';
 import {
-  applyProviderControls,
   modelCapability,
   isPermanentQuotaError,
-  permitsCompatibilityFallback,
   providerHeaders,
   providerPayloadFailure,
 } from '../llmProtocol.js';
@@ -16,13 +14,10 @@ import { chatCompletionsEndpoint } from '../../../lib/providerUrl.js';
 import { getLlmDispatcher, markLlmActivity } from './dispatcher.js';
 import { LlmProviderError, type ChatCompletionRequestOptions } from './types.js';
 import {
-  RATE_LIMIT_ATTEMPTS,
   RATE_LIMIT_STATUS,
   TRANSIENT_ATTEMPTS,
-  TRANSIENT_RETRYABLE_STATUS,
   attemptsForUpstreamStatus,
   isRetryableUpstreamStatus,
-  isRetryableUpstreamFailure,
   isTransientSocketReset,
   sleep,
   upstreamRetryDelayMs,
@@ -31,7 +26,6 @@ import { isToolFinishReason, nextCompatibilityVariant, requestBodyVariants } fro
 import {
   appendToolArgumentDelta,
   createToolArgumentStream,
-  mergeToolArgumentDelta,
   mergeToolNameDelta,
 } from './toolArgs.js';
 import { isRecord, reasoningText } from './values.js';
@@ -99,7 +93,7 @@ export async function streamChatCompletion(
          front: a turn that first meets a 503 (3 attempts) and then a 429
          (5) spends the longer budget it now needs. */
       for (let attempt = 0; ; attempt++) {
-        if (signal && signal.aborted) {
+        if (signal?.aborted) {
           onError(new Error('LLM request aborted'));
           return;
         }
@@ -184,7 +178,7 @@ export async function streamChatCompletion(
             }),
           );
           await sleep(delayMs, signal);
-          if (signal && signal.aborted) {
+          if (signal?.aborted) {
             onError(new Error('LLM request aborted'));
             return;
           }

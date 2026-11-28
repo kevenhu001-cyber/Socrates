@@ -10,18 +10,18 @@ function* prepareImplicitGrid(g, params, compile, warnings) {
     scope.x = x;
     scope.y = y;
     const v = evaluateDemonstrationExpression(compile(expr), scope, budget);
-    if (!finite(v) || Math.abs(v) > 1e12) throw Error('Nonfinite or excessive grid input');
+    if (!finite(v) || Math.abs(v) > 1e12) throw new Error('Nonfinite or excessive grid input');
     return v;
   };
   const alpha = read(s.diffusivity, 0, 0);
   if (alpha < 0)
-    throw located('dynamics.spatial.diffusivity', Error('Diffusivity must be nonnegative'));
+    throw located('dynamics.spatial.diffusivity', new Error('Diffusivity must be nonnegative'));
   const dx = (x[1] - x[0]) / (nx - 1),
     dy = two ? (y[1] - y[0]) / (ny - 1) : 1;
   const rx = (alpha * dt) / (dx * dx),
     ry = two ? (alpha * dt) / (dy * dy) : 0;
   if (!finite(rx) || !finite(ry) || rx > 1e12 || ry > 1e12)
-    throw Error('Diffusion coefficient or grid spacing exceeds numerical limits');
+    throw new Error('Diffusion coefficient or grid spacing exceeds numerical limits');
   let current = new Float64Array(size);
   const source = new Float64Array(size);
   const boundary = new Float64Array(size);
@@ -105,7 +105,7 @@ function* prepareImplicitGrid(g, params, compile, warnings) {
           if (i % 8 === 0) yield;
         }
       if (!next.every((v) => finite(v) && Math.abs(v) <= 1e12))
-        throw Error('Grid solution diverged');
+        throw new Error('Grid solution diverged');
       current = next;
       frames.push(next);
       means.push(next.reduce((a, b) => a + b, 0) / size);

@@ -51,7 +51,8 @@ export function getLlmDispatcher(endpoint?: string): Dispatcher {
     if (process.env.LLM_PROXY && !process.env.HTTPS_PROXY) {
       process.env.HTTPS_PROXY = process.env.LLM_PROXY;
     }
-    const headersTimeout = parseInt(process.env.LLM_HEADERS_TIMEOUT_MS || '180000', 10) || 180_000;
+    const headersTimeout =
+      Number.parseInt(process.env.LLM_HEADERS_TIMEOUT_MS || '180000', 10) || 180_000;
     _llmDispatcher = new EnvHttpProxyAgent({
       keepAliveTimeout: 12_000,
       keepAliveMaxTimeout: 60_000,
@@ -67,7 +68,8 @@ export function getLlmDispatcher(endpoint?: string): Dispatcher {
       },
     });
   } else {
-    const headersTimeout = parseInt(process.env.LLM_HEADERS_TIMEOUT_MS || '180000', 10) || 180_000;
+    const headersTimeout =
+      Number.parseInt(process.env.LLM_HEADERS_TIMEOUT_MS || '180000', 10) || 180_000;
     _llmDispatcher = new Agent({
       keepAliveTimeout: 12_000,
       keepAliveMaxTimeout: 60_000,

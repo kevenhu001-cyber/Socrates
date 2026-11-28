@@ -8,7 +8,7 @@ function* solveSparseSystem(spec, params, compile) {
   const read = (expr) => {
     const v = evaluateDemonstrationExpression(compile(expr), scope, budget);
     if (!finite(v) || Math.abs(v) > 1e12)
-      throw located('sparseSystem', Error('Nonfinite sparse coefficient'));
+      throw located('sparseSystem', new Error('Nonfinite sparse coefficient'));
     return v;
   };
   const counts = new Int32Array(n + 1),
@@ -36,7 +36,7 @@ function* solveSparseSystem(spec, params, compile) {
   if (spec.symmetric && !diagonal.every((v) => v > 0))
     throw located(
       'sparseSystem',
-      Error('CG requires positive diagonal and a symmetric positive-definite matrix'),
+      new Error('CG requires positive diagonal and a symmetric positive-definite matrix'),
     );
   const b = Float64Array.from(spec.rhs, read),
     x = new Float64Array(n),
@@ -70,7 +70,7 @@ function* solveSparseSystem(spec, params, compile) {
     if (!diagonal.every((v) => finite(v) && Math.abs(v) > 1e-15))
       throw located(
         'sparseSystem',
-        Error('BiCGSTAB Jacobi preconditioner requires nonzero diagonals'),
+        new Error('BiCGSTAB Jacobi preconditioner requires nonzero diagonals'),
       );
     const shadow = r.slice(),
       v = new Float64Array(n),
@@ -84,7 +84,7 @@ function* solveSparseSystem(spec, params, compile) {
       iterations = 0,
       error = Math.sqrt(dot(r, r)) / scale;
     const fail = () => {
-      throw located('sparseSystem', Error('BiCGSTAB breakdown or nonconvergence'));
+      throw located('sparseSystem', new Error('BiCGSTAB breakdown or nonconvergence'));
     };
     while (error > spec.tolerance && iterations < spec.maxIterations) {
       const rho = dot(shadow, r);
@@ -146,7 +146,7 @@ function* solveSparseSystem(spec, params, compile) {
     multiply(p, ap);
     const curvature = dot(p, ap);
     if (!(curvature > 0) || !finite(curvature) || !finite(rho))
-      throw located('sparseSystem', Error('CG breakdown: matrix may not be positive definite'));
+      throw located('sparseSystem', new Error('CG breakdown: matrix may not be positive definite'));
     const alpha = rho / curvature;
     for (let i = 0; i < n; i++) {
       x[i] += alpha * p[i];
@@ -159,7 +159,7 @@ function* solveSparseSystem(spec, params, compile) {
     const restart = error <= spec.tolerance || iterations % 64 === 0;
     if (restart) error = residual();
     if (!finite(error) || !x.every(finite))
-      throw located('sparseSystem', Error('Sparse iteration diverged'));
+      throw located('sparseSystem', new Error('Sparse iteration diverged'));
     if (error <= spec.tolerance) break;
     for (let i = 0; i < n; i++) z[i] = r[i] / diagonal[i];
     const next = dot(r, z),
@@ -172,7 +172,7 @@ function* solveSparseSystem(spec, params, compile) {
   if (error > spec.tolerance)
     throw located(
       'sparseSystem',
-      Error('CG failed to converge within the iteration budget; relative residual ' + error),
+      new Error('CG failed to converge within the iteration budget; relative residual ' + error),
     );
   return { x, error, iterations, nnz: values.length };
 }

@@ -39,7 +39,7 @@ function getFileTypeCategory(item: LibraryItemRecord): string {
   return CATEGORY_RULES.find((rule) => rule.matches(kind, ext))?.type || 'file';
 }
 
-function FileGlyph({ children }: { children: React.ReactNode }) {
+function FileGlyph({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <svg
       width="18"

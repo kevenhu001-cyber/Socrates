@@ -16,7 +16,7 @@ function normalizeProviderMessages(messages: ChatCompletionRequestOptions['messa
       (message.role === 'assistant' && Array.isArray(message.tool_calls)) ||
       message.role === 'tool'
     ) {
-      normalized = { ...message, content: message.content == null ? '' : message.content };
+      normalized = { ...message, content: message.content ?? '' };
     }
     // Preserve provider-returned reasoning verbatim. Current MiniMax and
     // DeepSeek document reasoning_content; synthesizing a second details

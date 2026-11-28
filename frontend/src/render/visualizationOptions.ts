@@ -36,7 +36,7 @@ function colorFor(role: string | undefined, index: number, colors: VizColors): s
 }
 
 function escapeTooltip(value: unknown): string {
-  return String(value == null ? '' : value).replace(/[&<>"']/g, function (char) {
+  return String(value ?? '').replace(/[&<>"']/g, function (char) {
     return (
       { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' } as Record<
         string,
@@ -175,10 +175,11 @@ function functionChartOption(
     textStyle,
     color: normalized.series.map((item, index) => colorFor(item.role, index, colors)),
     aria: { enabled: true, description: { summary: spec.accessibilitySummary } },
-    tooltip: Object.assign(
-      { trigger: 'axis', valueFormatter: (value: number) => Number(value).toPrecision(5) },
-      tooltipBase,
-    ),
+    tooltip: {
+      trigger: 'axis',
+      valueFormatter: (value: number) => Number(value).toPrecision(5),
+      ...tooltipBase,
+    },
     legend: legendOptions(normalized.series, colors, fontFamily),
     grid: {
       left: 48,
@@ -269,7 +270,7 @@ function shareChartOption(
     textStyle,
     color: [colors.primary, colors.secondary, colors.comparison, colors.highlight, colors.baseline],
     aria: { enabled: true, description: { summary: spec.accessibilitySummary } },
-    tooltip: Object.assign({ trigger: 'item' }, tooltipBase),
+    tooltip: { trigger: 'item', ...tooltipBase },
     legend: {
       type: categories.length > 6 ? 'scroll' : 'plain',
       bottom: 0,
@@ -333,18 +334,16 @@ function heatmapChartOption(
     backgroundColor: 'transparent',
     textStyle,
     aria: { enabled: true, description: { summary: spec.accessibilitySummary } },
-    tooltip: Object.assign(
-      {
-        trigger: 'item',
-        formatter: (params: { value: number[] }) =>
-          escapeTooltip(truncateLabel(yCategories[params.value[1]], 24)) +
-          ' · ' +
-          escapeTooltip(truncateLabel(xCategories[params.value[0]], 24)) +
-          ': ' +
-          escapeTooltip(params.value[2]),
-      },
-      tooltipBase,
-    ),
+    tooltip: {
+      trigger: 'item',
+      formatter: (params: { value: number[] }) =>
+        escapeTooltip(truncateLabel(yCategories[params.value[1]], 24)) +
+        ' · ' +
+        escapeTooltip(truncateLabel(xCategories[params.value[0]], 24)) +
+        ': ' +
+        escapeTooltip(params.value[2]),
+      ...tooltipBase,
+    },
     grid: { left: 10, right: 64, top: 10, bottom: 10, containLabel: true },
     xAxis: {
       type: 'category',
@@ -425,7 +424,7 @@ function radarChartOption(
     const values = radarSeries.map((series) => Number(series.data[index])).filter(Number.isFinite);
     const low = Math.min.apply(null, [0].concat(values));
     const observedMax = Math.max.apply(null, values.concat([0]));
-    const upper = indicator.max === undefined ? Math.max(1, observedMax * 1.08) : indicator.max;
+    const upper = indicator.max ?? Math.max(1, observedMax * 1.08);
     return { name: indicator.name, min: Math.min(low, upper - 0.001), max: upper };
   });
   return {
@@ -433,7 +432,7 @@ function radarChartOption(
     textStyle,
     color: radarSeries.map((item, index) => colorFor(item.role, index, colors)),
     aria: { enabled: true, description: { summary: spec.accessibilitySummary } },
-    tooltip: Object.assign({ trigger: 'item' }, tooltipBase),
+    tooltip: { trigger: 'item', ...tooltipBase },
     legend: legendOptions(radarSeries, colors, fontFamily, 'bottom'),
     radar: {
       indicator: radarIndicators,
@@ -474,22 +473,20 @@ function scatterChartOption(
     textStyle,
     color: scatterSeries.map((item, index) => colorFor(item.role, index, colors)),
     aria: { enabled: true, description: { summary: spec.accessibilitySummary } },
-    tooltip: Object.assign(
-      {
-        trigger: 'item',
-        formatter: (params: { seriesName?: string; value: number[] }) =>
-          escapeTooltip(params.seriesName || '') +
-          '<br>' +
-          escapeTooltip(payload.xLabel || 'x') +
-          ': ' +
-          escapeTooltip(params.value[0]) +
-          '<br>' +
-          escapeTooltip(payload.yLabel || 'y') +
-          ': ' +
-          escapeTooltip(params.value[1]),
-      },
-      tooltipBase,
-    ),
+    tooltip: {
+      trigger: 'item',
+      formatter: (params: { seriesName?: string; value: number[] }) =>
+        escapeTooltip(params.seriesName || '') +
+        '<br>' +
+        escapeTooltip(payload.xLabel || 'x') +
+        ': ' +
+        escapeTooltip(params.value[0]) +
+        '<br>' +
+        escapeTooltip(payload.yLabel || 'y') +
+        ': ' +
+        escapeTooltip(params.value[1]),
+      ...tooltipBase,
+    },
     legend: legendOptions(scatterSeries, colors, fontFamily),
     grid: {
       left: 48,
@@ -573,7 +570,7 @@ function cartesianChartOption(
     textStyle,
     color: seriesInput.map((item, index) => colorFor(item.role, index, colors)),
     aria: { enabled: true, description: { summary: spec.accessibilitySummary } },
-    tooltip: Object.assign({ trigger: 'axis' }, tooltipBase),
+    tooltip: { trigger: 'axis', ...tooltipBase },
     legend: legendOptions(seriesInput, colors, fontFamily),
     grid: {
       left: 10,
@@ -670,5 +667,5 @@ export function optionForChart(spec: VizSpec, colors: VizColors): ChartOption {
   else
     baseOption = cartesianChartOption(spec, colors, fontFamily, textStyle, tooltipBase, chartType);
 
-  return Object.assign({}, chartAnimationOptions(), baseOption);
+  return { ...chartAnimationOptions(), ...baseOption };
 }

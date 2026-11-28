@@ -94,7 +94,7 @@ export function canonicalToolExample(
 ): Record<string, unknown> | null {
   const handWritten = CANONICAL_EXAMPLES[toolName];
   if (handWritten) return handWritten;
-  if (!schema || !schema.properties) return null;
+  if (!schema?.properties) return null;
   const example: Record<string, unknown> = {};
   const required = Array.isArray(schema.required) ? schema.required : [];
   const keys = required.length ? required : Object.keys(schema.properties).slice(0, 3);
@@ -124,7 +124,7 @@ export function canonicalToolExampleJson(
 function boundedNumber(schema: JsonSchemaNode): number {
   const min = typeof schema.minimum === 'number' ? schema.minimum : null;
   const max = typeof schema.maximum === 'number' ? schema.maximum : null;
-  if (min !== null && max !== null) return min <= max ? min : max;
+  if (min !== null && max !== null) return Math.min(min, max);
   if (min !== null) return min;
   if (max !== null && max < 1) return max;
   return 1;
@@ -134,7 +134,7 @@ function boundedNumber(schema: JsonSchemaNode): number {
 function boundedInteger(schema: JsonSchemaNode): number {
   const min = typeof schema.minimum === 'number' ? Math.ceil(schema.minimum) : null;
   const max = typeof schema.maximum === 'number' ? Math.floor(schema.maximum) : null;
-  if (min !== null && max !== null) return min <= max ? min : max;
+  if (min !== null && max !== null) return Math.min(min, max);
   if (min !== null) return min;
   if (max !== null && max < 1) return max;
   return 1;
@@ -188,7 +188,7 @@ function exampleValueFor(key: string, schema: JsonSchemaNode, depth: number): un
 
 /** Render a schema as a short "field: type (required)" list. */
 export function describeToolSchema(schema?: JsonSchemaNode | null): string {
-  if (!schema || !schema.properties) return '';
+  if (!schema?.properties) return '';
   const required = new Set(Array.isArray(schema.required) ? schema.required : []);
   const lines: string[] = [];
   for (const [key, property] of Object.entries(schema.properties)) {
@@ -302,8 +302,6 @@ export function buildToolErrorFeedback(input: ToolErrorFeedbackInput): ToolError
     retryable
       ? 'Send one corrected call with materially different arguments, or continue in prose if the tool is not needed.'
       : 'Do not repeat this call. Continue in prose instead.',
-  );
-  lines.push(
     'Treat this error as internal feedback. Do not quote it or narrate the retry. If recovery is exhausted, mention only a material limitation.',
   );
 

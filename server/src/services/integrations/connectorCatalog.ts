@@ -404,7 +404,7 @@ export function searchConnectorCatalog(
       if (description.includes(token)) score += 2;
       if (entry.searchText.includes(token)) score += 1;
     }
-    if (tokens.some((token) => service === token)) score += 10;
+    if (tokens.includes(service)) score += 10;
     if (score > 0) {
       matches.push({
         tool: entry.tool,

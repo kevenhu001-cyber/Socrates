@@ -30,7 +30,7 @@ function finish(generator) {
 if (process.argv[2] === '--child') {
   const [, , , mode, id] = process.argv;
   const program = cases[id];
-  if (!program) throw Error('Unknown benchmark: ' + id);
+  if (!program) throw new Error('Unknown benchmark: ' + id);
   const start = performance.now();
   const module =
     mode === 'lazy'
@@ -61,7 +61,7 @@ if (process.argv[2] === '--child') {
 } else {
   const repeats = Number(process.argv[2] ?? 5);
   if (!Number.isInteger(repeats) || repeats < 1 || repeats > 30)
-    throw Error('Choose 1–30 fresh-process repetitions');
+    throw new Error('Choose 1–30 fresh-process repetitions');
   const med = (values) => {
     const a = [...values].sort((a, b) => a - b);
     return (a[(a.length - 1) >> 1] + a[a.length >> 1]) / 2;
@@ -76,9 +76,9 @@ if (process.argv[2] === '--child') {
           [fileURLToPath(import.meta.url), '--child', mode, id],
           { encoding: 'utf8' },
         );
-        if (result.status !== 0) throw Error(result.stderr || 'Benchmark child failed');
+        if (result.status !== 0) throw new Error(result.stderr || 'Benchmark child failed');
         const sample = JSON.parse(result.stdout);
-        if (sample.warnings) throw Error('Benchmark produced warnings: ' + id);
+        if (sample.warnings) throw new Error('Benchmark produced warnings: ' + id);
         samples.push(sample);
       }
       const row = { case: id, mode, runs: repeats };

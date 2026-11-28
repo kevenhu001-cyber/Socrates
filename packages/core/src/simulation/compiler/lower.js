@@ -47,13 +47,13 @@ export function lowerNumericalProgram(program, metadata, validateSource) {
       'mechanics',
     ].filter((key) => d[key] !== undefined);
     if (forms.length > 1)
-      throw located('dynamics', Error('Choose exactly one specialized dynamics model'));
+      throw located('dynamics', new Error('Choose exactly one specialized dynamics model'));
     if (d.method === 'verlet' && !d.mechanics)
-      throw located('dynamics.method', Error('Verlet requires mechanics'));
+      throw located('dynamics.method', new Error('Verlet requires mechanics'));
     if (d.method === 'ssa' && !d.reactionNetwork)
-      throw located('dynamics.method', Error('SSA requires a reaction network'));
+      throw located('dynamics.method', new Error('SSA requires a reaction network'));
     if (d.method === 'grid-heun' && !d.coupledFields)
-      throw located('dynamics.method', Error('grid-heun requires coupledFields'));
+      throw located('dynamics.method', new Error('grid-heun requires coupledFields'));
   }
   if (metadata)
     Object.assign(metadata, {

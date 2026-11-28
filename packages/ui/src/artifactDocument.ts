@@ -18,7 +18,7 @@ export interface ArtifactDocumentPalette {
 }
 
 export function escapeHtml(value: unknown): string {
-  return String(value == null ? '' : value).replace(
+  return String(value ?? '').replace(
     /[&<>'"]/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[c] as string,
   );

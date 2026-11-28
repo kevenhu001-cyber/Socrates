@@ -5,7 +5,7 @@ import { reportSwallow } from '../util/reportSwallow.ts';
  * No global publication, and no static import of the brand SVG pack.
  */
 function esc(value: string | null) {
-  return String(value == null ? '' : value)
+  return String(value ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -53,7 +53,7 @@ function _connectorMonogram(provider: unknown) {
 }
 
 export function connectorIconWithFallback(provider: unknown): string {
-  const markup = _ciMod && _ciMod.getConnectorIconMarkup(provider);
+  const markup = _ciMod?.getConnectorIconMarkup(provider);
   if (markup) return markup;
   if (!_ciMod) ensureConnectorIcons();
   return _connectorMonogram(provider);

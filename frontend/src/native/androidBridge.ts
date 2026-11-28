@@ -196,7 +196,7 @@ function watchNativeTheme(): void {
   if (!host?.setThemeMode || typeof document === 'undefined') return;
   let lastMode = '';
   const sync = () => {
-    const mode = document.documentElement.getAttribute('data-mode');
+    const mode = document.documentElement.dataset.mode;
     if ((mode !== 'light' && mode !== 'dark') || mode === lastMode) return;
     try {
       host.setThemeMode?.(mode);

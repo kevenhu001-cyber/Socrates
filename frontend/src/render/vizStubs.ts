@@ -378,9 +378,7 @@ export function renderViz(htmlStr: string, opts: { stableId?: string }) {
   // is appended at the end of <body> so it runs AFTER all of the
   // user's inline <script>s.
   const currentMode =
-    typeof document !== 'undefined'
-      ? document.documentElement.getAttribute('data-mode') || 'light'
-      : 'light';
+    typeof document !== 'undefined' ? document.documentElement.dataset.mode || 'light' : 'light';
   const doc =
     '<!DOCTYPE html><html data-mode="' +
     escAttr(currentMode) +
@@ -446,21 +444,22 @@ function parsePlotSpec(spec: string) {
   if (!src) return { error: 'empty plot spec' };
   let color = '#3a6df0';
   let width = 1.6;
-  const colorM = src.match(/\scolor\s*=\s*([a-zA-Z#][a-zA-Z0-9#(),.%\- ]*)/i);
+  const colorM = /\scolor\s*=\s*([a-zA-Z#][a-zA-Z0-9#(),.%\- ]*)/i.exec(src);
   if (colorM) {
     color = colorM[1].trim();
     src = src.replace(colorM[0], '');
   }
-  const widthM = src.match(/\swidth\s*=\s*([0-9]*\.?[0-9]+)/i);
+  const widthM = /\swidth\s*=\s*(\d*\.?\d+)/i.exec(src);
   if (widthM) {
-    width = parseFloat(widthM[1]) || width;
+    width = Number.parseFloat(widthM[1]) || width;
     src = src.replace(widthM[0], '');
   }
   let xMin = -10,
     xMax = 10;
-  const rangeM = src.match(
-    /\sfrom\s+(-?[0-9.]+(?:\s*\*\s*pi)?|pi|-pi|e|-e)\s+to\s+(-?[0-9.]+(?:\s*\*\s*pi)?|pi|-pi|e|-e)/i,
-  );
+  const rangeM =
+    /\sfrom\s+(-?[0-9.]+(?:\s*\*\s*pi)?|pi|-pi|e|-e)\s+to\s+(-?[0-9.]+(?:\s*\*\s*pi)?|pi|-pi|e|-e)/i.exec(
+      src,
+    );
   if (rangeM) {
     xMin = parsePlotRangeNumber(rangeM[1]);
     xMax = parsePlotRangeNumber(rangeM[2]);
@@ -484,10 +483,10 @@ function parsePlotRangeNumber(tok: string) {
   if (tok === '-pi') return -Math.PI;
   if (tok === 'e') return Math.E;
   if (tok === '-e') return -Math.E;
-  const m = tok.match(/^(-?[0-9]*\.?[0-9]+)\s*\*\s*pi$/i);
-  if (m) return parseFloat(m[1]) * Math.PI;
-  const n = parseFloat(tok);
-  return isFinite(n) ? n : 0;
+  const m = /^(-?\d*\.?\d+)\s*\*\s*pi$/i.exec(tok);
+  if (m) return Number.parseFloat(m[1]) * Math.PI;
+  const n = Number.parseFloat(tok);
+  return Number.isFinite(n) ? n : 0;
 }
 
 function buildPlotInnerHtml(): string {
@@ -508,7 +507,7 @@ function buildPlotInnerHtml(): string {
     'fit();' +
     'window.addEventListener("resize",function(){fit();draw();});' +
     'function compile(src){' +
-    'var s=src.replace(/\\s+/g,"");var i=0;' +
+    String.raw`var s=src.replace(/\s+/g,"");var i=0;` +
     'function peek(){return s[i];}' +
     'function eat(c){if(s[i]===c){i++;return true;}return false;}' +
     'function err(m){throw new Error(m);}' +
@@ -521,7 +520,7 @@ function buildPlotInnerHtml(): string {
     'if(c==="("){i++;var v=expr();if(!eat(")"))err("missing )");return v;}' +
     'if(c==="-"){i++;var n=atom();return function(x){return -n(x)}}' +
     'if(c==="+"){i++;return atom();}' +
-    'var n=s.slice(i).match(/^[0-9]*\\.?[0-9]+(?:[eE][-+]?[0-9]+)?/);if(n){i+=n[0].length;var q=parseFloat(n[0]);return function(){return q};}' +
+    String.raw`var n=s.slice(i).match(/^\d*\.?\d+(?:[eE][-+]?\d+)?/);if(n){i+=n[0].length;var q=Number.parseFloat(n[0]);return function(){return q};}` +
     'var id=s.slice(i).match(/^[A-Za-z][A-Za-z0-9]*/);if(id){var nm=id[0];i+=nm.length;' +
     'if(nm==="x")return function(x){return x};if(nm==="pi")return function(){return Math.PI};if(nm==="e")return function(){return Math.E};' +
     'var F={sin:Math.sin,cos:Math.cos,tan:Math.tan,asin:Math.asin,acos:Math.acos,atan:Math.atan,exp:Math.exp,log:Math.log,ln:Math.log,sqrt:Math.sqrt,abs:Math.abs,floor:Math.floor,ceil:Math.ceil,round:Math.round,sinh:Math.sinh,cosh:Math.cosh,tanh:Math.tanh};' +
@@ -539,10 +538,10 @@ function buildPlotInnerHtml(): string {
     'var ctx=cv.getContext("2d");var w=cv.width,h=cv.height;ctx.clearRect(0,0,w,h);' +
     'if(p.error){ctx.fillStyle="#a04040";ctx.font="13px sans-serif";ctx.fillText("Plot error: "+p.error,16,24);return;}' +
     'var N=400;var xs=new Array(N);var ys=new Array(N);' +
-    'for(var k=0;k<N;k++){var xv=p.xMin+(p.xMax-p.xMin)*k/(N-1);xs[k]=xv;var yv=tree(xv);ys[k]=isFinite(yv)?yv:NaN;}' +
+    'for(var k=0;k<N;k++){var xv=p.xMin+(p.xMax-p.xMin)*k/(N-1);xs[k]=xv;var yv=tree(xv);ys[k]=Number.isFinite(yv)?yv:NaN;}' +
     'var yMin=Infinity,yMax=-Infinity;' +
-    'for(var k2=0;k2<N;k2++){if(isFinite(ys[k2])){if(ys[k2]<yMin)yMin=ys[k2];if(ys[k2]>yMax)yMax=ys[k2];}}' +
-    'if(!isFinite(yMin)){yMin=-1;yMax=1;}' +
+    'for(var k2=0;k2<N;k2++){if(Number.isFinite(ys[k2])){if(ys[k2]<yMin)yMin=ys[k2];if(ys[k2]>yMax)yMax=ys[k2];}}' +
+    'if(!Number.isFinite(yMin)){yMin=-1;yMax=1;}' +
     'var pad=(yMax-yMin)*0.1||1;yMin-=pad;yMax+=pad;' +
     'var left=Math.floor(40*dpr),right=Math.floor(w-30*dpr),top=Math.floor(20*dpr),bottom=Math.floor(h-30*dpr);' +
     'var W=right-left,H=bottom-top;' +
@@ -567,7 +566,7 @@ function buildPlotInnerHtml(): string {
     'var xTicks=6;for(var t2=0;t2<=xTicks;t2++){var xv=p.xMin+(p.xMax-p.xMin)*t2/xTicks;ctx.fillText(xv.toFixed(2),X(xv),bottom+4*dpr);}' +
     'ctx.strokeStyle=lineColor;ctx.lineWidth=p.width*dpr;ctx.lineJoin="round";ctx.lineCap="round";ctx.beginPath();' +
     'var started=false;' +
-    'for(var k3=0;k3<N;k3++){if(!isFinite(ys[k3])){started=false;continue;}var px=X(xs[k3]),py=Y(ys[k3]);if(!started){ctx.moveTo(px,py);started=true;}else{ctx.lineTo(px,py);}}' +
+    'for(var k3=0;k3<N;k3++){if(!Number.isFinite(ys[k3])){started=false;continue;}var px=X(xs[k3]),py=Y(ys[k3]);if(!started){ctx.moveTo(px,py);started=true;}else{ctx.lineTo(px,py);}}' +
     'ctx.stroke();' +
     'ctx.fillStyle=axisColor;ctx.font="italic "+Math.floor(11*dpr)+"px sans-serif";ctx.textAlign="left";ctx.textBaseline="top";ctx.fillText("f(x) = "+p.expr,left,Math.floor(6*dpr));' +
     '}' +
@@ -585,9 +584,7 @@ function buildPlotDoc(id: string, payloadJson: string): string {
   // synchronously before any subsequent <script>.
   const setupScript = '<script>window.__plot=' + payloadJson + ';</script>';
   const currentMode =
-    typeof document !== 'undefined'
-      ? document.documentElement.getAttribute('data-mode') || 'light'
-      : 'light';
+    typeof document !== 'undefined' ? document.documentElement.dataset.mode || 'light' : 'light';
   return (
     '<!DOCTYPE html><html data-mode="' +
     escAttr(currentMode) +

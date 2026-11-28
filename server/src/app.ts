@@ -6,10 +6,9 @@ import helmet from 'helmet';
 import { CSP_INLINE_SCRIPT_HASHES } from './generated/cspInlineHashes.js';
 
 import { csrfProtection } from './middleware/csrf.js';
-import { requireAuth, optionalAuth } from './middleware/auth.js';
 import { errorHandler, notFoundHandler, timeoutMiddleware } from './middleware/error.js';
 import { sanitizeLogValue } from './lib/logRedaction.js';
-import { clientErrorLimiter, webhookLimiter } from './middleware/rateLimit.js';
+import { apiDefaultLimiter, clientErrorLimiter, webhookLimiter } from './middleware/rateLimit.js';
 import {
   normalizeClientErrorSeverity,
   clientErrorLogLevel,
@@ -32,7 +31,6 @@ import { getDb } from './db/index.js';
 import { apiKeys } from './db/schema/index.js';
 import { sql, and, eq, isNotNull } from 'drizzle-orm';
 import { getStatus as getPubsubStatus } from './lib/pubsub.js';
-import { apiDefaultLimiter } from './middleware/rateLimit.js';
 import { idempotencyMiddleware } from './middleware/idempotency.js';
 import { recordRequestSample } from './services/util/statusMonitor.js';
 import { recordHttpMetrics } from './lib/telemetry.js';

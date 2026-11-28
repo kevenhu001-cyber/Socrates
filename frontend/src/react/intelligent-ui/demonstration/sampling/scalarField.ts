@@ -54,7 +54,7 @@ function* sampleGridRow(
     if (x === 0 || variesX) {
       try {
         const value = runtime.evaluate(view.expression, time, xs[x], worldY);
-        if (!Number.isFinite(value)) throw Error('Non-finite field sample');
+        if (!Number.isFinite(value)) throw new Error('Non-finite field sample');
         const scaled = colorRange
           ? (value - colorRange[0]) / (colorRange[1] - colorRange[0])
           : value;
@@ -152,6 +152,6 @@ export function* sampleGrid(
     fillStrideRows(y, height, stride, width, variesY, words);
     yield;
   }
-  if (!valid) throw Error(firstError);
+  if (!valid) throw new Error(firstError);
   return pixels;
 }

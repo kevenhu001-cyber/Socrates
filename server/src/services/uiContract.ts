@@ -50,7 +50,7 @@ export function uiContractContent(
   args: Record<string, unknown>,
 ): { ok: true; output: string; page: number; pages: number } | { ok: false; error: string } {
   const kind = args.kind;
-  if (typeof kind !== 'string' || !KINDS.some((candidate) => candidate === kind))
+  if (typeof kind !== 'string' || !(KINDS as readonly string[]).includes(kind))
     return { ok: false, error: 'Choose a kind from the get_ui_contract schema.' };
   if (args.section !== undefined && kind !== 'demonstration')
     return { ok: false, error: 'section is only supported for demonstration contracts.' };

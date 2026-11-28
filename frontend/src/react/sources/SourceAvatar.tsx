@@ -9,14 +9,14 @@ export function SourceAvatar({
   imageClassName,
   testId,
   loadingFallback = false,
-}: {
+}: Readonly<{
   url: string;
   host: string;
   className: string;
   imageClassName?: string;
   testId?: string;
   loadingFallback?: boolean;
-}) {
+}>) {
   const src = faviconProxyUrl(url);
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const [loadedSrc, setLoadedSrc] = useState<string | null>(null);

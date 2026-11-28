@@ -138,11 +138,11 @@ function YAxis({
   domain,
   sy,
   scale,
-}: {
+}: Readonly<{
   domain: Domain;
   sy: (value: number) => number;
   scale?: AxisScale;
-}) {
+}>) {
   return (
     <>
       {ticks(domain[0], domain[1], 3, scale).map((value) => (
@@ -163,13 +163,13 @@ function XAxis({
   sy,
   sx,
   scale,
-}: {
+}: Readonly<{
   xDomain: Domain;
   scale?: AxisScale;
   yDomain: Domain;
   sy: (value: number) => number;
   sx: (value: number) => number;
-}) {
+}>) {
   const axis = sy(Math.max(yDomain[0], Math.min(yDomain[1], 0)));
   return (
     <g className="demo-axis">
@@ -186,7 +186,10 @@ function XAxis({
   );
 }
 
-function CurvePaths({ curves, paths }: { curves: ReturnType<typeof curveSpecs>; paths: string[] }) {
+function CurvePaths({
+  curves,
+  paths,
+}: Readonly<{ curves: ReturnType<typeof curveSpecs>; paths: string[] }>) {
   return (
     <>
       {curves.map((curve, index) => (
@@ -208,11 +211,11 @@ function PlotMarkers({
   view,
   result,
   project,
-}: {
+}: Readonly<{
   view: View;
   result: Sampled;
   project: ProjectPoint;
-}) {
+}>) {
   if (view.kind === 'plot')
     return (
       <>
@@ -259,7 +262,7 @@ function PlotCaption({ view }: { view: View }) {
   ) : null;
 }
 
-function PlotLegend({ view }: { view: View }) {
+function PlotLegend({ view }: Readonly<{ view: View }>) {
   if (view.kind !== 'plot' || !view.curves.some((curve) => curve.label)) return null;
   return (
     <div className="demo-legend">

@@ -9,13 +9,13 @@ function ProfileActionRow({
   actionLabel,
   onAction,
   warning = false,
-}: {
+}: Readonly<{
   title: string;
   description: string;
   actionLabel: string;
   onAction: () => void;
   warning?: boolean;
-}) {
+}>) {
   return (
     <div className="profile-action-row">
       <div>
@@ -29,7 +29,7 @@ function ProfileActionRow({
   );
 }
 
-export function ProfileDataSection({ dispatch }: { dispatch: ProfileDispatch }) {
+export function ProfileDataSection({ dispatch }: Readonly<{ dispatch: ProfileDispatch }>) {
   return (
     <SectionCard className="profile-section" title={profileText('profile.data', 'Data')}>
       <ProfileActionRow

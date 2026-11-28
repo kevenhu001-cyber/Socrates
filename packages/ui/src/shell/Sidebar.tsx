@@ -21,7 +21,7 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { uiControl, uiMotion, uiRadius, uiStep } from '@socrates/theme';
 import { dataAttributes } from '../domProps';
-import { domClassName, domStyle, type TextStyle, type ViewStyle } from '../domStyle';
+import { domClassName, domStyle, type ViewStyle } from '../domStyle';
 import { useUiTheme } from '../primitives/theme';
 import { usePressFeedback } from '../primitives/UiButton';
 import { UiText, type UiTextStyle } from '../primitives/UiText';
@@ -135,7 +135,7 @@ export function SidebarBrand({
   caret = false,
   hideLogo = false,
   hidden = false,
-}: SidebarBrandProps) {
+}: Readonly<SidebarBrandProps>) {
   const { colors, fontFamily, typeScale } = useUiTheme();
   const size = compact ? 24 : 20;
   return (
@@ -223,7 +223,7 @@ export function SidebarIconAction({
   backgroundVar,
   hostStyle,
   onPress,
-}: SidebarIconActionProps) {
+}: Readonly<SidebarIconActionProps>) {
   const { colors } = useUiTheme();
   const { pressed, hovered, handlers } = usePressFeedback();
   return (
@@ -269,10 +269,10 @@ export function SidebarIconAction({
 export function SidebarHeaderActions({
   children,
   hostStyle,
-}: {
+}: Readonly<{
   children: ReactNode;
   hostStyle?: unknown;
-}) {
+}>) {
   return (
     <div className={domClassName(hostStyle)} style={domStyle([styles.actions, hostStyle])}>
       {children}
@@ -330,7 +330,7 @@ export function SidebarNavRow({
   labelStyle,
   backgroundVar,
   onPress,
-}: SidebarNavRowProps) {
+}: Readonly<SidebarNavRowProps>) {
   const { colors, fontFamily, typeScale } = useUiTheme();
   const { pressed, hovered, focused, handlers } = usePressFeedback();
   const statePaint = active

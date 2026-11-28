@@ -35,12 +35,12 @@ export function* prepareDynamics(
       if (reactionModel && value < 0)
         throw located(
           `dynamics.initial.${key}`,
-          Error('Species initial amount must be nonnegative'),
+          new Error('Species initial amount must be nonnegative'),
         );
       if (!finite(value))
         throw located(
           `dynamics.initial.${key}`,
-          Error('Initial state is not a finite number for these parameter values'),
+          new Error('Initial state is not a finite number for these parameter values'),
         );
       return [key, value];
     }),
@@ -62,7 +62,7 @@ export function* prepareDynamics(
       if (!solveSmallSystem(matrix, rhs, n))
         throw located(
           'dynamics.massMatrix',
-          Error('Mass matrix is singular or numerically ill-conditioned'),
+          new Error('Mass matrix is singular or numerically ill-conditioned'),
         );
       return Object.fromEntries(names.map((key, i) => [key, rhs[i]]));
     }

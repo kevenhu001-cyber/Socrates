@@ -40,7 +40,7 @@ export function stripLegacyToolHtml(html: string): string {
 
 /** The declarative terminal status owns Retry/Resend; stored copies are inert. */
 export function stripLegacyTerminalHtml(html: string): string {
-  if (!html || !html.includes('msg-error')) return html;
+  if (!html?.includes('msg-error')) return html;
   return stripStoredMarkup(html, ['.msg-error']);
 }
 
@@ -53,9 +53,8 @@ function stripStoredMarkup(source: string, selectors: readonly string[]): string
     if (!body) return source;
     for (const selector of selectors) {
       const nodes = body.querySelectorAll(selector);
-      for (let i = 0; i < nodes.length; i++) {
-        const node = nodes[i];
-        if (node.parentNode) node.parentNode.removeChild(node);
+      for (const node of nodes) {
+        node.remove();
       }
     }
     return body.innerHTML;

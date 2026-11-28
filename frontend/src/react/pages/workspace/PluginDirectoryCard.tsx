@@ -17,7 +17,7 @@ function PluginConnectionAction({
   plugin,
   configured,
   dispatch,
-}: Omit<PluginDirectoryCardProps, 'onSelect'>) {
+}: Readonly<Omit<PluginDirectoryCardProps, 'onSelect'>>) {
   const status = plugin.connection?.status;
   if (status === 'connected') {
     const label = i18n('plugins.manage', 'Manage');
@@ -91,7 +91,7 @@ export function PluginDirectoryCard({
   configured,
   dispatch,
   onSelect,
-}: PluginDirectoryCardProps) {
+}: Readonly<PluginDirectoryCardProps>) {
   const connectionLabel =
     plugin.connection?.status === 'connected'
       ? i18n('plugins.connected', 'Connected')
