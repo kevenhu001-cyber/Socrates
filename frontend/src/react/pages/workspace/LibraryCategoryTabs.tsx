@@ -1,5 +1,4 @@
-import { Tabs, TabsList, TabsTrigger } from '../../ui/shadcn/tabs';
-import { cn } from 'cn';
+import { PageTabs } from '../../ui/page/PageTabs';
 import type { useWorkspaceDispatch } from './workspace.hooks';
 import { i18n } from './workspaceUi';
 
@@ -11,33 +10,22 @@ interface LibraryCategoryTabsProps {
 
 export function LibraryCategoryTabs({ chip, onChipChange, dispatch }: LibraryCategoryTabsProps) {
   const categories = [
-    { id: 'recommend', label: i18n('library.tabRecommend', '推荐') },
-    { id: 'favorite', label: i18n('library.tabFavorite', '收藏') },
-    { id: 'folder', label: i18n('library.tabFolder', '文件夹') },
-    { id: 'images', label: i18n('library.filter.images', '图片') },
-    { id: 'all', label: i18n('library.tabAll', '全部') },
+    { value: 'recommend', label: i18n('library.tabRecommend', '推荐') },
+    { value: 'favorite', label: i18n('library.tabFavorite', '收藏') },
+    { value: 'folder', label: i18n('library.tabFolder', '文件夹') },
+    { value: 'images', label: i18n('library.filter.images', '图片') },
+    { value: 'all', label: i18n('library.tabAll', '全部') },
   ] as const;
 
   return (
-    <Tabs
+    <PageTabs
       value={chip}
-      onValueChange={(value) => {
-        onChipChange(value as LibraryCategoryTabsProps['chip']);
+      ariaLabel={i18n('sidebar.library.title', '资料库')}
+      items={categories}
+      onChange={(value) => {
+        onChipChange(value);
         if (value === 'images') dispatch.switchTab('files');
       }}
-    >
-      <TabsList className="ui-page-tabs" aria-label={i18n('sidebar.library.title', '资料库')}>
-        {categories.map((category) => (
-          <TabsTrigger
-            key={category.id}
-            type="button"
-            value={category.id}
-            className={cn('ui-page-tab', chip === category.id && 'active')}
-          >
-            {category.label}
-          </TabsTrigger>
-        ))}
-      </TabsList>
-    </Tabs>
+    />
   );
 }

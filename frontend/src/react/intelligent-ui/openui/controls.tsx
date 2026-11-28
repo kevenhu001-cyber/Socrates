@@ -1,8 +1,8 @@
 import { MathText } from '../../rn/useInlineMath';
 import { Label as ShadcnLabel } from '../../ui/shadcn/label';
-import { Input as ShadcnInput } from '../../ui/shadcn/input';
+import { Input as ShadcnInput } from '../../ui/v3';
 import { Textarea as ShadcnTextarea } from '../../ui/v3';
-import { NativeSelect as ShadcnNativeSelect } from '../../ui/shadcn/native-select';
+import { NativeSelect as ShadcnNativeSelect } from '../../ui/v3';
 import { NativeControl as ShadcnNativeControl } from '../../ui/NativeControl';
 import { Button as UiButton } from '../../ui/Button';
 import { Button as ShadcnButton } from '../../ui/shadcn/button';

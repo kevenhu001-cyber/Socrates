@@ -1,5 +1,5 @@
 import { Icon } from '../../../legacy/Icon';
-import { Input } from '../shadcn/input';
+import { Input } from '../v3';
 import { Label } from '../shadcn/label';
 import { cn } from 'cn';
 

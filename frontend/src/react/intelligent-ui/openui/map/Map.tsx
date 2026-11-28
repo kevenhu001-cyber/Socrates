@@ -1,4 +1,4 @@
-import { NativeSelect as ShadcnNativeSelect } from '../../../ui/shadcn/native-select';
+import { NativeSelect as ShadcnNativeSelect } from '../../../ui/v3';
 import { Button as ShadcnButton } from '../../../ui/shadcn/button';
 // Adapted from thesysdev/open-intelligent-ui map.tsx (MIT); see ../LICENSE.
 import { defineComponent, reactive, useIsStreaming, useStateField } from '@openuidev/react-lang';
