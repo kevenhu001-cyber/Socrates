@@ -10,7 +10,7 @@ import {
   CardContent,
   CardAction,
 } from '../ui/shadcn/card';
-import { Badge } from '../ui/shadcn/badge';
+import { Badge } from '../ui/v3';
 import { i18n } from '../../ui/legacyI18n.ts';
 import { ProviderRow } from './ProviderRow';
 import type { ProviderListProps, SettingsProviderSnapshot } from './types';

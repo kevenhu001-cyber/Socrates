@@ -1,4 +1,4 @@
-import { Input as ShadcnInput } from '../ui/shadcn/input';
+import { Input as ShadcnInput } from '../ui/v3';
 import { Button } from '../ui/shadcn/button';
 import { useState, type SyntheticEvent } from 'react';
 

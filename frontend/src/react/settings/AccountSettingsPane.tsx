@@ -1,5 +1,5 @@
-import { Input as ShadcnInput } from '../ui/shadcn/input';
-import { Badge } from '../ui/shadcn/badge';
+import { Input as ShadcnInput } from '../ui/v3';
+import { Badge } from '../ui/v3';
 import { Button } from '../ui/shadcn/button';
 import { SettingsRow } from '../layout/SettingsRow';
 import { useProfileDispatch, useProfileSnapshot } from '../profile/profile.store';
