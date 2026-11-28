@@ -1,5 +1,5 @@
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
-import { InputGroup, InputGroupInput, InputGroupAddon } from '../ui/shadcn/input-group';
+import { Input } from '../ui/v3';
 import { Button } from '../ui/shadcn/button';
 import { PageTabs } from '../ui/page/PageTabs';
 import { cn } from 'cn';
@@ -229,19 +229,19 @@ export function SettingsNavigation({
       {showOverview ? (
         <SettingsIdentity label={label} onOpen={() => onSectionChange('account')} />
       ) : null}
-      <InputGroup className={cn('settings-search shrink-0', mobile && !searchOpen && 'hidden')}>
-        <InputGroupAddon align="inline-start">
-          <Icon name="search" size={18} />
-        </InputGroupAddon>
-        <InputGroupInput
+      <div className={cn('settings-search shrink-0', mobile && !searchOpen && 'hidden')}>
+        <Input
           id="settingsSearchInput"
           type="search"
+          size="md"
+          pill
+          startAdornment={<Icon name="search" size={16} />}
           placeholder={label('搜索设置', 'Search settings')}
           aria-label={label('搜索设置', 'Search settings')}
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
         />
-      </InputGroup>
+      </div>
       <div
         className="settings-nav-categories"
         role="group"

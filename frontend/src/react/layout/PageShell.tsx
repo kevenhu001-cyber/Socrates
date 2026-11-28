@@ -14,6 +14,8 @@ export interface PageShellProps {
   toolbar?: ReactNode;
   hideHeader?: boolean;
   maxWidth?: 'reading' | 'wide';
+  ariaBusy?: boolean;
+  ariaLive?: 'polite' | 'assertive' | 'off';
   className?: string;
   children: ReactNode;
 }
@@ -23,7 +25,7 @@ export interface PageShellProps {
  *
  * Unifies header geometry, optional single-row toolbar, content width rhythm
  * (860px reading / 1040px wide grid), and vertical spacing across workspace,
- * scheduled, and secondary app pages.
+ * scheduled, admin, exam, creation, and secondary app pages.
  */
 export function PageShell({
   titleId,
@@ -35,6 +37,8 @@ export function PageShell({
   toolbar,
   hideHeader = false,
   maxWidth = 'reading',
+  ariaBusy,
+  ariaLive,
   className,
   children,
 }: Readonly<PageShellProps>) {
@@ -46,6 +50,8 @@ export function PageShell({
         className,
       )}
       aria-labelledby={titleId}
+      aria-busy={ariaBusy}
+      aria-live={ariaLive}
       data-page-shell=""
       data-page-width={maxWidth}
     >

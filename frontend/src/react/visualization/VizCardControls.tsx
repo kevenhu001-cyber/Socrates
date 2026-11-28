@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Expand, FileCode2, Play, RefreshCw, SquareTerminal } from 'lucide-react';
 import { Button } from '../ui/shadcn/button';
-import { ToggleGroup, ToggleGroupItem } from '../ui/shadcn/toggle-group';
+import { SegmentedControl } from '../ui/v3';
 
 export interface VizCardControlsProps {
   cardId: string;
@@ -28,8 +28,7 @@ export function VizCardControls({
 }: VizCardControlsProps) {
   const [view, setView] = useState(initialView);
 
-  function changeView(values: string[]) {
-    const next = values[0];
+  function changeView(next: string) {
     if (next !== 'preview' && next !== 'code') return;
     setView(next);
     onViewChange(next);
@@ -38,39 +37,36 @@ export function VizCardControls({
   return (
     <>
       {viewToggle && (
-        <ToggleGroup
-          value={[view]}
-          variant="outline"
-          size="sm"
-          spacing={0}
+        <SegmentedControl
+          value={view}
+          size="xs"
+          pill
           aria-label="Card view"
           className="viz-seg"
-          onValueChange={changeView}
+          onChange={changeView}
         >
-          {/* 2026-11-26 reference: an icon segmented pill — source on the
-              left, preview (▶) on the right; the active segment is the
-              darker disc. Names stay on aria-label / title. */}
-          <ToggleGroupItem
-            value="code"
-            className="viz-seg-btn"
-            data-viz-card={cardId}
-            data-viz-view-opt="code"
-            aria-label="Code"
-            title="Code"
-          >
-            <SquareTerminal aria-hidden="true" />
-          </ToggleGroupItem>
-          <ToggleGroupItem
-            value="preview"
-            className="viz-seg-btn"
-            data-viz-card={cardId}
-            data-viz-view-opt="preview"
-            aria-label="Preview"
-            title="Preview"
-          >
-            <Play aria-hidden="true" />
-          </ToggleGroupItem>
-        </ToggleGroup>
+          {/* Icon segmented pill — source on the left, preview (▶) on the right. */}
+          <SegmentedControl.Option value="code" aria-label="Code">
+            <span
+              className="viz-seg-btn inline-flex items-center justify-center"
+              data-viz-card={cardId}
+              data-viz-view-opt="code"
+              title="Code"
+            >
+              <SquareTerminal aria-hidden="true" size={14} />
+            </span>
+          </SegmentedControl.Option>
+          <SegmentedControl.Option value="preview" aria-label="Preview">
+            <span
+              className="viz-seg-btn inline-flex items-center justify-center"
+              data-viz-card={cardId}
+              data-viz-view-opt="preview"
+              title="Preview"
+            >
+              <Play aria-hidden="true" size={14} />
+            </span>
+          </SegmentedControl.Option>
+        </SegmentedControl>
       )}
       <span className="viz-status" role="status">
         <span className="viz-status-dot" />

@@ -1,6 +1,6 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, MouseEvent as ReactMouseEvent } from 'react';
-import { ToggleGroup, ToggleGroupItem } from '../ui/shadcn/toggle-group';
+import { SegmentedControl } from '../ui/v3';
 import { createRootSlot } from '../lib/boot/ownedRoot';
 import { ensureBodyContainer } from '../lib/boot/mountContainer';
 import { DialogFrame } from '../dialog/DialogFrame';
@@ -34,35 +34,27 @@ function UsagePeriodControls({
   onChange: (period: UsagePeriod) => void;
 }) {
   return (
-    <ToggleGroup
+    <SegmentedControl
       className="usage-period-tabs"
-      value={[period]}
-      variant="outline"
+      value={period}
       size="sm"
-      spacing={1}
+      pill
       aria-label={i18n('usage.period', 'Usage period')}
-      onValueChange={(values) => {
-        const nextPeriod = values[0];
+      onChange={(nextPeriod) => {
         if (nextPeriod === 'year' || nextPeriod === 'month') onChange(nextPeriod);
       }}
     >
-      <ToggleGroupItem
-        type="button"
-        className="usage-period-tab"
-        value="year"
-        data-usage-period="year"
-      >
-        {i18n('usage.last12Months', 'Last 12 months')}
-      </ToggleGroupItem>
-      <ToggleGroupItem
-        type="button"
-        className="usage-period-tab"
-        value="month"
-        data-usage-period="month"
-      >
-        {i18n('usage.thisMonth', 'This month')}
-      </ToggleGroupItem>
-    </ToggleGroup>
+      <SegmentedControl.Option value="year">
+        <span className="usage-period-tab" data-usage-period="year">
+          {i18n('usage.last12Months', 'Last 12 months')}
+        </span>
+      </SegmentedControl.Option>
+      <SegmentedControl.Option value="month">
+        <span className="usage-period-tab" data-usage-period="month">
+          {i18n('usage.thisMonth', 'This month')}
+        </span>
+      </SegmentedControl.Option>
+    </SegmentedControl>
   );
 }
 

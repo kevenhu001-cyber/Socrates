@@ -1,15 +1,5 @@
-import { Input as ShadcnInput } from '../ui/v3';
-import { Checkbox } from '../ui/v3';
+import { Checkbox, Input as ShadcnInput, RadioGroup } from '../ui/v3';
 import { Button } from '../ui/shadcn/button';
-import { RadioGroupItem } from '../ui/shadcn/radio-group';
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardAction,
-  CardContent,
-  CardFooter,
-} from '../ui/shadcn/card';
 import { TrashIcon } from 'lucide-react';
 import { Field, FieldGroup, FieldLabel } from '../ui/shadcn/field';
 import { i18n } from '../../ui/legacyI18n.ts';
@@ -33,7 +23,9 @@ function ProviderActiveButton({ active, id }: { active: boolean; id: string }) {
     ? i18n('settings.activeModel', 'Active model')
     : i18n('settings.setActiveModel', 'Set as active');
   return (
-    <RadioGroupItem className="provider-active-btn" value={id} title={label} aria-label={label} />
+    <RadioGroup.Item className="provider-active-btn shrink-0" value={id}>
+      {label}
+    </RadioGroup.Item>
   );
 }
 
@@ -53,14 +45,17 @@ export function ProviderRow({
   onRemove,
 }: ProviderRowProps) {
   return (
-    <Card className={`provider-row${provider.isActive ? ' active' : ''}`} data-id={provider.id}>
-      <CardHeader>
-        <CardTitle>{provider.label || i18n('provider.label', 'Display name')}</CardTitle>
-        <CardAction>
-          <ProviderActiveButton active={provider.isActive} id={provider.id} />
-        </CardAction>
-      </CardHeader>
-      <CardContent>
+    <div
+      className={`provider-row flex flex-col gap-4 rounded-xl border border-border bg-transparent p-4${provider.isActive ? ' active' : ''}`}
+      data-id={provider.id}
+    >
+      <div className="flex items-center justify-between gap-3 border-b border-border/60 pb-3">
+        <div className="text-sm font-medium text-foreground">
+          {provider.label || i18n('provider.label', 'Display name')}
+        </div>
+        <ProviderActiveButton active={provider.isActive} id={provider.id} />
+      </div>
+      <div>
         <FieldGroup className="provider-fields">
           <ProviderTextField
             id={provider.id}
@@ -142,8 +137,8 @@ export function ProviderRow({
             }
           />
         </FieldGroup>
-      </CardContent>
-      <CardFooter className="justify-end">
+      </div>
+      <div className="flex items-center justify-end border-t border-border/60 pt-3">
         <Button
           variant="destructive"
           type="button"
@@ -155,7 +150,7 @@ export function ProviderRow({
           <TrashIcon data-icon="inline-start" aria-hidden />
           {language === 'zh' ? '移除' : 'Remove'}
         </Button>
-      </CardFooter>
-    </Card>
+      </div>
+    </div>
   );
 }

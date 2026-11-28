@@ -1,10 +1,7 @@
 import { Label as ShadcnLabel } from '../ui/shadcn/label';
-import { Textarea as ShadcnTextarea } from '../ui/v3';
-import { ToggleGroup, ToggleGroupItem } from '../ui/shadcn/toggle-group';
-import { Switch } from '../ui/v3';
+import { SegmentedControl, Switch, Textarea as ShadcnTextarea } from '../ui/v3';
 import { Field, FieldLabel } from '../ui/shadcn/field';
 import { useCallback, useRef } from 'react';
-import { cn } from 'cn';
 import { SectionCard } from '../ui/page/SectionCard';
 import type { ProfileDispatch, ProfileSnapshot } from './types';
 import { profileText } from './profileText';
@@ -32,33 +29,20 @@ export function ProfilePreferencesSection({
       className="profile-section"
       title={profileText('profile.preferences', 'Preferences')}
     >
-      <div className="profile-row">
+      <div className="profile-row" id="profileLangToggle">
         <span className="profile-row-label">{profileText('profile.language', 'Language')}</span>
-        <ToggleGroup
-          id="profileLangToggle"
-          value={[language]}
+        <SegmentedControl
+          size="sm"
+          pill
+          value={language === 'zh' ? 'zh' : 'en'}
           aria-label={profileText('profile.language', 'Language')}
-          onValueChange={(values) => {
-            if (values[0] === 'en' || values[0] === 'zh') dispatch.setLang(values[0]);
+          onChange={(next) => {
+            if (next === 'en' || next === 'zh') dispatch.setLang(next);
           }}
         >
-          <ToggleGroupItem
-            type="button"
-            className={cn(language === 'en' && 'active')}
-            value="en"
-            id="profileLangEn"
-          >
-            English
-          </ToggleGroupItem>
-          <ToggleGroupItem
-            type="button"
-            className={cn(language === 'zh' && 'active')}
-            value="zh"
-            id="profileLangZh"
-          >
-            中文
-          </ToggleGroupItem>
-        </ToggleGroup>
+          <SegmentedControl.Option value="en">English</SegmentedControl.Option>
+          <SegmentedControl.Option value="zh">中文</SegmentedControl.Option>
+        </SegmentedControl>
       </div>
 
       <Field orientation="horizontal" className="profile-row">

@@ -1,12 +1,5 @@
 import { SettingsRow } from '../layout/SettingsRow';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../ui/shadcn/select';
+import { Select } from '../ui/v3';
 
 /** A labelled, keyboard-navigable preference; labels remain localized while
  * only the stable option value is persisted by its owning service. */
@@ -30,25 +23,16 @@ export function PreferenceSelect({
       className="settings-choice"
       control={
         <Select
-          items={options}
+          id={id}
+          options={options}
           value={value}
-          onValueChange={(next) => {
-            if (next !== null) onValueChange(next);
-          }}
-        >
-          <SelectTrigger id={id} className="min-w-36">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent align="end" alignItemWithTrigger={false}>
-            <SelectGroup>
-              {options.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
+          onChange={(option) => onValueChange(option.value)}
+          variant="outline"
+          size="md"
+          block={false}
+          align="end"
+          triggerClassName="min-w-36"
+        />
       }
     />
   );

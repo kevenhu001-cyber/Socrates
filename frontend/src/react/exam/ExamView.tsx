@@ -18,8 +18,7 @@ import {
 import { useInlineMath } from '../rn/useInlineMath';
 import { WebUiTheme } from '../rn/WebUiTheme';
 import { ActionBar } from '../ui/page/ActionBar';
-import { PageFrame } from '../ui/page/PageFrame';
-import { PageHeader } from '../ui/page/PageHeader';
+import { PageShell } from '../layout/PageShell';
 
 /* Host ids kept from the DOM baseline: navigation.ts / persistence.ts query
  * them, and the Playwright specs address the same nodes. */
@@ -250,14 +249,14 @@ export function ExamView() {
         ) : null}
         <div className="exam-root-slot" id="examViewReactBody">
           {isSetup ? (
-            <PageFrame className="exam-setup-page" aria-labelledby="examViewTitle">
-              <PageHeader
-                titleId="examViewTitle"
-                title={strings.setup.heroTitle}
-                description={strings.setup.heroDescription}
-              />
+            <PageShell
+              titleId="examViewTitle"
+              title={strings.setup.heroTitle}
+              description={strings.setup.heroDescription}
+              className="exam-setup-page"
+            >
               {panel}
-            </PageFrame>
+            </PageShell>
           ) : (
             panel
           )}

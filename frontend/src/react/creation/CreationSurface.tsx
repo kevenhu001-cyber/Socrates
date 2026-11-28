@@ -17,7 +17,7 @@ import { NativeSelect, NativeSelectOption } from '../ui/shadcn/native-select';
 import { Textarea } from '../ui/v3';
 import { PageViewToggle } from '../ui/page/PageTabs';
 import { PageEmptyState } from '../ui/page/PageEmptyState';
-import { PageFrame } from '../ui/page/PageFrame';
+import { PageShell } from '../layout/PageShell';
 import { PageHeader } from '../ui/page/PageHeader';
 import { PageSearchField } from '../ui/page/PageSearchField';
 import { PageToolbar } from '../ui/page/PageToolbar';
@@ -699,7 +699,7 @@ function CreationSurfaceContent({
   }
 
   return (
-    <PageFrame className="creation-surface-frame">
+    <PageShell titleId={`creation-${name}-title`} hideHeader maxWidth="wide" className="creation-surface-frame">
       <CreationHeader
         name={name}
         query={controller.query}
@@ -737,7 +737,7 @@ function CreationSurfaceContent({
           onAction={controller.handleAction}
         />
       </div>
-    </PageFrame>
+    </PageShell>
   );
 }
 

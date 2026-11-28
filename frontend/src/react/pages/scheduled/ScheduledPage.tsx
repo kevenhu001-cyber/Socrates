@@ -1,6 +1,6 @@
 import { Plus } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '../../ui/shadcn/tabs';
-import { Alert, AlertDescription } from '../../ui/shadcn/alert';
+import { Alert } from '../../ui/v3';
 import { Button } from '../../ui/shadcn/button';
 import { cn } from 'cn';
 import { createRootSlot } from '../../lib/boot/ownedRoot';
@@ -50,9 +50,7 @@ export function ScheduledPage() {
         description={description}
         className="scheduled-directory"
       >
-        <Alert variant="destructive" className="scheduled-empty">
-          <AlertDescription>{snap.error}</AlertDescription>
-        </Alert>
+        <Alert color="danger" variant="soft" description={snap.error} className="scheduled-empty" />
       </PageShell>
     );
   }
