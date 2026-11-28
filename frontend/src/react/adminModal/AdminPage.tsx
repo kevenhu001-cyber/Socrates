@@ -1,6 +1,5 @@
 import { Button as UiButton } from '../ui/shadcn/button';
-import { PageFrame } from '../ui/page/PageFrame';
-import { PageHeader } from '../ui/page/PageHeader';
+import { PageShell } from '../layout/PageShell';
 import { t } from '../../i18n/index';
 import { useLocaleRefresh } from '../rn/WebUiTheme';
 /** The standalone /admin operator console page. */
@@ -19,12 +18,16 @@ export function AdminPage() {
 
   if (admin.authed === null) {
     return (
-      <PageFrame className="admin-console" aria-labelledby="admin-console-title" aria-busy="true">
-        <PageHeader titleId="admin-console-title" title={t('admin.title')} />
+      <PageShell
+        titleId="admin-console-title"
+        title={t('admin.title')}
+        className="admin-console"
+        ariaBusy
+      >
         <div className="admin-loading" role="status">
           {t('common.loading')}
         </div>
-      </PageFrame>
+      </PageShell>
     );
   }
   if (!admin.authed) {
@@ -32,25 +35,22 @@ export function AdminPage() {
   }
 
   return (
-    <PageFrame
+    <PageShell
+      titleId="admin-console-title"
+      title={t('admin.title')}
       className="admin-console"
-      aria-labelledby="admin-console-title"
-      aria-busy={admin.snapshot.loading}
+      ariaBusy={admin.snapshot.loading}
+      actions={
+        <UiButton
+          variant="destructive"
+          type="button"
+          className="admin-remove"
+          onClick={admin.signOut}
+        >
+          {t('profile.signOut')}
+        </UiButton>
+      }
     >
-      <PageHeader
-        titleId="admin-console-title"
-        title={t('admin.title')}
-        actions={
-          <UiButton
-            variant="destructive"
-            type="button"
-            className="admin-remove"
-            onClick={admin.signOut}
-          >
-            {t('profile.signOut')}
-          </UiButton>
-        }
-      />
       {admin.snapshot.loading && (
         <div className="admin-loading" role="status">
           {t('common.loading')}
@@ -83,7 +83,7 @@ export function AdminPage() {
           />
         </div>
       ) : null}
-    </PageFrame>
+    </PageShell>
   );
 }
 

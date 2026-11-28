@@ -1,8 +1,7 @@
 import React from 'react';
-import { Skeleton } from '../../ui/shadcn/skeleton';
+import { Skeleton } from '../../ui/v3';
 import { cn } from 'cn';
-import { PageFrame } from '../../ui/page/PageFrame';
-import { PageHeader } from '../../ui/page/PageHeader';
+import { PageShell } from '../../layout/PageShell';
 import { i18n } from './workspaceUi';
 import { getCurrentLang } from '../../../ui/legacyI18n.ts';
 
@@ -184,22 +183,19 @@ export function WorkspaceLoadingView({ page }: Readonly<WorkspaceLoadingViewProp
   const { title, description } = loadingCopy(page);
   const titleId = `workspace-loading-${page}-title`;
   return (
-    <PageFrame
+    <PageShell
+      titleId={titleId}
+      title={title}
+      description={description}
       className={`workspace-surface workspace-loading-surface workspace-loading-${page}`}
-      aria-busy="true"
-      aria-live="polite"
-      aria-labelledby={titleId}
+      ariaBusy
+      ariaLive="polite"
+      actions={<SkeletonBlock className="workspace-skeleton-action workspace-skeleton-create" />}
     >
-      <PageHeader
-        titleId={titleId}
-        title={title}
-        description={description}
-        actions={<SkeletonBlock className="workspace-skeleton-action workspace-skeleton-create" />}
-      />
       {page === 'plugins' && <PluginSkeleton />}
       {page === 'projects' && <ProjectsSkeleton />}
       {page === 'library' && <LibrarySkeleton />}
       {page === 'scheduled' && <ScheduledSkeleton />}
-    </PageFrame>
+    </PageShell>
   );
 }
