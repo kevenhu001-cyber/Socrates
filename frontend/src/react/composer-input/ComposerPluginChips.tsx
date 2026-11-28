@@ -1,4 +1,4 @@
-import { Badge } from '../ui/shadcn/badge';
+import { Badge } from '../ui/v3';
 import { Button } from '../ui/shadcn/button';
 import { Icon } from '../../legacy/Icon';
 import { useEffect, useState } from 'react';

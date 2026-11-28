@@ -1,7 +1,7 @@
 import { useEffect, useReducer, useRef, useState } from 'react';
 import { Check, ClipboardX, Copy, Expand } from 'lucide-react';
 import { Button } from '../ui/shadcn/button';
-import { Textarea } from '../ui/shadcn/textarea';
+import { Textarea } from '../ui/v3';
 import { openVizModalRaw } from '../../render/vizStubs.ts';
 import { esc } from '../../render/text.ts';
 import { i18n } from '../../ui/legacyI18n.ts';

@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { Button } from '../ui/shadcn/button';
-import { Textarea } from '../ui/shadcn/textarea';
+import { Textarea } from '../ui/v3';
 import { i18n } from '../../ui/legacyI18n.ts';
 import { useMobileViewport } from '../sidebar-chrome/useMobileViewport';
 
