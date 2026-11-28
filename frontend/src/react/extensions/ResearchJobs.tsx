@@ -1,4 +1,4 @@
-import { Label as ShadcnLabel } from '../ui/shadcn/label';
+import { Label as ShadcnLabel } from '../ui/v3';
 import { Textarea as ShadcnTextarea } from '../ui/v3';
 import { Button as UiButton } from '../ui/Button';
 import { useEffect, useReducer, useState, useSyncExternalStore } from 'react';

@@ -3,7 +3,7 @@ import { MathText } from '../rn/useInlineMath';
 import { LazyLearningNode } from './LazyLearningNode';
 import { NativeVisualization } from './NativeVisualization';
 import { Demonstration } from './demonstration/Demonstration';
-import { Label as ShadcnLabel } from '../ui/shadcn/label';
+import { Label as ShadcnLabel } from '../ui/v3';
 import { Switch as ShadcnSwitch } from '../ui/v3';
 import { NativeControl as ShadcnNativeControl } from '../ui/NativeControl';
 import { Separator as ShadcnSeparator } from '../ui/Separator';
