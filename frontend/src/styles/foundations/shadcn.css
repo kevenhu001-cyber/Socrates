@@ -4,8 +4,10 @@
 @layer theme, base, components, utilities;
 @import 'tailwindcss/theme.css' layer(theme);
 @import 'tailwindcss/utilities.css' layer(utilities) source(none);
+@import '@openai/apps-sdk-ui/css';
 
 @source '../../react';
+@source '../../../node_modules/@openai/apps-sdk-ui';
 @custom-variant dark (&:where([data-mode="dark"], [data-mode="dark"] *));
 
 @theme inline {

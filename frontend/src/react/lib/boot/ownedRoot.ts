@@ -1,5 +1,6 @@
-import type { ReactNode } from 'react';
+import { createElement, type ReactNode } from 'react';
 import { createRoot, hydrateRoot, type Root } from 'react-dom/client';
+import { AppsSDKUIProvider } from '@openai/apps-sdk-ui/components/AppsSDKUIProvider';
 import { reportSwallow } from '../../../util/reportSwallow';
 import { clearHostMounted, hostIsMounted, hostIsMountedBy, markHostMountedBy } from './ownership';
 
@@ -30,8 +31,9 @@ function mountRoot(
   const cleanup = install?.();
   let root: Root | null = null;
   try {
-    root = hydrate ? hydrateRoot(host, content) : createRoot(host);
-    if (!hydrate) root.render(content);
+    const wrapped = createElement(AppsSDKUIProvider, { linkComponent: 'a', children: content });
+    root = hydrate ? hydrateRoot(host, wrapped) : createRoot(host);
+    if (!hydrate) root.render(wrapped);
   } catch (error) {
     try {
       root?.unmount();
@@ -45,7 +47,8 @@ function mountRoot(
   const handle: OwnedRootHandle = {
     root: mountedRoot,
     render: (nextContent) => {
-      if (roots.get(host)?.handle === handle) mountedRoot.render(nextContent);
+      if (roots.get(host)?.handle === handle)
+        mountedRoot.render(createElement(AppsSDKUIProvider, { linkComponent: 'a', children: nextContent }));
     },
     destroy: () => {
       // A stale handle must never release a newer root on the same host.
