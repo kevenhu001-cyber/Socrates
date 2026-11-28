@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { cn } from 'cn';
-import { Label } from '../ui/shadcn/label';
+import { Label } from '../ui/v3';
 
 export interface SettingsRowProps {
   htmlFor?: string;

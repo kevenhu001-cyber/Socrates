@@ -1,6 +1,6 @@
 import { PageTabs } from '../ui/page/PageTabs';
 import { Switch } from '../ui/v3';
-import { Label as ShadcnLabel } from '../ui/shadcn/label';
+import { Label as ShadcnLabel } from '../ui/v3';
 import { NativeControl as ShadcnNativeControl } from '../ui/NativeControl';
 import { Button } from '../ui/shadcn/button';
 import { SettingsRow } from '../layout/SettingsRow';

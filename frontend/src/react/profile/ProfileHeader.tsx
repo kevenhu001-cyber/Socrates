@@ -1,5 +1,5 @@
 import { profileText } from './profileText';
-import { Label } from '../ui/shadcn/label';
+import { Label } from '../ui/v3';
 import { Input as ShadcnInput } from '../ui/v3';
 import {
   useCallback,

@@ -1,7 +1,7 @@
 import { Input as ShadcnInput } from '../ui/v3';
 import { PreferenceSelect } from './PreferenceSelect';
 import { Button } from '../ui/shadcn/button';
-import { Field, FieldLabel } from '../ui/shadcn/field';
+import { Field, FieldLabel } from '../ui/v3';
 import { useState } from 'react';
 import { getCurrentUser } from '../legacy/gateway.ts';
 import { confirmClearSettings } from '../../legacy/dangerConfirms.ts';

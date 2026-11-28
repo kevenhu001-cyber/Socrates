@@ -58,6 +58,21 @@ export {
 export { Slider, type SliderProps } from '@openai/apps-sdk-ui/components/Slider';
 export { Tooltip, type TooltipProps } from '@openai/apps-sdk-ui/components/Tooltip';
 
+export {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSeparator,
+  FieldSet,
+  FieldTitle,
+  Label,
+  Separator,
+} from './form';
+
 export type ButtonProps = Omit<AppsSdkButtonProps, 'color'> & {
   color?: AppsSdkButtonProps['color'];
 };

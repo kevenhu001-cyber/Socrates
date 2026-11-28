@@ -13,7 +13,7 @@ import { createRootSlot } from '../lib/boot/ownedRoot';
 import { ensureBodyContainer } from '../lib/boot/mountContainer';
 import { Button } from '../ui/shadcn/button';
 import { Input } from '../ui/v3';
-import { Label } from '../ui/shadcn/label';
+import { Label } from '../ui/v3';
 import { NativeSelect, NativeSelectOption } from '../ui/v3';
 import { Textarea } from '../ui/v3';
 import { FoundationDialog, FoundationDialogTitle } from '../dialog/FoundationDialog';

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FieldGroup } from '../ui/shadcn/field';
+import { FieldGroup } from '../ui/v3';
 import { Switch } from '../ui/v3';
 import { PreferenceSelect } from './PreferenceSelect';
 import { SettingsRow } from '../layout/SettingsRow';

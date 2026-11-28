@@ -1,4 +1,4 @@
-import { Field, FieldGroup, FieldLabel } from '../ui/shadcn/field';
+import { Field, FieldGroup, FieldLabel } from '../ui/v3';
 import { Input as ShadcnInput } from '../ui/v3';
 import { Button as UiButton } from '../ui/shadcn/button';
 import { AuthCard } from '../ui/page/AuthCard';

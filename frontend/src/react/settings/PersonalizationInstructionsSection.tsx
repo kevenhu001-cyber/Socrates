@@ -1,5 +1,5 @@
 import { Textarea as ShadcnTextarea } from '../ui/v3';
-import { Field, FieldGroup, FieldLabel } from '../ui/shadcn/field';
+import { Field, FieldGroup, FieldLabel } from '../ui/v3';
 import { useEffect, useRef } from 'react';
 import { buildCustomInstructionsString } from '../../config/customInstructions.ts';
 import type { SaveSettingsPreference, SettingsLabel } from './settings.types';
