@@ -15,7 +15,7 @@ import { Button } from '../ui/shadcn/button';
 import { Input } from '../ui/shadcn/input';
 import { Label } from '../ui/shadcn/label';
 import { NativeSelect, NativeSelectOption } from '../ui/shadcn/native-select';
-import { Textarea } from '../ui/shadcn/textarea';
+import { Textarea } from '../ui/v3';
 import { FoundationDialog, FoundationDialogTitle } from '../dialog/FoundationDialog';
 import { i18n } from '../../ui/legacyI18n.ts';
 import {
