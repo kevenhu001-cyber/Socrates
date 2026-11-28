@@ -29,15 +29,15 @@ function closeAllPanels(): void {
 }
 
 function openCreation(name: 'images' | 'assistants' | 'sites'): void {
-  void import('../legacy/creationSurfaces.ts')
-    .then(async (module) => {
+  void import('../react/creation/creationSurfaceHost.tsx')
+    .then(({ mountCreationSurface }) => {
       if (getActiveDestination() !== name) return;
-      await module.openCreationSurface(name);
+      mountCreationSurface(name);
       if (getActiveDestination() !== name) return;
       activateMainView(DESTINATIONS[name].host, document);
     })
     .catch((error) => {
-      console.error('[nav] creation surface failed to load', error);
+      reportSwallow(error, 'sidebar/navigation.openCreation');
     });
 }
 

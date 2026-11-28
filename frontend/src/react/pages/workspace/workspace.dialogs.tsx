@@ -1,11 +1,11 @@
-import type { ReactElement } from 'react';
+import { createElement, type ReactElement } from 'react';
 import { getLegacyActions } from '../../legacy/gateway.ts';
 import { connectorIconWithFallback } from '../../../sidebar/connectorIconLoader.ts';
 import { apiFetch } from '../../../util/api/index.ts';
 import { i18n } from '../../../ui/legacyI18n.ts';
 import { getCachedProjects } from '../../../projects/projectCache.ts';
 import { dispatchSession, sessionStore } from '../../../store/index.ts';
-import { openLibraryDetail } from '../../../legacy/libraryDetail.ts';
+import { openDetailSurface } from '../../../legacy/detailSurface.ts';
 import { mountDialogCard, unmountDialogCard } from './workspace.dialogHost';
 import { renderActionButton } from '../../../legacy/actionButton.ts';
 import {
@@ -29,6 +29,14 @@ import {
 import { deleteScheduledTask, saveScheduledTask } from '../scheduled/scheduled.service';
 import { useScheduledStore } from '../scheduled/scheduled.store';
 import { reportSwallow as reportEmptyCatch } from '../../../util/reportSwallow.ts';
+
+function openLibraryDetail(title: string, meta: string, markup: string, closeLabel: string) {
+  const content = createElement('div', {
+    className: 'artifact-preview-body library-detail-content',
+    dangerouslySetInnerHTML: { __html: markup },
+  });
+  return openDetailSurface({ owner: 'library', title, meta, closeLabel, content });
+}
 
 interface ProjectRunSummary {
   id: string;

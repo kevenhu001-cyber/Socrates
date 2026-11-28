@@ -1,6 +1,6 @@
 import { activateComposerSurface } from '../composer/controller.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
-import { animateSurfaceEntrance } from './motion/surface.ts';
+import { prefersReducedMotion } from './motion/index.ts';
 import { closeDetailSurface } from './detailSurface.ts';
 import { CORE_VIEW_IDS, MAIN_PAGE_IDS } from '../sidebar/navigation.destinations.ts';
 import { dispatchUi, uiStore } from '../store/index.ts';
@@ -8,6 +8,30 @@ import { setTopbarState } from '../react/topbar/topbarStore.ts';
 import { toggleShareBtn } from './share.ts';
 
 export { CORE_VIEW_IDS, MAIN_PAGE_IDS };
+
+let activeSurfaceEntrance: { host: HTMLElement; animation: Animation } | null = null;
+
+function animateSurfaceEntrance(host: HTMLElement, previousView?: string, reveal = true): void {
+  if (host.id === previousView) return;
+  activeSurfaceEntrance?.animation.cancel();
+  activeSurfaceEntrance = null;
+  const forcedColors =
+    typeof window !== 'undefined' && window.matchMedia?.('(forced-colors: active)').matches;
+  if (!reveal || prefersReducedMotion() || forcedColors || typeof host.animate !== 'function')
+    return;
+  const style = getComputedStyle(host);
+  const time = style.getPropertyValue('--ui-duration-overlay').trim();
+  const value = Number.parseFloat(time);
+  const duration = Number.isFinite(value) ? value * (time.endsWith('ms') ? 1 : 1000) : 220;
+  const easing = style.getPropertyValue('--ui-ease-out').trim() || 'cubic-bezier(0.2, 0, 0, 1)';
+  const animation = host.animate([{ opacity: 0 }, { opacity: 1 }], { duration, easing });
+  const entry = { host, animation };
+  activeSurfaceEntrance = entry;
+  const finish = () => {
+    if (activeSurfaceEntrance === entry) activeSurfaceEntrance = null;
+  };
+  void animation.finished.then(finish, finish);
+}
 
 const WORKSPACE_PAGE_IDS = new Set<string>(MAIN_PAGE_IDS.filter((id) => id !== 'examView'));
 const VIEW_IDS = new Set(CORE_VIEW_IDS.concat(MAIN_PAGE_IDS));

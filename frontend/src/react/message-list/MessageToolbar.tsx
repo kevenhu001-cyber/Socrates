@@ -1,8 +1,6 @@
 import React from 'react';
 import { Icon } from '../../legacy/Icon';
 import type { IconName } from '../../legacy/iconRegistry';
-import { animateSpring, readScale } from '../../legacy/motion/spring';
-import { SPRING_PRESETS } from '@socrates/core/motion/spring';
 import { MessageOverflow, type OverflowAction } from './MessageOverflow';
 import type { ChatMessage } from '../types/domain';
 import type { MessageToolbarCallbacks } from './types';
@@ -22,11 +20,6 @@ const CheckIcon: IconName = 'copyCheck';
 const EditIcon: IconName = 'edit';
 const TrashIcon: IconName = 'trash';
 const RegenerateIcon: IconName = 'regenerate';
-
-/* The reaction pop: one visible overshoot of roughly 19% that settles back.
- * The number is the spring's own — stiffness 380 / damping 18 give ζ = 0.46
- * and a peak of 19.5% — so the curve and the amplitude are one decision. */
-const LIKE_OVERSHOOT = 0.195;
 
 /* The toolbar glyph: the shared icon set, drawn the way the toolbar's own
  * sheet expects it (18px on the 24px grid, geometric edges). */
@@ -100,7 +93,6 @@ interface MessageToolbarActionsProps {
   liked: boolean;
   onCopy: () => void;
   onThumbsUp: () => void;
-  likeButtonRef: React.RefObject<HTMLButtonElement | null>;
   /** Historical rows expose their actions through the context menu. */
   compact: boolean;
   contextMenu?: { open: boolean; setOpen: (open: boolean) => void };
@@ -182,7 +174,6 @@ function MessageToolbarActions({
   liked,
   onCopy,
   onThumbsUp,
-  likeButtonRef,
   compact,
   contextMenu,
 }: MessageToolbarActionsProps): React.ReactElement {
@@ -249,7 +240,6 @@ function MessageToolbarActions({
               label={i18n('message.helpful', 'Helpful')}
               aria-pressed={liked}
               onClick={onThumbsUp}
-              ref={likeButtonRef}
               className={liked ? 'active' : undefined}
             >
               {toolbarIcon(liked ? 'thumbsUpFilled' : ThumbsUpIcon)}
@@ -302,19 +292,11 @@ function MessageToolbar({
   const callbacks = onEdit ? { ...legacyCallbacks, onEdit } : legacyCallbacks;
   const [copied, setCopied] = React.useState(false);
   const [liked, setLiked] = React.useState(false);
-  const likeButtonRef = React.useRef<HTMLButtonElement | null>(null);
-  const likeAnimationRef = React.useRef<Animation | null>(null);
   const [, refreshLanguage] = React.useReducer((revision: number) => revision + 1, 0);
   React.useEffect(() => {
     document.addEventListener('socrates:langchange', refreshLanguage);
     return () => document.removeEventListener('socrates:langchange', refreshLanguage);
   }, []);
-  React.useEffect(
-    () => () => {
-      likeAnimationRef.current?.cancel();
-    },
-    [],
-  );
   const id =
     typeof message.id === 'string'
       ? message.id
@@ -328,36 +310,9 @@ function MessageToolbar({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  /**
-   * Pop the reaction icon. The icon is scaled rather than the button: the
-   * button carries the active pill, and growing the pill 19% would read as
-   * the whole row moving.
-   *
-   * The pop starts from wherever the icon currently is, and the kick is
-   * scaled by the distance still left to the peak — so a second click in the
-   * middle of the first pop settles the icon back instead of stacking a
-   * second overshoot on top of it.
-   */
-  const playLikePop = () => {
-    const button = likeButtonRef.current;
-    const icon = button?.querySelector('svg');
-    if (!icon) return;
-    const current = readScale(icon);
-    likeAnimationRef.current?.cancel();
-    likeAnimationRef.current = animateSpring(icon, {
-      config: SPRING_PRESETS.like,
-      from: current,
-      to: 1,
-      overshoot: Math.max(0, LIKE_OVERSHOOT - (current - 1)),
-      property: 'scale',
-    });
-  };
-
   const handleThumbsUp = () => {
     callbacks.onThumbsUp?.();
-    const next = !liked;
-    setLiked(next);
-    if (next) playLikePop();
+    setLiked((prev) => !prev);
   };
 
   // Reserve the same toolbar geometry during playback without mounting any
@@ -406,7 +361,6 @@ function MessageToolbar({
         liked={liked}
         onCopy={handleCopy}
         onThumbsUp={handleThumbsUp}
-        likeButtonRef={likeButtonRef}
         compact={compact}
         contextMenu={contextMenu}
       />
