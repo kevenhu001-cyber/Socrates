@@ -1,4 +1,4 @@
-import { Input as ShadcnInput } from '../ui/shadcn/input';
+import { Input as ShadcnInput } from '../ui/v3';
 import { t } from './text';
 import { Icon } from '../../legacy/Icon';
 import type { KeyboardEvent, Ref } from 'react';

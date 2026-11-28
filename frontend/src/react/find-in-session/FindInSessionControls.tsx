@@ -1,4 +1,4 @@
-import { Input as ShadcnInput } from '../ui/shadcn/input';
+import { Input as ShadcnInput } from '../ui/v3';
 import { Button as ShadcnButton } from '../ui/shadcn/button';
 import type { ChangeEventHandler, KeyboardEventHandler, Ref } from 'react';
 import { FIND_INPUT_ID } from './findInSession.constants';

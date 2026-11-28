@@ -1,5 +1,5 @@
 import { Button } from '../ui/shadcn/button';
-import { Input } from '../ui/shadcn/input';
+import { Input } from '../ui/v3';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Editor } from '@tiptap/react';
 import { i18n } from '../../ui/legacyI18n.ts';
