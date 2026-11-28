@@ -650,17 +650,21 @@ test('wide display equations scroll inside the answer on a phone', async ({ page
   const formula = Array.from({ length: 35 }, (_, index) => 'x_{' + index + '}').join('+');
   await prepareChatWorkbench(page, {
     viewport: WORKBENCH_VIEWPORTS.mobile,
-    messages: [{
-      clientId: 'wide-equation',
-      role: 'assistant',
-      type: 'assistant',
-      rawText: 'A long equation:\n\n$$' + formula + '$$',
-      html: '<p>A long equation:</p>',
-    }],
+    messages: [
+      {
+        clientId: 'wide-equation',
+        role: 'assistant',
+        type: 'assistant',
+        rawText: 'A long equation:\n\n$$' + formula + '$$',
+        html: '<p>A long equation:</p>',
+      },
+    ],
   });
   const equation = page.locator('#msgList .katex-display').first();
   await expect(equation.locator('.katex-html')).toBeVisible();
-  await expect.poll(() => equation.evaluate((node) => node.scrollWidth > node.clientWidth)).toBe(true);
+  await expect
+    .poll(() => equation.evaluate((node) => node.scrollWidth > node.clientWidth))
+    .toBe(true);
   const geometry = await equation.evaluate((node) => {
     node.scrollLeft = 0;
     const start = node.querySelector('.katex-html').getBoundingClientRect().left;
@@ -670,6 +674,8 @@ test('wide display equations scroll inside the answer on a phone', async ({ page
   });
   expect(geometry.start).toBeGreaterThanOrEqual(geometry.left - 1);
   expect(geometry.scroll).toBeGreaterThan(0);
-  expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth - innerWidth),
+  ).toBeLessThanOrEqual(1);
   await page.screenshot({ path: 'test-results/wide-equation-phone.png' });
 });

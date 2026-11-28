@@ -92,11 +92,12 @@ export function PluginDirectoryCard({
   dispatch,
   onSelect,
 }: PluginDirectoryCardProps) {
-  const connectionLabel = plugin.connection?.status === 'connected'
-    ? i18n('plugins.connected', 'Connected')
-    : plugin.connection?.status === 'initiated'
-      ? detailText('Awaiting authorization', '等待授权')
-      : null;
+  const connectionLabel =
+    plugin.connection?.status === 'connected'
+      ? i18n('plugins.connected', 'Connected')
+      : plugin.connection?.status === 'initiated'
+        ? detailText('Awaiting authorization', '等待授权')
+        : null;
   const description = pluginDescription(plugin);
   return (
     <article

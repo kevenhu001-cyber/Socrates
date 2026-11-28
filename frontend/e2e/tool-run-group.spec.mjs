@@ -85,7 +85,13 @@ const FIXTURE_CALLS = [
    scripts run later, so calling this again on the same page re-themes it. */
 async function loadFixtureSession(
   page,
-  { theme = 'dark', html = null, toolCalls = FIXTURE_CALLS, language = 'en', expandBursts = true } = {},
+  {
+    theme = 'dark',
+    html = null,
+    toolCalls = FIXTURE_CALLS,
+    language = 'en',
+    expandBursts = true,
+  } = {},
 ) {
   await mockAuthedApp(page);
   await page.addInitScript(
@@ -184,7 +190,10 @@ test('expanded calls are visible in call order', async ({ page }) => {
     'Status unknown',
   );
   await expect(s1.getByTestId('thinking-step-spinner')).toHaveCount(0);
-  await expect(panel.locator('.rn-tool-row[data-tcid="f1"]')).toHaveAttribute('data-state', 'error');
+  await expect(panel.locator('.rn-tool-row[data-tcid="f1"]')).toHaveAttribute(
+    'data-state',
+    'error',
+  );
 });
 
 test('a row opens its detail inline, and closes on a second press', async ({ page }) => {
@@ -223,11 +232,21 @@ test('keyboard activation toggles the row disclosure', async ({ page }) => {
 
 test('raw Python output and search JSON never enter expanded tool details', async ({ page }) => {
   const calls = [
-    { id: 'raw-python', name: 'code_interpreter', input: { code: 'print("private_python_probe")' },
-      output: 'private_stdout_probe', status: 'completed', textOffset: 0 },
-    { ...searchCall('raw-search', 'wide detail', [{ title: 'Public result', url: 'https://example.test/a' }]),
+    {
+      id: 'raw-python',
+      name: 'code_interpreter',
+      input: { code: 'print("private_python_probe")' },
+      output: 'private_stdout_probe',
+      status: 'completed',
+      textOffset: 0,
+    },
+    {
+      ...searchCall('raw-search', 'wide detail', [
+        { title: 'Public result', url: 'https://example.test/a' },
+      ]),
       input: { query: 'wide detail', payload: 'private_arg_probe' },
-      output: '{"raw":"private_json_probe"}' },
+      output: '{"raw":"private_json_probe"}',
+    },
   ];
   const body = await loadFixtureSession(page, { toolCalls: calls });
   const panel = page.locator('#thoughtsPanel');
@@ -255,7 +274,9 @@ test('tool failures remain visible as status without a technical disclosure', as
   await expect(panel).not.toContainText('SEARCH_TIMEOUT');
 });
 
-test('each file action names its file without repeating its label in an empty detail', async ({ page }) => {
+test('each file action names its file without repeating its label in an empty detail', async ({
+  page,
+}) => {
   await loadFixtureSession(page);
   const panel = page.locator('#thoughtsPanel');
   const w1 = panel.getByTestId('tool-row-w1');
@@ -272,13 +293,15 @@ test('answer prose keeps its recorded order around the rows, with no baked-in du
 }) => {
   const body = await loadFixtureSession(page);
   const panel = page.locator('#thoughtsPanel');
-  const textOrder = await body.locator('.turn-evidence').evaluate((el) =>
-    Array.from(el.querySelectorAll('.rn-turn-activity, .tool-run-prose')).map((node) =>
-      node.classList.contains('rn-turn-activity')
-        ? 'activity'
-        : `text:${(node.textContent || '').trim()}`,
-    ),
-  );
+  const textOrder = await body
+    .locator('.turn-evidence')
+    .evaluate((el) =>
+      Array.from(el.querySelectorAll('.rn-turn-activity, .tool-run-prose')).map((node) =>
+        node.classList.contains('rn-turn-activity')
+          ? 'activity'
+          : `text:${(node.textContent || '').trim()}`,
+      ),
+    );
   expect(textOrder).toEqual([
     'activity',
     'text:Lead paragraph.',
@@ -286,7 +309,9 @@ test('answer prose keeps its recorded order around the rows, with no baked-in du
     'text:Tail paragraph.',
   ]);
   expect(
-    await panel.locator('.rn-tool-row').evaluateAll((nodes) => nodes.map((n) => `tool:${n.dataset.tcid}`)),
+    await panel
+      .locator('.rn-tool-row')
+      .evaluateAll((nodes) => nodes.map((n) => `tool:${n.dataset.tcid}`)),
   ).toEqual(['tool:s1', 'tool:s2', 'tool:s3', 'tool:f1', 'tool:w1', 'tool:w2']);
   await expect(panel.locator('.agent-tool-card')).toHaveCount(0);
   await expect(body.locator('.agent-tool-card')).toHaveCount(0);
@@ -357,7 +382,9 @@ test('rows share one icon column inside Thoughts', async ({ page }) => {
   await expect(row).toHaveCSS('border-top-width', '0px');
   await expect(row.getByTestId('thinking-step-status')).toHaveCount(0);
   const icons = await panel
-    .locator('.rn-tool-row .tool-run-trigger > :is(.tool-inline-tool-icon, .tool-site-marks, .activity-step-glyph):first-child')
+    .locator(
+      '.rn-tool-row .tool-run-trigger > :is(.tool-inline-tool-icon, .tool-site-marks, .activity-step-glyph):first-child',
+    )
     .evaluateAll((nodes) => {
       return nodes.map((node) => {
         const rect = node.getBoundingClientRect();
@@ -614,7 +641,6 @@ test('a pending approval stays visible in the transcript with pill decisions', a
   await expect(prompt.locator('.tool-approval-decisions')).toHaveCount(0);
   expect(decisions).toEqual([{ method: 'POST', body: { decision: 'accept' } }]);
 });
-
 
 test('activity bursts start collapsed including failed and unknown rows', async ({ page }) => {
   const body = await loadFixtureSession(page, { expandBursts: false });

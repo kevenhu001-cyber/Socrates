@@ -754,6 +754,7 @@ export const zh = {
   'session.noSearchMatch': '没有与 {query} 匹配的会话。',
   'session.clearSearch': '清除搜索',
   'session.loadListFailed': '无法加载会话，请检查网络后重试。',
+  'session.saveBeforeStreamFailed': '当前会话尚未保存到服务器，请重试。',
   'session.retry': '重试',
   'session.noFilterMatch': '没有与 {filter} 筛选条件匹配的会话。',
   'session.clearFilter': '清除筛选',

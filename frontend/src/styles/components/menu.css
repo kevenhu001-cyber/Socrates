@@ -229,12 +229,16 @@ body #composerToolsMenu.composer-tools-menu {
   white-space: nowrap;
 }
 #composerToolsMenu .composer-tools-item kbd {
-  display: block;
+  display: inline-flex;
+  align-items: center;
   margin-left: auto;
   color: var(--ui-text-tertiary);
+  font-family: var(--font-mono);
   font-size: var(--ui-font-size-xxs);
   font-weight: var(--ui-font-weight-regular);
-  padding: 1px 5px;
+  font-variant-numeric: tabular-nums;
+  padding: 1px 6px;
+  border: 1px solid var(--ui-border-subtle);
   border-radius: var(--ui-radius-xs);
   background: var(--ui-bg-control);
 }

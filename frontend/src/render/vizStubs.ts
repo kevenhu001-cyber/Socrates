@@ -39,12 +39,12 @@ export const VIZ_THEME_RESET =
   '<style>' +
   '*,*::before,*::after{box-sizing:border-box}' +
   'html,body{margin:0;padding:0}' +
-  'body{font-family:"Noto Sans SC","PingFang SC","Hiragino Sans GB",system-ui,sans-serif;font-size:14px;line-height:1.55;color:var(--ui-text-primary,#171717);background:transparent}' +
+  'body{font-family:"Geist Sans","Noto Sans SC",sans-serif;font-size:14px;line-height:1.55;color:var(--ui-text-primary,#171717);background:transparent}' +
   'html[data-mode=dark] body,[data-mode=dark] body{color:var(--ui-text-primary,#ededed);background:transparent}' +
   'a{color:var(--ui-accent-action,#3b82f6)}' +
   'svg{max-width:100%;height:auto;display:block}' +
-  'pre{font-family:"JetBrains Mono","Cascadia Code",ui-monospace,monospace;font-size:.92em;background:rgba(120,120,140,0.08);border-radius:8px;padding:8px 10px;overflow:auto}' +
-  'code{font-family:"JetBrains Mono","Cascadia Code",ui-monospace,monospace;font-size:.92em}' +
+  'pre{font-family:"Geist Mono","Noto Sans SC",monospace;font-size:.92em;background:rgba(120,120,140,0.08);border-radius:8px;padding:8px 10px;overflow:auto}' +
+  'code{font-family:"Geist Mono","Noto Sans SC",monospace;font-size:.92em}' +
   '</style>';
 
 import { esc, escAttr } from './text.ts';

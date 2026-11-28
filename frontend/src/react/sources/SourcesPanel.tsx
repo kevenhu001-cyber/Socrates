@@ -126,7 +126,9 @@ export function SourcesPanel() {
       }
       // Desktop is non-modal; the phone sheet keeps keyboard navigation inside.
       if (event.key !== 'Tab' || !media.matches || !host) return;
-      const focusable = Array.from(host.querySelectorAll<HTMLElement>('button:not([disabled]), a[href]'));
+      const focusable = Array.from(
+        host.querySelectorAll<HTMLElement>('button:not([disabled]), a[href]'),
+      );
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
       if (!first || !last) return;
@@ -178,7 +180,9 @@ export function SourcesPanel() {
             <path d="M4 2.5h5.5L12 5v8.5H4z" />
             <path d="M9.5 2.5V5H12M6 8h4M6 10.5h4" />
           </svg>
-          <h2 id="sourcesPanelTitle" className="sources-panel-title">{entry.title}</h2>
+          <h2 id="sourcesPanelTitle" className="sources-panel-title">
+            {entry.title}
+          </h2>
           <span className="sources-panel-count" aria-hidden="true">
             {entry.items.length}
           </span>

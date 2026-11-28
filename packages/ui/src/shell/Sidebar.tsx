@@ -245,7 +245,9 @@ export function SidebarIconAction({
         {
           /* Only ever forces `none`: when shown, the host's layout CSS decides. */
           ...(visible ? null : { display: 'none' }),
-          ...(controlSize ? { width: controlSize, height: controlSize, minWidth: controlSize } : null),
+          ...(controlSize
+            ? { width: controlSize, height: controlSize, minWidth: controlSize }
+            : null),
           backgroundColor: pressed
             ? colors.fillPressed
             : hovered

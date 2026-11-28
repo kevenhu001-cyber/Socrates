@@ -41,17 +41,19 @@
 /* Markdown rendered content */
 .msg-body h1 {
   font-size: 1.4em;
-  font-weight: var(--ui-font-weight-medium);
+  font-weight: var(--ui-font-weight-semibold);
+  letter-spacing: -0.015em;
   color: var(--ui-text-primary);
-  margin: 16px 0 8px;
+  margin: 20px 0 8px;
   line-height: 1.3;
 }
 .msg-body h2 {
   font-size: 1.2em;
-  font-weight: var(--ui-font-weight-medium);
+  font-weight: var(--ui-font-weight-semibold);
+  letter-spacing: -0.01em;
   color: var(--ui-text-primary);
-  margin: 14px 0 6px;
-  line-height: 1.3;
+  margin: 16px 0 6px;
+  line-height: 1.32;
 }
 /* The previous 1.05em + weight 500 + --text-100 was
    visually indistinguishable from body text in CJK runs (Chinese chars
@@ -150,23 +152,24 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  height: 28px;
-  padding: 0 6px 0 12px;
-  margin-bottom: -2px;
+  height: 30px;
+  padding: 0 8px 0 14px;
+  margin: 8px 0 0;
   border: 0.5px solid color-mix(in srgb, var(--ui-border-default) 8%, transparent);
-  border-bottom: none;
+  border-bottom: 1px solid var(--ui-border-subtle);
   border-radius: var(--ui-radius-lg) var(--ui-radius-lg) 0 0;
+  background: var(--ui-bg-raised);
   font-size: calc(var(--ui-font-size-caption) * var(--app-font-scale, 1));
-  color: var(--ui-text-tertiary);
-  opacity: 0.85;
-  transition: opacity 0.18s ease;
+  color: var(--ui-text-secondary);
+  transition: color var(--ui-duration-fast) ease;
 }
 .msg-body .code-block-header:hover {
-  opacity: 1;
+  color: var(--ui-text-primary);
 }
 .msg-body .code-block-header + pre {
   margin-top: 0;
   border-top: none;
+  border-radius: 0 0 var(--ui-radius-lg) var(--ui-radius-lg);
 }
 .code-block-header-lang {
   flex: 1;

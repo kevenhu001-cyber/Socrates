@@ -176,29 +176,44 @@ function createSimulationWorkerAudit() {
   return {
     name: 'socrates-simulation-worker-audit',
     generateBundle(_options, bundle) {
-      const chunks = Object.values(bundle).filter(item => item.type === 'chunk');
-      const entry = chunks.find(chunk => chunk.isEntry &&
-        (chunk.facadeModuleId || '').replaceAll('\\','/').endsWith('/demonstration.worker.ts'));
+      const chunks = Object.values(bundle).filter((item) => item.type === 'chunk');
+      const entry = chunks.find(
+        (chunk) =>
+          chunk.isEntry &&
+          (chunk.facadeModuleId || '').replaceAll('\\', '/').endsWith('/demonstration.worker.ts'),
+      );
       if (!entry) return;
-      const byFile = new Map(chunks.map(chunk => [chunk.fileName, chunk]));
+      const byFile = new Map(chunks.map((chunk) => [chunk.fileName, chunk]));
       const eager = new Set([entry.fileName]);
       for (const file of eager) for (const dep of byFile.get(file)?.imports || []) eager.add(dep);
-      const rows = chunks.map(chunk => ({
+      const rows = chunks.map((chunk) => ({
         file: chunk.fileName,
         eager: eager.has(chunk.fileName),
         gzipBytes: gzipSync(chunk.code).length,
-        modules: Object.entries(chunk.modules).filter(([,info]) => info.renderedLength > 0)
-          .map(([id]) => id.replaceAll('\\','/').split('/').slice(-5).join('/')),
+        modules: Object.entries(chunk.modules)
+          .filter(([, info]) => info.renderedLength > 0)
+          .map(([id]) => id.replaceAll('\\', '/').split('/').slice(-5).join('/')),
       }));
-      for (const row of rows.filter(row => row.eager)) {
-        const leaked = row.modules.find(id =>
-          /simulation\/numerics\/(?!dense\.js$)/.test(id) ||
-          /demonstration\/(?:sampling\/|geometry\/(?:spatial|surface|isosurface|marchingTetrahedra)\.ts)/.test(id));
+      for (const row of rows.filter((row) => row.eager)) {
+        const leaked = row.modules.find(
+          (id) =>
+            /simulation\/numerics\/(?!dense\.js$)/.test(id) ||
+            /demonstration\/(?:sampling\/|geometry\/(?:spatial|surface|isosurface|marchingTetrahedra)\.ts)/.test(
+              id,
+            ),
+        );
         if (leaked) this.error('Advanced simulation code in eager Worker closure: ' + leaked);
       }
-      const eagerBytes = rows.filter(row => row.eager).reduce((n,row) => n+row.gzipBytes,0);
-      const lazyBytes = rows.filter(row => !row.eager).reduce((n,row) => n+row.gzipBytes,0);
-      console.log('[simulation-worker-audit] static gzip=' + eagerBytes + ' bytes; lazy gzip=' + lazyBytes + ' bytes; chunks=' + rows.length);
+      const eagerBytes = rows.filter((row) => row.eager).reduce((n, row) => n + row.gzipBytes, 0);
+      const lazyBytes = rows.filter((row) => !row.eager).reduce((n, row) => n + row.gzipBytes, 0);
+      console.log(
+        '[simulation-worker-audit] static gzip=' +
+          eagerBytes +
+          ' bytes; lazy gzip=' +
+          lazyBytes +
+          ' bytes; chunks=' +
+          rows.length,
+      );
     },
   };
 }
@@ -264,8 +279,12 @@ export default defineConfig({
       '@socrates/contracts': fileURLToPath(
         new URL('../packages/contracts/src/index.ts', import.meta.url),
       ),
-      '@socrates/core/demonstrationLight': fileURLToPath(new URL('../packages/core/src/demonstrationLight.js', import.meta.url)),
-      '@socrates/core/demonstrationAsync': fileURLToPath(new URL('../packages/core/src/demonstrationAsync.js', import.meta.url)),
+      '@socrates/core/demonstrationLight': fileURLToPath(
+        new URL('../packages/core/src/demonstrationLight.js', import.meta.url),
+      ),
+      '@socrates/core/demonstrationAsync': fileURLToPath(
+        new URL('../packages/core/src/demonstrationAsync.js', import.meta.url),
+      ),
       '@socrates/core/demonstration': fileURLToPath(
         new URL('../packages/core/src/demonstration.js', import.meta.url),
       ),
@@ -511,7 +530,10 @@ export default defineConfig({
   },
   plugins: [
     tailwindcss(),
-    createLocalApiStubPlugin({ localAuthBypass: LOCAL_AUTH_BYPASS }),
+    createLocalApiStubPlugin({
+      localAuthBypass: LOCAL_AUTH_BYPASS,
+      forceAuthBypass: process.env.FORCE_LOCAL_AUTH_BYPASS === '1',
+    }),
     createStripHtmlCommentsPlugin(),
     createPdfjsRuntimeAssetsPlugin(),
     createPrecompressedAssetsPlugin(),
@@ -527,20 +549,8 @@ export default defineConfig({
     },
     port: 5173,
     strictPort: false,
-    proxy: LOCAL_AUTH_BYPASS
-      ? {
-          '/api': {
-            target: `http://127.0.0.1:${process.env.API_PORT || 3037}`,
-            bypass(req) {
-              const [pathOnly] = (req.url || '').split('?');
-              if (pathOnly.startsWith('/api/auth/') || pathOnly.startsWith('/api/v2/auth/')) {
-                return pathOnly;
-              }
-            },
-          },
-        }
-      : {
-          '/api': `http://127.0.0.1:${process.env.API_PORT || 3037}`,
-        },
+    proxy: {
+      '/api': `http://127.0.0.1:${process.env.API_PORT || 3037}`,
+    },
   },
 });

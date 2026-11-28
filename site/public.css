@@ -55,10 +55,10 @@
      tooth; black grain would disappear into the ground. Static, rasterised
      once and tiled. */
   --site-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .9 -.32'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");
-  --site-font: 'Geist Sans', 'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', system-ui, sans-serif;
+  --site-font: 'Geist Sans', 'Noto Sans SC', sans-serif;
   /* Display shares the sans family: one typeface, as on the reference. */
   --site-font-display: var(--site-font);
-  --site-font-mono: 'Geist Mono', ui-monospace, 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', monospace;
+  --site-font-mono: 'Geist Mono', 'Noto Sans SC', monospace;
   /* 1440px of content plus gutters, as the reference container (90rem).
      The box is border-box, so the measure is 1440 − 2 × 32 = 1376px, the
      same content width openai.com uses for its 1440px container. */

@@ -282,7 +282,8 @@ app.use(
   compression({
     level: 6,
     filter: (req, res) => {
-      if (res.getHeader && res.getHeader('Content-Type') === 'text/event-stream') return false;
+      const contentType = res.getHeader ? String(res.getHeader('Content-Type') || '') : '';
+      if (contentType.includes('text/event-stream')) return false;
       return compression.filter(req, res);
     },
   }),

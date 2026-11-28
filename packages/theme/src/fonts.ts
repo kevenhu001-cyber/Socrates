@@ -31,9 +31,8 @@ export const CJK_FONT_FAMILY = {
 
 export type FontWeight = keyof typeof FONT_FAMILY;
 
-/** The web adapter registers the bundled faces with their real weights. Put
- * both ahead of system fallback so common Chinese glyphs use Noto Sans SC. */
-export const WEB_FONT_FAMILY = '"Inter", "Noto Sans SC", system-ui, sans-serif';
+/** The web adapter registers the bundled faces with their real weights. */
+export const WEB_FONT_FAMILY = '"Geist Sans", "Noto Sans SC", sans-serif';
 const WEB_FONT_WEIGHT: Readonly<Record<FontWeight, '400' | '500' | '600' | '700'>> = {
   regular: '400',
   medium: '500',
@@ -59,4 +58,4 @@ export function fontStyle(
 }
 
 /** Monospace face for inline code / code blocks (SPA: `--font-mono`). */
-export const MONO_FAMILY = 'Menlo';
+export const MONO_FAMILY = 'Geist Mono';

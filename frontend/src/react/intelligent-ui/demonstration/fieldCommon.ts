@@ -16,13 +16,15 @@ export function fieldExpressions(view: DemonstrationField): DemonstrationValue[]
     ...(view.vector ?? []),
     ...(view.colorRange ?? []),
     ...(view.zRange ?? []),
-    ...(view.isoLevel===undefined?[]:[view.isoLevel]),
+    ...(view.isoLevel === undefined ? [] : [view.isoLevel]),
     ...(view.slicePlane ? [view.slicePlane.at] : []),
     ...(view.curve3d ?? []),
     ...(view.vector3d ?? []),
     ...(view.parameterRange ?? []),
-    ...(view.uRange ?? []),...(view.vRange ?? []),...(view.surface3d ?? []),
-    ...(view.markers ?? []).flatMap(m=>[m.x,m.y]),
+    ...(view.uRange ?? []),
+    ...(view.vRange ?? []),
+    ...(view.surface3d ?? []),
+    ...(view.markers ?? []).flatMap((m) => [m.x, m.y]),
     ...(view.curveHistory ? ['t'] : []),
     ...(view.contours ?? []),
     ...(view.vectorScale === undefined ? [] : [view.vectorScale]),
@@ -50,5 +52,7 @@ export function setting(
 export type Domain = [number, number];
 
 export function isSpatialField(view: DemonstrationField): boolean {
-  return ['surface','curve3d','vectors3d','parametricSurface','isosurface'].includes(view.presentation ?? '');
+  return ['surface', 'curve3d', 'vectors3d', 'parametricSurface', 'isosurface'].includes(
+    view.presentation ?? '',
+  );
 }

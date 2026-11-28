@@ -60,19 +60,37 @@ function numEnv(name: string, fallback: number): number {
 function textOf(m: CompressibleMessage): string {
   if (typeof m.rawText === 'string' && m.rawText) return m.rawText;
   if (typeof m.content === 'string' && m.content) return m.content;
-  if (Array.isArray(m.content)) return m.content.map(p => p?.type === 'text' && typeof p.text === 'string' ? p.text : '[non-text attachment]').join('\n');
+  if (Array.isArray(m.content))
+    return m.content
+      .map((p) =>
+        p?.type === 'text' && typeof p.text === 'string' ? p.text : '[non-text attachment]',
+      )
+      .join('\n');
   return '';
 }
 
 function asHistoryLine(m: CompressibleMessage): string | null {
   const text = textOf(m).trim();
   const role = typeof m.role === 'string' && m.role ? m.role : 'user';
-  if (role === 'system' || role === 'developer') return /^\[(?:Context|Conversation) summary/.test(text) ? 'Prior summary: ' + text.slice(0, 4000) : null;
-  if (role === 'tool') return text ? 'Tool result (' + String(m.name || m.tool_call_id || 'unknown').slice(0,100) + ', untrusted): ' + text.slice(0, 3000) : null;
+  if (role === 'system' || role === 'developer')
+    return /^\[(?:Context|Conversation) summary/.test(text)
+      ? 'Prior summary: ' + text.slice(0, 4000)
+      : null;
+  if (role === 'tool')
+    return text
+      ? 'Tool result (' +
+          String(m.name || m.tool_call_id || 'unknown').slice(0, 100) +
+          ', untrusted): ' +
+          text.slice(0, 3000)
+      : null;
   if (role !== 'user' && role !== 'assistant') return null;
-  const calls = role === 'assistant' && Array.isArray(m.tool_calls)
-    ? ' Tool calls: ' + JSON.stringify(m.tool_calls).slice(0, 2000) : '';
-  return text || calls ? (role === 'user' ? 'User: ' : 'Assistant: ') + text.slice(0, 4000) + calls : null;
+  const calls =
+    role === 'assistant' && Array.isArray(m.tool_calls)
+      ? ' Tool calls: ' + JSON.stringify(m.tool_calls).slice(0, 2000)
+      : '';
+  return text || calls
+    ? (role === 'user' ? 'User: ' : 'Assistant: ') + text.slice(0, 4000) + calls
+    : null;
 }
 
 function stripHeavyPayloads(m: CompressibleMessage): CompressibleMessage {
@@ -126,7 +144,13 @@ export function __resetCompressMemo(): void {
 
 export async function compressSessionMessages(
   input: CompressibleMessage[],
-  opts: { keepTurns?: number; triggerTokens?: number; model?: string; cacheScope?: string; batchTurns?: number } = {},
+  opts: {
+    keepTurns?: number;
+    triggerTokens?: number;
+    model?: string;
+    cacheScope?: string;
+    batchTurns?: number;
+  } = {},
 ): Promise<CompressionResult> {
   const messages = Array.isArray(input) ? input.slice() : [];
   const keepTurns = opts.keepTurns ?? numEnv('SESSION_COMPRESS_KEEP_TURNS', 24);
@@ -190,7 +214,7 @@ export async function compressSessionMessages(
   // Advance a few complete older turns at once. This amortizes summary work
   // and keeps the compressed prefix unchanged across several new turns.
   if (opts.batchTurns && tailStart > 0) {
-    const boundaries = messages.map((m, i) => m.role === 'user' ? i : -1).filter(i => i >= 0);
+    const boundaries = messages.map((m, i) => (m.role === 'user' ? i : -1)).filter((i) => i >= 0);
     const at = boundaries.indexOf(tailStart);
     if (at >= 0) {
       const batch = Math.max(1, Math.floor(opts.batchTurns));
@@ -260,9 +284,12 @@ export async function compressSessionMessages(
      instead of paying for the LLM again. The tail is rebuilt below from
      the current input, so the caller still gets fresh recent turns. */
   const providerIdentity = [provider.id, provider.url, provider.model];
-  const keyFor = (length: number, lines: string[]) => createHash('sha256')
-    .update(JSON.stringify(['summary-v2', opts.cacheScope ?? null, ...providerIdentity, length, lines]))
-    .digest('hex');
+  const keyFor = (length: number, lines: string[]) =>
+    createHash('sha256')
+      .update(
+        JSON.stringify(['summary-v2', opts.cacheScope ?? null, ...providerIdentity, length, lines]),
+      )
+      .digest('hex');
   const digest = keyFor(head.length, headLines);
   // Reuse an exact older checkpoint rather than resending the entire head.
   // Changes to the summarized transcript invalidate the corresponding digest.
@@ -273,17 +300,29 @@ export async function compressSessionMessages(
     for (let i = head.length - 1; i > 0 && examined < 24; i--) {
       if (head[i].role !== 'user') continue;
       examined++;
-      const previousLines = head.slice(0,i).map(asHistoryLine).filter((l): l is string => !!l);
+      const previousLines = head
+        .slice(0, i)
+        .map(asHistoryLine)
+        .filter((l): l is string => !!l);
       const previous = compressMemo.peek(keyFor(i, previousLines));
       if (!previous) continue;
       checkpoint = previous;
-      delta = head.slice(i).map(asHistoryLine).filter((l): l is string => !!l);
+      delta = head
+        .slice(i)
+        .map(asHistoryLine)
+        .filter((l): l is string => !!l);
       break;
     }
   }
-  const rawTranscript = (checkpoint ? 'Prior compressed context:\n' + checkpoint + '\n\nNew older turns:\n' : '') + delta.join('\n\n');
-  const transcript = rawTranscript.length <= 60000 ? rawTranscript :
-    rawTranscript.slice(0, 29000) + '\n[Middle of older transcript omitted for summarizer budget]\n' + rawTranscript.slice(-29000);
+  const rawTranscript =
+    (checkpoint ? 'Prior compressed context:\n' + checkpoint + '\n\nNew older turns:\n' : '') +
+    delta.join('\n\n');
+  const transcript =
+    rawTranscript.length <= 60000
+      ? rawTranscript
+      : rawTranscript.slice(0, 29000) +
+        '\n[Middle of older transcript omitted for summarizer budget]\n' +
+        rawTranscript.slice(-29000);
   const { url: apiBase, keyPlaintext: apiKey, model } = provider;
   const summarize = async () => {
     try {
@@ -326,7 +365,9 @@ export async function compressSessionMessages(
     summaryTokens = 0;
   }
   // A verbose summary must not make compression larger than the original budget.
-  const available = triggerTokens - estimateContextMessageTokens(tail.map(m => ({ ...m, content: m.content || textOf(m) })));
+  const available =
+    triggerTokens -
+    estimateContextMessageTokens(tail.map((m) => ({ ...m, content: m.content || textOf(m) })));
   if (summaryTokens + 64 > available) return tailOnly();
   return finishWithSummary(summary, summaryTokens);
 

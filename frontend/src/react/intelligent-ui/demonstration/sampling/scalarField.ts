@@ -55,8 +55,18 @@ function* sampleGridRow(
       try {
         const value = runtime.evaluate(view.expression, time, xs[x], worldY);
         if (!Number.isFinite(value)) throw Error('Non-finite field sample');
-        const scaled = colorRange ? (value - colorRange[0]) / (colorRange[1] - colorRange[0]) : value;
-        writeColor(pixels, offset * 4, scaled, view.palette, gamma, colorRange ? 1 : exposure, tint);
+        const scaled = colorRange
+          ? (value - colorRange[0]) / (colorRange[1] - colorRange[0])
+          : value;
+        writeColor(
+          pixels,
+          offset * 4,
+          scaled,
+          view.palette,
+          gamma,
+          colorRange ? 1 : exposure,
+          tint,
+        );
         onValid();
       } catch (error) {
         if (isDemonstrationBudgetError(error)) throw error;

@@ -181,13 +181,13 @@ export function permitsCompatibilityFallback(body: string, reason: string): bool
       ? 'service_tier|priority'
       : reason === 'provider-400-with-temperature'
         ? 'temperature'
-      : reason === 'provider-400-with-tools'
-        ? 'tools?|tool_choice|function.call'
-        : reason === 'provider-400-with-stream-options'
-          ? 'stream_options|include_usage'
-          : reason === 'provider-400-with-cache-options'
-            ? 'prompt_cache_key|session_id|cache_control'
-            : 'reasoning_effort|reasoning_split|thinking|enable_thinking|chat_template_kwargs';
+        : reason === 'provider-400-with-tools'
+          ? 'tools?|tool_choice|function.call'
+          : reason === 'provider-400-with-stream-options'
+            ? 'stream_options|include_usage'
+            : reason === 'provider-400-with-cache-options'
+              ? 'prompt_cache_key|session_id|cache_control'
+              : 'reasoning_effort|reasoning_split|thinking|enable_thinking|chat_template_kwargs';
   return (
     new RegExp(`(?:${field})`, 'i').test(body) &&
     /unsupported|not supported|unknown|unrecognized|unexpected|not allowed|not permitted|extra (?:input|field)|reject/i.test(

@@ -222,7 +222,9 @@ test('a shared turn lays its tool rows out declaratively, read-only', async ({ p
   ]);
   await panel.getByTestId('tool-row-shared-search').click();
   // Sources are shown only inside their own action detail as domain chips.
-  expect(await panel.getByTestId('tool-detail').getByTestId('tool-source').count()).toBeGreaterThanOrEqual(1);
+  expect(
+    await panel.getByTestId('tool-detail').getByTestId('tool-source').count(),
+  ).toBeGreaterThanOrEqual(1);
   await expect(panel.getByTestId('tool-detail').getByTestId('tool-source-title')).toHaveCount(0);
   await panel.getByTestId('tool-row-shared-search').click();
 

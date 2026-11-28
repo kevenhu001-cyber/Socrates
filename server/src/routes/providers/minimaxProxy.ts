@@ -102,9 +102,18 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
      * to their own upstream on every subsequent turn. The snapshot keeps only
      * provider-independent session state; the identity is appended per
      * request, after the snapshot has been resolved. */
-    const memoryPromise = resolveMemoryContext(req.userId ?? undefined, isUuid(req.body.projectId) ? req.body.projectId : undefined, undefined, context.conversation);
+    const memoryPromise = resolveMemoryContext(
+      req.userId ?? undefined,
+      isUuid(req.body.projectId) ? req.body.projectId : undefined,
+      undefined,
+      context.conversation,
+    );
     const teacherPromise = mode === 'tutor' ? getTeacherModePrompt() : Promise.resolve(null);
-    const assistantPromise = resolveAssistantInstructions(assistantId, sessionId, req.userId ?? undefined);
+    const assistantPromise = resolveAssistantInstructions(
+      assistantId,
+      sessionId,
+      req.userId ?? undefined,
+    );
     for (const p of [memoryPromise, teacherPromise, assistantPromise]) p.catch(() => {});
     const storedPrompt = await resolveSessionPromptOrAssemble(
       req.userId ?? undefined,
@@ -127,31 +136,58 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
     const clientBlocks = hasClientSystemPrefix(context.initialization)
       ? renderClientBlocks(classifyClientSystemMessages(context.initialization))
       : undefined;
-    const [memoryBlock, teacherPrompt, assistantBlock] = await Promise.all([memoryPromise, teacherPromise, assistantPromise]);
-    let refreshed = refreshServerPrompt(storedPrompt, { clientBlocks, reasoningEffort: reasoning_effort });
+    const [memoryBlock, teacherPrompt, assistantBlock] = await Promise.all([
+      memoryPromise,
+      teacherPromise,
+      assistantPromise,
+    ]);
+    let refreshed = refreshServerPrompt(storedPrompt, {
+      clientBlocks,
+      reasoningEffort: reasoning_effort,
+    });
     refreshed = refreshSnapshotBlock(refreshed, TEACHER_MODE_MARKER, teacherPrompt);
-    refreshed = refreshSnapshotBlock(refreshed, '[User-selected assistant]', assistantBlock?.prompt ?? null);
+    refreshed = refreshSnapshotBlock(
+      refreshed,
+      '[User-selected assistant]',
+      assistantBlock?.prompt ?? null,
+    );
     refreshed = refreshSnapshotBlock(refreshed, MEMORY_CONTEXT_MARKER, null);
     const systemPrompt = insertProviderIdentity(
       insertResponseTypography(refreshed),
       await getBeagleSystemPrompt(),
     );
-    let conversation = appendTurnContext(context.conversation, context.turnInstructions, memoryBlock?.prompt ?? null);
+    let conversation = appendTurnContext(
+      context.conversation,
+      context.turnInstructions,
+      memoryBlock?.prompt ?? null,
+    );
     const budget = resolveContextBudget(provider.model, {
       overrideTokens: Number(process.env.CHAT_CONTEXT_MAX_TOKENS),
       reserveTokens: typeof max_tokens === 'number' ? max_tokens : DEFAULT_MAX_TOKENS,
     });
     const softRaw = Number(process.env.CHAT_CONTEXT_SOFT_TOKENS ?? '24000');
-    const trigger = Math.min(budget.budget, Number.isFinite(softRaw) && softRaw > 0 ? Math.floor(softRaw) : budget.budget);
-    if (estimateContextMessageTokens([{ role: 'system', content: systemPrompt }, ...conversation]) > trigger) {
+    const trigger = Math.min(
+      budget.budget,
+      Number.isFinite(softRaw) && softRaw > 0 ? Math.floor(softRaw) : budget.budget,
+    );
+    if (
+      estimateContextMessageTokens([{ role: 'system', content: systemPrompt }, ...conversation]) >
+      trigger
+    ) {
       try {
         const compressed = await compressSessionMessages(conversation, {
           ...(req.userId && sessionId ? { cacheScope: req.userId + ':' + sessionId } : {}),
-          triggerTokens: Math.max(1, trigger - estimateContextMessageTokens([{ role: 'system', content: systemPrompt }])),
+          triggerTokens: Math.max(
+            1,
+            trigger - estimateContextMessageTokens([{ role: 'system', content: systemPrompt }]),
+          ),
           batchTurns: 4,
         });
         if (compressed.didCompress) {
-          const wire = compressed.messages.map(m => ({ ...m, content: m.content ?? m.rawText ?? '' })) as ProviderMessage[];
+          const wire = compressed.messages.map((m) => ({
+            ...m,
+            content: m.content ?? m.rawText ?? '',
+          })) as ProviderMessage[];
           conversation = splitPromptContext(wire, mode).conversation;
         }
       } catch (error) {

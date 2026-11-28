@@ -43,7 +43,7 @@ import type { Request, Router } from 'express';
  * the session ID as an authority-bearing binding. Falling back to an
  * unbound/project workspace here would violate per-session isolation. */
 async function requireOwnedSessionAfterSave(sessionId: string, userId: string) {
-  const attempts = 4;
+  const attempts = 8;
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     try {
       return await requireOwnedSession(getDb(), sessionId, userId);
@@ -51,7 +51,7 @@ async function requireOwnedSessionAfterSave(sessionId: string, userId: string) {
       const status =
         err && typeof err === 'object' ? (err as { status?: unknown }).status : undefined;
       if (status !== 404 || attempt === attempts - 1) throw err;
-      await new Promise<void>((resolve) => setTimeout(resolve, 25 * (attempt + 1)));
+      await new Promise<void>((resolve) => setTimeout(resolve, Math.min(250, 40 * (attempt + 1))));
     }
   }
   throw new Error('Session ownership check did not complete');

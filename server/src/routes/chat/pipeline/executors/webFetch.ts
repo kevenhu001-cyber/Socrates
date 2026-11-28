@@ -84,7 +84,12 @@ function formatPageBlock(
 ): { block: string; end: number; hasMore: boolean } {
   const rawContent = String(page.content || '');
   let end = Math.min(rawContent.length, offset + maxChars);
-  if (end < rawContent.length && end > offset && /[\uD800-\uDBFF]/.test(rawContent[end - 1]) && /[\uDC00-\uDFFF]/.test(rawContent[end])) {
+  if (
+    end < rawContent.length &&
+    end > offset &&
+    /[\uD800-\uDBFF]/.test(rawContent[end - 1]) &&
+    /[\uDC00-\uDFFF]/.test(rawContent[end])
+  ) {
     end = end - 1 === offset ? end + 1 : end - 1;
   }
   const hasMore = end < rawContent.length;
@@ -140,7 +145,9 @@ export const executeWebFetch: ToolExecutor = async (
 
   const offset = Number(args.offset ?? 0);
   const batch = urls.length > 1;
-  const maxChars = Number(args.max_chars ?? (batch ? DEFAULT_BATCH_PAGE_CHARS : DEFAULT_PAGE_CHARS));
+  const maxChars = Number(
+    args.max_chars ?? (batch ? DEFAULT_BATCH_PAGE_CHARS : DEFAULT_PAGE_CHARS),
+  );
   if (
     !Number.isSafeInteger(offset) ||
     offset < 0 ||
@@ -309,7 +316,9 @@ export const executeWebFetch: ToolExecutor = async (
     output,
     pages: summary,
     retryable: false,
-    truncated: summary.some((p) => p.ok === false || p.hasMore === true || p.sourceTruncated === true),
+    truncated: summary.some(
+      (p) => p.ok === false || p.hasMore === true || p.sourceTruncated === true,
+    ),
   });
   return { result };
 };

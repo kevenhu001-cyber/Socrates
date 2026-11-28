@@ -17,6 +17,7 @@ import {
   TRANSIENT_ATTEMPTS,
   attemptsForUpstreamStatus,
   isRetryableUpstreamStatus,
+  isTransientSocketReset,
   sleep,
   upstreamRetryDelayMs,
 } from './retry.js';
@@ -51,10 +52,11 @@ export async function callChatCompletion(opts: ChatCompletionRequestOptions) {
         } as unknown as RequestInit);
       } catch (err) {
         if ((err as Error).name === 'AbortError') throw err;
-        if (attempt >= TRANSIENT_ATTEMPTS - 1 || !retryBudget.reserve(1000)) {
+        const retryDelayMs = isTransientSocketReset(err) ? 350 : 1000;
+        if (attempt >= TRANSIENT_ATTEMPTS - 1 || !retryBudget.reserve(retryDelayMs)) {
           throw Object.assign(err as Error, { retryable: false });
         }
-        await sleep(1000, signal);
+        await sleep(retryDelayMs, signal);
         continue;
       }
       if (response.ok) {

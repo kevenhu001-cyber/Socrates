@@ -148,6 +148,30 @@ test('raw non-stream responses detach the caller abort listener after headers', 
   assert.equal(fetchSignal.aborted, false);
 });
 
+test('raw stream requests preserve AbortError instead of masking cancellation as network failure', async () => {
+  const caller = new AbortController();
+  await withGlobals(
+    {
+      document: { cookie: '' },
+      fetch: async (_path, { signal }) =>
+        new Promise((_resolve, reject) => {
+          signal.addEventListener(
+            'abort',
+            () => reject(Object.assign(new Error('aborted'), { name: 'AbortError' })),
+            { once: true },
+          );
+          caller.abort();
+        }),
+    },
+    async () => {
+      await assert.rejects(apiFetchRaw('/api/chat/stream', { signal: caller.signal }), {
+        name: 'AbortError',
+        code: 'ABORTED',
+      });
+    },
+  );
+});
+
 test('raw stream requests refresh CSRF once before replay', async () => {
   const calls = [];
   await withGlobals(

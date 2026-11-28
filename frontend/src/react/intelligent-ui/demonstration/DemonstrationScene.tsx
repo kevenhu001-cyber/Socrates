@@ -1,6 +1,10 @@
 import { memo, useId, type ReactNode } from 'react';
 import { demonstrationDomain } from '@socrates/core/demonstrationLight';
-import type { DemonstrationObject, DemonstrationScene, DemonstrationValue } from '@socrates/core/demonstration';
+import type {
+  DemonstrationObject,
+  DemonstrationScene,
+  DemonstrationValue,
+} from '@socrates/core/demonstration';
 import { MathText } from '../../rn/useInlineMath';
 import { SvgMathText } from '../../rn/SvgMathText';
 import { i18n } from '../../../ui/legacyI18n.ts';
@@ -37,57 +41,114 @@ function springPath(from: Point, to: Point): string {
 
 /** Local schematic coordinates use from→to as the positive axis. */
 function engineeringSymbol(kind: string, from: Point, to: Point, color: string): ReactNode {
-  const dx = to[0]-from[0], dy = to[1]-from[1], length = Math.hypot(dx,dy);
+  const dx = to[0] - from[0],
+    dy = to[1] - from[1],
+    length = Math.hypot(dx, dy);
   if (length < 0.01) throw Error('Symbol endpoints must be distinct');
-  const angle = Math.atan2(dy,dx)*180/Math.PI;
-  const mid = length/2, r = Math.min(length*.23, 16), left = mid-r, right = mid+r;
+  const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+  const mid = length / 2,
+    r = Math.min(length * 0.23, 16),
+    left = mid - r,
+    right = mid + r;
   let d: string;
   switch (kind) {
     case 'bond':
     case 'doubleBond':
     case 'tripleBond': {
-      const offsets=kind==='bond'?[0]:kind==='doubleBond'?[-2.5,2.5]:[-4,0,4];
-      d=offsets.map(y=>`M0 ${y}H${length}`).join(' ');break;
+      const offsets = kind === 'bond' ? [0] : kind === 'doubleBond' ? [-2.5, 2.5] : [-4, 0, 4];
+      d = offsets.map((y) => `M0 ${y}H${length}`).join(' ');
+      break;
     }
     case 'reactionArrow':
     case 'reversibleArrow':
     case 'inhibition': {
-      const h=Math.min(9,length/4);
-      d=kind==='reactionArrow'?`M0 0H${length}l${-h} ${-h*.45}M${length} 0l${-h} ${h*.45}`:kind==='inhibition'?`M0 0H${length}M${length} ${-h*.6}v${h*1.2}`:`M0 -4H${length}l${-h} ${-h*.45}M${length} 4H0l${h} ${h*.45}`;
+      const h = Math.min(9, length / 4);
+      d =
+        kind === 'reactionArrow'
+          ? `M0 0H${length}l${-h} ${-h * 0.45}M${length} 0l${-h} ${h * 0.45}`
+          : kind === 'inhibition'
+            ? `M0 0H${length}M${length} ${-h * 0.6}v${h * 1.2}`
+            : `M0 -4H${length}l${-h} ${-h * 0.45}M${length} 4H0l${h} ${h * 0.45}`;
       break;
     }
     case 'resistor':
-      d = `M0 0H${left}V${-r*.5}H${right}V${r*.5}H${left}V0M${right} 0H${length}`; break;
+      d = `M0 0H${left}V${-r * 0.5}H${right}V${r * 0.5}H${left}V0M${right} 0H${length}`;
+      break;
     case 'capacitor':
-      d = `M0 0H${mid-r*.2}M${mid-r*.2} ${-r}V${r}M${mid+r*.2} ${-r}V${r}M${mid+r*.2} 0H${length}`; break;
+      d = `M0 0H${mid - r * 0.2}M${mid - r * 0.2} ${-r}V${r}M${mid + r * 0.2} ${-r}V${r}M${mid + r * 0.2} 0H${length}`;
+      break;
     case 'inductor': {
       d = `M0 0H${left}`;
-      const coil = (right-left)/4;
-      for (let i=0;i<4;i++) d+=`a${coil/2} ${r*.7} 0 0 1 ${coil} 0`;
-      d+=`H${length}`; break;
+      const coil = (right - left) / 4;
+      for (let i = 0; i < 4; i++) d += `a${coil / 2} ${r * 0.7} 0 0 1 ${coil} 0`;
+      d += `H${length}`;
+      break;
     }
     case 'voltageSource':
     case 'currentSource':
-      return <g transform={`translate(${from[0]} ${from[1]}) rotate(${angle})`} stroke={color} fill="none" strokeWidth="1.7">
-        <path d={`M0 0H${left}M${right} 0H${length}`}/><circle cx={mid} cy={0} r={r}/>
-        {kind==='voltageSource' ? <path d={`M${mid-r*.65} 0h${r*.45}m${-r*.225} ${-r*.225}v${r*.45}M${mid+r*.2} 0h${r*.45}`}/>
-          : <path d={`M${mid-r*.6} 0H${mid+r*.6}l${-r*.35} ${-r*.3}m${r*.35} ${r*.3}l${-r*.35} ${r*.3}`}/>}
-      </g>;
+      return (
+        <g
+          transform={`translate(${from[0]} ${from[1]}) rotate(${angle})`}
+          stroke={color}
+          fill="none"
+          strokeWidth="1.7"
+        >
+          <path d={`M0 0H${left}M${right} 0H${length}`} />
+          <circle cx={mid} cy={0} r={r} />
+          {kind === 'voltageSource' ? (
+            <path
+              d={`M${mid - r * 0.65} 0h${r * 0.45}m${-r * 0.225} ${-r * 0.225}v${r * 0.45}M${mid + r * 0.2} 0h${r * 0.45}`}
+            />
+          ) : (
+            <path
+              d={`M${mid - r * 0.6} 0H${mid + r * 0.6}l${-r * 0.35} ${-r * 0.3}m${r * 0.35} ${r * 0.3}l${-r * 0.35} ${r * 0.3}`}
+            />
+          )}
+        </g>
+      );
     case 'dimension':
-      d = `M0 ${-r*.5}V${r*.5}M${length} ${-r*.5}V${r*.5}M0 0H${length}M${r*.5} ${-r*.25}L0 0l${r*.5} ${r*.25}M${length-r*.5} ${-r*.25}L${length} 0l${-r*.5} ${r*.25}`;break;
+      d = `M0 ${-r * 0.5}V${r * 0.5}M${length} ${-r * 0.5}V${r * 0.5}M0 0H${length}M${r * 0.5} ${-r * 0.25}L0 0l${r * 0.5} ${r * 0.25}M${length - r * 0.5} ${-r * 0.25}L${length} 0l${-r * 0.5} ${r * 0.25}`;
+      break;
     case 'ground':
-      d = `M0 0H${length*.55}M${length*.55} ${-r}V${r}M${length*.73} ${-r*.65}V${r*.65}M${length*.91} ${-r*.3}V${r*.3}`;break;
+      d = `M0 0H${length * 0.55}M${length * 0.55} ${-r}V${r}M${length * 0.73} ${-r * 0.65}V${r * 0.65}M${length * 0.91} ${-r * 0.3}V${r * 0.3}`;
+      break;
     case 'pin':
     case 'roller': {
-      const b = length*.65;
-      d = `M0 0L${b} ${-r}V${r}Z M${length} ${-r*1.35}V${r*1.35}`;
-      return <g transform={`translate(${from[0]} ${from[1]}) rotate(${angle})`} stroke={color} fill="none" strokeWidth="1.7">
-        <path d={d}/>{kind==='roller' && [-.55,.55].map(k=><circle key={k} cx={(b+length)/2} cy={k*r} r={Math.min(r*.25,(length-b)/2)}/>)}
-      </g>;
+      const b = length * 0.65;
+      d = `M0 0L${b} ${-r}V${r}Z M${length} ${-r * 1.35}V${r * 1.35}`;
+      return (
+        <g
+          transform={`translate(${from[0]} ${from[1]}) rotate(${angle})`}
+          stroke={color}
+          fill="none"
+          strokeWidth="1.7"
+        >
+          <path d={d} />
+          {kind === 'roller' &&
+            [-0.55, 0.55].map((k) => (
+              <circle
+                key={k}
+                cx={(b + length) / 2}
+                cy={k * r}
+                r={Math.min(r * 0.25, (length - b) / 2)}
+              />
+            ))}
+        </g>
+      );
     }
-    default: return null;
+    default:
+      return null;
   }
-  return <path transform={`translate(${from[0]} ${from[1]}) rotate(${angle})`} d={d} stroke={color} strokeWidth="1.7" strokeLinejoin="round" fill="none"/>;
+  return (
+    <path
+      transform={`translate(${from[0]} ${from[1]}) rotate(${angle})`}
+      d={d}
+      stroke={color}
+      strokeWidth="1.7"
+      strokeLinejoin="round"
+      fill="none"
+    />
+  );
 }
 
 function drawSceneObject({
@@ -127,14 +188,61 @@ function drawSceneObject({
       />
     );
     labelAt = [points[0][0], points[0][1] - 10];
-  } else if (object.kind === 'body' || object.kind === 'block' || object.kind === 'atom' || object.kind === 'cell') {
+  } else if (
+    object.kind === 'body' ||
+    object.kind === 'block' ||
+    object.kind === 'atom' ||
+    object.kind === 'cell'
+  ) {
     const [cx, cy] = project(object.center);
     if (object.kind === 'atom' || object.kind === 'cell') {
-      const radius=size(object.radius);
-      const elementColors:Record<string,string>={H:'#9ca3af',C:'#64748b',N:'#3478da',O:'#d34d4d',S:'#c89b27',P:'#db8734',Cl:'#32945c'};
-      const tint=object.kind==='atom'?elementColors[object.element]??color:color;
-      drawing=<g><circle cx={cx} cy={cy} r={radius} fill={tint} fillOpacity={object.kind==='atom'?.88:.12} stroke={tint} strokeWidth="1.8"/>{object.kind==='atom'?<text x={cx} y={cy} dy=".35em" textAnchor="middle" fontSize={Math.min(15,radius*.85)} fill="#fff">{object.element}</text>:<circle cx={cx+radius*.15} cy={cy-radius*.1} r={radius*.28} stroke={tint} fill={tint} fillOpacity=".25" strokeWidth="1.2"/>}</g>;
-      labelAt=[cx,cy-radius-8];
+      const radius = size(object.radius);
+      const elementColors: Record<string, string> = {
+        H: '#9ca3af',
+        C: '#64748b',
+        N: '#3478da',
+        O: '#d34d4d',
+        S: '#c89b27',
+        P: '#db8734',
+        Cl: '#32945c',
+      };
+      const tint = object.kind === 'atom' ? (elementColors[object.element] ?? color) : color;
+      drawing = (
+        <g>
+          <circle
+            cx={cx}
+            cy={cy}
+            r={radius}
+            fill={tint}
+            fillOpacity={object.kind === 'atom' ? 0.88 : 0.12}
+            stroke={tint}
+            strokeWidth="1.8"
+          />
+          {object.kind === 'atom' ? (
+            <text
+              x={cx}
+              y={cy}
+              dy=".35em"
+              textAnchor="middle"
+              fontSize={Math.min(15, radius * 0.85)}
+              fill="#fff"
+            >
+              {object.element}
+            </text>
+          ) : (
+            <circle
+              cx={cx + radius * 0.15}
+              cy={cy - radius * 0.1}
+              r={radius * 0.28}
+              stroke={tint}
+              fill={tint}
+              fillOpacity=".25"
+              strokeWidth="1.2"
+            />
+          )}
+        </g>
+      );
+      labelAt = [cx, cy - radius - 8];
     } else if (object.kind === 'body') {
       const radius = size(object.radius);
       drawing = (
@@ -175,7 +283,9 @@ function drawSceneObject({
       dy = to[1] - from[1],
       angle = Math.atan2(dy, dx);
     const head = Math.min(9, Math.hypot(dx, dy) / 3);
-    drawing = !['rod','spring','vector'].includes(object.kind) ? engineeringSymbol(object.kind,from,to,color) : (
+    drawing = !['rod', 'spring', 'vector'].includes(object.kind) ? (
+      engineeringSymbol(object.kind, from, to, color)
+    ) : (
       <>
         <path
           d={

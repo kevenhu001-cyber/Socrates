@@ -29,6 +29,7 @@ import type { Response, Application } from 'express';
 
 const DEFAULT_KEEPALIVE_MS = 15_000;
 const COMMENT_PREFIX = ':';
+const activeKeepalives = new WeakSet<Response>();
 
 /**
  * Options for {@link startSseKeepalive}. The declared fields are the
@@ -122,6 +123,10 @@ export function startSseKeepalive(res: Response, opts: SseKeepaliveOpts = {}) {
      fast — a 1 s floor would force every test to wait >1 s to catch
      a single periodic tick. */
   const intervalMs = Math.max(250, opts.intervalMs || DEFAULT_KEEPALIVE_MS);
+  if (activeKeepalives.has(res)) {
+    return { stop: () => {}, intervalMs };
+  }
+  activeKeepalives.add(res);
   const text = opts.text || 'keepalive';
   let stopped = false;
 

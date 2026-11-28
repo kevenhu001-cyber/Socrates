@@ -47,12 +47,12 @@ export interface DemonstrationPlot extends DemonstrationViewBase {
 export interface DemonstrationField extends DemonstrationViewBase {
   kind: 'field';
   expression: DemonstrationValue;
-  slicePlane?: {axis:'x'|'y'|'z';at:DemonstrationValue};
+  slicePlane?: { axis: 'x' | 'y' | 'z'; at: DemonstrationValue };
   presentation?: 'map' | 'surface' | 'curve3d' | 'vectors3d' | 'parametricSurface' | 'isosurface';
   isoLevel?: DemonstrationValue;
-  surface3d?: [DemonstrationValue,DemonstrationValue,DemonstrationValue];
-  uRange?: [DemonstrationValue,DemonstrationValue];
-  vRange?: [DemonstrationValue,DemonstrationValue];
+  surface3d?: [DemonstrationValue, DemonstrationValue, DemonstrationValue];
+  uRange?: [DemonstrationValue, DemonstrationValue];
+  vRange?: [DemonstrationValue, DemonstrationValue];
   markers?: DemonstrationMarker[];
   curve3d?: [DemonstrationValue, DemonstrationValue, DemonstrationValue];
   vector3d?: [DemonstrationValue, DemonstrationValue, DemonstrationValue];
@@ -90,8 +90,17 @@ export type DemonstrationObject =
       center: DemonstrationPoint;
       radius: DemonstrationValue;
     })
-  | (DemonstrationObjectBase & {kind:'cell';center:DemonstrationPoint;radius:DemonstrationValue})
-  | (DemonstrationObjectBase & {kind:'atom';center:DemonstrationPoint;radius:DemonstrationValue;element:string})
+  | (DemonstrationObjectBase & {
+      kind: 'cell';
+      center: DemonstrationPoint;
+      radius: DemonstrationValue;
+    })
+  | (DemonstrationObjectBase & {
+      kind: 'atom';
+      center: DemonstrationPoint;
+      radius: DemonstrationValue;
+      element: string;
+    })
   | (DemonstrationObjectBase & {
       kind: 'block';
       center: DemonstrationPoint;
@@ -106,7 +115,25 @@ export type DemonstrationObject =
       dashed?: boolean;
     })
   | (DemonstrationObjectBase & {
-      kind: 'rod' | 'spring' | 'vector' | 'resistor' | 'capacitor' | 'inductor' | 'voltageSource' | 'currentSource' | 'dimension' | 'pin' | 'roller' | 'ground' | 'bond' | 'doubleBond' | 'tripleBond' | 'reactionArrow' | 'reversibleArrow' | 'inhibition';
+      kind:
+        | 'rod'
+        | 'spring'
+        | 'vector'
+        | 'resistor'
+        | 'capacitor'
+        | 'inductor'
+        | 'voltageSource'
+        | 'currentSource'
+        | 'dimension'
+        | 'pin'
+        | 'roller'
+        | 'ground'
+        | 'bond'
+        | 'doubleBond'
+        | 'tripleBond'
+        | 'reactionArrow'
+        | 'reversibleArrow'
+        | 'inhibition';
       from: DemonstrationPoint;
       to: DemonstrationPoint;
     });
@@ -132,43 +159,126 @@ export interface DemonstrationProgram {
   resetKey?: string;
   parameters?: DemonstrationParameter[];
   definitions?: Record<string, DemonstrationValue>;
-  analysis?: {kind:'fft';expression:DemonstrationValue;timeRange:[number,number];samples?:number;window?:'rectangular'|'hann';removeMean?:boolean;lowpass?:DemonstrationValue} | {kind:'eigen';matrix:DemonstrationValue[][]} | {kind:'sweep';parameter:string;range:[number,number];samples?:number;expression:DemonstrationValue;time?:number};
-  finiteElement?: {nodes:number[];diffusion:DemonstrationValue;reaction?:DemonstrationValue;source:DemonstrationValue;left:DemonstrationValue;right:DemonstrationValue};
-  optimization?: {variables:{id:string;initial:DemonstrationValue;min:number;max:number}[];objective:DemonstrationValue;goal?:'min'|'max';tolerance?:number;maxIterations?:number};
-  nonlinearSystem?: {guess:Record<string,DemonstrationValue>;residuals:Record<string,DemonstrationValue>;tolerance?:number;maxIterations?:number};
-  sparseSystem?: {method?:'pcg'|'bicgstab';size:number;entries:[number,number,DemonstrationValue][];rhs:DemonstrationValue[];tolerance?:number;maxIterations?:number};
-  linearAlgebra?: ({id:string;op:'vector';values:DemonstrationValue[]} | {id:string;op:'matrix';values:DemonstrationValue[][]} | {id:string;op:'scale';a:string;factor:DemonstrationValue} | {id:string;op:'norm'|'transpose';a:string} | {id:string;op:'add'|'sub'|'dot'|'cross'|'matmul';a:string;b:string})[];
+  analysis?:
+    | {
+        kind: 'fft';
+        expression: DemonstrationValue;
+        timeRange: [number, number];
+        samples?: number;
+        window?: 'rectangular' | 'hann';
+        removeMean?: boolean;
+        lowpass?: DemonstrationValue;
+      }
+    | { kind: 'eigen'; matrix: DemonstrationValue[][] }
+    | {
+        kind: 'sweep';
+        parameter: string;
+        range: [number, number];
+        samples?: number;
+        expression: DemonstrationValue;
+        time?: number;
+      };
+  finiteElement?: {
+    nodes: number[];
+    diffusion: DemonstrationValue;
+    reaction?: DemonstrationValue;
+    source: DemonstrationValue;
+    left: DemonstrationValue;
+    right: DemonstrationValue;
+  };
+  optimization?: {
+    variables: { id: string; initial: DemonstrationValue; min: number; max: number }[];
+    objective: DemonstrationValue;
+    goal?: 'min' | 'max';
+    tolerance?: number;
+    maxIterations?: number;
+  };
+  nonlinearSystem?: {
+    guess: Record<string, DemonstrationValue>;
+    residuals: Record<string, DemonstrationValue>;
+    tolerance?: number;
+    maxIterations?: number;
+  };
+  sparseSystem?: {
+    method?: 'pcg' | 'bicgstab';
+    size: number;
+    entries: [number, number, DemonstrationValue][];
+    rhs: DemonstrationValue[];
+    tolerance?: number;
+    maxIterations?: number;
+  };
+  linearAlgebra?: (
+    | { id: string; op: 'vector'; values: DemonstrationValue[] }
+    | { id: string; op: 'matrix'; values: DemonstrationValue[][] }
+    | { id: string; op: 'scale'; a: string; factor: DemonstrationValue }
+    | { id: string; op: 'norm' | 'transpose'; a: string }
+    | { id: string; op: 'add' | 'sub' | 'dot' | 'cross' | 'matmul'; a: string; b: string }
+  )[];
   dynamics?: {
     initial?: Record<string, DemonstrationValue>;
     derivatives?: Record<string, DemonstrationValue>;
-    spatial?: {
-      dimension?: 1;
-      nodes: number;
-      domain: [number, number];
-      equation?: 'diffusion' | 'wave';
-      diffusivity?: DemonstrationValue;
-      speed?: DemonstrationValue;
-      initialVelocity?: DemonstrationValue;
-      damping?: DemonstrationValue;
-      initial: DemonstrationValue;
-      left: DemonstrationValue;
-      right: DemonstrationValue;
-      source?: DemonstrationValue;
-    } | {
-      dimension: 2;
-      equation?: 'diffusion';
-      nx: number;
-      ny: number;
-      xDomain: [number, number];
-      yDomain: [number, number];
-      diffusivity: DemonstrationValue;
-      initial: DemonstrationValue;
-      boundary: DemonstrationValue;
-      source?: DemonstrationValue;
+    spatial?:
+      | {
+          dimension?: 1;
+          nodes: number;
+          domain: [number, number];
+          equation?: 'diffusion' | 'wave';
+          diffusivity?: DemonstrationValue;
+          speed?: DemonstrationValue;
+          initialVelocity?: DemonstrationValue;
+          damping?: DemonstrationValue;
+          initial: DemonstrationValue;
+          left: DemonstrationValue;
+          right: DemonstrationValue;
+          source?: DemonstrationValue;
+        }
+      | {
+          dimension: 2;
+          equation?: 'diffusion';
+          nx: number;
+          ny: number;
+          xDomain: [number, number];
+          yDomain: [number, number];
+          diffusivity: DemonstrationValue;
+          initial: DemonstrationValue;
+          boundary: DemonstrationValue;
+          source?: DemonstrationValue;
+        };
+    mechanics?: {
+      coordinates: {
+        position: string;
+        velocity: string;
+        initialPosition: DemonstrationValue;
+        initialVelocity: DemonstrationValue;
+        acceleration: DemonstrationValue;
+      }[];
     };
-    mechanics?: {coordinates:{position:string;velocity:string;initialPosition:DemonstrationValue;initialVelocity:DemonstrationValue;acceleration:DemonstrationValue}[]};
-    coupledFields?: {dimension:1|2;nx:number;ny?:number;xDomain:[number,number];yDomain?:[number,number];boundary:'periodic'|'noFlux';fields:{id:string;initial:DemonstrationValue;diffusivity:DemonstrationValue;reaction?:DemonstrationValue;advection?:[DemonstrationValue]|[DemonstrationValue,DemonstrationValue]}[]};
-    reactionNetwork?: {seed?:number;species:{id:string;initial:DemonstrationValue;composition?:Record<string,number>}[];reactions:{id:string;reactants:Record<string,number>;products:Record<string,number>;rateConstant?:DemonstrationValue;rate?:DemonstrationValue}[]};
+    coupledFields?: {
+      dimension: 1 | 2;
+      nx: number;
+      ny?: number;
+      xDomain: [number, number];
+      yDomain?: [number, number];
+      boundary: 'periodic' | 'noFlux';
+      fields: {
+        id: string;
+        initial: DemonstrationValue;
+        diffusivity: DemonstrationValue;
+        reaction?: DemonstrationValue;
+        advection?: [DemonstrationValue] | [DemonstrationValue, DemonstrationValue];
+      }[];
+    };
+    reactionNetwork?: {
+      seed?: number;
+      species: { id: string; initial: DemonstrationValue; composition?: Record<string, number> }[];
+      reactions: {
+        id: string;
+        reactants: Record<string, number>;
+        products: Record<string, number>;
+        rateConstant?: DemonstrationValue;
+        rate?: DemonstrationValue;
+      }[];
+    };
     stateSpace?: {
       states: string[];
       initial: DemonstrationValue[];
@@ -181,7 +291,14 @@ export interface DemonstrationProgram {
     };
     circuit?: {
       nodes: string[];
-      elements: { kind: 'R' | 'L' | 'C' | 'V' | 'I'; id: string; p: string; n: string; value: DemonstrationValue; initial?: DemonstrationValue }[];
+      elements: {
+        kind: 'R' | 'L' | 'C' | 'V' | 'I';
+        id: string;
+        p: string;
+        n: string;
+        value: DemonstrationValue;
+        initial?: DemonstrationValue;
+      }[];
     };
     duration: number;
     step: number;
@@ -189,10 +306,20 @@ export interface DemonstrationProgram {
     /** Nonsingular M in M*state'=derivatives; rows/columns follow initial-state key order. */
     massMatrix?: DemonstrationValue[][];
     /** Semi-explicit index-one constraints g(t, state, algebraic)=0. */
-    algebraic?: { guess: Record<string, DemonstrationValue>; residuals: Record<string, DemonstrationValue>; tolerance?: number };
+    algebraic?: {
+      guess: Record<string, DemonstrationValue>;
+      residuals: Record<string, DemonstrationValue>;
+      tolerance?: number;
+    };
     rtol?: number;
     atol?: number;
-    events?: { expression: DemonstrationValue; direction?: -1 | 0 | 1; rearmTolerance?: number; terminal?: boolean; reset?: Record<string, DemonstrationValue> }[];
+    events?: {
+      expression: DemonstrationValue;
+      direction?: -1 | 0 | 1;
+      rearmTolerance?: number;
+      terminal?: boolean;
+      reset?: Record<string, DemonstrationValue>;
+    }[];
   };
   duration?: number;
   views: DemonstrationView[];
@@ -239,7 +366,13 @@ export interface DemonstrationRuntime {
   /** Bit mask: x = 1, y = 2, time/state = 4, spaceZ = 8. Parameters are fixed per runtime. */
   dependencies(expression: DemonstrationValue): number;
   resetBudget(): void;
-  evaluate(expression: DemonstrationValue, time?: number, x?: number, y?: number, spaceZ?: number): number;
+  evaluate(
+    expression: DemonstrationValue,
+    time?: number,
+    x?: number,
+    y?: number,
+    spaceZ?: number,
+  ): number;
   stateAt(time: number): Record<string, number>;
 }
 export function parseDemonstrationExpression(input: DemonstrationValue): DemonstrationExpression;

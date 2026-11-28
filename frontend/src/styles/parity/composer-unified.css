@@ -60,6 +60,9 @@
   border-radius: inherit;
   pointer-events: none;
 }
+[data-mode='light'] #appShell .composer-shell [data-composer-frame]:hover::before {
+  border-color: var(--ui-border-default);
+}
 [data-mode='light'] #appShell .composer-shell [data-composer-frame][data-focused='true']::before {
   border-color: var(--ui-border-strong);
 }
@@ -107,6 +110,11 @@
 }
 [data-mode='dark'] #appShell .composer-shell [data-composer-frame][data-layout='inline']::before {
   display: none;
+}
+#appShell
+  .composer-shell
+  [data-composer-frame][data-layout='inline']:not([data-focused='true']):hover {
+  box-shadow: inset 0 0 0 1px var(--ui-border-subtle);
 }
 #appShell .composer-shell [data-composer-frame][data-layout='inline'][data-focused='true'] {
   box-shadow: inset 0 0 0 1px var(--ui-hairline-strong);

@@ -122,8 +122,7 @@ function formatNumericTick(value: number): string {
 
 /* Canvas/SVG renderers need a concrete family list. Keep it aligned with
    themes.css so chart labels use the same Geist and Noto faces as the UI. */
-export const VIZ_FONT_FAMILY =
-  "'Geist Sans','Noto Sans SC','PingFang SC','Microsoft YaHei',Arial,sans-serif";
+export const VIZ_FONT_FAMILY = "'Geist Sans','Noto Sans SC',sans-serif";
 
 function legendOptions(
   series: readonly unknown[],

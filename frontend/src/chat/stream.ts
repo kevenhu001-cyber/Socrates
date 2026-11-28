@@ -41,6 +41,7 @@ export type StreamAttemptOutcome =
  * along as extra keys because the frame processor invokes them by name. */
 export interface StreamCallOptions extends AIRequestOptions {
   maxAttempts?: number;
+  sessionId?: string | null;
   clientTurn?: { id: string };
   onTurnBound?: (turnId: string) => void;
   turnId?: string;

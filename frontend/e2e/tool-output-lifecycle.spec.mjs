@@ -422,7 +422,10 @@ test('a visualization stays visible across the running → result transition', a
   // accepts the UI. Never mount speculative attachments or error cards.
   await message.getByTestId('turn-activity-toggle').click();
   const panel = page.locator('#thoughtsPanel');
-  await expect(panel.locator('.rn-tool-row[data-tcid="viz-1"]')).toHaveAttribute('data-state', 'running');
+  await expect(panel.locator('.rn-tool-row[data-tcid="viz-1"]')).toHaveAttribute(
+    'data-state',
+    'running',
+  );
   await expect(message.locator('[data-tool-anchor="viz-1"]')).toHaveCount(0);
   await expect(message.locator('.viz-state-skeleton')).toHaveCount(0);
 

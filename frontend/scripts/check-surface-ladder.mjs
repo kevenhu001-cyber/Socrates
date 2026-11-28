@@ -537,7 +537,9 @@ function main() {
        * so the baseline records `scale: null` for it and only the
        * structural properties above apply. */
       if (policy.scale === 'geist' || policy.scale === 'chatgpt-reference') {
-        const scale = (policy.scale === 'chatgpt-reference' ? REFERENCE_SURFACES : GEIST_SURFACES)[mode];
+        const scale = (policy.scale === 'chatgpt-reference' ? REFERENCE_SURFACES : GEIST_SURFACES)[
+          mode
+        ];
         const sliceRungs = blackRungs;
         const indices = sliceRungs.map((rung) => scale.findIndex((entry) => entry.value === rung));
         if (indices.includes(-1)) {
@@ -706,7 +708,9 @@ function main() {
         shared: previous?.shared ?? false,
       };
       for (const mode of ['dark', 'light']) {
-        const scale = (previous?.scale === 'chatgpt-reference' ? REFERENCE_SURFACES : GEIST_SURFACES)[mode];
+        const scale = (
+          previous?.scale === 'chatgpt-reference' ? REFERENCE_SURFACES : GEIST_SURFACES
+        )[mode];
         next.themes[theme][mode] = {};
         for (const rung of RUNGS) {
           const value = ladders[theme]?.[mode]?.rungHex[rung];

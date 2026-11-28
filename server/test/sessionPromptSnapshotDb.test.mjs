@@ -114,7 +114,10 @@ test(
     assert.match(fresh.payload.messages[0].content, /changed custom instructions/);
     await db.delete(memories).where(eq(memories.id, memory.id));
     const deleted = await prepare(s, 'changed custom instructions', changedOwner);
-    assert.doesNotMatch(deleted.payload.messages.map(m => m.content).join('\n'), /new durable fact|original durable fact/);
+    assert.doesNotMatch(
+      deleted.payload.messages.map((m) => m.content).join('\n'),
+      /new durable fact|original durable fact/,
+    );
     assert.equal(
       (
         await db

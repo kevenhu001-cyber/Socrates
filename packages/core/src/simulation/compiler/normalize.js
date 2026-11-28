@@ -1,6 +1,9 @@
 import { record, finite, range, located, at } from '../foundation.js';
 import { name } from '../expression/functions.js';
-import { normalizeDemonstrationExpression, normalizeDemonstrationIdentifier } from '../expression/parser.js';
+import {
+  normalizeDemonstrationExpression,
+  normalizeDemonstrationIdentifier,
+} from '../expression/parser.js';
 
 /* ---------- Program normalization ---------- */
 const ITEM_KEYS = new Set(['item', 'items']);
@@ -247,12 +250,19 @@ function normalizeView(raw) {
       if (view[key] !== undefined) view[key] = expressionLike(view[key]);
     if (view.colorRange !== undefined) view.colorRange = rangeLike(view.colorRange);
     if (view.zRange !== undefined) view.zRange = rangeLike(view.zRange);
-    if(view.isoLevel!==undefined)view.isoLevel=expressionLike(view.isoLevel);
-    if(record(view.slicePlane))view.slicePlane={...view.slicePlane,at:expressionLike(view.slicePlane.at)};
+    if (view.isoLevel !== undefined) view.isoLevel = expressionLike(view.isoLevel);
+    if (record(view.slicePlane))
+      view.slicePlane = { ...view.slicePlane, at: expressionLike(view.slicePlane.at) };
     if (view.parameterRange !== undefined) view.parameterRange = rangeLike(view.parameterRange);
-    for(const key of ['uRange','vRange'])if(view[key]!==undefined)view[key]=rangeLike(view[key]);
-    for(const key of ['curve3d','vector3d','surface3d']) if(Array.isArray(view[key])) view[key]=view[key].map(expressionLike);
-    if (['curve3d','vectors3d','parametricSurface'].includes(view.presentation) && view.expression === undefined) view.expression=0;
+    for (const key of ['uRange', 'vRange'])
+      if (view[key] !== undefined) view[key] = rangeLike(view[key]);
+    for (const key of ['curve3d', 'vector3d', 'surface3d'])
+      if (Array.isArray(view[key])) view[key] = view[key].map(expressionLike);
+    if (
+      ['curve3d', 'vectors3d', 'parametricSurface'].includes(view.presentation) &&
+      view.expression === undefined
+    )
+      view.expression = 0;
     if (Array.isArray(view.contours)) view.contours = view.contours.map(expressionLike);
     const vector = asArray(view.vector);
     if (Array.isArray(vector)) view.vector = vector.map(expressionLike);
@@ -347,7 +357,9 @@ function normalizeDemonstrationProgram(input) {
     );
     let duration = numberLike(dynamics.duration),
       step = numberLike(dynamics.step);
-    if (!['rk45', 'sdirk2', 'grid-implicit', 'ssa', 'grid-heun','verlet'].includes(dynamics.method)) {
+    if (
+      !['rk45', 'sdirk2', 'grid-implicit', 'ssa', 'grid-heun', 'verlet'].includes(dynamics.method)
+    ) {
       if (finite(duration) && duration > 30) duration = 30;
       if (finite(step)) step = Math.max(0.002, Math.min(0.05, step));
       if (finite(duration) && finite(step) && duration > 0 && Math.ceil(duration / step) > 10000)
@@ -357,17 +369,29 @@ function normalizeDemonstrationProgram(input) {
       if (dynamics[key] !== undefined) dynamics[key] = numberLike(dynamics[key]);
     }
     if (record(dynamics.algebraic)) {
-      dynamics.algebraic = { ...dynamics.algebraic, guess: mapValues(dynamics.algebraic.guess, expressionLike), residuals: mapValues(dynamics.algebraic.residuals, expressionLike) };
-      if (dynamics.algebraic.tolerance !== undefined) dynamics.algebraic.tolerance = numberLike(dynamics.algebraic.tolerance);
+      dynamics.algebraic = {
+        ...dynamics.algebraic,
+        guess: mapValues(dynamics.algebraic.guess, expressionLike),
+        residuals: mapValues(dynamics.algebraic.residuals, expressionLike),
+      };
+      if (dynamics.algebraic.tolerance !== undefined)
+        dynamics.algebraic.tolerance = numberLike(dynamics.algebraic.tolerance);
     }
     if (Array.isArray(dynamics.massMatrix))
-      dynamics.massMatrix = dynamics.massMatrix.map((row) => Array.isArray(row) ? row.map(expressionLike) : row);
+      dynamics.massMatrix = dynamics.massMatrix.map((row) =>
+        Array.isArray(row) ? row.map(expressionLike) : row,
+      );
     if (Array.isArray(dynamics.events))
       dynamics.events = dynamics.events.map((event) =>
         record(event)
-          ? { ...event, expression: expressionLike(event.expression),
-              ...(event.rearmTolerance !== undefined ? {rearmTolerance:numberLike(event.rearmTolerance)} : {}),
-              ...(record(event.reset) ? { reset: mapValues(event.reset, expressionLike) } : {}) }
+          ? {
+              ...event,
+              expression: expressionLike(event.expression),
+              ...(event.rearmTolerance !== undefined
+                ? { rearmTolerance: numberLike(event.rearmTolerance) }
+                : {}),
+              ...(record(event.reset) ? { reset: mapValues(event.reset, expressionLike) } : {}),
+            }
           : event,
       );
     dynamics.duration = duration;
@@ -401,4 +425,11 @@ function normalizeDemonstrationProgram(input) {
   return out;
 }
 
-export { normalizeDemonstrationProgram, numberLike, expressionLike, booleanLike, textLike, asArray };
+export {
+  normalizeDemonstrationProgram,
+  numberLike,
+  expressionLike,
+  booleanLike,
+  textLike,
+  asArray,
+};

@@ -59,4 +59,3 @@ const POLICIES: Record<string, ToolArgumentPolicy> = {
 export function toolArgumentPolicy(toolName: string | null | undefined): ToolArgumentPolicy {
   return toolName && Object.hasOwn(POLICIES, toolName) ? POLICIES[toolName] : DEFAULT_POLICY;
 }
-

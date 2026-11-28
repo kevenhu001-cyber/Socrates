@@ -58,18 +58,39 @@ test('all retries share an eight-second wait budget', () => {
   assert.equal(budget.reserve(1), false);
 });
 
-test('response time consumes the budget, and longer Retry-After is never shortened', () => {
+test('backoff budget caps cumulative sleep without penalizing slow upstream failures', async () => {
   let now = 0;
   const budget = createUpstreamRetryBudget(() => now);
   assert.equal(budget.reserve(2000), true);
-  now = 7500;
-  assert.equal(budget.reserve(501), false);
-  assert.equal(budget.reserve(500), true);
+  // A slow failed fetch (>8s) still preserves remaining backoff capacity for retries.
+  now = 15_000;
+  assert.equal(budget.reserve(4000), true);
+  assert.equal(budget.reserve(2001), false);
+  assert.equal(budget.reserve(2000), true);
   for (const invalid of [-1, NaN, Infinity]) assert.equal(budget.reserve(invalid), false);
   assert.equal(createUpstreamRetryBudget().reserve(60_000), false);
 });
 
 for (const stream of [true, false]) {
+  test(`${stream ? 'stream' : 'completion'}: slow failed attempt still gets transient retries`, async () => {
+    let calls = 0;
+    let fakeClock = 0;
+    const origPerfNow = performance.now.bind(performance);
+    performance.now = () => fakeClock;
+    globalThis.fetch = async () => {
+      calls++;
+      fakeClock += 12_000;
+      throw new TypeError('socket reset after slow wait');
+    };
+    globalThis.setTimeout = (cb, _ms, ...args) => originalSetTimeout(cb, 0, ...args);
+    try {
+      const error = await failure(stream);
+      assert.equal(calls, 3, 'slow attempt 0 must not burn the retry backoff budget');
+      assert.equal(error.retryable, false);
+    } finally {
+      performance.now = origPerfNow;
+    }
+  });
   test(`${stream ? 'stream' : 'completion'}: long cooldown returns immediately with metadata and no browser replay`, async () => {
     let calls = 0;
     globalThis.fetch = async () => {

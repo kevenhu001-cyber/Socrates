@@ -66,7 +66,9 @@ export function ToolRunApproval({ view, messageId, toolCallId, readOnly }: ToolR
     >
       <WebUiTheme>
         <div className="tool-approval-card" data-testid="tool-approval">
-          <div className="tool-approval-heading" data-testid="tool-approval-title">{view.title}</div>
+          <div className="tool-approval-heading" data-testid="tool-approval-title">
+            {view.title}
+          </div>
           {view.state === 'pending' ? (
             <p className="tool-approval-description">
               {i18n('tool.codexApprovalCopy', 'Review the action before it continues.')}
@@ -83,7 +85,12 @@ export function ToolRunApproval({ view, messageId, toolCallId, readOnly }: ToolR
             </dl>
           ) : null}
           {view.status ? (
-            <div className="tool-approval-status" data-testid="tool-approval-status" role="status" aria-live="polite">
+            <div
+              className="tool-approval-status"
+              data-testid="tool-approval-status"
+              role="status"
+              aria-live="polite"
+            >
               {view.status}
             </div>
           ) : null}

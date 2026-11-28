@@ -547,6 +547,7 @@ function captureSessionPayload(): SessionPostPayload {
  * post the same bytes. Any real change (new message, edited html, retitled
  * session) moves the signature and posts normally. */
 const _lastPosted: { id: string | null; sig: string | null } = { id: null, sig: null };
+const _failedSaves = new WeakMap<Promise<unknown>, unknown>();
 
 /* reduce each save to the rows the server is not
  * already known to hold. The pure delta/fingerprint logic lives in
@@ -701,12 +702,17 @@ function postSession(payload: SessionPostPayload): Promise<unknown> {
      below, for exactly the rows that were acknowledged. */
   const body = buildDeltaPayload(payload, _syncedFor(capturedSessionId), _fingerprints);
   const sentMessages = body.messages as SessionPostMessage[];
-  saveState.saveInFlight = apiFetch<SaveResponse>('/api/sessions', { method: 'POST', body: body })
+  const pendingSave = apiFetch<SaveResponse>('/api/sessions', { method: 'POST', body: body })
     .then(function (response) {
       commitAcknowledgedSave(response, capturedSessionId, sessionId, sentMessages);
       publishAcknowledgedSave(response, payload, capturedSessionId, sessionId);
     })
     .catch(function (e) {
+      if (_lastPosted.id === sessionId && _lastPosted.sig === sig) {
+        _lastPosted.id = null;
+        _lastPosted.sig = null;
+      }
+      _failedSaves.set(pendingSave, e);
       /* F1a — surface the save failure so the user knows their
        conversation isn't being persisted. Without this the recent
        list can silently lose new entries (Bug1). The default 1800ms
@@ -727,7 +733,31 @@ function postSession(payload: SessionPostPayload): Promise<unknown> {
        instead of re-sending a stale id. */
       drainSaveQueue();
     });
+  saveState.saveInFlight = pendingSave;
   return saveState.saveInFlight;
+}
+
+/**
+ * Guarantee an active non-incognito session exists on the server before
+ * opening /api/chat/stream?sessionId=..., retrying once on transient save error.
+ */
+export async function ensureSessionSavedBeforeStream(
+  inFlightHint?: Promise<unknown> | null,
+): Promise<{ ok: boolean; error?: unknown }> {
+  if (isIncognitoOn() || !getCurrentUser()) return { ok: true };
+  if (!sessionStore.getState().topic || !sessionStore.getState().currentSessionId) {
+    return { ok: true };
+  }
+  const activeSave = saveState.saveInFlight || inFlightHint || saveCurrentSession();
+  if (!activeSave) return { ok: true };
+  await activeSave;
+  if (!_failedSaves.has(activeSave)) return { ok: true };
+  await new Promise((resolve) => setTimeout(resolve, 250));
+  const retrySave = saveCurrentSession();
+  if (!retrySave) return { ok: true };
+  await retrySave;
+  if (!_failedSaves.has(retrySave)) return { ok: true };
+  return { ok: false, error: _failedSaves.get(retrySave) };
 }
 
 /* page lifecycle handlers that prevent loss of

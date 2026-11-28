@@ -150,7 +150,10 @@ function loadingCopy(page: string): { title: string; description: string } {
         title: i18n('projects.title', fallback('项目', 'Projects')),
         description: i18n(
           'projects.loading',
-          fallback('正在载入项目空间与知识上下文…', 'Loading project spaces and knowledge context…'),
+          fallback(
+            '正在载入项目空间与知识上下文…',
+            'Loading project spaces and knowledge context…',
+          ),
         ),
       };
     case 'library':
@@ -191,9 +194,7 @@ export function WorkspaceLoadingView({ page }: WorkspaceLoadingViewProps) {
         titleId={titleId}
         title={title}
         description={description}
-        actions={
-          <SkeletonBlock className="workspace-skeleton-action workspace-skeleton-create" />
-        }
+        actions={<SkeletonBlock className="workspace-skeleton-action workspace-skeleton-create" />}
       />
       {page === 'plugins' && <PluginSkeleton />}
       {page === 'projects' && <ProjectsSkeleton />}

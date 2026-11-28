@@ -26,7 +26,9 @@ function FailedLine({ status, messageId, readOnly }: TurnStatusProps) {
     <div className="turn-surface-status msg-error" data-turn-surface-part="terminal" role="alert">
       <CircleAlertIcon className="msg-status-icon" size={20} strokeWidth={1.75} aria-hidden />
       <div className="msg-status-copy">
-        <strong className="msg-status-title">{i18n('chat.errorTitle', 'Could not generate a response')}</strong>
+        <strong className="msg-status-title">
+          {i18n('chat.errorTitle', 'Could not generate a response')}
+        </strong>
         {message ? <span className="msg-error-text">{message}</span> : null}
       </div>
       {readOnly || status.retryable === false ? null : (

@@ -88,8 +88,9 @@ test('Cmd-K React mode always loads (no ?react=1 flag needed)', async ({ page })
   expect(retired).toBe(true);
 });
 
-
-test('phone drawer exposes global conversation search without filtering only recents', async ({ page }) => {
+test('phone drawer exposes global conversation search without filtering only recents', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');

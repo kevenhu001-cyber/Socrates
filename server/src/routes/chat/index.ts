@@ -69,7 +69,12 @@ router.post(
         apiKey: provider.keyPlaintext!,
         model: provider.model,
         userId: req.userId,
-        cacheSessionId: typeof req.query.sessionId === 'string' ? req.query.sessionId : typeof req.body.sessionId === 'string' ? req.body.sessionId : undefined,
+        cacheSessionId:
+          typeof req.query.sessionId === 'string'
+            ? req.query.sessionId
+            : typeof req.body.sessionId === 'string'
+              ? req.body.sessionId
+              : undefined,
         /* the operator's own statement
          * about their endpoint wins over the registry's host heuristic. */
         instantEncoding: provider.instantEncoding ?? null,

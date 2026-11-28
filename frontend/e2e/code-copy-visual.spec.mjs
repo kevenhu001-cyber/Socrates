@@ -167,6 +167,7 @@ test('code actions are aligned and code stays inside the phone viewport', async 
   });
   expect(offsets.length).toBeGreaterThan(0);
   for (const offset of offsets) expect(offset).toBeLessThanOrEqual(1);
-  expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth))
-    .toBeLessThanOrEqual(1);
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth - innerWidth),
+  ).toBeLessThanOrEqual(1);
 });

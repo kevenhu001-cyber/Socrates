@@ -1247,7 +1247,6 @@ test('General settings switches conversation formulas to source and remembers th
   await expect(page.locator('html')).toHaveAttribute('data-math-presentation', 'typeset');
 });
 
-
 test('desktop settings selected category preserves the row geometry', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
@@ -1260,5 +1259,8 @@ test('desktop settings selected category preserves the row geometry', async ({ p
   await expect(display).toHaveAttribute('aria-current', 'page');
   await expect(display).toHaveCSS('border-radius', radius);
   await expect(general).toHaveCSS('border-radius', radius);
-  await page.screenshot({ path: 'test-results/detail-polish/settings-desktop.png', animations: 'disabled' });
+  await page.screenshot({
+    path: 'test-results/detail-polish/settings-desktop.png',
+    animations: 'disabled',
+  });
 });

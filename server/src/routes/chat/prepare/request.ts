@@ -121,9 +121,18 @@ export async function prepareChatRequest(
       : Promise.resolve(null);
   // Freeze only the base profile and context; refresh mutable instructions and
   // memories on the outbound request, never by rewriting the snapshot.
-  const memoryPromise = resolveMemoryContext(req.userId ?? undefined, projectId, undefined, context.conversation);
+  const memoryPromise = resolveMemoryContext(
+    req.userId ?? undefined,
+    projectId,
+    undefined,
+    context.conversation,
+  );
   const teacherPromise = mode === 'tutor' ? getTeacherModePrompt() : Promise.resolve(null);
-  const assistantPromise = resolveAssistantInstructions(parsed.assistantId, sessionId, req.userId ?? undefined);
+  const assistantPromise = resolveAssistantInstructions(
+    parsed.assistantId,
+    sessionId,
+    req.userId ?? undefined,
+  );
   const promptPromise = resolveSessionPromptOrAssemble(
     req.userId ?? undefined,
     sessionId,
@@ -134,15 +143,25 @@ export async function prepareChatRequest(
       return initialized[0].content as string;
     },
   );
-  for (const p of [providerPromise, ragPromise, promptPromise, learningPromise, memoryPromise, teacherPromise, assistantPromise]) p.catch(() => {});
-  const [storedPrompt, ragBlock, learningTurn, memoryBlock, teacherPrompt, assistantBlock] = await Promise.all([
-    promptPromise,
+  for (const p of [
+    providerPromise,
     ragPromise,
-    learningPromise.catch(() => null),
+    promptPromise,
+    learningPromise,
     memoryPromise,
     teacherPromise,
     assistantPromise,
-  ]);
+  ])
+    p.catch(() => {});
+  const [storedPrompt, ragBlock, learningTurn, memoryBlock, teacherPrompt, assistantBlock] =
+    await Promise.all([
+      promptPromise,
+      ragPromise,
+      learningPromise.catch(() => null),
+      memoryPromise,
+      teacherPromise,
+      assistantPromise,
+    ]);
   let conversation = appendTurnContext(
     context.conversation,
     context.turnInstructions,
@@ -169,7 +188,11 @@ export async function prepareChatRequest(
     reasoningEffort: reasoning_effort,
   });
   systemPrompt = refreshSnapshotBlock(systemPrompt, TEACHER_MODE_MARKER, teacherPrompt);
-  systemPrompt = refreshSnapshotBlock(systemPrompt, '[User-selected assistant]', assistantBlock?.prompt ?? null);
+  systemPrompt = refreshSnapshotBlock(
+    systemPrompt,
+    '[User-selected assistant]',
+    assistantBlock?.prompt ?? null,
+  );
   systemPrompt = refreshSnapshotBlock(systemPrompt, MEMORY_CONTEXT_MARKER, null);
   let finalMessages: ProviderMessage[] = [
     { role: 'system', content: insertResponseTypography(systemPrompt) },
@@ -226,10 +249,7 @@ export async function prepareChatRequest(
       const rawKeep = Number(process.env.CHAT_CONTEXT_KEEP_TURNS);
       const compressed = await compressSessionMessages(conversation, {
         ...(req.userId && sessionId ? { cacheScope: `${req.userId}:${sessionId}` } : {}),
-        triggerTokens: Math.max(
-          1,
-          trigger - estimateContextMessageTokens([finalMessages[0]]),
-        ),
+        triggerTokens: Math.max(1, trigger - estimateContextMessageTokens([finalMessages[0]])),
         batchTurns: 4,
         ...(Number.isFinite(rawKeep) && rawKeep > 0 ? { keepTurns: Math.floor(rawKeep) } : {}),
       });
@@ -263,7 +283,14 @@ export async function prepareChatRequest(
   // Started alongside the context lookups above ().
   const provider = await providerPromise;
   if (!provider) {
-    if (parsed.providerId) throw new ApiError(400, 'NO_PROVIDER', 'The selected model is no longer available. Select a configured model.', undefined, false);
+    if (parsed.providerId)
+      throw new ApiError(
+        400,
+        'NO_PROVIDER',
+        'The selected model is no longer available. Select a configured model.',
+        undefined,
+        false,
+      );
     throw new ApiError(503, 'NO_PROVIDER', 'No active LLM provider configured');
   }
   if (!provider.keyPlaintext) {

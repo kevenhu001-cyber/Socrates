@@ -488,7 +488,8 @@ for (const theme of ['light', 'dark']) {
           const recommendation = page.locator('.scheduled-recommendation').first();
           await expect(recommendation).toBeVisible();
           await expect(recommendation.locator('.scheduled-recommendation-icon')).toHaveCSS(
-            'border-top-width', '0px',
+            'border-top-width',
+            '0px',
           );
         }
         const title = page.locator(selector).locator('[data-page-title]').first();
@@ -521,8 +522,13 @@ for (const theme of ['light', 'dark']) {
       await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
       await capture('settings', '#settingsPage');
       if (width > 768) {
-        await expect(page.locator('#settingsPage .account-page-header')).toHaveCSS('border-bottom-width', '1px');
-        await expect(page.locator('#settingsPage .settings-category-description').first()).toBeHidden();
+        await expect(page.locator('#settingsPage .account-page-header')).toHaveCSS(
+          'border-bottom-width',
+          '1px',
+        );
+        await expect(
+          page.locator('#settingsPage .settings-category-description').first(),
+        ).toBeHidden();
       }
       await page.locator('#settingsPage .settings-nav [data-section="models"]').click();
       await capture('models', '#settingsPage .settings-body');

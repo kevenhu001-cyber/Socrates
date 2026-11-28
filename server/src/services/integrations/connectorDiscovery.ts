@@ -19,7 +19,7 @@ export const SEARCH_CONNECTORS_TOOL = {
   function: {
     name: 'search_connectors',
     description:
-      "Search available connected apps and deferred native capabilities (charts, computation, workspace, images, documents, papers). Returns matching tool names and a short description. Use this instead of guessing an unavailable tool. After choosing a result, call get_connector_spec with the exact tool name to read its arguments; that tool becomes callable on the next step.",
+      'Search available connected apps and deferred native capabilities (charts, computation, workspace, images, documents, papers). Returns matching tool names and a short description. Use this instead of guessing an unavailable tool. After choosing a result, call get_connector_spec with the exact tool name to read its arguments; that tool becomes callable on the next step.',
     parameters: {
       type: 'object',
       additionalProperties: false,

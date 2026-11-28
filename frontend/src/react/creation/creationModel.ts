@@ -29,7 +29,7 @@ export type EditorDraft = {
 export type EditorField = keyof EditorDraft;
 
 const DEFAULT_SITE_SOURCE =
-  '<!doctype html>\n<html lang="zh"><meta charset="utf-8"><title>Socrates Site</title><style>body{font-family:system-ui;max-width:720px;margin:10vh auto;padding:24px}</style><h1>我的站点</h1><p>在这里开始创作。</p></html>';
+  '<!doctype html>\n<html lang="zh"><meta charset="utf-8"><title>Socrates Site</title><style>body{font-family:"Geist Sans","Noto Sans SC",sans-serif;max-width:720px;margin:10vh auto;padding:24px}</style><h1>我的站点</h1><p>在这里开始创作。</p></html>';
 
 const copy: Record<'en' | 'zh', Record<string, string>> = {
   zh: {

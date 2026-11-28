@@ -3,10 +3,25 @@ import { resolveDefinition, evaluatePreparedExpression } from '../expression/eva
 import { numberLike } from '../compiler/normalize.js';
 import { createConsistentState } from './algebraic.js';
 import { prepareDynamics } from './dynamics.js';
-import { createResultStore, prepareStationary, prepareSpatial, prepareAnalysis } from './providers.js';
+import {
+  createResultStore,
+  prepareStationary,
+  prepareSpatial,
+  prepareAnalysis,
+} from './providers.js';
 
 /** Common runtime: parameter revisions, evaluation scope, caches and lifecycle. */
-function* prepareRuntime(program, definitions, stateNames, compile, dependencies, values, solver, compileSource, algorithms) {
+function* prepareRuntime(
+  program,
+  definitions,
+  stateNames,
+  compile,
+  dependencies,
+  values,
+  solver,
+  compileSource,
+  algorithms,
+) {
   const budget = { remaining: BUDGET };
   const warnings = [];
   const params = Object.fromEntries(
@@ -15,20 +30,36 @@ function* prepareRuntime(program, definitions, stateNames, compile, dependencies
       return [p.id, finite(value) ? Math.max(p.min, Math.min(p.max, value)) : p.value];
     }),
   );
-  const hasSpaceZ=program.views.some(view=>(view.presentation==='vectors3d'||view.presentation==='isosurface'||view.slicePlane!==undefined));
-  const base = Object.assign(Object.create(null), params,hasSpaceZ?{spaceZ:0}:{});
+  const hasSpaceZ = program.views.some(
+    (view) =>
+      view.presentation === 'vectors3d' ||
+      view.presentation === 'isosurface' ||
+      view.slicePlane !== undefined,
+  );
+  const base = Object.assign(Object.create(null), params, hasSpaceZ ? { spaceZ: 0 } : {});
   const constants = new Map();
-  const results=createResultStore();
-  const stationaryDiagnostics=yield* prepareStationary(solver,params,compile,results,algorithms);
+  const results = createResultStore();
+  const stationaryDiagnostics = yield* prepareStationary(
+    solver,
+    params,
+    compile,
+    results,
+    algorithms,
+  );
   let previousTime;
   const timeValues = new Map();
-  const scopeAt = (t, x, y, state, evaluate, reusableSample, spaceZ=0) => {
-    const scope = Object.assign(Object.create(base), state, { x, y, t },hasSpaceZ?{spaceZ}:{});
+  const scopeAt = (t, x, y, state, evaluate, reusableSample, spaceZ = 0) => {
+    const scope = Object.assign(
+      Object.create(base),
+      state,
+      { x, y, t },
+      hasSpaceZ ? { spaceZ } : {},
+    );
     results.attach(scope);
     if (!definitions.size) return scope;
     const sample = reusableSample ?? new Map();
     scope[resolveDefinition] = (name) => {
-      if(results.has(name))return results.read(name,scope);
+      if (results.has(name)) return results.read(name, scope);
       if (!definitions.has(name)) return undefined;
       const expression = definitions.get(name);
       const mask = dependencies(expression);
@@ -40,26 +71,46 @@ function* prepareRuntime(program, definitions, stateNames, compile, dependencies
   };
   const evalRaw = (expression, scope) =>
     evaluatePreparedExpression(compile(expression), scope, budget);
-  const dynamics=program.dynamics;
-  const consistentState=createConsistentState(dynamics,base,scopeAt,evalRaw);
-  const spatial=yield* prepareSpatial(solver,params,compile,warnings,results,algorithms);
-  const evolution=spatial??(dynamics?yield* prepareDynamics(dynamics,stateNames,params,compile,scopeAt,consistentState,solver,warnings,hasSpaceZ,algorithms):undefined);
-  const duration=evolution?.duration??program.duration??0;
-  const stateAt = (time) => consistentState(evolution?.stateAt(time)??{}, Math.max(0,Math.min(duration,finite(time)?time:0)), evalRaw);
+  const dynamics = program.dynamics;
+  const consistentState = createConsistentState(dynamics, base, scopeAt, evalRaw);
+  const spatial = yield* prepareSpatial(solver, params, compile, warnings, results, algorithms);
+  const evolution =
+    spatial ??
+    (dynamics
+      ? yield* prepareDynamics(
+          dynamics,
+          stateNames,
+          params,
+          compile,
+          scopeAt,
+          consistentState,
+          solver,
+          warnings,
+          hasSpaceZ,
+          algorithms,
+        )
+      : undefined);
+  const duration = evolution?.duration ?? program.duration ?? 0;
+  const stateAt = (time) =>
+    consistentState(
+      evolution?.stateAt(time) ?? {},
+      Math.max(0, Math.min(duration, finite(time) ? time : 0)),
+      evalRaw,
+    );
   let sampleScope, sampleHasState;
   const sampleValues = new Map();
   const emptyState = Object.create(null);
   const runtime = {
     duration,
-    eventTimes: evolution?.eventTimes??[],
-    diagnostics: stationaryDiagnostics??evolution?.diagnostics,
+    eventTimes: evolution?.eventTimes ?? [],
+    diagnostics: stationaryDiagnostics ?? evolution?.diagnostics,
     parameters: params,
     warnings,
     dependencies,
     resetBudget() {
       budget.remaining = BUDGET;
     },
-    evaluate(expression, t = 0, x = 0, y = 0, spaceZ=0) {
+    evaluate(expression, t = 0, x = 0, y = 0, spaceZ = 0) {
       const needsState = (dependencies(expression) & 4) !== 0 && stateNames.length > 0;
       if (t !== previousTime) {
         previousTime = t;
@@ -69,20 +120,44 @@ function* prepareRuntime(program, definitions, stateNames, compile, dependencies
       if (!sampleScope || (needsState && !sampleHasState)) {
         sampleValues.clear();
         sampleHasState = needsState;
-        sampleScope = scopeAt(t, x, y, needsState ? stateAt(t) : emptyState, evalRaw, sampleValues,spaceZ);
-      } else if (x !== sampleScope.x || y !== sampleScope.y || (hasSpaceZ && spaceZ!==sampleScope.spaceZ)) {
+        sampleScope = scopeAt(
+          t,
+          x,
+          y,
+          needsState ? stateAt(t) : emptyState,
+          evalRaw,
+          sampleValues,
+          spaceZ,
+        );
+      } else if (
+        x !== sampleScope.x ||
+        y !== sampleScope.y ||
+        (hasSpaceZ && spaceZ !== sampleScope.spaceZ)
+      ) {
         sampleValues.clear();
         sampleScope.x = x;
         sampleScope.y = y;
-        if(hasSpaceZ)sampleScope.spaceZ=spaceZ;
+        if (hasSpaceZ) sampleScope.spaceZ = spaceZ;
       }
       return evalRaw(expression, sampleScope);
     },
     stateAt,
   };
-  if(solver.analysisSpec){
-    yield* prepareAnalysis(solver.analysisSpec,runtime,params,compile,compileSource,results,algorithms);
-    constants.clear();timeValues.clear();sampleValues.clear();sampleScope=undefined;runtime.resetBudget();
+  if (solver.analysisSpec) {
+    yield* prepareAnalysis(
+      solver.analysisSpec,
+      runtime,
+      params,
+      compile,
+      compileSource,
+      results,
+      algorithms,
+    );
+    constants.clear();
+    timeValues.clear();
+    sampleValues.clear();
+    sampleScope = undefined;
+    runtime.resetBudget();
   }
   return runtime;
 }

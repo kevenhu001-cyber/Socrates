@@ -41,14 +41,15 @@ test('ProjectConnector tool argument validation enforces documented input shapes
   );
 });
 
-
 test('public connector details reflect the exact reviewed tool registry', () => {
-  assert.deepEqual(projectConnectorChatActions('github').map((action) => action.name), [
-    'github.get_current_user',
-  ]);
-  assert.deepEqual(projectConnectorChatActions('gmail').map((action) => action.name), [
-    'gmail.search_threads',
-  ]);
+  assert.deepEqual(
+    projectConnectorChatActions('github').map((action) => action.name),
+    ['github.get_current_user'],
+  );
+  assert.deepEqual(
+    projectConnectorChatActions('gmail').map((action) => action.name),
+    ['gmail.search_threads'],
+  );
   assert.deepEqual(projectConnectorChatActions('health'), []);
   assert.deepEqual(projectConnectorChatActions('oc_github'), []);
 });

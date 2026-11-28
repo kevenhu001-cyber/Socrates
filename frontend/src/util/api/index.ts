@@ -125,8 +125,12 @@ export async function apiFetchRaw(path: string, opts: ApiRequestOptions = {}): P
         signal: linkedSignal.controller.signal,
       }) as RequestInit,
     );
-  } catch {
+  } catch (caught) {
     linkedSignal.detach();
+    const failure = caught as { name?: string } | null;
+    if (failure?.name === 'AbortError' || linkedSignal.controller.signal.aborted) {
+      throw abortedRequestError();
+    }
     throw makeApiError(0, '网络异常，请检查连接后重试', null, 'NETWORK', 0);
   }
 
@@ -138,7 +142,11 @@ export async function apiFetchRaw(path: string, opts: ApiRequestOptions = {}): P
     if (response.status === 401 && !opts._authEndpoint && !authExpiryIsSuppressed()) {
       notifyUnauthorized('apiFetchRaw', request.method, request.path);
     } else if (shouldRefreshCsrf(response, opts, request.method)) {
-      await refreshCsrfToken(undefined, 'util/api.apiFetchRaw');
+      if (response.body && typeof response.body.cancel === 'function') {
+        await response.body.cancel().catch(() => {});
+      }
+      const refreshController = new AbortController();
+      await refreshCsrfToken(refreshController.signal, 'util/api.apiFetchRaw');
       return apiFetchRaw(request.path, Object.assign({}, opts, { _csrfRetried: true }));
     }
     await throwRawResponseError(response);

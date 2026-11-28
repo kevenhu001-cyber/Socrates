@@ -25,10 +25,12 @@ export function initDb(databaseUrl: string): Database {
   // pg@8.13+ triggers a DeprecationWarning. The ?options= parameter
   // applies to every connection the pool creates, so all connections
   // inherit the timeout without any per-connect setup.
+  const configuredMax = parseInt(process.env.DB_POOL_MAX || '16', 10);
+  const poolMax = Number.isFinite(configuredMax) ? Math.max(4, Math.min(64, configuredMax)) : 16;
   const separator = databaseUrl.includes('?') ? '&' : '?';
   pool = new Pool({
     connectionString: `${databaseUrl}${separator}options=--statement_timeout%3D30000`,
-    max: 8,
+    max: poolMax,
     min: 1,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 5000,

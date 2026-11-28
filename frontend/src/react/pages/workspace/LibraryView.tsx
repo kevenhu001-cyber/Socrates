@@ -17,9 +17,7 @@ function LibraryView({
   data: LibraryViewData;
   dispatch: ReturnType<typeof useWorkspaceDispatch>;
 }>) {
-  const [chip, setChip] = useState<'recommend' | 'favorite' | 'folder' | 'images' | 'all'>(
-    'all',
-  );
+  const [chip, setChip] = useState<'recommend' | 'favorite' | 'folder' | 'images' | 'all'>('all');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [typeFilter, setTypeFilter] = useState<string>('all');
 

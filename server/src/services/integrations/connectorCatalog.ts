@@ -223,18 +223,41 @@ export function buildConnectorCatalog(input: {
  * catalog. Discovery does not execute anything or widen authorization. */
 export function addDeferredCoreTools(
   catalog: ConnectorCatalog,
-  definitions: readonly { function?: { name?: string; description?: string; parameters?: unknown } }[],
+  definitions: readonly {
+    function?: { name?: string; description?: string; parameters?: unknown };
+  }[],
   deferred: ReadonlySet<string>,
 ): ConnectorCatalog {
   const groups: Record<string, { service: string; aliases: string[] }> = {
-    code_interpreter: { service: 'computation', aliases: ['python', 'calculate', '计算', '数据分析', 'export'] },
-    render_intelligent_ui: { service: 'visualization', aliases: ['chart', 'diagram', 'graph', 'visual', '图表', '示意图', '交互', '仿真'] },
-    get_ui_contract: { service: 'visualization', aliases: ['schema', 'visual', 'ui contract', '图表'] },
-    patch_intelligent_ui: { service: 'visualization', aliases: ['update chart', 'patch', '修改图表'] },
+    code_interpreter: {
+      service: 'computation',
+      aliases: ['python', 'calculate', '计算', '数据分析', 'export'],
+    },
+    render_intelligent_ui: {
+      service: 'visualization',
+      aliases: ['chart', 'diagram', 'graph', 'visual', '图表', '示意图', '交互', '仿真'],
+    },
+    get_ui_contract: {
+      service: 'visualization',
+      aliases: ['schema', 'visual', 'ui contract', '图表'],
+    },
+    patch_intelligent_ui: {
+      service: 'visualization',
+      aliases: ['update chart', 'patch', '修改图表'],
+    },
     image_search: { service: 'images', aliases: ['image', 'photo', '图片', '照片'] },
-    workspace_agent: { service: 'workspace', aliases: ['code', 'repository', 'edit files', '编程', '仓库', '项目'] },
-    initialize_workspace: { service: 'workspace', aliases: ['initialize workspace', '工作区', 'reset workspace'] },
-    create_document: { service: 'documents', aliases: ['plan', 'spec', 'document', '计划', '文档', '需求'] },
+    workspace_agent: {
+      service: 'workspace',
+      aliases: ['code', 'repository', 'edit files', '编程', '仓库', '项目'],
+    },
+    initialize_workspace: {
+      service: 'workspace',
+      aliases: ['initialize workspace', '工作区', 'reset workspace'],
+    },
+    create_document: {
+      service: 'documents',
+      aliases: ['plan', 'spec', 'document', '计划', '文档', '需求'],
+    },
     create_site: { service: 'sites', aliases: ['website', 'html', '网页', '网站'] },
     arxiv_search: { service: 'papers', aliases: ['arxiv', 'paper', 'research', '论文', '文献'] },
   };
@@ -245,14 +268,25 @@ export function addDeferredCoreTools(
     const group = groups[fn.name];
     if (!group) continue;
     const description = String(fn.description || '');
-    const parameters = (fn.parameters && typeof fn.parameters === 'object' ? fn.parameters : {}) as Record<string, unknown>;
+    const parameters = (
+      fn.parameters && typeof fn.parameters === 'object' ? fn.parameters : {}
+    ) as Record<string, unknown>;
     byTool.set(fn.name, {
-      tool: fn.name, service: group.service, family: 'core', actionId: fn.name,
-      description, parameters, aliases: group.aliases,
+      tool: fn.name,
+      service: group.service,
+      family: 'core',
+      actionId: fn.name,
+      description,
+      parameters,
+      aliases: group.aliases,
       searchText: [fn.name, group.service, description, ...group.aliases].join(' ').toLowerCase(),
     });
   }
-  return { ...catalog, byTool, entries: [...byTool.values()].sort((a,b) => a.tool.localeCompare(b.tool)) };
+  return {
+    ...catalog,
+    byTool,
+    entries: [...byTool.values()].sort((a, b) => a.tool.localeCompare(b.tool)),
+  };
 }
 
 /** Tools that stay in the core set even when the catalog is non-empty. */

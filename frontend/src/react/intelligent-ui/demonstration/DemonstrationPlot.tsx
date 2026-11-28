@@ -2,12 +2,17 @@ import { MathText } from '../../rn/useInlineMath';
 import { SvgMathText } from '../../rn/SvgMathText';
 import { i18n } from '../../../ui/legacyI18n.ts';
 import { memo, useId } from 'react';
+import { type PlotView as View, type PlotSample as Sampled, type Issue } from './samplePlot';
 import {
-  type PlotView as View,
-  type PlotSample as Sampled,
-  type Issue,
-} from './samplePlot';
-import { WIDTH, HEIGHT, LEFT, RIGHT, TOP, BOTTOM, plotProjection, type AxisScale } from './geometry/plotProjection';
+  WIDTH,
+  HEIGHT,
+  LEFT,
+  RIGHT,
+  TOP,
+  BOTTOM,
+  plotProjection,
+  type AxisScale,
+} from './geometry/plotProjection';
 import { demoAxisLabel } from './mathLabels';
 import { DemoIssue } from './DemonstrationIssue';
 export const demoColors: Record<string, string> = {
@@ -98,13 +103,18 @@ function formatTick(value: number): string {
 
 function ticks(min: number, max: number, target: number, scale: AxisScale = 'linear'): number[] {
   if (scale === 'log') {
-    const lo = Math.log10(min), hi = Math.log10(max);
+    const lo = Math.log10(min),
+      hi = Math.log10(max);
     if (!Number.isFinite(lo) || !Number.isFinite(hi) || hi <= lo) return [];
     const step = Math.max(1, Math.ceil((hi - lo) / target));
     const first = Math.ceil(lo / step) * step;
-    const major = Array.from({ length: Math.min(20, Math.max(0, Math.floor((hi - first) / step) + 1)) },
-      (_, index) => 10 ** (first + index * step));
-    return major.length >= 2 ? major : Array.from({length: 3}, (_, i) => 10 ** (lo + (hi - lo) * i / 2));
+    const major = Array.from(
+      { length: Math.min(20, Math.max(0, Math.floor((hi - first) / step) + 1)) },
+      (_, index) => 10 ** (first + index * step),
+    );
+    return major.length >= 2
+      ? major
+      : Array.from({ length: 3 }, (_, i) => 10 ** (lo + ((hi - lo) * i) / 2));
   }
   const raw = (max - min) / target;
   if (!(raw > 0) || !Number.isFinite(raw)) return [];
@@ -124,7 +134,15 @@ function projectPoint(sx: (value: number) => number, sy: (value: number) => numb
       : null;
 }
 
-function YAxis({ domain, sy, scale }: { domain: Domain; sy: (value: number) => number; scale?: AxisScale }) {
+function YAxis({
+  domain,
+  sy,
+  scale,
+}: {
+  domain: Domain;
+  sy: (value: number) => number;
+  scale?: AxisScale;
+}) {
   return (
     <>
       {ticks(domain[0], domain[1], 3, scale).map((value) => (
@@ -295,12 +313,28 @@ function renderPlot(view: View, result: Sampled, id: string) {
         <XAxis xDomain={xDomain} yDomain={yDomain} sy={sy} sx={sx} scale={result.xScale} />
         <g clipPath={`url(#${id})`}>
           {result.eventTimes?.map((time, index) => (
-            <line key={index} x1={sx(time)} x2={sx(time)} y1={TOP} y2={HEIGHT - BOTTOM}
-              stroke={demoColors.orange} strokeWidth="1" strokeDasharray="3 4" opacity=".65" />
+            <line
+              key={index}
+              x1={sx(time)}
+              x2={sx(time)}
+              y1={TOP}
+              y2={HEIGHT - BOTTOM}
+              stroke={demoColors.orange}
+              strokeWidth="1"
+              strokeDasharray="3 4"
+              opacity=".65"
+            />
           ))}
           {result.playhead !== undefined && Number.isFinite(sx(result.playhead)) && (
-            <line x1={sx(result.playhead)} x2={sx(result.playhead)} y1={TOP} y2={HEIGHT - BOTTOM}
-              stroke={demoColors.muted} strokeWidth="1" strokeDasharray="4 3" />
+            <line
+              x1={sx(result.playhead)}
+              x2={sx(result.playhead)}
+              y1={TOP}
+              y2={HEIGHT - BOTTOM}
+              stroke={demoColors.muted}
+              strokeWidth="1"
+              strokeDasharray="4 3"
+            />
           )}
           <CurvePaths curves={curves} paths={result.paths} />
           <PlotMarkers view={view} result={result} project={project} />

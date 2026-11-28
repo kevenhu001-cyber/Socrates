@@ -26,8 +26,7 @@ const { dispatchSearch, dispatchSession, searchStore, sessionStore } =
   await import('../src/store/index.ts');
 const { getProjectCacheSnapshot, setCachedProjects } =
   await import('../src/projects/projectCache.ts');
-const { clearUserMemories, setUserMemories } =
-  await import('../src/app/lifecycle/userMemory.ts');
+const { clearUserMemories, setUserMemories } = await import('../src/app/lifecycle/userMemory.ts');
 
 test('toneVoiceSuffix is empty for the default preset', () => {
   setTonePreset('default');
@@ -70,7 +69,8 @@ test('thinkingSuffix carries no effort directive in tutor mode either', () => {
 });
 
 test('profile cache is not injected again; unsynced local memory is retained', async () => {
-  const { setMemory, replaceMemoryId, clearAllMemories } = await import('../src/storage/memoryStore.ts');
+  const { setMemory, replaceMemoryId, clearAllMemories } =
+    await import('../src/storage/memoryStore.ts');
   const previousProjectId = sessionStore.getState().currentProjectId;
   dispatchSession({ type: 'session/set', key: 'currentProjectId', value: null });
   clearAllMemories();
@@ -87,7 +87,11 @@ test('profile cache is not injected again; unsynced local memory is retained', a
   } finally {
     clearAllMemories();
     clearUserMemories();
-    dispatchSession({ type: 'session/set', key: 'currentProjectId', value: previousProjectId ?? null });
+    dispatchSession({
+      type: 'session/set',
+      key: 'currentProjectId',
+      value: previousProjectId ?? null,
+    });
   }
 });
 

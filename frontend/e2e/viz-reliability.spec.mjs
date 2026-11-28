@@ -34,9 +34,7 @@ test('alias payloads the server accepts draw real data instead of an empty axis'
   await expect(page.locator('.intui-openui .visualization-stage-progress')).toHaveCount(0);
 });
 
-test('a rejected render_intelligent_ui call does not render an error card', async ({
-  page,
-}) => {
+test('a rejected render_intelligent_ui call does not render an error card', async ({ page }) => {
   const source =
     'root = Col([v])\nv = Visualization("bar", "Class averages", {"categories":["One","Two"],"series":[{"name":"Math","data":["x","y"]}]}, "s")';
   await prepareChatWorkbench(page, {
@@ -83,9 +81,7 @@ test('a rejected render_intelligent_ui call does not render an error card', asyn
   await expect(page.getByText('Here is the chart.')).toBeVisible();
 });
 
-test('a rejected demonstration does not mount a failed attachment', async ({
-  page,
-}) => {
+test('a rejected demonstration does not mount a failed attachment', async ({ page }) => {
   await prepareChatWorkbench(page, {
     messages: [
       {

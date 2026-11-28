@@ -8,71 +8,178 @@ import { expressionNames } from '../expression/evaluate.js';
 // basis. Declared elemental composition is optional, but when present every
 // reaction must conserve each declared element.
 
-function lowerReactionNetwork(program){
-  const d=program.dynamics;
-  if(!record(d)||d.reactionNetwork===undefined)return program;
-  const s=d.reactionNetwork,fail=message=>{throw located('dynamics.reactionNetwork',Error(message));};
-  if(!record(s)||!['rk45','sdirk2','ssa'].includes(d.method)||
-      ['initial','derivatives','spatial','circuit','stateSpace','massMatrix','algebraic','events'].some(k=>d[k]!==undefined))
+function lowerReactionNetwork(program) {
+  const d = program.dynamics;
+  if (!record(d) || d.reactionNetwork === undefined) return program;
+  const s = d.reactionNetwork,
+    fail = (message) => {
+      throw located('dynamics.reactionNetwork', Error(message));
+    };
+  if (
+    !record(s) ||
+    !['rk45', 'sdirk2', 'ssa'].includes(d.method) ||
+    [
+      'initial',
+      'derivatives',
+      'spatial',
+      'circuit',
+      'stateSpace',
+      'massMatrix',
+      'algebraic',
+      'events',
+    ].some((k) => d[k] !== undefined)
+  )
     fail('Reaction network replaces other dynamics descriptions; choose rk45, sdirk2 or ssa');
-  const stochastic=d.method==='ssa';
-  if(stochastic&&s.seed!==undefined&&(!Number.isInteger(s.seed)||s.seed<0||s.seed>0xffffffff))fail('SSA seed must be an unsigned 32-bit integer');
-  if(!stochastic&&s.seed!==undefined)fail('Seed is only used by SSA');
-  const species=s.species,reactions=s.reactions;
-  if(!Array.isArray(species)||species.length<1||species.length>(d.method==='sdirk2'?8:16)||
-      !Array.isArray(reactions)||reactions.length<1||reactions.length>16)
+  const stochastic = d.method === 'ssa';
+  if (
+    stochastic &&
+    s.seed !== undefined &&
+    (!Number.isInteger(s.seed) || s.seed < 0 || s.seed > 0xffffffff)
+  )
+    fail('SSA seed must be an unsigned 32-bit integer');
+  if (!stochastic && s.seed !== undefined) fail('Seed is only used by SSA');
+  const species = s.species,
+    reactions = s.reactions;
+  if (
+    !Array.isArray(species) ||
+    species.length < 1 ||
+    species.length > (d.method === 'sdirk2' ? 8 : 16) ||
+    !Array.isArray(reactions) ||
+    reactions.length < 1 ||
+    reactions.length > 16
+  )
     fail('Use 1–16 species (8 stiff) and 1–16 reactions');
-  const scalar=v=>finite(v)||(typeof v==='string'&&v.length>0&&v.length<=1600);
-  const ids=new Set(),params=new Set((Array.isArray(program.parameters)?program.parameters:[]).map(p=>p?.id));
-  const definitions={...program.definitions},initial={},terms=new Map();
-  const composition=species.some(v=>v?.composition!==undefined),elements=new Set();
-  for(const v of species){
-    if(!record(v)||!name(v.id)||ids.has(v.id)||params.has(v.id)||Object.hasOwn(definitions,v.id)||
-        !scalar(v.initial)||(finite(v.initial)&&v.initial<0))fail('Species need distinct identifiers and nonnegative initial values');
-    try{expressionNames(parseDemonstrationExpression(v.initial),params);}catch(e){fail('Initial amounts must use constants and parameters only');}
-    if(stochastic&&finite(v.initial)&&(!Number.isSafeInteger(v.initial)||v.initial>1e8))fail('SSA initial counts must be integers from 0 to 100,000,000');
-    ids.add(v.id);initial[v.id]=v.initial;terms.set(v.id,[]);
-    if(composition){
-      if(!record(v.composition)||Object.keys(v.composition).length>12||
-          Object.entries(v.composition).some(([e,n])=>!/^[A-Z][a-z]?$/.test(e)||!Number.isInteger(n)||n<0||n>200))
-        fail('All species need composition maps with valid element symbols and nonnegative integer counts');
-      Object.keys(v.composition).forEach(e=>elements.add(e));
+  const scalar = (v) => finite(v) || (typeof v === 'string' && v.length > 0 && v.length <= 1600);
+  const ids = new Set(),
+    params = new Set(
+      (Array.isArray(program.parameters) ? program.parameters : []).map((p) => p?.id),
+    );
+  const definitions = { ...program.definitions },
+    initial = {},
+    terms = new Map();
+  const composition = species.some((v) => v?.composition !== undefined),
+    elements = new Set();
+  for (const v of species) {
+    if (
+      !record(v) ||
+      !name(v.id) ||
+      ids.has(v.id) ||
+      params.has(v.id) ||
+      Object.hasOwn(definitions, v.id) ||
+      !scalar(v.initial) ||
+      (finite(v.initial) && v.initial < 0)
+    )
+      fail('Species need distinct identifiers and nonnegative initial values');
+    try {
+      expressionNames(parseDemonstrationExpression(v.initial), params);
+    } catch (e) {
+      fail('Initial amounts must use constants and parameters only');
+    }
+    if (stochastic && finite(v.initial) && (!Number.isSafeInteger(v.initial) || v.initial > 1e8))
+      fail('SSA initial counts must be integers from 0 to 100,000,000');
+    ids.add(v.id);
+    initial[v.id] = v.initial;
+    terms.set(v.id, []);
+    if (composition) {
+      if (
+        !record(v.composition) ||
+        Object.keys(v.composition).length > 12 ||
+        Object.entries(v.composition).some(
+          ([e, n]) => !/^[A-Z][a-z]?$/.test(e) || !Number.isInteger(n) || n < 0 || n > 200,
+        )
+      )
+        fail(
+          'All species need composition maps with valid element symbols and nonnegative integer counts',
+        );
+      Object.keys(v.composition).forEach((e) => elements.add(e));
     }
   }
-  if(elements.size>12)fail('Use at most 12 conserved elements');
-  const put=(id,value)=>{
-    if(!name(id)||ids.has(id)||params.has(id)||Object.hasOwn(definitions,id)||Object.keys(definitions).length>=24)
-      fail('Generated rate/element names collide or exceed 24 definitions: '+id);
-    definitions[id]=value;
+  if (elements.size > 12) fail('Use at most 12 conserved elements');
+  const put = (id, value) => {
+    if (
+      !name(id) ||
+      ids.has(id) ||
+      params.has(id) ||
+      Object.hasOwn(definitions, id) ||
+      Object.keys(definitions).length >= 24
+    )
+      fail('Generated rate/element names collide or exceed 24 definitions: ' + id);
+    definitions[id] = value;
   };
-  const stoich=m=>record(m)&&Object.entries(m).every(([id,n])=>ids.has(id)&&Number.isInteger(n)&&n>=1&&n<=8);
-  const rateIds=new Set();
-  for(const r of reactions){
-    if(!record(r)||!name(r.id)||rateIds.has(r.id)||!stoich(r.reactants)||!stoich(r.products)||
-      (r.rateConstant===undefined)===(r.rate===undefined))fail('Reaction needs unique id, reactants/products maps and exactly one rateConstant or rate');
+  const stoich = (m) =>
+    record(m) &&
+    Object.entries(m).every(([id, n]) => ids.has(id) && Number.isInteger(n) && n >= 1 && n <= 8);
+  const rateIds = new Set();
+  for (const r of reactions) {
+    if (
+      !record(r) ||
+      !name(r.id) ||
+      rateIds.has(r.id) ||
+      !stoich(r.reactants) ||
+      !stoich(r.products) ||
+      (r.rateConstant === undefined) === (r.rate === undefined)
+    )
+      fail(
+        'Reaction needs unique id, reactants/products maps and exactly one rateConstant or rate',
+      );
     rateIds.add(r.id);
-    const delta=id=>(r.products[id]??0)-(r.reactants[id]??0);
-    if(!species.some(v=>delta(v.id)!==0))fail('Reaction must change at least one species');
-    if(composition)for(const e of elements){
-      if(species.reduce((a,v)=>a+delta(v.id)*(v.composition[e]??0),0)!==0)fail('Unbalanced reaction '+r.id+' for element '+e);
-    }
+    const delta = (id) => (r.products[id] ?? 0) - (r.reactants[id] ?? 0);
+    if (!species.some((v) => delta(v.id) !== 0)) fail('Reaction must change at least one species');
+    if (composition)
+      for (const e of elements) {
+        if (species.reduce((a, v) => a + delta(v.id) * (v.composition[e] ?? 0), 0) !== 0)
+          fail('Unbalanced reaction ' + r.id + ' for element ' + e);
+      }
     let flux;
-    if(r.rateConstant!==undefined){
-      if(!scalar(r.rateConstant)||(finite(r.rateConstant)&&r.rateConstant<0))fail('Rate constant must be nonnegative');
-      try{expressionNames(parseDemonstrationExpression(r.rateConstant),params);}catch(e){fail('Rate constant must use parameters and constants only');}
-      const choose=(id,n)=>Array.from({length:n},(_,i)=>`max(0,(${id}-${i}))/${i+1}`).join('*');
-      flux=['requireNonnegative('+r.rateConstant+')',...Object.entries(r.reactants).map(([id,n])=>stochastic?choose(id,n):`max(0,${id})^${n}`)].join('*');
-    }else{
-      if(stochastic)fail('SSA accepts only mass-action rateConstant, not time-dependent or custom rates');
-      if(!scalar(r.rate)||(finite(r.rate)&&r.rate<0))fail('Custom flux must be nonnegative');
-      flux=`requireNonnegative(${r.rate})`;
+    if (r.rateConstant !== undefined) {
+      if (!scalar(r.rateConstant) || (finite(r.rateConstant) && r.rateConstant < 0))
+        fail('Rate constant must be nonnegative');
+      try {
+        expressionNames(parseDemonstrationExpression(r.rateConstant), params);
+      } catch (e) {
+        fail('Rate constant must use parameters and constants only');
+      }
+      const choose = (id, n) =>
+        Array.from({ length: n }, (_, i) => `max(0,(${id}-${i}))/${i + 1}`).join('*');
+      flux = [
+        'requireNonnegative(' + r.rateConstant + ')',
+        ...Object.entries(r.reactants).map(([id, n]) =>
+          stochastic ? choose(id, n) : `max(0,${id})^${n}`,
+        ),
+      ].join('*');
+    } else {
+      if (stochastic)
+        fail('SSA accepts only mass-action rateConstant, not time-dependent or custom rates');
+      if (!scalar(r.rate) || (finite(r.rate) && r.rate < 0))
+        fail('Custom flux must be nonnegative');
+      flux = `requireNonnegative(${r.rate})`;
     }
-    const rate='rate_'+r.id;put(rate,flux);
-    for(const id of ids){const n=delta(id);if(n)terms.get(id).push(`(${n})*${rate}`);}
+    const rate = 'rate_' + r.id;
+    put(rate, flux);
+    for (const id of ids) {
+      const n = delta(id);
+      if (n) terms.get(id).push(`(${n})*${rate}`);
+    }
   }
-  for(const e of elements)put('total_'+e,species.filter(v=>v.composition[e]).map(v=>`${v.composition[e]}*${v.id}`).join('+')||'0');
-  const {reactionNetwork:_reactionNetwork,...rest}=d;
-  return {...program,definitions,dynamics:{...rest,method:stochastic?'rk45':d.method,initial,derivatives:Object.fromEntries([...terms].map(([id,v])=>[id,v.join('+')||0]))}};
+  for (const e of elements)
+    put(
+      'total_' + e,
+      species
+        .filter((v) => v.composition[e])
+        .map((v) => `${v.composition[e]}*${v.id}`)
+        .join('+') || '0',
+    );
+  const { reactionNetwork: _reactionNetwork, ...rest } = d;
+  return {
+    ...program,
+    definitions,
+    dynamics: {
+      ...rest,
+      method: stochastic ? 'rk45' : d.method,
+      initial,
+      derivatives: Object.fromEntries([...terms].map(([id, v]) => [id, v.join('+') || 0])),
+    },
+  };
 }
 
 export { lowerReactionNetwork };

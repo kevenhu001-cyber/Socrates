@@ -303,7 +303,9 @@ export function buildToolErrorFeedback(input: ToolErrorFeedbackInput): ToolError
       ? 'Send one corrected call with materially different arguments, or continue in prose if the tool is not needed.'
       : 'Do not repeat this call. Continue in prose instead.',
   );
-  lines.push('Treat this error as internal feedback. Do not quote it or narrate the retry. If recovery is exhausted, mention only a material limitation.');
+  lines.push(
+    'Treat this error as internal feedback. Do not quote it or narrate the retry. If recovery is exhausted, mention only a material limitation.',
+  );
 
   const detailParts = [fieldErrors, example ? `example: ${example}` : ''].filter(Boolean);
   return {

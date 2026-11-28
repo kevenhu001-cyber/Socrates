@@ -224,15 +224,23 @@ function parseDemonstrationExpression(input) {
           throw Error(`Unknown mathematical function: ${written}`);
         }
         const expected = expectedArity(name);
-        if (name === 'solveN' ? (args.length < 4 || args.length > 44) : expected === null ? args.length === 0 || args.length > 8 : args.length !== expected)
+        if (
+          name === 'solveN'
+            ? args.length < 4 || args.length > 44
+            : expected === null
+              ? args.length === 0 || args.length > 8
+              : args.length !== expected
+        )
           throw Error(
             `Wrong argument count: ${written} takes ${expected ?? '1–8'} argument${expected === 1 ? '' : 's'}`,
           );
         if (
-          ['sum', 'iterate','diff','integral'].includes(name) &&
+          ['sum', 'iterate', 'diff', 'integral'].includes(name) &&
           (args[0]?.kind !== 'variable' || !SAFE.test(args[0].name) || RESERVED.has(args[0].name))
         )
-          throw Error('sum/iterate/diff/integral needs a safe local variable as its first argument');
+          throw Error(
+            'sum/iterate/diff/integral needs a safe local variable as its first argument',
+          );
         return { kind: 'call', name, args };
       }
       // "sin x" and "sin 2x": a core one-argument function without parentheses.
@@ -289,4 +297,9 @@ function parseDemonstrationExpression(input) {
   return ast;
 }
 
-export { DEMONSTRATION_LOOP_LIMIT, normalizeDemonstrationExpression, normalizeDemonstrationIdentifier, parseDemonstrationExpression };
+export {
+  DEMONSTRATION_LOOP_LIMIT,
+  normalizeDemonstrationExpression,
+  normalizeDemonstrationIdentifier,
+  parseDemonstrationExpression,
+};

@@ -47,11 +47,15 @@ function LibraryItemName({
     );
   }
   return (
-    <UiButton type="button" className="library-item-name library-open-item" title={name}
+    <UiButton
+      type="button"
+      className="library-item-name library-open-item"
+      title={name}
       onClick={(event) => {
         event.stopPropagation();
         dispatch.openItem(item.id, item.kind || 'file', itemKey);
-      }}>
+      }}
+    >
       {name}
     </UiButton>
   );
@@ -141,7 +145,9 @@ function LibraryItemRow({
           aria-label={'Select ' + name}
         />
       </ShadcnLabel>
-      <UiButton type="button" aria-label={name}
+      <UiButton
+        type="button"
+        aria-label={name}
         className={
           'workspace-row-icon library-file-icon library-file-' +
           getFileTypeCategory(item) +

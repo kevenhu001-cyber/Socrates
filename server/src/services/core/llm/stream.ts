@@ -23,6 +23,7 @@ import {
   attemptsForUpstreamStatus,
   isRetryableUpstreamStatus,
   isRetryableUpstreamFailure,
+  isTransientSocketReset,
   sleep,
   upstreamRetryDelayMs,
 } from './retry.js';
@@ -190,8 +191,9 @@ export async function streamChatCompletion(
         } catch (err) {
           if ((err as Error).name === 'AbortError') throw err; // let the outer catch classify it
           lastError = err as Error;
-          if (attempt < TRANSIENT_ATTEMPTS - 1 && retryBudget.reserve(1000)) {
-            await sleep(1000, signal);
+          const retryDelayMs = isTransientSocketReset(err) ? 350 : 1000;
+          if (attempt < TRANSIENT_ATTEMPTS - 1 && retryBudget.reserve(retryDelayMs)) {
+            await sleep(retryDelayMs, signal);
             continue;
           }
           throw Object.assign(err as Error, { retryable: false });

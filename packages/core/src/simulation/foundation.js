@@ -1,5 +1,3 @@
-
-
 const BUDGET = 4000000,
   DYNAMICS_BUDGET = 12000000;
 const budgetError = () => Error('Demonstration calculation budget exceeded');
@@ -33,4 +31,15 @@ const at = (path, fn) => {
   }
 };
 
-export { BUDGET, DYNAMICS_BUDGET, budgetError, isDemonstrationBudgetError, record, finite, range, text, located, at };
+export {
+  BUDGET,
+  DYNAMICS_BUDGET,
+  budgetError,
+  isDemonstrationBudgetError,
+  record,
+  finite,
+  range,
+  text,
+  located,
+  at,
+};

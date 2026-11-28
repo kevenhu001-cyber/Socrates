@@ -256,18 +256,54 @@ async function executeChatStreamPipeline(
    * high-frequency progress/deltas stay SSE-only. All taps are
    * fire-and-forget so a slow DB never stalls the live stream. */
   if (turnId) {
+    /* Coalesce high-frequency content/reasoning chunks so a 500-token response
+     * commits ~5–15 batched PG transactions instead of 500 row-lock bursts,
+     * while flushing synchronously before boundaries to keep strict order. */
+    const DELTA_FLUSH_MS = 180;
+    const DELTA_FLUSH_CHARS = 512;
+    let pendingKind: 'content' | 'reasoning' | null = null;
+    let pendingDelta = '';
+    let flushTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const flushPendingDeltas = () => {
+      if (flushTimer) {
+        clearTimeout(flushTimer);
+        flushTimer = null;
+      }
+      if (!pendingKind || !pendingDelta) return;
+      const event = pendingKind;
+      const delta = pendingDelta;
+      pendingKind = null;
+      pendingDelta = '';
+      publishChatTurnEvent(turnId, event, { delta }).catch(() => {});
+    };
+
+    const queueDelta = (kind: 'content' | 'reasoning', chunk: string) => {
+      if (!chunk) return;
+      if (pendingKind && pendingKind !== kind) flushPendingDeltas();
+      pendingKind = kind;
+      pendingDelta += chunk;
+      if (pendingDelta.length >= DELTA_FLUSH_CHARS) {
+        flushPendingDeltas();
+      } else if (!flushTimer) {
+        flushTimer = setTimeout(flushPendingDeltas, DELTA_FLUSH_MS);
+        flushTimer.unref?.();
+      }
+    };
+
     const tap = (event: string, data: Record<string, unknown>) => {
+      flushPendingDeltas();
       publishChatTurnEvent(turnId, event, data).catch(() => {});
     };
     const innerContent = emitter.content.bind(emitter);
     emitter.content = (chunk: string) => {
       innerContent(chunk);
-      tap('content', { delta: chunk });
+      queueDelta('content', chunk);
     };
     const innerReasoning = emitter.reasoning.bind(emitter);
     emitter.reasoning = (reasoning: string) => {
       innerReasoning(reasoning);
-      tap('reasoning', { delta: reasoning });
+      queueDelta('reasoning', reasoning);
     };
     const innerEvent = emitter.event.bind(emitter);
     emitter.event = (name: string, data: unknown) => {
@@ -306,10 +342,17 @@ async function executeChatStreamPipeline(
       model: provider.model,
     }).catch(() => {});
     turnCheckpointTimer = setInterval(() => {
+      flushPendingDeltas();
       checkpointTurn();
       void maybeAbortIfInterrupted();
     }, 2000);
     turnCheckpointTimer.unref?.();
+    const prevClearTurnTimer = clearTurnTimer;
+    registerCleanup?.(() => {
+      flushPendingDeltas();
+      prevClearTurnTimer();
+      clearInterval(watchdogTimer);
+    });
   }
 
   /* Read the question only to choose the completed activity summary language. */

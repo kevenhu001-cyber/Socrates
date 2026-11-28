@@ -1,19 +1,18 @@
 /* ── Canonical type system ──────────────────────────────────────────────
-   One set of stacks for the whole site. Sans = Geist Sans (declared in
-   chrome.css), Serif = Newsreader, Mono = Geist Mono (kickers, meta, code).
-   The Latin editorial families are not self-hosted: they resolve from the
-   platform stacks. CJK resolves to the Noto Sans SC subsets below, so
-   Windows hosts never leak Microsoft YaHei / SimSun.
-   Every other stylesheet references these variables. */
+   One self-hosted stack for the whole site: Sans = Geist Sans, Serif =
+   Newsreader, Mono = Geist Mono, CJK = self-hosted Noto Sans SC subsets.
+   Every stylesheet references these variables; no system font fallbacks. */
 :root {
-  --font-sans: "Inter", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
-  --font-serif: "Newsreader", "Source Serif 4", "Iowan Old Style", "Charter", "Georgia", "Noto Serif SC", "Songti SC", "SimSun", serif;
-  --font-mono: "Geist Mono", "JetBrains Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  --font-sans: 'Geist Sans', 'Noto Sans SC', sans-serif;
+  --font-serif: 'Newsreader', 'Noto Sans SC', serif;
+  --font-mono: 'Geist Mono', 'Noto Sans SC', monospace;
 }
 
 /* Self-hosted faces, all in media/fonts/:
 
-     Geist Mono     latin, for kickers / meta / code.
+     Geist Sans     latin/UI variable face (wght 100-900).
+     Newsreader     latin editorial display face (weights 400, 500).
+     Geist Mono     latin variable face, for kickers / meta / code.
      Noto Sans SC   two variable subsets (wght 100-900) split by script: the
                     ideographs and CJK punctuation the Chinese pages paint,
                     and the latin / greek / symbol code points that fall past
@@ -22,14 +21,36 @@
                     English page that cites one κ from paying for 1,330
                     ideographs.
 
-   The Noto files replace the 101 Google unicode-range slices that used to
-   live here. On /zh/ that was 24 font requests and 1,323 KB; the whole site's
-   font payload was 4.29 MB. Nothing in the site needs more than the copy it
-   ships, so the subsets are built from the pages themselves and the
-   unicode-ranges below are generated from each file's own cmap: a code point
-   a subset does not carry falls through to PingFang SC / YaHei rather than
-   rendering tofu. Never widen them by hand — regenerate with
-   scripts/build-site-cjk-subset.py. */
+   The Noto files replace the 101 Google unicode-range slices. Nothing in the
+   static site needs more than the copy it ships, so the subsets are built
+   from the pages themselves via scripts/build-site-cjk-subset.py. */
+
+@font-face {
+  font-family: 'Geist Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('/media/fonts/geist-sans-variable.woff2') format('woff2');
+  unicode-range: U+0000-2E7F,U+3040-FEFF,U+FFF0-FFFF;
+}
+
+@font-face {
+  font-family: 'Newsreader';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url('/media/fonts/newsreader-latin-400.woff2') format('woff2');
+  unicode-range: U+0000-2E7F,U+3040-FEFF,U+FFF0-FFFF;
+}
+
+@font-face {
+  font-family: 'Newsreader';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  src: url('/media/fonts/newsreader-latin-500.woff2') format('woff2');
+  unicode-range: U+0000-2E7F,U+3040-FEFF,U+FFF0-FFFF;
+}
 
 @font-face {
   font-family: 'Geist Mono';

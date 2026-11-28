@@ -6,8 +6,23 @@ import type {
   DemonstrationRuntime,
 } from '@socrates/core/demonstration';
 import { errorMessage } from './fieldCommon';
-import { plotProjection, pathFor, type Domain, type Point, type AxisScale } from './geometry/plotProjection';
-export { WIDTH, HEIGHT, LEFT, RIGHT, TOP, BOTTOM, plotProjection, type AxisScale } from './geometry/plotProjection';
+import {
+  plotProjection,
+  pathFor,
+  type Domain,
+  type Point,
+  type AxisScale,
+} from './geometry/plotProjection';
+export {
+  WIDTH,
+  HEIGHT,
+  LEFT,
+  RIGHT,
+  TOP,
+  BOTTOM,
+  plotProjection,
+  type AxisScale,
+} from './geometry/plotProjection';
 
 export type PlotView = DemonstrationPlot | DemonstrationTrajectory;
 function axisValue(domain: Domain, fraction: number, scale: AxisScale = 'linear') {
@@ -16,7 +31,8 @@ function axisValue(domain: Domain, fraction: number, scale: AxisScale = 'linear'
     : domain[0] + fraction * (domain[1] - domain[0]);
 }
 function positiveDomain(domain: Domain, scale: AxisScale, axis: string) {
-  if (scale === 'log' && domain[0] <= 0) throw Error(`Logarithmic ${axis} axis needs positive bounds`);
+  if (scale === 'log' && domain[0] <= 0)
+    throw Error(`Logarithmic ${axis} axis needs positive bounds`);
 }
 export interface Issue {
   part: 'curve' | 'marker';
@@ -78,15 +94,24 @@ function* sampleCurvePoints(
       const right = Math.min(time, xDomain[1]);
       if (history && right < left) continue;
       const scale = view.kind === 'plot' ? view.xScale : undefined;
-      const t = view.kind === 'trajectory' ? (time * i) / samples
-        : history ? axisValue([left, right], i / samples, scale) : time;
+      const t =
+        view.kind === 'trajectory'
+          ? (time * i) / samples
+          : history
+            ? axisValue([left, right], i / samples, scale)
+            : time;
       const x =
         view.kind === 'trajectory'
           ? read(view.horizontal, t, 0)
-          : history ? t : axisValue(xDomain, i / samples, scale);
+          : history
+            ? t
+            : axisValue(xDomain, i / samples, scale);
       const y = read(curve.expression, t, x);
-      if (Number.isFinite(x) && Number.isFinite(y) &&
-          !(view.kind === 'plot' && view.yScale === 'log' && y <= 0)) {
+      if (
+        Number.isFinite(x) &&
+        Number.isFinite(y) &&
+        !(view.kind === 'plot' && view.yScale === 'log' && y <= 0)
+      ) {
         points.push([x, y]);
         finite++;
       } else points.push(null);
@@ -145,24 +170,31 @@ function* sample(
   runtime.resetBudget();
   const issues: Issue[] = [];
   const xDomain = demonstrationDomain(view.x, runtime, time);
-  const xScale = view.kind === 'plot' ? view.xScale ?? 'linear' : 'linear';
-  const yScale = view.kind === 'plot' ? view.yScale ?? 'linear' : 'linear';
+  const xScale = view.kind === 'plot' ? (view.xScale ?? 'linear') : 'linear';
+  const yScale = view.kind === 'plot' ? (view.yScale ?? 'linear') : 'linear';
   positiveDomain(xDomain, xScale, 'x');
-  const slice = view.kind === 'plot' && view.sliceY !== undefined
-    ? runtime.evaluate(view.sliceY, time) : 0;
+  const slice =
+    view.kind === 'plot' && view.sliceY !== undefined ? runtime.evaluate(view.sliceY, time) : 0;
   if (!Number.isFinite(slice)) throw Error('Slice coordinate must be finite');
   const read = (expression: DemonstrationValue, t: number, x: number) =>
     runtime.evaluate(expression, t, x, slice);
   const sources =
     view.kind === 'plot'
-      ? view.curves.map((curve) => ({ expression: curve.expression, label: curve.label, samples:curve.samples }))
-      : [{ expression: view.vertical, label: view.label, samples:undefined }];
+      ? view.curves.map((curve) => ({
+          expression: curve.expression,
+          label: curve.label,
+          samples: curve.samples,
+        }))
+      : [{ expression: view.vertical, label: view.label, samples: undefined }];
   const curves: Point[][] = [];
   for (const [index, curve] of sources.entries()) {
     const reusable =
-      view.kind === 'plot' && !view.history &&
-      ![...view.x, ...(view.sliceY === undefined ? [] : [view.sliceY]), curve.expression].some((expression) => runtime.dependencies(expression) & 4);
-    const intervals=curve.samples!==undefined?curve.samples-1:samples;
+      view.kind === 'plot' &&
+      !view.history &&
+      ![...view.x, ...(view.sliceY === undefined ? [] : [view.sliceY]), curve.expression].some(
+        (expression) => runtime.dependencies(expression) & 4,
+      );
+    const intervals = curve.samples !== undefined ? curve.samples - 1 : samples;
     const key = `${index}:${intervals}`;
     let sampled = reusable ? cache.get(key) : undefined;
     if (!sampled) {
@@ -199,10 +231,25 @@ function* sample(
     yDomain,
     xScale,
     yScale,
-    paths: curves.map((points,index) => pathFor(points, sx, sy, view.kind==='plot'?view.curves[index].interpolation:undefined,sy(Math.max(yDomain[0],Math.min(yDomain[1],0))))),
+    paths: curves.map((points, index) =>
+      pathFor(
+        points,
+        sx,
+        sy,
+        view.kind === 'plot' ? view.curves[index].interpolation : undefined,
+        sy(Math.max(yDomain[0], Math.min(yDomain[1], 0))),
+      ),
+    ),
     markers,
     issues,
-    ...(view.kind === 'plot' && view.history ? { playhead: time, eventTimes: (runtime.eventTimes ?? []).filter((t) => t <= time && t >= xDomain[0] && t <= xDomain[1]) } : {}),
+    ...(view.kind === 'plot' && view.history
+      ? {
+          playhead: time,
+          eventTimes: (runtime.eventTimes ?? []).filter(
+            (t) => t <= time && t >= xDomain[0] && t <= xDomain[1],
+          ),
+        }
+      : {}),
   };
 }
 
@@ -247,4 +294,3 @@ export function* samplePlot(
   }
   throw Error('Unreachable');
 }
-

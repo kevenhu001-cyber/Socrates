@@ -137,10 +137,10 @@ export const uiColorsCssVars: UiColors = Object.freeze(
   ) as unknown as UiColors,
 );
 
-/** Font stacks. Bundled fonts first: Geist Sans for Latin/UI and Noto Sans SC for Chinese. */
+/** Font stacks. Bundled fonts only: Geist Sans for Latin/UI and Noto Sans SC for Chinese. */
 export const uiFont = {
-  sans: '"Geist Sans", "Noto Sans SC", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", system-ui, sans-serif',
-  mono: '"Geist Mono", "Noto Sans SC", "SFMono-Regular", Menlo, Monaco, Consolas, "PingFang SC", "Microsoft YaHei", ui-monospace, monospace',
+  sans: '"Geist Sans", "Noto Sans SC", sans-serif',
+  mono: '"Geist Mono", "Noto Sans SC", monospace',
 } as const;
 
 export interface UiTypeStep {

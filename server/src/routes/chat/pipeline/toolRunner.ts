@@ -344,14 +344,21 @@ export function createToolRunner(deps: ToolRunnerDeps): ToolRunner {
     const rawContent = formatToolResultContent(toolName, result);
     const toolContent = activeToolNames.includes('read_tool_result')
       ? toolResultArchive.preview(tc.id, toolName, rawContent, {
-          correction: Boolean(result.correction), failed: result.status !== 'completed',
+          correction: Boolean(result.correction),
+          failed: result.status !== 'completed',
         })
       : rawContent;
     if (toolContent !== rawContent) {
       deps.onDisplayOutput?.(tc.id, wrapUntrustedToolResult(toolName, rawContent));
       if (process.env.CHAT_TOOL_RESULT_METRICS === '1') {
-        console.info('[tool-result-budget]', JSON.stringify({ tool: toolName,
-          originalTokens: estimateContextTokens(rawContent), previewTokens: estimateContextTokens(toolContent) }));
+        console.info(
+          '[tool-result-budget]',
+          JSON.stringify({
+            tool: toolName,
+            originalTokens: estimateContextTokens(rawContent),
+            previewTokens: estimateContextTokens(toolContent),
+          }),
+        );
       }
     }
     return {

@@ -85,7 +85,9 @@ function languageDirectiveFor(text: string): string {
   };
   const language = names[lang];
   return language
-    ? '\n\nDefault response language: ' + language + '. Honor an explicit translation or output-language request instead; preserve technical terms, quotes and syntax.\n'
+    ? '\n\nDefault response language: ' +
+        language +
+        '. Honor an explicit translation or output-language request instead; preserve technical terms, quotes and syntax.\n'
     : '';
 }
 

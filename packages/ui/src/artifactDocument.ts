@@ -87,7 +87,7 @@ const CSP =
 
 function baseStyles(palette: ArtifactDocumentPalette): string {
   return `*{box-sizing:border-box}html,body{margin:0;padding:0}
-body{background:${palette.page};color:${palette.text};font-family:"Plus Jakarta Sans",system-ui,-apple-system,"Noto Sans SC","PingFang SC",sans-serif;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+body{background:${palette.page};color:${palette.text};font-family:"Geist Sans","Noto Sans SC",sans-serif;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
 .artifact{padding:14px 16px 18px;display:flex;flex-direction:column;gap:10px}
 .artifact-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
 .artifact-title{margin:0;font-size:15px;font-weight:600;color:${palette.text}}
@@ -103,7 +103,7 @@ body{background:${palette.page};color:${palette.text};font-family:"Plus Jakarta 
 .artifact-list li{border:1px solid ${palette.border};border-radius:8px;padding:8px 10px;background:${palette.raised}}
 .artifact-list b{display:block;font-weight:600;color:${palette.text};font-size:13px}
 .artifact-list small{display:block;color:${palette.muted};font-size:12px;margin-top:2px}
-.artifact-source{margin:0;white-space:pre-wrap;word-break:break-word;font-family:Menlo,Consolas,monospace;font-size:12px;color:${palette.muted};border:1px dashed ${palette.border};border-radius:8px;padding:10px;max-height:320px;overflow:auto}
+.artifact-source{margin:0;white-space:pre-wrap;word-break:break-word;font-family:"Geist Mono","Noto Sans SC",monospace;font-size:12px;color:${palette.muted};border:1px dashed ${palette.border};border-radius:8px;padding:10px;max-height:320px;overflow:auto}
 .artifact-note{color:${palette.muted};font-size:12px}`;
 }
 

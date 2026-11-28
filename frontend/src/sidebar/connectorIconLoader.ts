@@ -72,4 +72,3 @@ function hydrateConnectorIcons(root?: ParentNode) {
       if (markup) el.outerHTML = markup;
     });
 }
-

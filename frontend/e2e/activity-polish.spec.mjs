@@ -71,7 +71,9 @@ for (const mobile of [false, true]) {
     if (mobile) {
       await expect(page.locator(TURN.thoughtsBackdrop)).toBeVisible();
       await expect(panel.locator('.thoughts-sheet-handle')).toBeVisible();
-      const radius = await panel.evaluate((el) => parseFloat(getComputedStyle(el).borderTopLeftRadius));
+      const radius = await panel.evaluate((el) =>
+        parseFloat(getComputedStyle(el).borderTopLeftRadius),
+      );
       expect(radius).toBeGreaterThanOrEqual(16);
     } else {
       await expect(page.locator('#appShell')).toHaveClass(/has-thoughts-open/);
@@ -87,7 +89,7 @@ for (const mobile of [false, true]) {
       return {
         labelOffset: Math.abs(summaryTitle.x - toolLabel.x),
         detailOffset: Math.abs(summaryTitle.x - summaryDetail.x),
-        bulletAlign: Math.abs((bullet.x + bullet.width / 2) - (glyph.x + glyph.width / 2)),
+        bulletAlign: Math.abs(bullet.x + bullet.width / 2 - (glyph.x + glyph.width / 2)),
         connector: connector.borderInlineStartStyle,
       };
     });

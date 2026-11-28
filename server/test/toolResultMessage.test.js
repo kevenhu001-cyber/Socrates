@@ -188,10 +188,18 @@ test('failure feedback keeps error narration out of the answer body', () => {
 
 test('corrections honor the retry budget and completed results retain their payload', () => {
   assert.match(
-    formatToolResultContent('some_tool', { status: 'failed', retryable: true, correction: 'schema feedback' }),
+    formatToolResultContent('some_tool', {
+      status: 'failed',
+      retryable: true,
+      correction: 'schema feedback',
+    }),
     /\[retryable: yes\][\s\S]*schema feedback/,
   );
-  const exhausted = formatToolResultContent('some_tool', { status: 'failed', retryable: false, correction: 'schema feedback' });
+  const exhausted = formatToolResultContent('some_tool', {
+    status: 'failed',
+    retryable: false,
+    correction: 'schema feedback',
+  });
   assert.match(exhausted, /\[retryable: no\]/);
   assert.doesNotMatch(exhausted, /schema feedback/);
   assert.equal(
@@ -257,8 +265,11 @@ test('transient connector retries stop when the per-tool failure budget is exhau
 
 test('code failure feedback only supplies the matching remedy', () => {
   const output = formatToolResultContent('code_interpreter', {
-    status: 'failed', errorCode: 'execution_timeout', retryable: true,
-    stderr: 'Timed out', stdout: 'partial data',
+    status: 'failed',
+    errorCode: 'execution_timeout',
+    retryable: true,
+    stderr: 'Timed out',
+    stdout: 'partial data',
   });
   assert.match(output, /Suggested fix:.*vectorized/);
   assert.doesNotMatch(output, /micropip|NameError|svg_illustration/);

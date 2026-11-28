@@ -1,18 +1,18 @@
 import { PHYSICS_EXAMPLES, PHYSICS_EXAMPLE_ASSUMPTIONS } from '@socrates/core/physicsExamples';
 
 export const DEMONSTRATION_SECTIONS = {
-  "basics": "Program envelope, parameters, views, units, presets and limits",
-  "expressions": "Math syntax, functions, recurrences, automatic differentiation and quadrature",
-  "ode": "RK4/RK45/SDIRK2, hybrid events, mass matrices, index-one DAE, Verlet and trajectories",
-  "electrical": "State-space, RLC modified nodal analysis, power/energy modelling",
-  "pde": "Diffusion, wave, coupled reaction/advection fields and 1D finite elements",
-  "chemistry": "Reaction networks, mass action, Gillespie SSA and schematic chemical geometry",
-  "algebra": "Structured linear algebra, sparse solvers, nonlinear roots and bounded optimization",
-  "analysis": "FFT, symmetric eigenanalysis, parameter sweeps and discrete plots",
-  "plots": "2D plots, histories, scalar/vector fields, contours and streamlines",
-  "geometry3d": "Height/parametric surfaces, 3D curves/vectors, scalar slices and isosurfaces",
-  "scenes": "Physical scene objects, mechanisms and engineering symbols",
-  "examples": "Validated editable example programs"
+  basics: 'Program envelope, parameters, views, units, presets and limits',
+  expressions: 'Math syntax, functions, recurrences, automatic differentiation and quadrature',
+  ode: 'RK4/RK45/SDIRK2, hybrid events, mass matrices, index-one DAE, Verlet and trajectories',
+  electrical: 'State-space, RLC modified nodal analysis, power/energy modelling',
+  pde: 'Diffusion, wave, coupled reaction/advection fields and 1D finite elements',
+  chemistry: 'Reaction networks, mass action, Gillespie SSA and schematic chemical geometry',
+  algebra: 'Structured linear algebra, sparse solvers, nonlinear roots and bounded optimization',
+  analysis: 'FFT, symmetric eigenanalysis, parameter sweeps and discrete plots',
+  plots: '2D plots, histories, scalar/vector fields, contours and streamlines',
+  geometry3d: 'Height/parametric surfaces, 3D curves/vectors, scalar slices and isosurfaces',
+  scenes: 'Physical scene objects, mechanisms and engineering symbols',
+  examples: 'Validated editable example programs',
 } as const;
 export type DemonstrationSection = keyof typeof DEMONSTRATION_SECTIONS;
 const GUIDES = {
@@ -93,7 +93,9 @@ For 3D scalar isosurfaces set field presentation:'isosurface', expression:'x^2+y
   scenes: `- scene: needs x, y and 1-32 objects. Compose physical bodies and apparatus with the SAME parameters, definitions, ODE state and time as plots/fields/metrics. Coordinates and sizes are in axis units, y points upward, angles are radians, and aspect ratio is preserved. Object shapes: {kind:"body",center:[expression,expression],radius:expression}; {kind:"block",center:[expression,expression],width:expression,height:expression,angle?:expression}; {kind:"rod"|"spring"|"vector",from:[expression,expression],to:[expression,expression]}. Engineering symbols use the same from/to endpoint format: resistor, capacitor, inductor, voltageSource, currentSource, dimension (double-ended arrow), pin, roller, ground (from is the connection, to sets orientation/extent). Draw wires with path/rod and labels with symbol label. These symbols are visual only; use dynamics.circuit for the actual electrical model. A path is {kind:"path",points:[[expression,expression],...],closed?:boolean,dashed?:boolean}, with 2-64 points, for slopes, wires, ropes and ray paths. Each object may have label and color (ink, muted, blue, orange, red, green, violet). Sizes must remain positive and all geometry finite within ±1e6. Objects draw in array order. A vector's endpoints express the displayed vector; derive and label the force/velocity scale explicitly. Springs are schematic connectors, not automatic force laws: author the equations in dynamics/definitions. Use scenes for pendulum mechanisms, mass-spring assemblies, coupled oscillators, orbits, force diagrams and ray paths; pair them with actual calculated fields when needed. Scene objects only display the authored model; they do not add collision, contact or circuit solvers.`,
   examples: [
     'Available composed examples and assumptions:',
-    ...Object.entries(PHYSICS_EXAMPLE_ASSUMPTIONS).map(([id,assumptions])=>id+': '+assumptions),
+    ...Object.entries(PHYSICS_EXAMPLE_ASSUMPTIONS).map(
+      ([id, assumptions]) => id + ': ' + assumptions,
+    ),
     'Editable coupled dynamics example:',
     JSON.stringify(PHYSICS_EXAMPLES.coupledOscillators),
     'Editable electromagnetic example:',
@@ -107,7 +109,12 @@ export function demonstrationSectionContent(section: DemonstrationSection): stri
   return GUIDES[section];
 }
 export function demonstrationSectionIndex(): string {
-  return 'Choose a section with get_ui_contract({kind:"demonstration",section:"..."}). Read basics first if new to the DSL.\n'+Object.entries(DEMONSTRATION_SECTIONS).map(([id,description])=>id+': '+description).join('\n');
+  return (
+    'Choose a section with get_ui_contract({kind:"demonstration",section:"..."}). Read basics first if new to the DSL.\n' +
+    Object.entries(DEMONSTRATION_SECTIONS)
+      .map(([id, description]) => id + ': ' + description)
+      .join('\n')
+  );
 }
 
 export const DEMONSTRATION_GUIDANCE = Object.values(GUIDES).join('\n\n');

@@ -6,10 +6,7 @@ import { buttonVariants } from '../ui/shadcn/button';
 
 export function ProfileAccountSection({ user }: { user: ProfileUserSnapshot }) {
   return (
-    <SectionCard
-      className="profile-section"
-      title={profileText('profile.account', 'Account')}
-    >
+    <SectionCard className="profile-section" title={profileText('profile.account', 'Account')}>
       <div className="profile-row">
         <span className="profile-row-label">{profileText('profile.joined', 'Joined')}</span>
         <span className="profile-row-value" id="profileJoined">

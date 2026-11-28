@@ -39,10 +39,18 @@ function SettingsIdentity({ label, onOpen }: { label: SettingsLabel; onOpen: () 
       aria-label={label('账户', 'Account')}
       onClick={onOpen}
     >
-      <span className="settings-identity-avatar"><Icon name="user" size={22} /></span>
+      <span className="settings-identity-avatar">
+        <Icon name="user" size={22} />
+      </span>
       <span className="settings-identity-copy">
         <span>{user.displayName || user.email || label('访客', 'Guest')}</span>
-        <span>{user.email && user.displayName ? user.email : free ? label('免费版', 'Free') : user.tierLabel}</span>
+        <span>
+          {user.email && user.displayName
+            ? user.email
+            : free
+              ? label('免费版', 'Free')
+              : user.tierLabel}
+        </span>
       </span>
       <Icon name="chevronRight" className="settings-category-chevron" size={16} />
     </Button>
@@ -215,7 +223,9 @@ export function SettingsNavigation({
 
   return (
     <nav className="settings-nav" aria-label={label('设置分类', 'Settings categories')}>
-      {showOverview ? <SettingsIdentity label={label} onOpen={() => onSectionChange('account')} /> : null}
+      {showOverview ? (
+        <SettingsIdentity label={label} onOpen={() => onSectionChange('account')} />
+      ) : null}
       <InputGroup className={cn('settings-search shrink-0', mobile && !searchOpen && 'hidden')}>
         <InputGroupAddon align="inline-start">
           <Icon name="search" size={18} />

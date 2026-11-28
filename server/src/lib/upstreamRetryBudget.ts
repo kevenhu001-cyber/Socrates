@@ -1,16 +1,18 @@
-/** One budget for the entire provider call, including compatibility variants.
- * This bounds automatic backoff, not a successful model's reasoning time. */
+/** One backoff budget for the entire provider call, including compatibility variants.
+ * This bounds cumulative automatic retry sleep, never penalizing slow upstream TTFT. */
 export const UPSTREAM_RETRY_BUDGET_MS = 8_000;
 
-export function createUpstreamRetryBudget(now: () => number = () => performance.now()) {
-  const startedAt = now();
+export function createUpstreamRetryBudget(_now?: () => number) {
   let reservedMs = 0;
   return {
     reserve(delayMs: number): boolean {
-      const spentMs = Math.max(reservedMs, now() - startedAt);
-      if (!Number.isFinite(delayMs) || delayMs < 0 || spentMs + delayMs > UPSTREAM_RETRY_BUDGET_MS)
+      if (
+        !Number.isFinite(delayMs) ||
+        delayMs < 0 ||
+        reservedMs + delayMs > UPSTREAM_RETRY_BUDGET_MS
+      )
         return false;
-      reservedMs = spentMs + delayMs;
+      reservedMs += delayMs;
       return true;
     },
   };

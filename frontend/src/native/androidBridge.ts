@@ -208,7 +208,10 @@ function watchNativeTheme(): void {
   sync();
   if (typeof window.MutationObserver !== 'function') return;
   themeObserver = new window.MutationObserver(sync);
-  themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-mode'] });
+  themeObserver.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['data-mode'],
+  });
 }
 
 /**

@@ -82,7 +82,9 @@ export function appendTurnContext(
         ]
       : []),
     ...(recall
-      ? [`<client_context_data scope="untrusted">\n${escapePromptControlText(recall)}\n</client_context_data>`]
+      ? [
+          `<client_context_data scope="untrusted">\n${escapePromptControlText(recall)}\n</client_context_data>`,
+        ]
       : []),
     /* The style card goes last: closest to generation, highest recency. */
     ...(serverTurn || instructions.length ? [STYLE_REMINDER] : []),

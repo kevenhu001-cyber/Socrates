@@ -7,6 +7,7 @@
 import { ApiError } from '../../../lib/errors.js';
 import { buildSseErrorFrame } from '../../../lib/sseErrorFrame.js';
 import type { ErrorLocale } from '../../../lib/errorMessages.js';
+import { startSseKeepalive } from '../../../lib/sse.js';
 
 /* ─────────────────────────────────────────────────────────────────
    SSE prime
@@ -74,6 +75,8 @@ export function writeSsePrime(res: import('express').Response): boolean {
     } catch {
       /* empty-catch: intentional — res.flush is absent on some compression stacks */
     }
+    /* Start keepalive immediately so long RAG/compression preludes never idle past proxy limits. */
+    startSseKeepalive(res, { intervalMs: 10_000 });
     return true;
   } catch {
     /* socket already closed — the route's req.on('close') guard

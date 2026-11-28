@@ -327,7 +327,6 @@ test('file name opens the preview with keyboard and renaming stays in the action
   );
 });
 
-
 test('phone file name is bounded by its own grid track', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 780 });
   const file = row(page, 'country_risk_data.csv');
@@ -336,8 +335,14 @@ test('phone file name is bounded by its own grid track', async ({ page }) => {
   const geometry = await file.evaluate((node) => {
     const name = node.querySelector('.library-item-name');
     const actions = node.querySelector('.library-row-actions');
-    return { nameRight: name.getBoundingClientRect().right, actionsLeft: actions.getBoundingClientRect().left };
+    return {
+      nameRight: name.getBoundingClientRect().right,
+      actionsLeft: actions.getBoundingClientRect().left,
+    };
   });
   expect(geometry.nameRight).toBeLessThanOrEqual(geometry.actionsLeft + 1);
-  await page.screenshot({ path: 'test-results/detail-polish/library-320.png', animations: 'disabled' });
+  await page.screenshot({
+    path: 'test-results/detail-polish/library-320.png',
+    animations: 'disabled',
+  });
 });

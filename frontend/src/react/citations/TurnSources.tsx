@@ -45,7 +45,12 @@ export function TurnSources({ entryId, items }: { entryId: string; items: Source
       {sites.size ? (
         <span className="turn-sources-marks" aria-hidden="true">
           {[...sites.values()].map((item) => (
-            <SourceAvatar key={item.url} url={item.url} host={item.host} className="turn-sources-mark" />
+            <SourceAvatar
+              key={item.url}
+              url={item.url}
+              host={item.host}
+              className="turn-sources-mark"
+            />
           ))}
         </span>
       ) : (

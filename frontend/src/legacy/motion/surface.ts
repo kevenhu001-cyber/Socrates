@@ -22,13 +22,7 @@ export function animateSurfaceEntrance(
   const value = Number.parseFloat(time);
   const duration = Number.isFinite(value) ? value * (time.endsWith('ms') ? 1 : 1000) : 200;
   const easing = style.getPropertyValue('--ui-ease-out').trim() || 'cubic-bezier(0.22, 1, 0.36, 1)';
-  const animation = host.animate(
-    [
-      { opacity: 0 },
-      { opacity: 1 },
-    ],
-    { duration, easing },
-  );
+  const animation = host.animate([{ opacity: 0 }, { opacity: 1 }], { duration, easing });
   const entry = { host, animation };
   active = entry;
   const finish = () => {

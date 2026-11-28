@@ -54,4 +54,3 @@ export function usePreview(visible: boolean) {
   }, [visible, requestPreview]);
   return { preview, requestPreview };
 }
-

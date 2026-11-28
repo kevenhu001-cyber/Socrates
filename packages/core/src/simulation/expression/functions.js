@@ -73,7 +73,7 @@ const arity = { pow: 2, atan2: 2, clamp: 3, sinc: 1, sinratio: 2, besselJ1: 1, a
    existing program may already use as a parameter name. */
 const extraFunctions = {
   sparseAt: () => Number.NaN,
-  requireNonnegative: v => v>=0?v:Number.NaN,
+  requireNonnegative: (v) => (v >= 0 ? v : Number.NaN),
   log2: Math.log2,
   cbrt: Math.cbrt,
   trunc: Math.trunc,
@@ -90,26 +90,41 @@ const extraFunctions = {
   dot2: (a, b, c, d) => a * c + b * d,
   dot3: (a, b, c, d, e, f) => a * d + b * e + c * f,
   solveN: (index, n, ...args) => {
-    if (!Number.isInteger(n) || n < 1 || n > 6 || !Number.isInteger(index) ||
-        index < 1 || index > n || args.length !== n * n + n) return Number.NaN;
+    if (
+      !Number.isInteger(n) ||
+      n < 1 ||
+      n > 6 ||
+      !Number.isInteger(index) ||
+      index < 1 ||
+      index > n ||
+      args.length !== n * n + n
+    )
+      return Number.NaN;
     const rhs = Float64Array.from(args.slice(n * n));
     return solveSmallSystem(Float64Array.from(args.slice(0, n * n)), rhs, n)
-      ? rhs[index - 1] : Number.NaN;
+      ? rhs[index - 1]
+      : Number.NaN;
   },
-  cross3: (i, a, b, c, d, e, f) => i === 1 ? b*f-c*e : i === 2 ? c*d-a*f : i === 3 ? a*e-b*d : Number.NaN,
+  cross3: (i, a, b, c, d, e, f) =>
+    i === 1 ? b * f - c * e : i === 2 ? c * d - a * f : i === 3 ? a * e - b * d : Number.NaN,
   solve3: (index, ...args) => {
     if (!Number.isInteger(index) || index < 1 || index > 3) return Number.NaN;
     const rhs = Float64Array.from(args.slice(9));
     return solveSmallSystem(Float64Array.from(args.slice(0, 9)), rhs, 3)
-      ? rhs[index - 1] : Number.NaN;
+      ? rhs[index - 1]
+      : Number.NaN;
   },
   // A scaled 2x2 solve for coupled accelerations and linear constraints.
   solve2: (index, a, b, c, d, r, s) => {
     const p = Math.max(Math.abs(a), Math.abs(b));
     const q = Math.max(Math.abs(c), Math.abs(d));
     if (!(p > 0 && q > 0) || (index !== 1 && index !== 2)) return Number.NaN;
-    a /= p; b /= p; r /= p;
-    c /= q; d /= q; s /= q;
+    a /= p;
+    b /= p;
+    r /= p;
+    c /= q;
+    d /= q;
+    s /= q;
     const det = a * d - b * c;
     if (Math.abs(det) < 1e-12) return Number.NaN;
     return index === 1 ? (d * r - b * s) / det : (a * s - c * r) / det;
@@ -126,7 +141,7 @@ const aliases = {
   sgn: 'sign',
   power: 'pow',
 };
-const SPECIAL = ['sum', 'if', 'iterate','diff','integral'];
+const SPECIAL = ['sum', 'if', 'iterate', 'diff', 'integral'];
 const callable = (name) =>
   Object.hasOwn(functions, name) || Object.hasOwn(extraFunctions, name) || SPECIAL.includes(name)
     ? name
@@ -134,9 +149,9 @@ const callable = (name) =>
       ? aliases[name]
       : null;
 const expectedArity = (name) =>
-  name === 'sum' || name === 'iterate' || name==='integral'
+  name === 'sum' || name === 'iterate' || name === 'integral'
     ? 4
-    : name === 'if' || name==='diff'
+    : name === 'if' || name === 'diff'
       ? 3
       : (arity[name] ??
         extraArity[name] ??

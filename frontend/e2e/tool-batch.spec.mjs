@@ -3,7 +3,9 @@ import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 import { toolRow, toolRowButton } from './_turn-ui.mjs';
 
-test('a large tool burst collapses to one summary and preserves individual details', async ({ page }) => {
+test('a large tool burst collapses to one summary and preserves individual details', async ({
+  page,
+}) => {
   await mockAuthedApp(page, { lang: 'en' });
   await page.route('**/api/**/chat/stream', async (route) => {
     const frames = [];
@@ -17,7 +19,13 @@ test('a large tool burst collapses to one summary and preserves individual detai
     for (const id of ['batch-a', 'batch-b', 'batch-c', 'batch-d']) {
       frames.push(
         'event: tool_result\ndata: ' +
-          JSON.stringify({ id, ok: true, status: 'completed', output: id, results: [{ title: id, url: 'https://example.test/' + id }] }) +
+          JSON.stringify({
+            id,
+            ok: true,
+            status: 'completed',
+            output: id,
+            results: [{ title: id, url: 'https://example.test/' + id }],
+          }) +
           '\n\n',
       );
     }

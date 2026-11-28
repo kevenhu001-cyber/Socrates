@@ -14,7 +14,8 @@ import { toolCallbacksForStream, publishActiveWorkflowFinish } from '../toolCall
 import { clearPendingTurn, newClientTurnId, savePendingTurn } from './client.ts';
 import { addMessage } from '../messages.ts';
 import { scheduleTurnToTopForMessage } from './anchor/schedule.ts';
-import { saveCurrentSession } from '../../session/persistence.ts';
+import { ensureSessionSavedBeforeStream, saveCurrentSession } from '../../session/persistence.ts';
+import { i18n } from '../../ui/legacyI18n.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { learningTurnOptions } from '../../tutor/learningModeState.ts';
 import { buildChatTurnMessages } from './prompt.ts';
@@ -172,6 +173,7 @@ function runChatTurnStream(
         workspaceRunFinishedMessage: 'Workspace run finished',
       }),
       onRetry: (notice) => controller.setRetryStatus?.(notice),
+      sessionId: pending.sessionId,
       clientTurn: pending.clientTurn,
       onTurnBound: pending.onTurnBound,
       /* RN-6: in Tutor mode a free-form turn carries the learning mode too. */
@@ -243,6 +245,15 @@ export async function askChatTurn(
   const controller = await createTurnController(retryTurn, precreated);
   const isCancelled = () => turnWasCancelled(ownerSessionId, controller);
   if (isCancelled()) return;
+
+  const saved = await ensureSessionSavedBeforeStream();
+  if (!saved.ok) {
+    controller.replaceWithError(
+      i18n('session.saveBeforeStreamFailed', 'Could not save this conversation yet. Please retry.'),
+      () => quietTurn(retryTurn()),
+    );
+    return;
+  }
 
   const pageContext = await prepareTurnPageContext(userMessage, isCancelled);
   if (!pageContext || isCancelled()) return;

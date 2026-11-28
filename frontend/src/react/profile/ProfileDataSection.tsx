@@ -31,10 +31,7 @@ function ProfileActionRow({
 
 export function ProfileDataSection({ dispatch }: { dispatch: ProfileDispatch }) {
   return (
-    <SectionCard
-      className="profile-section"
-      title={profileText('profile.data', 'Data')}
-    >
+    <SectionCard className="profile-section" title={profileText('profile.data', 'Data')}>
       <ProfileActionRow
         title={profileText('profile.usage', 'Token usage')}
         description={profileText(

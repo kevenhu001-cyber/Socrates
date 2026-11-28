@@ -28,7 +28,12 @@ const LEGACY_TOOL_SELECTORS = [
  */
 export function stripLegacyToolHtml(html: string): string {
   const source = String(html || '');
-  if (!source || !/tool-inline|tool-run-group|agent-tool-card|think-tools|rn-tool-row|rn-turn-activity|tool-run-detail-body|agent-run-host/.test(source))
+  if (
+    !source ||
+    !/tool-inline|tool-run-group|agent-tool-card|think-tools|rn-tool-row|rn-turn-activity|tool-run-detail-body|agent-run-host/.test(
+      source,
+    )
+  )
     return source;
   return stripStoredMarkup(source, LEGACY_TOOL_SELECTORS);
 }
@@ -58,4 +63,3 @@ function stripStoredMarkup(source: string, selectors: readonly string[]): string
     return source;
   }
 }
-

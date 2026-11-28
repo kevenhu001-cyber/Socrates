@@ -1,4 +1,8 @@
-import type { DemonstrationProgram, DemonstrationWarning, DemonstrationDiagnostics } from '@socrates/core/demonstration';
+import type {
+  DemonstrationProgram,
+  DemonstrationWarning,
+  DemonstrationDiagnostics,
+} from '@socrates/core/demonstration';
 import type { FieldSample } from './sampleField';
 import type { PlotSample } from './samplePlot';
 import type { SceneSample } from './sampleScene';

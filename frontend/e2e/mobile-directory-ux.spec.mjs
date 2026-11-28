@@ -4,20 +4,42 @@ import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 test.use({ hasTouch: true, isMobile: true });
 
 const files = [
-  { id: 'file-a', name: 'Very long research synthesis filename that must not push actions off the screen.md', kind: 'text', size: 1234, uploadedAt: '2026-10-01T12:00:00Z' },
-  { id: 'file-b', name: 'chart.png', kind: 'image', size: 4567, uploadedAt: '2026-10-01T12:00:00Z' },
+  {
+    id: 'file-a',
+    name: 'Very long research synthesis filename that must not push actions off the screen.md',
+    kind: 'text',
+    size: 1234,
+    uploadedAt: '2026-10-01T12:00:00Z',
+  },
+  {
+    id: 'file-b',
+    name: 'chart.png',
+    kind: 'image',
+    size: 4567,
+    uploadedAt: '2026-10-01T12:00:00Z',
+  },
 ];
 
 async function assertFits(frame) {
   await expect(frame).toBeVisible();
-  await expect.poll(() => frame.evaluate((node) => {
-    const rect = node.getBoundingClientRect();
-    return rect.left >= -1 && rect.right <= innerWidth + 1 && node.scrollWidth <= node.clientWidth + 1;
-  })).toBe(true);
+  await expect
+    .poll(() =>
+      frame.evaluate((node) => {
+        const rect = node.getBoundingClientRect();
+        return (
+          rect.left >= -1 &&
+          rect.right <= innerWidth + 1 &&
+          node.scrollWidth <= node.clientWidth + 1
+        );
+      }),
+    )
+    .toBe(true);
 }
 
 for (const width of [320, 390, 430]) {
-  test(`touch directories fit a ${width}px viewport and library controls work`, async ({ page }, testInfo) => {
+  test(`touch directories fit a ${width}px viewport and library controls work`, async ({
+    page,
+  }, testInfo) => {
     await page.setViewportSize({ width, height: 680 });
     const capture = async (name) => {
       await testInfo.attach(name, { body: await page.screenshot(), contentType: 'image/png' });
@@ -27,14 +49,30 @@ for (const width of [320, 390, 430]) {
       route.fulfill({ json: { files, hasMore: false } }),
     );
     await page.route(/\/api\/(?:v2\/)?projects(?:\?|$)/, (route) =>
-      route.fulfill({ json: { projects: [
-        { id: 'project-a', name: 'Socrates' },
-        { id: 'project-b', name: 'Energy systems research' },
-        { id: 'project-c', name: 'AI research' },
-      ] } }),
+      route.fulfill({
+        json: {
+          projects: [
+            { id: 'project-a', name: 'Socrates' },
+            { id: 'project-b', name: 'Energy systems research' },
+            { id: 'project-c', name: 'AI research' },
+          ],
+        },
+      }),
     );
     await page.route(/\/api\/(?:v2\/)?scheduled-tasks(?:\?|$)/, (route) =>
-      route.fulfill({ json: { tasks: [{ id: 'task-mobile', title: 'Daily research briefing', prompt: 'Read papers', status: 'active', frequency: 'daily' }] } }),
+      route.fulfill({
+        json: {
+          tasks: [
+            {
+              id: 'task-mobile',
+              title: 'Daily research briefing',
+              prompt: 'Read papers',
+              status: 'active',
+              frequency: 'daily',
+            },
+          ],
+        },
+      }),
     );
     await page.goto('/');
     await waitForAppShell(page);
@@ -80,7 +118,10 @@ for (const width of [320, 390, 430]) {
     const projects = await open('#navProjects', '.projects-directory');
     await expect(projects.locator('.ui-page-search input')).toHaveCSS('font-size', '16px');
     await expect(projects.locator('.project-row')).toHaveCount(3);
-    await expect(projects.locator('.project-row').first()).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    await expect(projects.locator('.project-row').first()).toHaveCSS(
+      'background-color',
+      'rgba(0, 0, 0, 0)',
+    );
     await capture('projects');
     const plugins = await open('#navPlugins', '.plugin-directory');
     await expect(plugins.locator('.plugin-directory-search input')).toHaveCSS('font-size', '16px');

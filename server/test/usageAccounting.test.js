@@ -402,11 +402,30 @@ describe('estimate fallback still behaves', () => {
 
 test('prompt cache counters normalize without guessing missing data', () => {
   const expected = { inputTokens: 100, cachedInputTokens: 80 };
-  assert.deepEqual(normalizePromptCacheUsage({ prompt_tokens: 100, prompt_tokens_details: { cached_tokens: 80 } }), expected);
-  assert.deepEqual(normalizePromptCacheUsage({ prompt_cache_hit_tokens: 80, prompt_cache_miss_tokens: 20 }), expected);
-  assert.deepEqual(normalizePromptCacheUsage({ input_tokens: 10, cache_read_input_tokens: 80, cache_creation_input_tokens: 10 }), expected);
-  assert.deepEqual(normalizePromptCacheUsage({ promptTokenCount: 100, cachedContentTokenCount: 80 }), expected);
-  assert.deepEqual(normalizePromptCacheUsage({ prompt_tokens: 100, prompt_tokens_details: { cached_tokens: 0 } }), { inputTokens: 100, cachedInputTokens: 0 });
+  assert.deepEqual(
+    normalizePromptCacheUsage({ prompt_tokens: 100, prompt_tokens_details: { cached_tokens: 80 } }),
+    expected,
+  );
+  assert.deepEqual(
+    normalizePromptCacheUsage({ prompt_cache_hit_tokens: 80, prompt_cache_miss_tokens: 20 }),
+    expected,
+  );
+  assert.deepEqual(
+    normalizePromptCacheUsage({
+      input_tokens: 10,
+      cache_read_input_tokens: 80,
+      cache_creation_input_tokens: 10,
+    }),
+    expected,
+  );
+  assert.deepEqual(
+    normalizePromptCacheUsage({ promptTokenCount: 100, cachedContentTokenCount: 80 }),
+    expected,
+  );
+  assert.deepEqual(
+    normalizePromptCacheUsage({ prompt_tokens: 100, prompt_tokens_details: { cached_tokens: 0 } }),
+    { inputTokens: 100, cachedInputTokens: 0 },
+  );
   assert.equal(normalizePromptCacheUsage({ prompt_tokens: 100 }), null);
   assert.equal(normalizePromptCacheUsage({ prompt_tokens: 10, prompt_cache_hit_tokens: 80 }), null);
 });

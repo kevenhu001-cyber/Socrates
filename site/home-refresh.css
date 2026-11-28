@@ -62,7 +62,7 @@ body.home-refresh {
 .home-hero { position: relative; padding-block: clamp(80px, 13vh, 144px) var(--space-800); text-align: center; }
 .home-hero-inner { position: relative; width: min(100%, 768px); margin-inline: auto; }
 .home-hero h1 { max-width: 720px; margin: 0 auto var(--space-200); color: var(--ink); font: 500 var(--fs-40)/1.15 var(--site-font); letter-spacing: -.025em; text-wrap: balance; }
-:lang(zh) .home-hero h1 { letter-spacing: 0; line-height: 1.3; }
+:lang(zh) .home-hero h1 { letter-spacing: -0.02em; line-height: 1.25; }
 .home-hero-lede { max-width: 560px; margin: 0 auto var(--space-500); color: var(--muted); font: var(--type-body-7); text-wrap: balance; }
 .hero-ask { width: 100%; }
 .ask-box {

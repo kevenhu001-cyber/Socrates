@@ -463,7 +463,9 @@ async function openAgentRunDetails(runId: string): Promise<void> {
     />,
   );
   try {
-    const result = await apiFetch<ProjectRunDetails>('/api/agent-runs/' + encodeURIComponent(runId));
+    const result = await apiFetch<ProjectRunDetails>(
+      '/api/agent-runs/' + encodeURIComponent(runId),
+    );
     const host = dialog.querySelector<HTMLElement>('#agentRunDetails');
     if (!host) return;
     renderRunDetails(host, result);

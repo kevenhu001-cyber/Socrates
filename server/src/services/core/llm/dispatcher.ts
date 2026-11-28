@@ -51,13 +51,15 @@ export function getLlmDispatcher(endpoint?: string): Dispatcher {
     if (process.env.LLM_PROXY && !process.env.HTTPS_PROXY) {
       process.env.HTTPS_PROXY = process.env.LLM_PROXY;
     }
+    const headersTimeout = parseInt(process.env.LLM_HEADERS_TIMEOUT_MS || '180000', 10) || 180_000;
     _llmDispatcher = new EnvHttpProxyAgent({
-      keepAliveTimeout: 60_000,
-      keepAliveMaxTimeout: 300_000,
+      keepAliveTimeout: 12_000,
+      keepAliveMaxTimeout: 60_000,
       connections: 64,
       pipelining: 1,
-      connectTimeout: 5_000,
-      headersTimeout: 30_000,
+      connectTimeout: 15_000,
+      headersTimeout,
+      bodyTimeout: 600_000,
       connect: {
         keepAlive: true,
         keepAliveInitialDelay: 10_000,
@@ -65,13 +67,15 @@ export function getLlmDispatcher(endpoint?: string): Dispatcher {
       },
     });
   } else {
+    const headersTimeout = parseInt(process.env.LLM_HEADERS_TIMEOUT_MS || '180000', 10) || 180_000;
     _llmDispatcher = new Agent({
-      keepAliveTimeout: 60_000,
-      keepAliveMaxTimeout: 300_000,
+      keepAliveTimeout: 12_000,
+      keepAliveMaxTimeout: 60_000,
       connections: 64,
       pipelining: 1,
-      connectTimeout: 5_000,
-      headersTimeout: 30_000,
+      connectTimeout: 15_000,
+      headersTimeout,
+      bodyTimeout: 600_000,
       connect: {
         lookup: cachedDnsLookup as never,
         keepAlive: true,

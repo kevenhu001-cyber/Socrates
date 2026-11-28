@@ -41,24 +41,52 @@ export function formatToolResultContent(toolName: string, result: ToolResult): s
           'This call is not retryable. STOP retrying this exact code. Do not quote internal diagnostics in your answer. Continue with a corrected approach in prose, or state the limitation in one plain sentence.',
         );
       }
-      const diagnostic = [result.errorCode, result.errorMessage, result.error, result.stderr].filter(Boolean).join('\n');
+      const diagnostic = [result.errorCode, result.errorMessage, result.error, result.stderr]
+        .filter(Boolean)
+        .join('\n');
       const fixes: Array<[RegExp, string]> = [
         [/code_too_large/i, 'Split into smaller runs.'],
-        [/execution_queue_timeout|daily_execution_limit_reached|code_interpreter_unavailable|skipped/i, 'Execution is unavailable; do not retry this turn.'],
-        [/execution_timeout/i, 'Split the work into smaller runs or use vectorized numpy/pandas operations.'],
+        [
+          /execution_queue_timeout|daily_execution_limit_reached|code_interpreter_unavailable|skipped/i,
+          'Execution is unavailable; do not retry this turn.',
+        ],
+        [
+          /execution_timeout/i,
+          'Split the work into smaller runs or use vectorized numpy/pandas operations.',
+        ],
         [/output_limit_exceeded/i, 'Save the full data to a file and print a concise summary.'],
-        [/illustration_not_supported/i, 'Use render_intelligent_ui with svg_illustration when available.'],
-        [/SyntaxError:.*await.*outside function/i, 'Wrap awaited statements in async def main() and call asyncio.run(main()).'],
+        [
+          /illustration_not_supported/i,
+          'Use render_intelligent_ui with svg_illustration when available.',
+        ],
+        [
+          /SyntaxError:.*await.*outside function/i,
+          'Wrap awaited statements in async def main() and call asyncio.run(main()).',
+        ],
         [/SyntaxError|IndentationError/i, 'Check Python module syntax and indentation.'],
-        [/NameError/i, 'Recompute variables in this run; previous calls do not share Python state.'],
-        [/python_dependency_unavailable/i, 'Use the standard library or a dependency-free approach; do not keep installing the same package.'],
-        [/ModuleNotFoundError/i, 'Pyodide packages auto-load from imports; for compatible pure-Python wheels use asyncio.run(micropip.install("pkg")). No shell or pip install.'],
-        [/FileNotFoundError/i, 'Use an existing path from the scratch header or create the file first.'],
+        [
+          /NameError/i,
+          'Recompute variables in this run; previous calls do not share Python state.',
+        ],
+        [
+          /python_dependency_unavailable/i,
+          'Use the standard library or a dependency-free approach; do not keep installing the same package.',
+        ],
+        [
+          /ModuleNotFoundError/i,
+          'Pyodide packages auto-load from imports; for compatible pure-Python wheels use asyncio.run(micropip.install("pkg")). No shell or pip install.',
+        ],
+        [
+          /FileNotFoundError/i,
+          'Use an existing path from the scratch header or create the file first.',
+        ],
         [/Empty PNG|figure not found/i, 'Close old figures and save the new figure explicitly.'],
       ];
       const fix = fixes.find(([pattern]) => pattern.test(diagnostic));
       if (fix) lines.push('Suggested fix: ' + fix[1]);
-      lines.push('Treat diagnostics as internal feedback; retry safely if permitted, otherwise state only a material limitation.');
+      lines.push(
+        'Treat diagnostics as internal feedback; retry safely if permitted, otherwise state only a material limitation.',
+      );
     }
     lines.push('--- stdout ---');
     lines.push(result.stdout || '(empty)');

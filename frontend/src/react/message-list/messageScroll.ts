@@ -74,7 +74,11 @@ export function updateScrollFadeMask(list: HTMLElement | null): void {
   const limit = Math.max(0, Math.floor(clientHeight / 4));
   const edgeFade = (distance: number) =>
     `${Math.round(
-      Math.min(limit, TOP_FADE_SIZE_PX, (Math.max(0, distance) / TOP_FADE_RAMP_PX) * TOP_FADE_SIZE_PX),
+      Math.min(
+        limit,
+        TOP_FADE_SIZE_PX,
+        (Math.max(0, distance) / TOP_FADE_RAMP_PX) * TOP_FADE_SIZE_PX,
+      ),
     )}px`;
   const topVal = overflow ? edgeFade(scrollTop) : '0px';
   const atEnd = overflow && scrollHeight - scrollTop - clientHeight <= 1;

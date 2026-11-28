@@ -10,8 +10,18 @@ import { requiredAlgorithms } from '../../packages/core/src/simulation/compiler/
 import { sampleField } from '../src/react/intelligent-ui/demonstration/sampleField.ts';
 import { samplePlot } from '../src/react/intelligent-ui/demonstration/samplePlot.ts';
 import { extractIsosurface } from '../src/react/intelligent-ui/demonstration/geometry/marchingTetrahedra.ts';
-import { createProjection, projectIsoFaces, projectSurfaceFaces, surfacePath, spaceCurvePath, spaceArrow } from '../src/react/intelligent-ui/demonstration/geometry/projection.ts';
-import { plotProjection, pathFor } from '../src/react/intelligent-ui/demonstration/geometry/plotProjection.ts';
+import {
+  createProjection,
+  projectIsoFaces,
+  projectSurfaceFaces,
+  surfacePath,
+  spaceCurvePath,
+  spaceArrow,
+} from '../src/react/intelligent-ui/demonstration/geometry/projection.ts';
+import {
+  plotProjection,
+  pathFor,
+} from '../src/react/intelligent-ui/demonstration/geometry/plotProjection.ts';
 import {
   parseDemonstrationExpression,
   evaluateDemonstrationExpression,
@@ -393,32 +403,41 @@ test('adaptive RK45 integrates a nonstiff RC decay and interpolates in time', ()
     version: 1,
     parameters: [{ id: 'tau', value: 2, min: 0.5, max: 4 }],
     dynamics: {
-      method: 'rk45', duration: 10, step: 0.25,
-      initial: { voltage: 5 }, derivatives: { voltage: '-voltage/tau' },
+      method: 'rk45',
+      duration: 10,
+      step: 0.25,
+      initial: { voltage: 5 },
+      derivatives: { voltage: '-voltage/tau' },
     },
-    views: [{ kind: 'plot', history: true, x: [0, 10], y: [0, 5], curves: [{ expression: 'voltage' }] }],
+    views: [
+      { kind: 'plot', history: true, x: [0, 10], y: [0, 5], curves: [{ expression: 'voltage' }] },
+    ],
   });
   assert.equal(runtime.duration, 10);
   assert.deepEqual(runtime.warnings, []);
   for (const time of [0, 0.123, 1.55, 5, 10])
-    assert.ok(Math.abs(runtime.stateAt(time).voltage - 5*Math.exp(-time/2)) < 2e-5);
+    assert.ok(Math.abs(runtime.stateAt(time).voltage - 5 * Math.exp(-time / 2)) < 2e-5);
 });
 
 test('hybrid dynamics locate a falling impact and apply simultaneous state resets', () => {
   const runtime = createDemonstrationRuntime({
     version: 1,
     dynamics: {
-      method: 'rk45', duration: 1, step: 0.1,
+      method: 'rk45',
+      duration: 1,
+      step: 0.1,
       initial: { height: 1, velocity: 0 },
       derivatives: { height: 'velocity', velocity: -9.81 },
-      events: [{ expression: 'height', direction: -1, reset: { height: 0, velocity: '-0.8*velocity' } }],
+      events: [
+        { expression: 'height', direction: -1, reset: { height: 0, velocity: '-0.8*velocity' } },
+      ],
     },
     views: [{ kind: 'trajectory', x: [0, 1], y: [0, 2], horizontal: 't', vertical: 'height' }],
   });
   assert.deepEqual(runtime.warnings, []);
-  const impact = Math.sqrt(2/9.81);
-  assert.ok(runtime.stateAt(impact-0.0001).velocity < 0);
-  assert.ok(runtime.stateAt(impact+0.0001).velocity > 0);
+  const impact = Math.sqrt(2 / 9.81);
+  assert.ok(runtime.stateAt(impact - 0.0001).velocity < 0);
+  assert.ok(runtime.stateAt(impact + 0.0001).velocity > 0);
   assert.ok(runtime.stateAt(0.6).height > 0);
 });
 
@@ -426,13 +445,16 @@ test('terminal event limits playback to a root, not the next output sample', () 
   const runtime = createDemonstrationRuntime({
     version: 1,
     dynamics: {
-      method: 'rk45', duration: 5, step: 0.2,
-      initial: { q: 1 }, derivatives: { q: -1 },
+      method: 'rk45',
+      duration: 5,
+      step: 0.2,
+      initial: { q: 1 },
+      derivatives: { q: -1 },
       events: [{ expression: 'q', direction: -1, terminal: true }],
     },
     views: [{ kind: 'metrics', values: [{ expression: 'q' }] }],
   });
-  assert.ok(Math.abs(runtime.duration-1) < 1e-8);
+  assert.ok(Math.abs(runtime.duration - 1) < 1e-8);
   assert.ok(Math.abs(runtime.stateAt(5).q) < 1e-8);
 });
 
@@ -440,19 +462,35 @@ test('spatial diffusion uses the same runtime and agrees with a heat-equation mo
   const program = {
     version: 1,
     dynamics: {
-      method: 'rk45', duration: 1, step: 0.01,
-      spatial: { nodes: 11, domain: [0, 1], diffusivity: 0.1,
-        initial: 'sin(pi*x)', left: 0, right: 0 },
+      method: 'rk45',
+      duration: 1,
+      step: 0.01,
+      spatial: {
+        nodes: 11,
+        domain: [0, 1],
+        diffusivity: 0.1,
+        initial: 'sin(pi*x)',
+        left: 0,
+        right: 0,
+      },
     },
     views: [{ kind: 'plot', x: [0, 1], y: [0, 1], curves: [{ expression: 'gridValue' }] }],
   };
   assert.deepEqual(validateDemonstration(program), { ok: true });
   const runtime = createDemonstrationRuntime(program);
   assert.deepEqual(runtime.warnings, []);
-  assert.ok(Math.abs(runtime.evaluate('gridValue', 1, 0.5) - Math.exp(-0.1*Math.PI**2)) < 0.005);
+  assert.ok(
+    Math.abs(runtime.evaluate('gridValue', 1, 0.5) - Math.exp(-0.1 * Math.PI ** 2)) < 0.005,
+  );
   assert.equal(runtime.evaluate('gridValue', 1, 0), 0);
   assert.ok(Math.abs(runtime.evaluate('gridValue', 1, 1)) < 1e-12);
-  assert.equal(validateDemonstration({...program, dynamics: {...program.dynamics, spatial: {...program.dynamics.spatial, nodes: 1000}}}).ok, false);
+  assert.equal(
+    validateDemonstration({
+      ...program,
+      dynamics: { ...program.dynamics, spatial: { ...program.dynamics.spatial, nodes: 1000 } },
+    }).ok,
+    false,
+  );
 });
 
 test('scaled coupled solve supports mass matrices and refuses singular systems', () => {
@@ -463,35 +501,86 @@ test('scaled coupled solve supports mass matrices and refuses singular systems',
 });
 
 test('field annotations are validated without registering a new renderer', () => {
-  const p = { version: 1, views: [{ kind: 'field', x: [-1, 1], y: [-1, 1],
-    palette: 'heat', expression: 'x^2+y^2', colorRange: [0, 2], unit: 'K',
-    contours: [0.5, 1], vector: ['-2*x', '-2*y'], vectorScale: 2 }] };
+  const p = {
+    version: 1,
+    views: [
+      {
+        kind: 'field',
+        x: [-1, 1],
+        y: [-1, 1],
+        palette: 'heat',
+        expression: 'x^2+y^2',
+        colorRange: [0, 2],
+        unit: 'K',
+        contours: [0.5, 1],
+        vector: ['-2*x', '-2*y'],
+        vectorScale: 2,
+      },
+    ],
+  };
   assert.deepEqual(validateDemonstration(p), { ok: true });
-  assert.equal(validateDemonstration({...p, views: [{...p.views[0], contours: Array(7).fill(0)}]}).ok, false);
-  assert.equal(validateDemonstration({...p, views: [{...p.views[0], vectorScale: -1}]}).ok, false);
+  assert.equal(
+    validateDemonstration({ ...p, views: [{ ...p.views[0], contours: Array(7).fill(0) }] }).ok,
+    false,
+  );
+  assert.equal(
+    validateDemonstration({ ...p, views: [{ ...p.views[0], vectorScale: -1 }] }).ok,
+    false,
+  );
 });
 
 test('nonsingular mass-matrix dynamics solve implicit coupled equations', () => {
   const program = {
     version: 1,
-    dynamics: { method: 'rk45', duration: 1, step: 0.1,
-      initial: { q: 0, v: 0 }, derivatives: { q: 5, v: 7 },
-      massMatrix: [[2, 1], [1, 3]] },
+    dynamics: {
+      method: 'rk45',
+      duration: 1,
+      step: 0.1,
+      initial: { q: 0, v: 0 },
+      derivatives: { q: 5, v: 7 },
+      massMatrix: [
+        [2, 1],
+        [1, 3],
+      ],
+    },
     views: [{ kind: 'metrics', values: [{ expression: 'q' }] }],
   };
   const runtime = createDemonstrationRuntime(program);
   assert.deepEqual(runtime.warnings, []);
   assert.ok(Math.abs(runtime.stateAt(1).q - 1.6) < 1e-10);
   assert.ok(Math.abs(runtime.stateAt(1).v - 1.8) < 1e-10);
-  assert.ok(createDemonstrationRuntime({...program, dynamics: {...program.dynamics, massMatrix: [[1, 1], [1, 1]]}}).warnings.length > 0);
+  assert.ok(
+    createDemonstrationRuntime({
+      ...program,
+      dynamics: {
+        ...program.dynamics,
+        massMatrix: [
+          [1, 1],
+          [1, 1],
+        ],
+      },
+    }).warnings.length > 0,
+  );
   assert.ok(Math.abs(calc('solve3(3,1,0,0,0,2,0,0,0,3,1,4,9)') - 3) < 1e-12);
 });
 test('spatial wave equation approximates a fixed-end standing mode', () => {
   const runtime = createDemonstrationRuntime({
     version: 1,
-    dynamics: { method: 'rk45', duration: 0.5, step: 0.01,
-      spatial: { equation: 'wave', nodes: 15, domain: [0, 1], speed: 1,
-        initial: 'sin(pi*x)', initialVelocity: 0, left: 0, right: 0 } },
+    dynamics: {
+      method: 'rk45',
+      duration: 0.5,
+      step: 0.01,
+      spatial: {
+        equation: 'wave',
+        nodes: 15,
+        domain: [0, 1],
+        speed: 1,
+        initial: 'sin(pi*x)',
+        initialVelocity: 0,
+        left: 0,
+        right: 0,
+      },
+    },
     views: [{ kind: 'plot', x: [0, 1], y: [-1, 1], curves: [{ expression: 'gridValue' }] }],
   });
   assert.deepEqual(runtime.warnings, []);
@@ -499,7 +588,12 @@ test('spatial wave equation approximates a fixed-end standing mode', () => {
 });
 
 test('scientific model examples preserve energy and constraint residuals', () => {
-  const scientific = JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json', import.meta.url), 'utf8'));
+  const scientific = JSON.parse(
+    readFileSync(
+      new URL('../../docs/examples/scientific-simulation.json', import.meta.url),
+      'utf8',
+    ),
+  );
   for (const program of Object.values(scientific)) {
     assert.deepEqual(validateDemonstration(program), { ok: true });
     assert.deepEqual(createDemonstrationRuntime(program).warnings, []);
@@ -517,39 +611,64 @@ function finishGenerator(iterator) {
   return step.value;
 }
 test('calibrated fields use actual values and computed isolines', () => {
-  const view = {kind: 'field', x: [-1,1], y: [-1,1], expression: 'x',
-    height: 64, palette: 'heat', colorRange: [-1,1], contours: [0],
-    vector: ['x', 0], vectorScale: 2};
-  const runtime = createDemonstrationRuntime({version: 1, views: [view]});
+  const view = {
+    kind: 'field',
+    x: [-1, 1],
+    y: [-1, 1],
+    expression: 'x',
+    height: 64,
+    palette: 'heat',
+    colorRange: [-1, 1],
+    contours: [0],
+    vector: ['x', 0],
+    vectorScale: 2,
+  };
+  const runtime = createDemonstrationRuntime({ version: 1, views: [view] });
   const sample = finishGenerator(sampleField(view, runtime, 0, false));
-  assert.deepEqual(sample.colorRange, [-1,1]);
+  assert.deepEqual(sample.colorRange, [-1, 1]);
   const pixels = new Uint8ClampedArray(sample.pixels);
-  assert.deepEqual([...pixels.slice(0,4)], [0,0,0,255]);
-  assert.deepEqual([...pixels.slice(319*4,320*4)], [255,255,255,255]);
+  assert.deepEqual([...pixels.slice(0, 4)], [0, 0, 0, 255]);
+  assert.deepEqual([...pixels.slice(319 * 4, 320 * 4)], [255, 255, 255, 255]);
   assert.equal(sample.contours.length, 1);
   assert.ok(sample.contours[0].lines.length > 0);
-  for (let i=0; i<sample.contours[0].lines.length; i+=2)
+  for (let i = 0; i < sample.contours[0].lines.length; i += 2)
     assert.ok(Math.abs(sample.contours[0].lines[i] - 159.5) < 0.1);
   assert.ok(sample.arrows.length > 0);
-  for (let i=0; i<sample.arrows.length; i+=4)
-    assert.ok(Math.hypot(sample.arrows[i+2], sample.arrows[i+3]) <= 2.5);
+  for (let i = 0; i < sample.arrows.length; i += 4)
+    assert.ok(Math.hypot(sample.arrows[i + 2], sample.arrows[i + 3]) <= 2.5);
 });
 test('history plots sample state at each plotted time and carry event guides', () => {
-  const view = {kind:'plot', history:true, x:[0,2], y:[0,2], curves:[{expression:'q'}]};
-  const runtime = createDemonstrationRuntime({version:1,dynamics:{
-    method:'rk45', duration:2, step:0.05, initial:{q:0}, derivatives:{q:1},
-    events:[{expression:'q-1', direction:1, terminal:true}]},views:[view]});
+  const view = { kind: 'plot', history: true, x: [0, 2], y: [0, 2], curves: [{ expression: 'q' }] };
+  const runtime = createDemonstrationRuntime({
+    version: 1,
+    dynamics: {
+      method: 'rk45',
+      duration: 2,
+      step: 0.05,
+      initial: { q: 0 },
+      derivatives: { q: 1 },
+      events: [{ expression: 'q-1', direction: 1, terminal: true }],
+    },
+    views: [view],
+  });
   const sample = finishGenerator(samplePlot(view, runtime, runtime.duration, false, new Map()));
   assert.ok(sample.paths[0].includes('L'));
-  assert.ok(Math.abs(sample.playhead-1)<1e-8);
-  assert.ok(Math.abs(sample.eventTimes[0]-1)<1e-8);
+  assert.ok(Math.abs(sample.playhead - 1) < 1e-8);
+  assert.ok(Math.abs(sample.eventTimes[0] - 1) < 1e-8);
 });
 
 test('L-stable SDIRK2 tracks a stiff forced decay', () => {
   const program = {
-    version: 1, dynamics: { method: 'sdirk2', duration: 1, step: 0.1,
-      rtol: 1e-5, atol: 1e-8, initial: { q: 1 },
-      derivatives: { q: '-10000*(q-cos(t))-sin(t)' } },
+    version: 1,
+    dynamics: {
+      method: 'sdirk2',
+      duration: 1,
+      step: 0.1,
+      rtol: 1e-5,
+      atol: 1e-8,
+      initial: { q: 1 },
+      derivatives: { q: '-10000*(q-cos(t))-sin(t)' },
+    },
     views: [{ kind: 'metrics', values: [{ expression: 'q' }] }],
   };
   const runtime = createDemonstrationRuntime(program);
@@ -559,10 +678,18 @@ test('L-stable SDIRK2 tracks a stiff forced decay', () => {
 });
 test('simultaneous events apply disjoint resets to the same prior state', () => {
   const runtime = createDemonstrationRuntime({
-    version: 1, dynamics: { method: 'rk45', duration: 2, step: 0.1,
-      initial: { q: 0, v: 0 }, derivatives: { q: 1, v: 1 },
-      events: [{ expression: 't-1', direction: 1, reset: { q: 'q+2' } },
-        { expression: 't-1', direction: 1, reset: { v: 'v+3' } }] },
+    version: 1,
+    dynamics: {
+      method: 'rk45',
+      duration: 2,
+      step: 0.1,
+      initial: { q: 0, v: 0 },
+      derivatives: { q: 1, v: 1 },
+      events: [
+        { expression: 't-1', direction: 1, reset: { q: 'q+2' } },
+        { expression: 't-1', direction: 1, reset: { v: 'v+3' } },
+      ],
+    },
     views: [{ kind: 'metrics', values: [{ expression: 'q' }] }],
   });
   assert.deepEqual(runtime.warnings, []);
@@ -573,51 +700,89 @@ test('simultaneous events apply disjoint resets to the same prior state', () => 
 
 test('two-dimensional diffusion matches a separable heat mode and fixed boundaries', () => {
   const runtime = createDemonstrationRuntime({
-    version: 1, dynamics: { method: 'rk45', duration: 0.2, step: 0.01,
-      spatial: { dimension: 2, nx: 7, ny: 7, xDomain: [0,1], yDomain: [0,1],
-        diffusivity: 0.1, initial: 'sin(pi*x)*sin(pi*y)', boundary: 0 }},
-    views: [{ kind: 'field', x: [0,1], y: [0,1], expression: 'gridValue' }],
+    version: 1,
+    dynamics: {
+      method: 'rk45',
+      duration: 0.2,
+      step: 0.01,
+      spatial: {
+        dimension: 2,
+        nx: 7,
+        ny: 7,
+        xDomain: [0, 1],
+        yDomain: [0, 1],
+        diffusivity: 0.1,
+        initial: 'sin(pi*x)*sin(pi*y)',
+        boundary: 0,
+      },
+    },
+    views: [{ kind: 'field', x: [0, 1], y: [0, 1], expression: 'gridValue' }],
   });
   assert.deepEqual(runtime.warnings, []);
-  assert.ok(Math.abs(runtime.evaluate('gridValue', 0.2, 0.5, 0.5) - Math.exp(-0.04*Math.PI**2)) < 0.01);
-  for (const [x,y] of [[0,0.5],[1,0.5],[0.5,0],[0.5,1]])
-    assert.ok(Math.abs(runtime.evaluate('gridValue',0.2,x,y)) < 1e-12);
+  assert.ok(
+    Math.abs(runtime.evaluate('gridValue', 0.2, 0.5, 0.5) - Math.exp(-0.04 * Math.PI ** 2)) < 0.01,
+  );
+  for (const [x, y] of [
+    [0, 0.5],
+    [1, 0.5],
+    [0.5, 0],
+    [0.5, 1],
+  ])
+    assert.ok(Math.abs(runtime.evaluate('gridValue', 0.2, x, y)) < 1e-12);
 });
 test('logarithmic plots sample physical frequencies and reject invalid bounds', () => {
-  const view = {kind:'plot', x:[1,1000], y:[0,3], xScale:'log', curves:[{expression:'log10(x)'}]};
-  const program = {version:1, views:[view]};
+  const view = {
+    kind: 'plot',
+    x: [1, 1000],
+    y: [0, 3],
+    xScale: 'log',
+    curves: [{ expression: 'log10(x)' }],
+  };
+  const program = { version: 1, views: [view] };
   const runtime = createDemonstrationRuntime(program);
-  const sample = finishGenerator(samplePlot(view,runtime,0,false,new Map()));
-  assert.equal(sample.xScale,'log');
+  const sample = finishGenerator(samplePlot(view, runtime, 0, false, new Map()));
+  assert.equal(sample.xScale, 'log');
   assert.ok(sample.paths[0].startsWith('M48.00,194.00'));
   assert.ok(sample.paths[0].endsWith('L508.00,14.00'));
-  assert.equal(validateDemonstration({...program,views:[{...view,x:[0,1000]}]}).ok,false);
+  assert.equal(validateDemonstration({ ...program, views: [{ ...view, x: [0, 1000] }] }).ok, false);
 });
 
 test('linear circuit compiler solves RC node voltages and Kirchhoff currents', () => {
-  const scientific = JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json', import.meta.url), 'utf8'));
+  const scientific = JSON.parse(
+    readFileSync(
+      new URL('../../docs/examples/scientific-simulation.json', import.meta.url),
+      'utf8',
+    ),
+  );
   const program = scientific.netlistRC;
   const runtime = createDemonstrationRuntime(program);
   assert.deepEqual(runtime.warnings, []);
-  assert.ok(Math.abs(runtime.evaluate('voltage_out', 2) - 5*(1-Math.exp(-2))) < 1e-5);
+  assert.ok(Math.abs(runtime.evaluate('voltage_out', 2) - 5 * (1 - Math.exp(-2))) < 1e-5);
   assert.ok(Math.abs(runtime.evaluate('current_resistor-current_cap', 2)) < 1e-10);
   const bad = JSON.parse(JSON.stringify(program));
   bad.dynamics.circuit.elements[2].value = '1+t';
-  assert.equal(validateDemonstration(bad).ok,false);
+  assert.equal(validateDemonstration(bad).ok, false);
 });
 test('spatial slice evaluates the requested y-coordinate', () => {
-  const view = {kind:'plot', x:[0,1], y:[0,2], sliceY:0.5, curves:[{expression:'x+y'}]};
-  const runtime = createDemonstrationRuntime({version:1,views:[view]});
-  const sample = finishGenerator(samplePlot(view,runtime,0,false,new Map()));
+  const view = { kind: 'plot', x: [0, 1], y: [0, 2], sliceY: 0.5, curves: [{ expression: 'x+y' }] };
+  const runtime = createDemonstrationRuntime({ version: 1, views: [view] });
+  const sample = finishGenerator(samplePlot(view, runtime, 0, false, new Map()));
   assert.ok(sample.paths[0].startsWith('M48.00,149.00'));
   assert.ok(sample.paths[0].endsWith('L508.00,59.00'));
 });
 
 test('stiff integration damps a fast mode while retaining a slow mode', () => {
   const runtime = createDemonstrationRuntime({
-    version: 1, dynamics: { method: 'sdirk2', duration: 1, step: 0.1,
-      rtol: 1e-5, atol: 1e-8, initial: { fast: 1, slow: 1 },
-      derivatives: { fast: '-10000*fast', slow: '-slow' } },
+    version: 1,
+    dynamics: {
+      method: 'sdirk2',
+      duration: 1,
+      step: 0.1,
+      rtol: 1e-5,
+      atol: 1e-8,
+      initial: { fast: 1, slow: 1 },
+      derivatives: { fast: '-10000*fast', slow: '-slow' },
+    },
     views: [{ kind: 'metrics', values: [{ expression: 'slow' }] }],
   });
   assert.deepEqual(runtime.warnings, []);
@@ -626,499 +791,934 @@ test('stiff integration damps a fast mode while retaining a slow mode', () => {
 });
 test('linear MNA supports series RLC with capacitor and inductor states', () => {
   const runtime = createDemonstrationRuntime({
-    version: 1, dynamics: { method: 'rk45', duration: 2, step: 0.02,
-      circuit: { nodes: ['a','b','c'], elements: [
-        { kind: 'V', id: 'v', p: 'a', n: '0', value: 1 },
-        { kind: 'R', id: 'r', p: 'a', n: 'b', value: 2 },
-        { kind: 'L', id: 'l', p: 'b', n: 'c', value: 1 },
-        { kind: 'C', id: 'c', p: 'c', n: '0', value: 1 },
-      ] } },
+    version: 1,
+    dynamics: {
+      method: 'rk45',
+      duration: 2,
+      step: 0.02,
+      circuit: {
+        nodes: ['a', 'b', 'c'],
+        elements: [
+          { kind: 'V', id: 'v', p: 'a', n: '0', value: 1 },
+          { kind: 'R', id: 'r', p: 'a', n: 'b', value: 2 },
+          { kind: 'L', id: 'l', p: 'b', n: 'c', value: 1 },
+          { kind: 'C', id: 'c', p: 'c', n: '0', value: 1 },
+        ],
+      },
+    },
     views: [{ kind: 'metrics', values: [{ expression: 'voltage_c' }] }],
   });
   assert.deepEqual(runtime.warnings, []);
-  assert.ok(Math.abs(runtime.evaluate('voltage_c', 2) - (1-3*Math.exp(-2))) < 1e-5);
-  assert.ok(Math.abs(runtime.evaluate('current_l-current_c',2)) < 1e-10);
+  assert.ok(Math.abs(runtime.evaluate('voltage_c', 2) - (1 - 3 * Math.exp(-2))) < 1e-5);
+  assert.ok(Math.abs(runtime.evaluate('current_l-current_c', 2)) < 1e-10);
 });
 
 test('structured state space matrices match a critically damped step response', () => {
-  const scientific = JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json', import.meta.url), 'utf8'));
+  const scientific = JSON.parse(
+    readFileSync(
+      new URL('../../docs/examples/scientific-simulation.json', import.meta.url),
+      'utf8',
+    ),
+  );
   const runtime = createDemonstrationRuntime(scientific.stateSpace);
   assert.deepEqual(runtime.warnings, []);
-  assert.ok(Math.abs(runtime.evaluate('response',2)-(1-3*Math.exp(-2)))<1e-7);
-  const bad=JSON.parse(JSON.stringify(scientific.stateSpace));
-  bad.dynamics.stateSpace.A=[[1]];
-  assert.equal(validateDemonstration(bad).ok,false);
+  assert.ok(Math.abs(runtime.evaluate('response', 2) - (1 - 3 * Math.exp(-2))) < 1e-7);
+  const bad = JSON.parse(JSON.stringify(scientific.stateSpace));
+  bad.dynamics.stateSpace.A = [[1]];
+  assert.equal(validateDemonstration(bad).ok, false);
 });
 test('semi-explicit index-one constraints reconstruct consistent nonlinear algebraic states', () => {
-  const scientific = JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json', import.meta.url), 'utf8'));
+  const scientific = JSON.parse(
+    readFileSync(
+      new URL('../../docs/examples/scientific-simulation.json', import.meta.url),
+      'utf8',
+    ),
+  );
   const runtime = createDemonstrationRuntime(scientific.indexOneDAE);
   assert.deepEqual(runtime.warnings, []);
-  assert.ok(Math.abs(runtime.stateAt(1).q-.25)<1e-6);
-  assert.ok(Math.abs(runtime.stateAt(1).aux-.5)<1e-6);
-  assert.ok(Math.abs(runtime.evaluate('aux^2-q',.333))<1e-10);
-  const bad=JSON.parse(JSON.stringify(scientific.indexOneDAE));
-  bad.dynamics.algebraic.guess.aux='q';
-  assert.equal(validateDemonstration(bad).ok,false);
+  assert.ok(Math.abs(runtime.stateAt(1).q - 0.25) < 1e-6);
+  assert.ok(Math.abs(runtime.stateAt(1).aux - 0.5) < 1e-6);
+  assert.ok(Math.abs(runtime.evaluate('aux^2-q', 0.333)) < 1e-10);
+  const bad = JSON.parse(JSON.stringify(scientific.indexOneDAE));
+  bad.dynamics.algebraic.guess.aux = 'q';
+  assert.equal(validateDemonstration(bad).ok, false);
 });
 test('surface sampling provides real bounded mesh values without raster allocation', () => {
-  const view={kind:'field',presentation:'surface',x:[-1,1],y:[-1,1],zRange:[0,2],expression:'x^2+y^2'};
-  const runtime=createDemonstrationRuntime({version:1,views:[view]});
-  const sample=finishGenerator(sampleField(view,runtime,0,false));
-  assert.equal(sample.pixels.byteLength,0);
-  assert.equal(sample.surface.size,33);
-  assert.equal(sample.surface.values[16*33+16],0);
-  assert.equal(sample.surface.values[0],2);
-  assert.equal(validateDemonstration({version:1,views:[{...view,zRange:[2,0]}]}).ok,true); // Numeric bounds are normalized to increasing order.
-  assert.equal(validateDemonstration({version:1,views:[{...view,zRange:[0]}]}).ok,false);
+  const view = {
+    kind: 'field',
+    presentation: 'surface',
+    x: [-1, 1],
+    y: [-1, 1],
+    zRange: [0, 2],
+    expression: 'x^2+y^2',
+  };
+  const runtime = createDemonstrationRuntime({ version: 1, views: [view] });
+  const sample = finishGenerator(sampleField(view, runtime, 0, false));
+  assert.equal(sample.pixels.byteLength, 0);
+  assert.equal(sample.surface.size, 33);
+  assert.equal(sample.surface.values[16 * 33 + 16], 0);
+  assert.equal(sample.surface.values[0], 2);
+  assert.equal(
+    validateDemonstration({ version: 1, views: [{ ...view, zRange: [2, 0] }] }).ok,
+    true,
+  ); // Numeric bounds are normalized to increasing order.
+  assert.equal(validateDemonstration({ version: 1, views: [{ ...view, zRange: [0] }] }).ok, false);
 });
 
 test('matrix-free implicit grid resolves a 65 by 65 heat mode within bounded history', () => {
-  const program = {version:1,dynamics:{method:'grid-implicit',duration:.2,step:.001,
-    spatial:{dimension:2,nx:65,ny:65,xDomain:[0,1],yDomain:[0,1],diffusivity:.1,
-      initial:'sin(pi*x)*sin(pi*y)',boundary:0}},
-    views:[{kind:'field',x:[0,1],y:[0,1],expression:'gridValue'}]};
-  const runtime=createDemonstrationRuntime(program);
-  assert.deepEqual(runtime.warnings,[]);
-  assert.ok(Math.abs(runtime.evaluate('gridValue',.2,.5,.5)-Math.exp(-.04*Math.PI**2))<.001);
-  assert.equal(runtime.evaluate('gridValue',.2,0,.5),0);
-  assert.ok(runtime.evaluate('gridMean',.2)<runtime.evaluate('gridMean',0));
-  assert.equal(validateDemonstration({...program,dynamics:{...program.dynamics,step:.00001}}).ok,false);
+  const program = {
+    version: 1,
+    dynamics: {
+      method: 'grid-implicit',
+      duration: 0.2,
+      step: 0.001,
+      spatial: {
+        dimension: 2,
+        nx: 65,
+        ny: 65,
+        xDomain: [0, 1],
+        yDomain: [0, 1],
+        diffusivity: 0.1,
+        initial: 'sin(pi*x)*sin(pi*y)',
+        boundary: 0,
+      },
+    },
+    views: [{ kind: 'field', x: [0, 1], y: [0, 1], expression: 'gridValue' }],
+  };
+  const runtime = createDemonstrationRuntime(program);
+  assert.deepEqual(runtime.warnings, []);
+  assert.ok(
+    Math.abs(runtime.evaluate('gridValue', 0.2, 0.5, 0.5) - Math.exp(-0.04 * Math.PI ** 2)) < 0.001,
+  );
+  assert.equal(runtime.evaluate('gridValue', 0.2, 0, 0.5), 0);
+  assert.ok(runtime.evaluate('gridMean', 0.2) < runtime.evaluate('gridMean', 0));
+  assert.equal(
+    validateDemonstration({ ...program, dynamics: { ...program.dynamics, step: 0.00001 } }).ok,
+    false,
+  );
 });
 test('implicit diffusion uses stationary nonzero boundaries and sources', () => {
-  const program={version:1,dynamics:{method:'grid-implicit',duration:1,step:.01,
-    spatial:{nodes:129,domain:[0,1],diffusivity:.1,initial:'20+10*x',left:20,right:30}},
-    views:[{kind:'plot',x:[0,1],y:[20,30],curves:[{expression:'gridValue'}]}]};
-  const runtime=createDemonstrationRuntime(program);
-  assert.deepEqual(runtime.warnings,[]);
-  assert.ok(Math.abs(runtime.evaluate('gridValue',1,.37)-23.7)<1e-8);
-  assert.equal(validateDemonstration({...program,dynamics:{...program.dynamics,spatial:{...program.dynamics.spatial,diffusivity:'1+t'}}}).ok,false);
+  const program = {
+    version: 1,
+    dynamics: {
+      method: 'grid-implicit',
+      duration: 1,
+      step: 0.01,
+      spatial: {
+        nodes: 129,
+        domain: [0, 1],
+        diffusivity: 0.1,
+        initial: '20+10*x',
+        left: 20,
+        right: 30,
+      },
+    },
+    views: [{ kind: 'plot', x: [0, 1], y: [20, 30], curves: [{ expression: 'gridValue' }] }],
+  };
+  const runtime = createDemonstrationRuntime(program);
+  assert.deepEqual(runtime.warnings, []);
+  assert.ok(Math.abs(runtime.evaluate('gridValue', 1, 0.37) - 23.7) < 1e-8);
+  assert.equal(
+    validateDemonstration({
+      ...program,
+      dynamics: {
+        ...program.dynamics,
+        spatial: { ...program.dynamics.spatial, diffusivity: '1+t' },
+      },
+    }).ok,
+    false,
+  );
 });
 
 test('structured linear algebra supports shape-checked matrix-vector products', () => {
-  const program={version:1,linearAlgebra:[
-    {id:'force',op:'vector',values:[3,4]},
-    {id:'rot',op:'matrix',values:[[0,-1],[1,0]]},
-    {id:'result',op:'matmul',a:'rot',b:'force'},
-    {id:'mag',op:'norm',a:'result'},
-    {id:'orthogonal',op:'dot',a:'force',b:'result'}],
-    views:[{kind:'metrics',values:[{expression:'result_1'},{expression:'mag'}]}]};
-  const runtime=createDemonstrationRuntime(program);
-  assert.equal(runtime.evaluate('result_1'),-4);
-  assert.equal(runtime.evaluate('result_2'),3);
-  assert.equal(runtime.evaluate('mag'),5);
-  assert.equal(runtime.evaluate('orthogonal'),0);
-  const invalid={...program,linearAlgebra:program.linearAlgebra.map((e,i)=>i===0?{...e,values:[1,2,3]}:e)};
-  assert.equal(validateDemonstration(invalid).ok,false);
+  const program = {
+    version: 1,
+    linearAlgebra: [
+      { id: 'force', op: 'vector', values: [3, 4] },
+      {
+        id: 'rot',
+        op: 'matrix',
+        values: [
+          [0, -1],
+          [1, 0],
+        ],
+      },
+      { id: 'result', op: 'matmul', a: 'rot', b: 'force' },
+      { id: 'mag', op: 'norm', a: 'result' },
+      { id: 'orthogonal', op: 'dot', a: 'force', b: 'result' },
+    ],
+    views: [{ kind: 'metrics', values: [{ expression: 'result_1' }, { expression: 'mag' }] }],
+  };
+  const runtime = createDemonstrationRuntime(program);
+  assert.equal(runtime.evaluate('result_1'), -4);
+  assert.equal(runtime.evaluate('result_2'), 3);
+  assert.equal(runtime.evaluate('mag'), 5);
+  assert.equal(runtime.evaluate('orthogonal'), 0);
+  const invalid = {
+    ...program,
+    linearAlgebra: program.linearAlgebra.map((e, i) => (i === 0 ? { ...e, values: [1, 2, 3] } : e)),
+  };
+  assert.equal(validateDemonstration(invalid).ok, false);
 });
 
 test('event rearming prevents a second crossing caused solely by numerical root offset', () => {
-  const runtime=createDemonstrationRuntime({version:1,dynamics:{method:'rk45',duration:2,step:.17,
-    initial:{q:1,v:-1},derivatives:{q:'v',v:0},
-    events:[{expression:'q',direction:0,rearmTolerance:1e-6,reset:{v:'-v'}}]},
-    views:[{kind:'metrics',values:[{expression:'q'}]}]});
-  assert.deepEqual(runtime.warnings,[]);
-  assert.equal(runtime.eventTimes.length,1);
-  assert.ok(Math.abs(runtime.stateAt(2).q-1)<1e-7);
-  assert.equal(runtime.stateAt(2).v,1);
+  const runtime = createDemonstrationRuntime({
+    version: 1,
+    dynamics: {
+      method: 'rk45',
+      duration: 2,
+      step: 0.17,
+      initial: { q: 1, v: -1 },
+      derivatives: { q: 'v', v: 0 },
+      events: [{ expression: 'q', direction: 0, rearmTolerance: 1e-6, reset: { v: '-v' } }],
+    },
+    views: [{ kind: 'metrics', values: [{ expression: 'q' }] }],
+  });
+  assert.deepEqual(runtime.warnings, []);
+  assert.equal(runtime.eventTimes.length, 1);
+  assert.ok(Math.abs(runtime.stateAt(2).q - 1) < 1e-7);
+  assert.equal(runtime.stateAt(2).v, 1);
 });
 
 test('CSR PCG solves a sparse symmetric chain and rejects detected indefinite curvature', () => {
-  const n=128,entries=[],rhs=[];
-  for(let i=0;i<n;i++){
-    entries.push([i,i,4]);if(i<n-1)entries.push([i,i+1,-1]);rhs.push(i===0||i===n-1?3:2);
+  const n = 128,
+    entries = [],
+    rhs = [];
+  for (let i = 0; i < n; i++) {
+    entries.push([i, i, 4]);
+    if (i < n - 1) entries.push([i, i + 1, -1]);
+    rhs.push(i === 0 || i === n - 1 ? 3 : 2);
   }
-  const program={version:1,diagnostics:true,sparseSystem:{size:n,entries,rhs,tolerance:1e-10},
-    views:[{kind:'plot',x:[0,n-1],y:[0,2],curves:[{expression:'sparseValue'}]}]};
-  const runtime=createDemonstrationRuntime(program);
-  for(let i=0;i<n;i++)assert.ok(Math.abs(runtime.evaluate('sparseValue',0,i)-1)<1e-8);
-  assert.ok(Math.abs(runtime.evaluate('sparseAt(64)')-1)<1e-8);
-  assert.ok(runtime.evaluate('sparseResidual')<1e-10);
-  assert.equal(runtime.diagnostics.method,'PCG');
-  assert.ok(runtime.diagnostics.iterations>0);
-  assert.throws(()=>createDemonstrationRuntime({...program,sparseSystem:{size:2,entries:[[0,0,1],[0,1,2],[1,1,1]],rhs:[1,-1]}}),/positive definite/);
-  assert.equal(validateDemonstration({...program,sparseSystem:{size:2,entries:[[0,0,1],[0,0,2],[1,1,1]],rhs:[1,1]}}).ok,false);
+  const program = {
+    version: 1,
+    diagnostics: true,
+    sparseSystem: { size: n, entries, rhs, tolerance: 1e-10 },
+    views: [{ kind: 'plot', x: [0, n - 1], y: [0, 2], curves: [{ expression: 'sparseValue' }] }],
+  };
+  const runtime = createDemonstrationRuntime(program);
+  for (let i = 0; i < n; i++) assert.ok(Math.abs(runtime.evaluate('sparseValue', 0, i) - 1) < 1e-8);
+  assert.ok(Math.abs(runtime.evaluate('sparseAt(64)') - 1) < 1e-8);
+  assert.ok(runtime.evaluate('sparseResidual') < 1e-10);
+  assert.equal(runtime.diagnostics.method, 'PCG');
+  assert.ok(runtime.diagnostics.iterations > 0);
+  assert.throws(
+    () =>
+      createDemonstrationRuntime({
+        ...program,
+        sparseSystem: {
+          size: 2,
+          entries: [
+            [0, 0, 1],
+            [0, 1, 2],
+            [1, 1, 1],
+          ],
+          rhs: [1, -1],
+        },
+      }),
+    /positive definite/,
+  );
+  assert.equal(
+    validateDemonstration({
+      ...program,
+      sparseSystem: {
+        size: 2,
+        entries: [
+          [0, 0, 1],
+          [0, 0, 2],
+          [1, 1, 1],
+        ],
+        rhs: [1, 1],
+      },
+    }).ok,
+    false,
+  );
 });
 test('3D vector scope does not cache across the third spatial coordinate', () => {
-  const view={kind:'field',presentation:'vectors3d',x:[-1,1],y:[-1,1],zRange:[-1,1],vector3d:['-y','x','spaceZ'],vectorScale:2,expression:0};
-  const runtime=createDemonstrationRuntime({version:1,definitions:{radial:'x^2+y^2+spaceZ^2'},views:[view]});
-  assert.equal(runtime.evaluate('radial',0,1,1,1),3);
-  assert.equal(runtime.evaluate('radial',0,1,1,0),2);
-  assert.equal(runtime.dependencies('radial')&8,8);
-  const sample=finishGenerator(sampleField(view,runtime,0,false));
-  assert.ok(sample.surface.arrows3d.length>300);
-  assert.equal(sample.pixels.byteLength,0);
+  const view = {
+    kind: 'field',
+    presentation: 'vectors3d',
+    x: [-1, 1],
+    y: [-1, 1],
+    zRange: [-1, 1],
+    vector3d: ['-y', 'x', 'spaceZ'],
+    vectorScale: 2,
+    expression: 0,
+  };
+  const runtime = createDemonstrationRuntime({
+    version: 1,
+    definitions: { radial: 'x^2+y^2+spaceZ^2' },
+    views: [view],
+  });
+  assert.equal(runtime.evaluate('radial', 0, 1, 1, 1), 3);
+  assert.equal(runtime.evaluate('radial', 0, 1, 1, 0), 2);
+  assert.equal(runtime.dependencies('radial') & 8, 8);
+  const sample = finishGenerator(sampleField(view, runtime, 0, false));
+  assert.ok(sample.surface.arrows3d.length > 300);
+  assert.equal(sample.pixels.byteLength, 0);
 });
 test('3D curve sampling follows the actual parameter and dynamics history', () => {
-  const view={kind:'field',presentation:'curve3d',x:[-1,1],y:[-1,1],zRange:[0,2],parameterRange:[0,2*Math.PI],curve3d:['cos(x)','sin(x)','x/pi'],expression:0};
-  const runtime=createDemonstrationRuntime({version:1,views:[view]});
-  const sample=finishGenerator(sampleField(view,runtime,0,false));
-  assert.ok(sample.surface.curve.length>400);
-  assert.ok(Math.abs(sample.surface.curve[0][0]-1)<1e-10);
-  assert.ok(Math.abs(sample.surface.curve.at(-1)[2]-1)<1e-10);
-  const history={...view,parameterRange:undefined,curveHistory:true,curve3d:['q','0','t']};
-  const dynamic=createDemonstrationRuntime({version:1,dynamics:{method:'rk45',duration:1,step:.1,initial:{q:0},derivatives:{q:1}},views:[history]});
-  const trail=finishGenerator(sampleField(history,dynamic,.5,false));
-  assert.ok(Math.abs(trail.surface.curve.at(-1)[0]-.5)<1e-10);
+  const view = {
+    kind: 'field',
+    presentation: 'curve3d',
+    x: [-1, 1],
+    y: [-1, 1],
+    zRange: [0, 2],
+    parameterRange: [0, 2 * Math.PI],
+    curve3d: ['cos(x)', 'sin(x)', 'x/pi'],
+    expression: 0,
+  };
+  const runtime = createDemonstrationRuntime({ version: 1, views: [view] });
+  const sample = finishGenerator(sampleField(view, runtime, 0, false));
+  assert.ok(sample.surface.curve.length > 400);
+  assert.ok(Math.abs(sample.surface.curve[0][0] - 1) < 1e-10);
+  assert.ok(Math.abs(sample.surface.curve.at(-1)[2] - 1) < 1e-10);
+  const history = {
+    ...view,
+    parameterRange: undefined,
+    curveHistory: true,
+    curve3d: ['q', '0', 't'],
+  };
+  const dynamic = createDemonstrationRuntime({
+    version: 1,
+    dynamics: { method: 'rk45', duration: 1, step: 0.1, initial: { q: 0 }, derivatives: { q: 1 } },
+    views: [history],
+  });
+  const trail = finishGenerator(sampleField(history, dynamic, 0.5, false));
+  assert.ok(Math.abs(trail.surface.curve.at(-1)[0] - 0.5) < 1e-10);
 });
-test('adaptive diagnostics count rejected and accepted steps, not global errors',()=>{
-  const runtime=createDemonstrationRuntime({version:1,diagnostics:true,dynamics:{method:'rk45',duration:1,step:.2,initial:{q:1},derivatives:{q:'-10*q'}},views:[{kind:'metrics',values:[{expression:'q'}]}]});
-  assert.ok(runtime.diagnostics.acceptedSteps>0);
-  assert.ok(runtime.diagnostics.rejectedSteps>0);
-  assert.ok(runtime.diagnostics.maxLocalError<=1);
-  assert.equal(runtime.diagnostics.derivativeEvaluations,7*(runtime.diagnostics.acceptedSteps+runtime.diagnostics.rejectedSteps));
+test('adaptive diagnostics count rejected and accepted steps, not global errors', () => {
+  const runtime = createDemonstrationRuntime({
+    version: 1,
+    diagnostics: true,
+    dynamics: {
+      method: 'rk45',
+      duration: 1,
+      step: 0.2,
+      initial: { q: 1 },
+      derivatives: { q: '-10*q' },
+    },
+    views: [{ kind: 'metrics', values: [{ expression: 'q' }] }],
+  });
+  assert.ok(runtime.diagnostics.acceptedSteps > 0);
+  assert.ok(runtime.diagnostics.rejectedSteps > 0);
+  assert.ok(runtime.diagnostics.maxLocalError <= 1);
+  assert.equal(
+    runtime.diagnostics.derivativeEvaluations,
+    7 * (runtime.diagnostics.acceptedSteps + runtime.diagnostics.rejectedSteps),
+  );
 });
 
-test('reaction network compiles balanced stoichiometry and conserves element pools',()=>{
-  const scientific=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
-  const runtime=createDemonstrationRuntime(scientific.reversibleReaction);
-  assert.deepEqual(runtime.warnings,[]);
-  assert.ok(Math.abs(runtime.evaluate('A',2)-(1/3+2/3*Math.exp(-6)))<1e-7);
-  assert.ok(Math.abs(runtime.evaluate('total_C',5)-1)<1e-9);
-  const invalid=JSON.parse(JSON.stringify(scientific.reversibleReaction));
-  invalid.dynamics.reactionNetwork.species[1].composition.C=2;
-  assert.equal(validateDemonstration(invalid).ok,false);
-  const enzyme=createDemonstrationRuntime(scientific.enzymeKinetics);
-  for(let i=0;i<=100;i++){
-    assert.ok(Math.abs(enzyme.evaluate('enzymeTotal',i/10)-.2)<1e-7);
-    assert.ok(Math.abs(enzyme.evaluate('substrateTotal',i/10)-1)<1e-7);
-    assert.ok(Object.values(enzyme.stateAt(i/10)).every(v=>v>=0));
+test('reaction network compiles balanced stoichiometry and conserves element pools', () => {
+  const scientific = JSON.parse(
+    readFileSync(
+      new URL('../../docs/examples/scientific-simulation.json', import.meta.url),
+      'utf8',
+    ),
+  );
+  const runtime = createDemonstrationRuntime(scientific.reversibleReaction);
+  assert.deepEqual(runtime.warnings, []);
+  assert.ok(Math.abs(runtime.evaluate('A', 2) - (1 / 3 + (2 / 3) * Math.exp(-6))) < 1e-7);
+  assert.ok(Math.abs(runtime.evaluate('total_C', 5) - 1) < 1e-9);
+  const invalid = JSON.parse(JSON.stringify(scientific.reversibleReaction));
+  invalid.dynamics.reactionNetwork.species[1].composition.C = 2;
+  assert.equal(validateDemonstration(invalid).ok, false);
+  const enzyme = createDemonstrationRuntime(scientific.enzymeKinetics);
+  for (let i = 0; i <= 100; i++) {
+    assert.ok(Math.abs(enzyme.evaluate('enzymeTotal', i / 10) - 0.2) < 1e-7);
+    assert.ok(Math.abs(enzyme.evaluate('substrateTotal', i / 10) - 1) < 1e-7);
+    assert.ok(Object.values(enzyme.stateAt(i / 10)).every((v) => v >= 0));
   }
 });
-test('seeded SSA count process is reproducible and stays integer and nonnegative',()=>{
-  const scientific=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
-  const a=createDemonstrationRuntime(scientific.stochasticExpression),b=createDemonstrationRuntime(scientific.stochasticExpression);
-  assert.deepEqual(a.warnings,[]);
-  assert.equal(a.diagnostics.method,'ssa');
-  assert.ok(a.diagnostics.events>0);
-  for(let i=0;i<=200;i++){
-    const n=a.evaluate('protein',i/10);
-    assert.equal(n,b.evaluate('protein',i/10));
-    assert.ok(Number.isInteger(n)&&n>=0);
+test('seeded SSA count process is reproducible and stays integer and nonnegative', () => {
+  const scientific = JSON.parse(
+    readFileSync(
+      new URL('../../docs/examples/scientific-simulation.json', import.meta.url),
+      'utf8',
+    ),
+  );
+  const a = createDemonstrationRuntime(scientific.stochasticExpression),
+    b = createDemonstrationRuntime(scientific.stochasticExpression);
+  assert.deepEqual(a.warnings, []);
+  assert.equal(a.diagnostics.method, 'ssa');
+  assert.ok(a.diagnostics.events > 0);
+  for (let i = 0; i <= 200; i++) {
+    const n = a.evaluate('protein', i / 10);
+    assert.equal(n, b.evaluate('protein', i / 10));
+    assert.ok(Number.isInteger(n) && n >= 0);
   }
-  const invalid=JSON.parse(JSON.stringify(scientific.stochasticExpression));
-  invalid.dynamics.reactionNetwork.species[0].initial=.5;
-  assert.equal(validateDemonstration(invalid).ok,false);
+  const invalid = JSON.parse(JSON.stringify(scientific.stochasticExpression));
+  invalid.dynamics.reactionNetwork.species[0].initial = 0.5;
+  assert.equal(validateDemonstration(invalid).ok, false);
 });
-test('molecular symbols validate and sample their authored geometry',()=>{
-  const scientific=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
-  assert.equal(validateDemonstration(scientific.molecularStructures).ok,true);
-  const bad=JSON.parse(JSON.stringify(scientific.molecularStructures));
-  bad.views[0].objects[2].element='invalid';
-  assert.equal(validateDemonstration(bad).ok,false);
-});
-
-test('stochastic plot uses a sampled staircase instead of fractional slopes',()=>{
-  const scientific=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
-  const program=scientific.stochasticExpression;
-  const runtime=createDemonstrationRuntime(program);
-  const sample=finishGenerator(samplePlot(program.views[0],runtime,10,false,new Map()));
-  assert.match(sample.paths[0],/H[0-9.]+V[0-9.]+/);
-  assert.doesNotMatch(sample.paths[1],/H[0-9.]+V[0-9.]+/);
+test('molecular symbols validate and sample their authored geometry', () => {
+  const scientific = JSON.parse(
+    readFileSync(
+      new URL('../../docs/examples/scientific-simulation.json', import.meta.url),
+      'utf8',
+    ),
+  );
+  assert.equal(validateDemonstration(scientific.molecularStructures).ok, true);
+  const bad = JSON.parse(JSON.stringify(scientific.molecularStructures));
+  bad.views[0].objects[2].element = 'invalid';
+  assert.equal(validateDemonstration(bad).ok, false);
 });
 
-test('local nonlinear residual solver and nonsymmetric sparse linear solver match known roots',()=>{
-  const scientific=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
-  const root=createDemonstrationRuntime(scientific.nonlinearEquilibrium);
-  assert.ok(Math.abs(root.evaluate('q')-2)<1e-8);
-  assert.ok(Math.abs(root.evaluate('v')-1)<1e-8);
-  assert.ok(root.diagnostics.absoluteResidual<1e-9);
-  const sparse=createDemonstrationRuntime(scientific.nonsymmetricSparse);
-  assert.equal(sparse.diagnostics.method,'BiCGSTAB');
-  assert.ok(sparse.diagnostics.relativeResidual<1e-10);
-  for(let i=0;i<64;i++)assert.ok(Math.abs(sparse.evaluate('sparseAt('+i+')')-1)<1e-8);
-  const bad={version:1,nonlinearSystem:{guess:{q:0},residuals:{q:'q^2+1'}},views:[{kind:'metrics',values:[{expression:'q'}]}]};
-  assert.throws(()=>createDemonstrationRuntime(bad),/Newton/);
-});
-test('coupled spatial fields conserve exchange pools and reject unstable diffusion steps',()=>{
-  const scientific=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
-  const one=createDemonstrationRuntime(scientific.coupledFields1D);
-  assert.deepEqual(one.warnings,[]);
-  assert.ok(Math.abs(one.evaluate('mean_U',1)-(.5+.5*Math.exp(-2)))<1e-5);
-  assert.ok(Math.abs(one.evaluate('mean_U+mean_V',1)-1)<1e-10);
-  assert.ok(Math.abs(one.evaluate('U',1,0)-one.evaluate('U',1,1))<1e-12);
-  const two=createDemonstrationRuntime(scientific.coupledFields2D);
-  assert.deepEqual(two.warnings,[]);
-  assert.ok(Math.abs(two.evaluate('mean_U+mean_V',1)-two.evaluate('mean_U+mean_V',0))<1e-10);
-  const invalid=structuredClone(scientific.coupledFields1D);invalid.dynamics.step=.1;
-  assert.throws(()=>createDemonstrationRuntime(invalid),/CFL/);
-  const conflict=structuredClone(scientific.coupledFields1D);conflict.dynamics.reactionNetwork={};
-  assert.equal(validateDemonstration(conflict).ok,false);
-});
-test('scalar volume slices remap physical coordinates and planar flow samples streamlines',()=>{
-  const view={kind:'field',x:[0,1],y:[0,1],height:64,expression:'spaceZ',palette:'heat',colorRange:[0,1],slicePlane:{axis:'x',at:.5}};
-  const rt=createDemonstrationRuntime({version:1,views:[view]});
-  const sample=finishGenerator(sampleField(view,rt,0,false));
-  assert.equal(sample.slice.axis,'x');
-  assert.equal(sample.slice.position,.5);
-  const pixels=new Uint8ClampedArray(sample.pixels);
-  assert.ok(pixels[1]>pixels[(63*320)*4+1]); // vertical displayed coordinate is physical z
-  const flow={kind:'field',x:[0,1],y:[0,1],height:64,expression:0,vector:[1,0],streamlines:true};
-  const field=finishGenerator(sampleField(flow,createDemonstrationRuntime({version:1,views:[flow]}),0,false));
-  assert.ok(field.streamlines.length>0);
-  for(const line of field.streamlines)for(let i=3;i<line.length;i+=2)assert.ok(Math.abs(line[i]-line[1])<1e-9);
+test('stochastic plot uses a sampled staircase instead of fractional slopes', () => {
+  const scientific = JSON.parse(
+    readFileSync(
+      new URL('../../docs/examples/scientific-simulation.json', import.meta.url),
+      'utf8',
+    ),
+  );
+  const program = scientific.stochasticExpression;
+  const runtime = createDemonstrationRuntime(program);
+  const sample = finishGenerator(samplePlot(program.views[0], runtime, 10, false, new Map()));
+  assert.match(sample.paths[0], /H[0-9.]+V[0-9.]+/);
+  assert.doesNotMatch(sample.paths[1], /H[0-9.]+V[0-9.]+/);
 });
 
-test('forward AD and Simpson quadrature evaluate bounded explicit calculus',()=>{
-  const scientific=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
-  const rt=createDemonstrationRuntime(scientific.calculus);
-  assert.ok(Math.abs(rt.evaluate('slope',0,.3)-2*Math.cos(.6))<1e-12);
-  assert.ok(Math.abs(rt.evaluate('area',0,.3)-(1-Math.cos(.6))/2)<1e-8);
-  assert.ok(Math.abs(rt.evaluate('integral(s,0,pi,sin(s))')-2)<1e-8);
-  assert.equal(rt.evaluate('diff(s,-2,s^3)'),12);
-  assert.throws(()=>rt.evaluate('diff(s,0,abs(s))'),/undefined or unsupported/);
-  const root=createDemonstrationRuntime(scientific.nonlinearEquilibrium);
-  assert.ok(root.diagnostics.adColumns>0);
-  assert.equal(root.diagnostics.finiteDifferenceColumns,0);
+test('local nonlinear residual solver and nonsymmetric sparse linear solver match known roots', () => {
+  const scientific = JSON.parse(
+    readFileSync(
+      new URL('../../docs/examples/scientific-simulation.json', import.meta.url),
+      'utf8',
+    ),
+  );
+  const root = createDemonstrationRuntime(scientific.nonlinearEquilibrium);
+  assert.ok(Math.abs(root.evaluate('q') - 2) < 1e-8);
+  assert.ok(Math.abs(root.evaluate('v') - 1) < 1e-8);
+  assert.ok(root.diagnostics.absoluteResidual < 1e-9);
+  const sparse = createDemonstrationRuntime(scientific.nonsymmetricSparse);
+  assert.equal(sparse.diagnostics.method, 'BiCGSTAB');
+  assert.ok(sparse.diagnostics.relativeResidual < 1e-10);
+  for (let i = 0; i < 64; i++)
+    assert.ok(Math.abs(sparse.evaluate('sparseAt(' + i + ')') - 1) < 1e-8);
+  const bad = {
+    version: 1,
+    nonlinearSystem: { guess: { q: 0 }, residuals: { q: 'q^2+1' } },
+    views: [{ kind: 'metrics', values: [{ expression: 'q' }] }],
+  };
+  assert.throws(() => createDemonstrationRuntime(bad), /Newton/);
 });
-test('box-constrained optimization solves Rosenbrock and a boundary optimum',()=>{
-  const scientific=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
-  const rt=createDemonstrationRuntime(scientific.optimizationRosenbrock);
-  assert.ok(Math.abs(rt.evaluate('q')-1)<1e-5);
-  assert.ok(Math.abs(rt.evaluate('v')-1)<1e-5);
-  assert.ok(rt.evaluate('optObjective')<1e-12);
-  assert.ok(rt.diagnostics.projectedGradient<=1e-6);
-  const bound={version:1,optimization:{variables:[{id:'q',min:0,max:1,initial:0}],objective:'(q-3)^2'},views:[{kind:'metrics',values:[{expression:'q'}]}]};
-  const b=createDemonstrationRuntime(bound);assert.equal(b.evaluate('q'),1);
-  assert.equal(b.evaluate('optGradient'),0);
-  const view=scientific.optimizationRosenbrock.views[0],field=finishGenerator(sampleField(view,rt,0,false));
-  assert.equal(field.markers.length,1);
-  assert.ok(Math.abs(field.markers[0].x-1)<1e-5);
+test('coupled spatial fields conserve exchange pools and reject unstable diffusion steps', () => {
+  const scientific = JSON.parse(
+    readFileSync(
+      new URL('../../docs/examples/scientific-simulation.json', import.meta.url),
+      'utf8',
+    ),
+  );
+  const one = createDemonstrationRuntime(scientific.coupledFields1D);
+  assert.deepEqual(one.warnings, []);
+  assert.ok(Math.abs(one.evaluate('mean_U', 1) - (0.5 + 0.5 * Math.exp(-2))) < 1e-5);
+  assert.ok(Math.abs(one.evaluate('mean_U+mean_V', 1) - 1) < 1e-10);
+  assert.ok(Math.abs(one.evaluate('U', 1, 0) - one.evaluate('U', 1, 1)) < 1e-12);
+  const two = createDemonstrationRuntime(scientific.coupledFields2D);
+  assert.deepEqual(two.warnings, []);
+  assert.ok(Math.abs(two.evaluate('mean_U+mean_V', 1) - two.evaluate('mean_U+mean_V', 0)) < 1e-10);
+  const invalid = structuredClone(scientific.coupledFields1D);
+  invalid.dynamics.step = 0.1;
+  assert.throws(() => createDemonstrationRuntime(invalid), /CFL/);
+  const conflict = structuredClone(scientific.coupledFields1D);
+  conflict.dynamics.reactionNetwork = {};
+  assert.equal(validateDemonstration(conflict).ok, false);
 });
-test('parametric surface stores full coordinate triples rather than scalar height only',()=>{
-  const scientific=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
-  const p=scientific.parametricTorus,rt=createDemonstrationRuntime(p);
-  const f=finishGenerator(sampleField(p.views[0],rt,0,false));
-  assert.equal(f.surface.size,33);
-  assert.equal(f.surface.vertices.length,1089);
-  assert.equal(f.surface.vertices.filter(Boolean).length,1089);
-  assert.ok(Math.abs(f.surface.vertices[0][0]-.725)<1e-12);
-  assert.ok(Math.abs(f.surface.vertices[16*33][0]-.275)<1e-12);
+test('scalar volume slices remap physical coordinates and planar flow samples streamlines', () => {
+  const view = {
+    kind: 'field',
+    x: [0, 1],
+    y: [0, 1],
+    height: 64,
+    expression: 'spaceZ',
+    palette: 'heat',
+    colorRange: [0, 1],
+    slicePlane: { axis: 'x', at: 0.5 },
+  };
+  const rt = createDemonstrationRuntime({ version: 1, views: [view] });
+  const sample = finishGenerator(sampleField(view, rt, 0, false));
+  assert.equal(sample.slice.axis, 'x');
+  assert.equal(sample.slice.position, 0.5);
+  const pixels = new Uint8ClampedArray(sample.pixels);
+  assert.ok(pixels[1] > pixels[63 * 320 * 4 + 1]); // vertical displayed coordinate is physical z
+  const flow = {
+    kind: 'field',
+    x: [0, 1],
+    y: [0, 1],
+    height: 64,
+    expression: 0,
+    vector: [1, 0],
+    streamlines: true,
+  };
+  const field = finishGenerator(
+    sampleField(flow, createDemonstrationRuntime({ version: 1, views: [flow] }), 0, false),
+  );
+  assert.ok(field.streamlines.length > 0);
+  for (const line of field.streamlines)
+    for (let i = 3; i < line.length; i += 2) assert.ok(Math.abs(line[i] - line[1]) < 1e-9);
 });
 
-test('compiled arithmetic and interpreter agree at varied coordinates and lazy branches remain lazy',()=>{
-  const expression='sin(x)^2+cos(x)^2+2*x^3-4*x/(1+x^2)';
-  const ast=parseDemonstrationExpression(expression);
-  const runtime=createDemonstrationRuntime({version:1,views:[{kind:'plot',x:[-5,5],y:[-300,300],curves:[{expression}]}]});
-  for(let i=0;i<1000;i++){
-    const x=(i-500)/100;
-    assert.equal(runtime.evaluate(expression,0,x),evaluateDemonstrationExpression(ast,{x}));
+test('forward AD and Simpson quadrature evaluate bounded explicit calculus', () => {
+  const scientific = JSON.parse(
+    readFileSync(
+      new URL('../../docs/examples/scientific-simulation.json', import.meta.url),
+      'utf8',
+    ),
+  );
+  const rt = createDemonstrationRuntime(scientific.calculus);
+  assert.ok(Math.abs(rt.evaluate('slope', 0, 0.3) - 2 * Math.cos(0.6)) < 1e-12);
+  assert.ok(Math.abs(rt.evaluate('area', 0, 0.3) - (1 - Math.cos(0.6)) / 2) < 1e-8);
+  assert.ok(Math.abs(rt.evaluate('integral(s,0,pi,sin(s))') - 2) < 1e-8);
+  assert.equal(rt.evaluate('diff(s,-2,s^3)'), 12);
+  assert.throws(() => rt.evaluate('diff(s,0,abs(s))'), /undefined or unsupported/);
+  const root = createDemonstrationRuntime(scientific.nonlinearEquilibrium);
+  assert.ok(root.diagnostics.adColumns > 0);
+  assert.equal(root.diagnostics.finiteDifferenceColumns, 0);
+});
+test('box-constrained optimization solves Rosenbrock and a boundary optimum', () => {
+  const scientific = JSON.parse(
+    readFileSync(
+      new URL('../../docs/examples/scientific-simulation.json', import.meta.url),
+      'utf8',
+    ),
+  );
+  const rt = createDemonstrationRuntime(scientific.optimizationRosenbrock);
+  assert.ok(Math.abs(rt.evaluate('q') - 1) < 1e-5);
+  assert.ok(Math.abs(rt.evaluate('v') - 1) < 1e-5);
+  assert.ok(rt.evaluate('optObjective') < 1e-12);
+  assert.ok(rt.diagnostics.projectedGradient <= 1e-6);
+  const bound = {
+    version: 1,
+    optimization: { variables: [{ id: 'q', min: 0, max: 1, initial: 0 }], objective: '(q-3)^2' },
+    views: [{ kind: 'metrics', values: [{ expression: 'q' }] }],
+  };
+  const b = createDemonstrationRuntime(bound);
+  assert.equal(b.evaluate('q'), 1);
+  assert.equal(b.evaluate('optGradient'), 0);
+  const view = scientific.optimizationRosenbrock.views[0],
+    field = finishGenerator(sampleField(view, rt, 0, false));
+  assert.equal(field.markers.length, 1);
+  assert.ok(Math.abs(field.markers[0].x - 1) < 1e-5);
+});
+test('parametric surface stores full coordinate triples rather than scalar height only', () => {
+  const scientific = JSON.parse(
+    readFileSync(
+      new URL('../../docs/examples/scientific-simulation.json', import.meta.url),
+      'utf8',
+    ),
+  );
+  const p = scientific.parametricTorus,
+    rt = createDemonstrationRuntime(p);
+  const f = finishGenerator(sampleField(p.views[0], rt, 0, false));
+  assert.equal(f.surface.size, 33);
+  assert.equal(f.surface.vertices.length, 1089);
+  assert.equal(f.surface.vertices.filter(Boolean).length, 1089);
+  assert.ok(Math.abs(f.surface.vertices[0][0] - 0.725) < 1e-12);
+  assert.ok(Math.abs(f.surface.vertices[16 * 33][0] - 0.275) < 1e-12);
+});
+
+test('compiled arithmetic and interpreter agree at varied coordinates and lazy branches remain lazy', () => {
+  const expression = 'sin(x)^2+cos(x)^2+2*x^3-4*x/(1+x^2)';
+  const ast = parseDemonstrationExpression(expression);
+  const runtime = createDemonstrationRuntime({
+    version: 1,
+    views: [{ kind: 'plot', x: [-5, 5], y: [-300, 300], curves: [{ expression }] }],
+  });
+  for (let i = 0; i < 1000; i++) {
+    const x = (i - 500) / 100;
+    assert.equal(runtime.evaluate(expression, 0, x), evaluateDemonstrationExpression(ast, { x }));
   }
-  assert.equal(runtime.evaluate('if(x==0,1,1/x)',0,0),1);
-  assert.ok(Math.abs(runtime.evaluate('integral(s,0,pi,sin(s)^2)')-Math.PI/2)<1e-9);
+  assert.equal(runtime.evaluate('if(x==0,1,1/x)', 0, 0), 1);
+  assert.ok(Math.abs(runtime.evaluate('integral(s,0,pi,sin(s)^2)') - Math.PI / 2) < 1e-9);
 });
 
-test('FFT measures one-sided amplitude, resolves simulated oscillator and reconstructs ideal low-pass',()=>{
-  const scientific=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
-  const p=scientific.fftSignal,rt=createDemonstrationRuntime(p);
-  assert.equal(rt.evaluate('fftPeakFrequency'),5);
-  assert.ok(Math.abs(rt.evaluate('fftAmplitude',0,5)-2)<1e-12);
-  assert.ok(Math.abs(rt.evaluate('fftAmplitude',0,19)-.5)<1e-12);
-  assert.ok(Math.abs(rt.evaluate('fftFiltered',0,.125)-2*Math.sin(2*Math.PI*5*.125))<1e-12);
-  assert.equal(rt.evaluate('fftNyquist'),128);
-  const hann=createDemonstrationRuntime({...p,analysis:{...p.analysis,window:'hann'}});
-  assert.ok(Math.abs(hann.evaluate('fftAmplitude',0,5)-2)<1e-12);
-  const oscillator=createDemonstrationRuntime(scientific.fftOscillator);
-  assert.equal(oscillator.evaluate('fftPeakFrequency'),3);
-  assert.ok(Math.abs(oscillator.evaluate('fftPeakAmplitude')-1)<1e-5);
-  assert.equal(validateDemonstration({...p,analysis:{...p.analysis,samples:100}}).ok,false);
-  const plot=finishGenerator(samplePlot(p.views[0],rt,0,false,new Map()));
-  assert.equal((plot.paths[0].match(/a1\.8,1\.8/g)||[]).length,258);
+test('FFT measures one-sided amplitude, resolves simulated oscillator and reconstructs ideal low-pass', () => {
+  const scientific = JSON.parse(
+    readFileSync(
+      new URL('../../docs/examples/scientific-simulation.json', import.meta.url),
+      'utf8',
+    ),
+  );
+  const p = scientific.fftSignal,
+    rt = createDemonstrationRuntime(p);
+  assert.equal(rt.evaluate('fftPeakFrequency'), 5);
+  assert.ok(Math.abs(rt.evaluate('fftAmplitude', 0, 5) - 2) < 1e-12);
+  assert.ok(Math.abs(rt.evaluate('fftAmplitude', 0, 19) - 0.5) < 1e-12);
+  assert.ok(
+    Math.abs(rt.evaluate('fftFiltered', 0, 0.125) - 2 * Math.sin(2 * Math.PI * 5 * 0.125)) < 1e-12,
+  );
+  assert.equal(rt.evaluate('fftNyquist'), 128);
+  const hann = createDemonstrationRuntime({ ...p, analysis: { ...p.analysis, window: 'hann' } });
+  assert.ok(Math.abs(hann.evaluate('fftAmplitude', 0, 5) - 2) < 1e-12);
+  const oscillator = createDemonstrationRuntime(scientific.fftOscillator);
+  assert.equal(oscillator.evaluate('fftPeakFrequency'), 3);
+  assert.ok(Math.abs(oscillator.evaluate('fftPeakAmplitude') - 1) < 1e-5);
+  assert.equal(
+    validateDemonstration({ ...p, analysis: { ...p.analysis, samples: 100 } }).ok,
+    false,
+  );
+  const plot = finishGenerator(samplePlot(p.views[0], rt, 0, false, new Map()));
+  assert.equal((plot.paths[0].match(/a1\.8,1\.8/g) || []).length, 258);
 });
-test('Jacobi symmetric eigenvectors satisfy residual and orthogonality, and sweep reruns ODE',()=>{
-  const scientific=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
-  const eigen=createDemonstrationRuntime(scientific.symmetricEigen);
-  const exact=[2-Math.sqrt(2),2,2+Math.sqrt(2)];
-  for(let i=0;i<3;i++)assert.ok(Math.abs(eigen.evaluate('eigenValue',0,i)-exact[i])<1e-12);
-  assert.ok(eigen.diagnostics.eigenResidual<1e-12);
-  assert.ok(eigen.diagnostics.eigenOrthogonality<1e-12);
-  const nonsymmetric={...scientific.symmetricEigen,analysis:{kind:'eigen',matrix:[[1,2,0],[3,4,0],[0,0,1]]}};
-  assert.throws(()=>createDemonstrationRuntime(nonsymmetric),/symmetric/);
-  const p=scientific.odeParameterSweep,rt=createDemonstrationRuntime(p);
-  assert.equal(rt.evaluate('sweepCount'),9);
-  assert.equal(rt.evaluate('sweepMinAt'),3);
-  for(let i=0;i<9;i++)assert.ok(Math.abs(rt.evaluate('sweepValue',0,1+i*.25)-Math.exp(-1-i*.25))<1e-7);
-  assert.ok(Math.abs(rt.evaluate('sweepSensitivity',0,2)+Math.exp(-2))<.002);
-  const plot=finishGenerator(samplePlot(p.views[0],rt,0,false,new Map()));
-  assert.equal((plot.paths[0].match(/a1\.8,1\.8/g)||[]).length,18);
+test('Jacobi symmetric eigenvectors satisfy residual and orthogonality, and sweep reruns ODE', () => {
+  const scientific = JSON.parse(
+    readFileSync(
+      new URL('../../docs/examples/scientific-simulation.json', import.meta.url),
+      'utf8',
+    ),
+  );
+  const eigen = createDemonstrationRuntime(scientific.symmetricEigen);
+  const exact = [2 - Math.sqrt(2), 2, 2 + Math.sqrt(2)];
+  for (let i = 0; i < 3; i++)
+    assert.ok(Math.abs(eigen.evaluate('eigenValue', 0, i) - exact[i]) < 1e-12);
+  assert.ok(eigen.diagnostics.eigenResidual < 1e-12);
+  assert.ok(eigen.diagnostics.eigenOrthogonality < 1e-12);
+  const nonsymmetric = {
+    ...scientific.symmetricEigen,
+    analysis: {
+      kind: 'eigen',
+      matrix: [
+        [1, 2, 0],
+        [3, 4, 0],
+        [0, 0, 1],
+      ],
+    },
+  };
+  assert.throws(() => createDemonstrationRuntime(nonsymmetric), /symmetric/);
+  const p = scientific.odeParameterSweep,
+    rt = createDemonstrationRuntime(p);
+  assert.equal(rt.evaluate('sweepCount'), 9);
+  assert.equal(rt.evaluate('sweepMinAt'), 3);
+  for (let i = 0; i < 9; i++)
+    assert.ok(
+      Math.abs(rt.evaluate('sweepValue', 0, 1 + i * 0.25) - Math.exp(-1 - i * 0.25)) < 1e-7,
+    );
+  assert.ok(Math.abs(rt.evaluate('sweepSensitivity', 0, 2) + Math.exp(-2)) < 0.002);
+  const plot = finishGenerator(samplePlot(p.views[0], rt, 0, false, new Map()));
+  assert.equal((plot.paths[0].match(/a1\.8,1\.8/g) || []).length, 18);
 });
 
-test('velocity Verlet preserves bounded oscillator energy at 5000 actual integration steps',()=>{
-  const ex=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
-  const rt=createDemonstrationRuntime(ex.verletOscillator);
-  assert.equal(rt.duration,100);assert.equal(rt.diagnostics.acceptedSteps,5000);
-  assert.equal(rt.diagnostics.storedValues,10002);assert.deepEqual(rt.warnings,[]);
-  for(let i=0;i<=5000;i++)assert.ok(Math.abs(rt.evaluate('energy',i*.02)-.5)<6e-5);
-  const invalid=structuredClone(ex.verletOscillator);
-  invalid.dynamics.mechanics.coordinates[0].acceleration='-q-.1*v';
-  assert.equal(validateDemonstration(invalid).ok,false);
+test('velocity Verlet preserves bounded oscillator energy at 5000 actual integration steps', () => {
+  const ex = JSON.parse(
+    readFileSync(
+      new URL('../../docs/examples/scientific-simulation.json', import.meta.url),
+      'utf8',
+    ),
+  );
+  const rt = createDemonstrationRuntime(ex.verletOscillator);
+  assert.equal(rt.duration, 100);
+  assert.equal(rt.diagnostics.acceptedSteps, 5000);
+  assert.equal(rt.diagnostics.storedValues, 10002);
+  assert.deepEqual(rt.warnings, []);
+  for (let i = 0; i <= 5000; i++) assert.ok(Math.abs(rt.evaluate('energy', i * 0.02) - 0.5) < 6e-5);
+  const invalid = structuredClone(ex.verletOscillator);
+  invalid.dynamics.mechanics.coordinates[0].acceleration = '-q-.1*v';
+  assert.equal(validateDemonstration(invalid).ok, false);
 });
-test('one-dimensional Galerkin finite elements solve nonuniform meshes and report discrete residual',()=>{
-  const ex=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
-  const p=ex.finiteElementPoisson,rt=createDemonstrationRuntime(p);
-  for(let i=0;i<=64;i++){const x=i/64;assert.ok(Math.abs(rt.evaluate('femValue',0,x)-x*(1-x))<1e-12);}
-  assert.ok(rt.evaluate('femResidual')<1e-12);
-  const nonuniform={...p,finiteElement:{...p.finiteElement,nodes:[0,.1,.31,.7,1]}};
-  const q=createDemonstrationRuntime(nonuniform);
-  for(const x of nonuniform.finiteElement.nodes)assert.ok(Math.abs(q.evaluate('femValue',0,x)-x*(1-x))<1e-12);
-  assert.throws(()=>createDemonstrationRuntime({...p,finiteElement:{...p.finiteElement,diffusion:-1}}),/positive diffusion/);
-});
-test('periodic upwind transport conserves mean in both directions and checks CFL',()=>{
-  const ex=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
-  const p=ex.periodicTransport;
-  for(const speed of [-1,1]){
-    const rt=createDemonstrationRuntime(p,{speed});
-    assert.deepEqual(rt.warnings,[]);
-    assert.ok(Math.abs(rt.evaluate('mean_U',.25)-1)<1e-12);
-    assert.ok(rt.evaluate('U',.25,speed===1?.25:.75)>1.4);
-    assert.ok(Math.abs(rt.diagnostics.transportCFL-.16)<1e-12);
+test('one-dimensional Galerkin finite elements solve nonuniform meshes and report discrete residual', () => {
+  const ex = JSON.parse(
+    readFileSync(
+      new URL('../../docs/examples/scientific-simulation.json', import.meta.url),
+      'utf8',
+    ),
+  );
+  const p = ex.finiteElementPoisson,
+    rt = createDemonstrationRuntime(p);
+  for (let i = 0; i <= 64; i++) {
+    const x = i / 64;
+    assert.ok(Math.abs(rt.evaluate('femValue', 0, x) - x * (1 - x)) < 1e-12);
   }
-  const unstable=structuredClone(p);unstable.dynamics.step=.1;
-  assert.throws(()=>createDemonstrationRuntime(unstable),/CFL/);
+  assert.ok(rt.evaluate('femResidual') < 1e-12);
+  const nonuniform = { ...p, finiteElement: { ...p.finiteElement, nodes: [0, 0.1, 0.31, 0.7, 1] } };
+  const q = createDemonstrationRuntime(nonuniform);
+  for (const x of nonuniform.finiteElement.nodes)
+    assert.ok(Math.abs(q.evaluate('femValue', 0, x) - x * (1 - x)) < 1e-12);
+  assert.throws(
+    () =>
+      createDemonstrationRuntime({ ...p, finiteElement: { ...p.finiteElement, diffusion: -1 } }),
+    /positive diffusion/,
+  );
 });
-test('marching tetrahedra extracts bounded sphere triangles from actual scalar samples',()=>{
-  const ex=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
-  const p=ex.scalarIsosurface,rt=createDemonstrationRuntime(p);
-  const f=finishGenerator(sampleField(p.views[0],rt,0,false));
-  assert.equal(f.surface.triangles.length,4992);
-  for(const triangle of f.surface.triangles)for(const point of triangle)
-    assert.ok(Math.abs(point.reduce((s,x)=>s+1.44*x*x,0)-1)<.02);
-  assert.equal(f.surface.isoLevel,1);
-  const preview=finishGenerator(sampleField(p.views[0],rt,0,true));
-  assert.ok(preview.surface.triangles.length<f.surface.triangles.length);
+test('periodic upwind transport conserves mean in both directions and checks CFL', () => {
+  const ex = JSON.parse(
+    readFileSync(
+      new URL('../../docs/examples/scientific-simulation.json', import.meta.url),
+      'utf8',
+    ),
+  );
+  const p = ex.periodicTransport;
+  for (const speed of [-1, 1]) {
+    const rt = createDemonstrationRuntime(p, { speed });
+    assert.deepEqual(rt.warnings, []);
+    assert.ok(Math.abs(rt.evaluate('mean_U', 0.25) - 1) < 1e-12);
+    assert.ok(rt.evaluate('U', 0.25, speed === 1 ? 0.25 : 0.75) > 1.4);
+    assert.ok(Math.abs(rt.diagnostics.transportCFL - 0.16) < 1e-12);
+  }
+  const unstable = structuredClone(p);
+  unstable.dynamics.step = 0.1;
+  assert.throws(() => createDemonstrationRuntime(unstable), /CFL/);
+});
+test('marching tetrahedra extracts bounded sphere triangles from actual scalar samples', () => {
+  const ex = JSON.parse(
+    readFileSync(
+      new URL('../../docs/examples/scientific-simulation.json', import.meta.url),
+      'utf8',
+    ),
+  );
+  const p = ex.scalarIsosurface,
+    rt = createDemonstrationRuntime(p);
+  const f = finishGenerator(sampleField(p.views[0], rt, 0, false));
+  assert.equal(f.surface.triangles.length, 4992);
+  for (const triangle of f.surface.triangles)
+    for (const point of triangle)
+      assert.ok(Math.abs(point.reduce((s, x) => s + 1.44 * x * x, 0) - 1) < 0.02);
+  assert.equal(f.surface.isoLevel, 1);
+  const preview = finishGenerator(sampleField(p.views[0], rt, 0, true));
+  assert.ok(preview.surface.triangles.length < f.surface.triangles.length);
 });
 
-test('simulation modules have no circular imports and preserve the public facade',()=>{
-  const root=fileURLToPath(new URL('../../packages/core/src/simulation/',import.meta.url));
-  const files=[];
-  function walk(dir){
-    for(const item of readdirSync(dir,{withFileTypes:true})){
-      const path=join(dir,item.name);
-      if(item.isDirectory())walk(path);
-      else if(item.name.endsWith('.js'))files.push(path);
+test('simulation modules have no circular imports and preserve the public facade', () => {
+  const root = fileURLToPath(new URL('../../packages/core/src/simulation/', import.meta.url));
+  const files = [];
+  function walk(dir) {
+    for (const item of readdirSync(dir, { withFileTypes: true })) {
+      const path = join(dir, item.name);
+      if (item.isDirectory()) walk(path);
+      else if (item.name.endsWith('.js')) files.push(path);
     }
   }
   walk(root);
-  assert.ok(files.length>=22);
-  const available=new Set(files),graph=new Map();
-  for(const path of files){
-    const source=readFileSync(path,'utf8');
-    const dependencies=[...source.matchAll(/^(?:import|export)\s+[^;]*?\bfrom\s+['"]([^'"]+)['"]/gm)].map(m=>resolve(dirname(path),m[1]));
-    for(const dep of dependencies)assert.ok(available.has(dep),`Internal module must not import outside the kernel: ${path} -> ${dep}`);
-    graph.set(path,dependencies);
+  assert.ok(files.length >= 22);
+  const available = new Set(files),
+    graph = new Map();
+  for (const path of files) {
+    const source = readFileSync(path, 'utf8');
+    const dependencies = [
+      ...source.matchAll(/^(?:import|export)\s+[^;]*?\bfrom\s+['"]([^'"]+)['"]/gm),
+    ].map((m) => resolve(dirname(path), m[1]));
+    for (const dep of dependencies)
+      assert.ok(
+        available.has(dep),
+        `Internal module must not import outside the kernel: ${path} -> ${dep}`,
+      );
+    graph.set(path, dependencies);
   }
-  const visiting=new Set(),visited=new Set();
-  function visit(path){
-    assert.ok(!visiting.has(path),`Circular simulation dependency: ${path}`);
-    if(visited.has(path))return;
-    visiting.add(path);for(const dep of graph.get(path))visit(dep);
-    visiting.delete(path);visited.add(path);
+  const visiting = new Set(),
+    visited = new Set();
+  function visit(path) {
+    assert.ok(!visiting.has(path), `Circular simulation dependency: ${path}`);
+    if (visited.has(path)) return;
+    visiting.add(path);
+    for (const dep of graph.get(path)) visit(dep);
+    visiting.delete(path);
+    visited.add(path);
   }
-  for(const path of files)visit(path);
+  for (const path of files) visit(path);
   // The validation entry must not transitively load a time/grid/analysis
   // solver or runtime. Small dense algebra is used by expression functions.
-  const validator=join(root,'compiler','validate.js');
-  const reachable=new Set();
-  function collect(path){
-    if(reachable.has(path))return;
-    reachable.add(path);for(const dep of graph.get(path))collect(dep);
+  const validator = join(root, 'compiler', 'validate.js');
+  const reachable = new Set();
+  function collect(path) {
+    if (reachable.has(path)) return;
+    reachable.add(path);
+    for (const dep of graph.get(path)) collect(dep);
   }
   collect(validator);
-  for(const path of reachable){
-    assert.ok(relative(root,path).split(sep)[0]!=='runtime',`Validator imports runtime: ${path}`);
-    assert.ok(relative(root,path).split(sep)[0]!=='numerics'||path===join(root,'numerics','dense.js'),`Validator imports execution algorithm: ${path}`);
+  for (const path of reachable) {
+    assert.ok(
+      relative(root, path).split(sep)[0] !== 'runtime',
+      `Validator imports runtime: ${path}`,
+    );
+    assert.ok(
+      relative(root, path).split(sep)[0] !== 'numerics' ||
+        path === join(root, 'numerics', 'dense.js'),
+      `Validator imports execution algorithm: ${path}`,
+    );
   }
-  for(const [path,deps] of graph){
-    if(relative(root,path).split(sep)[0]==='numerics')for(const dep of deps)
-      assert.ok(relative(root,dep).split(sep)[0]!=='models',`Numerical algorithm imports DSL adapter: ${path} -> ${dep}`);
+  for (const [path, deps] of graph) {
+    if (relative(root, path).split(sep)[0] === 'numerics')
+      for (const dep of deps)
+        assert.ok(
+          relative(root, dep).split(sep)[0] !== 'models',
+          `Numerical algorithm imports DSL adapter: ${path} -> ${dep}`,
+        );
   }
-  const facade=readFileSync(new URL('../../packages/core/src/demonstration.js',import.meta.url),'utf8');
-  assert.ok(facade.split('\n').length<20);
+  const facade = readFileSync(
+    new URL('../../packages/core/src/demonstration.js', import.meta.url),
+    'utf8',
+  );
+  assert.ok(facade.split('\n').length < 20);
 });
-test('compiled factory reuses validated expressions without sharing parameter revision results',()=>{
-  const p={version:1,parameters:[{id:'k',min:1,max:3,value:2}],definitions:{f:'k*x'},views:[{kind:'plot',x:[0,1],y:[0,3],curves:[{expression:'f'}]}]};
-  const factory=compileDemonstrationRuntime(p);
-  const a=finishGenerator(factory({k:1})),b=finishGenerator(factory({k:3}));
-  assert.equal(a.evaluate('f',0,.5),.5);
-  assert.equal(b.evaluate('f',0,.5),1.5);
-  assert.equal(a.evaluate('f',0,.5),.5);
-  const invalid={...p,definitions:{foo:1,bar:'#1'}};
-  assert.equal(validateDemonstration(invalid).ok,false);
-  assert.throws(()=>compileDemonstrationRuntime(invalid));
+test('compiled factory reuses validated expressions without sharing parameter revision results', () => {
+  const p = {
+    version: 1,
+    parameters: [{ id: 'k', min: 1, max: 3, value: 2 }],
+    definitions: { f: 'k*x' },
+    views: [{ kind: 'plot', x: [0, 1], y: [0, 3], curves: [{ expression: 'f' }] }],
+  };
+  const factory = compileDemonstrationRuntime(p);
+  const a = finishGenerator(factory({ k: 1 })),
+    b = finishGenerator(factory({ k: 3 }));
+  assert.equal(a.evaluate('f', 0, 0.5), 0.5);
+  assert.equal(b.evaluate('f', 0, 0.5), 1.5);
+  assert.equal(a.evaluate('f', 0, 0.5), 0.5);
+  const invalid = { ...p, definitions: { foo: 1, bar: '#1' } };
+  assert.equal(validateDemonstration(invalid).ok, false);
+  assert.throws(() => compileDemonstrationRuntime(invalid));
 });
 
-test('geometry extraction is independent of model evaluation and preserves its resource limits',()=>{
-  const size=17,values=new Float64Array(size**3);
-  for(let k=0;k<size;k++)for(let j=0;j<size;j++)for(let i=0;i<size;i++){
-    const [x,y,z]=[i,j,k].map(v=>-1.2+2.4*v/(size-1));
-    values[(k*size+j)*size+i]=x*x+y*y+z*z;
-  }
-  const triangles=finishGenerator(extractIsosurface(values,size,1));
-  assert.equal(triangles.length,4992);
-  for(const triangle of triangles)for(const point of triangle)
-    assert.ok(Math.abs(point.reduce((s,x)=>s+1.44*x*x,0)-1)<.02);
-  assert.deepEqual(finishGenerator(extractIsosurface(new Float64Array(8),2,1)),[]);
-  assert.throws(()=>finishGenerator(extractIsosurface(new Float64Array(8),18,1)),/cubic grid/);
-  assert.throws(()=>finishGenerator(extractIsosurface(new Float64Array(8),2,NaN)),/finite level/);
+test('geometry extraction is independent of model evaluation and preserves its resource limits', () => {
+  const size = 17,
+    values = new Float64Array(size ** 3);
+  for (let k = 0; k < size; k++)
+    for (let j = 0; j < size; j++)
+      for (let i = 0; i < size; i++) {
+        const [x, y, z] = [i, j, k].map((v) => -1.2 + (2.4 * v) / (size - 1));
+        values[(k * size + j) * size + i] = x * x + y * y + z * z;
+      }
+  const triangles = finishGenerator(extractIsosurface(values, size, 1));
+  assert.equal(triangles.length, 4992);
+  for (const triangle of triangles)
+    for (const point of triangle)
+      assert.ok(Math.abs(point.reduce((s, x) => s + 1.44 * x * x, 0) - 1) < 0.02);
+  assert.deepEqual(finishGenerator(extractIsosurface(new Float64Array(8), 2, 1)), []);
+  assert.throws(() => finishGenerator(extractIsosurface(new Float64Array(8), 18, 1)), /cubic grid/);
+  assert.throws(
+    () => finishGenerator(extractIsosurface(new Float64Array(8), 2, NaN)),
+    /finite level/,
+  );
 });
-test('camera projection transforms existing geometry without numerical runtime or mutation',()=>{
-  const sample={size:2,values:[0,.25,.5,1],x:[0,1],y:[0,1],z:[0,1],
-    triangles:[[[0,0,0],[1,0,0],[0,1,1]],[[0,0,-1],[-1,0,0],[0,-1,0]]],
-    curve:[[0,0,0],null,[.5,.5,1],[1,1,0]]};
-  const original=structuredClone(sample),p=createProjection(0,0);
-  assert.deepEqual(p(0,0,0),[260,135]);
-  assert.equal(surfacePath(sample,p,true,0),'M178.00,217.00L342.00,176.00');
-  assert.equal(spaceCurvePath(sample,p),'M260,135M301,53L342,135');
-  assert.ok(spaceArrow(p,[0,0,0],[1,0,0]).startsWith('M260,135L342,135'));
-  assert.equal(projectSurfaceFaces(sample,'shaded',0,0).length,1);
-  assert.deepEqual(projectSurfaceFaces(sample,'wireframe',0,0),[]);
-  const a=projectIsoFaces(sample,0,0),b=projectIsoFaces(sample,.6,.5);
-  assert.equal(a.length,2);assert.equal(b.length,2);assert.notDeepEqual(a,b);
-  assert.ok(a[0].depth<=a[1].depth&&b[0].depth<=b[1].depth);
-  assert.deepEqual(sample,original);
+test('camera projection transforms existing geometry without numerical runtime or mutation', () => {
+  const sample = {
+    size: 2,
+    values: [0, 0.25, 0.5, 1],
+    x: [0, 1],
+    y: [0, 1],
+    z: [0, 1],
+    triangles: [
+      [
+        [0, 0, 0],
+        [1, 0, 0],
+        [0, 1, 1],
+      ],
+      [
+        [0, 0, -1],
+        [-1, 0, 0],
+        [0, -1, 0],
+      ],
+    ],
+    curve: [[0, 0, 0], null, [0.5, 0.5, 1], [1, 1, 0]],
+  };
+  const original = structuredClone(sample),
+    p = createProjection(0, 0);
+  assert.deepEqual(p(0, 0, 0), [260, 135]);
+  assert.equal(surfacePath(sample, p, true, 0), 'M178.00,217.00L342.00,176.00');
+  assert.equal(spaceCurvePath(sample, p), 'M260,135M301,53L342,135');
+  assert.ok(spaceArrow(p, [0, 0, 0], [1, 0, 0]).startsWith('M260,135L342,135'));
+  assert.equal(projectSurfaceFaces(sample, 'shaded', 0, 0).length, 1);
+  assert.deepEqual(projectSurfaceFaces(sample, 'wireframe', 0, 0), []);
+  const a = projectIsoFaces(sample, 0, 0),
+    b = projectIsoFaces(sample, 0.6, 0.5);
+  assert.equal(a.length, 2);
+  assert.equal(b.length, 2);
+  assert.notDeepEqual(a, b);
+  assert.ok(a[0].depth <= a[1].depth && b[0].depth <= b[1].depth);
+  assert.deepEqual(sample, original);
 });
-test('plot projection is standalone for both linear and logarithmic axes',()=>{
-  const p=plotProjection([1,10],[1,100],'log','log');
-  assert.ok(Math.abs(p.sx(Math.sqrt(10))-(p.sx(1)+p.sx(10))/2)<1e-10);
-  const points=[[1,1],[2,10],null,[3,20],[4,30]];
-  const line=pathFor(points,p.sx,p.sy),step=pathFor(points,p.sx,p.sy,'step');
-  assert.equal((line.match(/M/g)||[]).length,2);
-  assert.equal((step.match(/H/g)||[]).length,2);
-  assert.equal((pathFor(points,p.sx,p.sy,'stem',p.sy(1)).match(/V/g)||[]).length,4);
+test('plot projection is standalone for both linear and logarithmic axes', () => {
+  const p = plotProjection([1, 10], [1, 100], 'log', 'log');
+  assert.ok(Math.abs(p.sx(Math.sqrt(10)) - (p.sx(1) + p.sx(10)) / 2) < 1e-10);
+  const points = [[1, 1], [2, 10], null, [3, 20], [4, 30]];
+  const line = pathFor(points, p.sx, p.sy),
+    step = pathFor(points, p.sx, p.sy, 'step');
+  assert.equal((line.match(/M/g) || []).length, 2);
+  assert.equal((step.match(/H/g) || []).length, 2);
+  assert.equal((pathFor(points, p.sx, p.sy, 'stem', p.sy(1)).match(/V/g) || []).length, 4);
 });
 
-test('asynchronous compilation selects only the required numerical algorithms',async()=>{
-  const analytic={version:1,views:[{kind:'plot',x:[0,1],y:[0,1],curves:[{expression:'x^2'}]}]};
-  const ex=JSON.parse(readFileSync(new URL('../../docs/examples/scientific-simulation.json',import.meta.url),'utf8'));
-  assert.deepEqual(requiredAlgorithms(inspectCompilation(analytic)),[]);
-  assert.deepEqual(requiredAlgorithms(inspectCompilation(ex.finiteElementPoisson)),['solveFiniteElement']);
-  assert.deepEqual(requiredAlgorithms(inspectCompilation(ex.scalarIsosurface)),[]);
-  assert.deepEqual(requiredAlgorithms(inspectCompilation(ex.verletOscillator)),['integrateVerlet']);
-  assert.deepEqual(requiredAlgorithms(inspectCompilation(ex.fftOscillator)),['prepareScientificAnalysis','integrateAdaptive']);
-  const factory=await compileDemonstrationRuntimeAsync(analytic);
-  assert.equal(finishGenerator(factory()).evaluate('x^2',0,.5),.25);
-  await assert.rejects(compileDemonstrationRuntimeAsync({version:1,views:[]}));
+test('asynchronous compilation selects only the required numerical algorithms', async () => {
+  const analytic = {
+    version: 1,
+    views: [{ kind: 'plot', x: [0, 1], y: [0, 1], curves: [{ expression: 'x^2' }] }],
+  };
+  const ex = JSON.parse(
+    readFileSync(
+      new URL('../../docs/examples/scientific-simulation.json', import.meta.url),
+      'utf8',
+    ),
+  );
+  assert.deepEqual(requiredAlgorithms(inspectCompilation(analytic)), []);
+  assert.deepEqual(requiredAlgorithms(inspectCompilation(ex.finiteElementPoisson)), [
+    'solveFiniteElement',
+  ]);
+  assert.deepEqual(requiredAlgorithms(inspectCompilation(ex.scalarIsosurface)), []);
+  assert.deepEqual(requiredAlgorithms(inspectCompilation(ex.verletOscillator)), [
+    'integrateVerlet',
+  ]);
+  assert.deepEqual(requiredAlgorithms(inspectCompilation(ex.fftOscillator)), [
+    'prepareScientificAnalysis',
+    'integrateAdaptive',
+  ]);
+  const factory = await compileDemonstrationRuntimeAsync(analytic);
+  assert.equal(finishGenerator(factory()).evaluate('x^2', 0, 0.5), 0.25);
+  await assert.rejects(compileDemonstrationRuntimeAsync({ version: 1, views: [] }));
 });
-test('async loader and synchronous facade preserve numerical results across all examples',async()=>{
-  for(const file of ['algorithmic-demonstrations.json','intelligent-ui-physics.json','scientific-simulation.json']){
-    const fixtures=JSON.parse(readFileSync(new URL('../../docs/examples/'+file,import.meta.url),'utf8'));
-    for(const [id,p] of Object.entries(fixtures)){
-      const lazy=await compileDemonstrationRuntimeAsync(p);
-      const sync=compileDemonstrationRuntime(p);
-      for(const values of [{},Object.fromEntries((p.parameters??[]).map(q=>[q.id,q.min+.25*(q.max-q.min)]))]){
-        let a,b;
-        try{a=finishGenerator(sync(values));}catch(error){assert.throws(()=>finishGenerator(lazy(values)),e=>String(e)===String(error),id);continue;}
-        b=finishGenerator(lazy(values));
-        assert.equal(b.duration,a.duration,id);
-        assert.deepEqual(b.diagnostics,a.diagnostics,id);
-        assert.deepEqual(b.warnings,a.warnings,id);
-        assert.deepEqual(b.eventTimes,a.eventTimes,id);
-        for(const t of [0,a.duration/2,a.duration]){
-          assert.deepEqual(b.stateAt(t),a.stateAt(t),id);
-          for(const expr of [...Object.keys(p.definitions??{}),...p.views.flatMap(v=>[v.expression,...(v.curves??[]).map(c=>c.expression),...(v.values??[]).map(c=>c.expression)].filter(x=>x!==undefined))]){
-            a.resetBudget();b.resetBudget();
+test('async loader and synchronous facade preserve numerical results across all examples', async () => {
+  for (const file of [
+    'algorithmic-demonstrations.json',
+    'intelligent-ui-physics.json',
+    'scientific-simulation.json',
+  ]) {
+    const fixtures = JSON.parse(
+      readFileSync(new URL('../../docs/examples/' + file, import.meta.url), 'utf8'),
+    );
+    for (const [id, p] of Object.entries(fixtures)) {
+      const lazy = await compileDemonstrationRuntimeAsync(p);
+      const sync = compileDemonstrationRuntime(p);
+      for (const values of [
+        {},
+        Object.fromEntries((p.parameters ?? []).map((q) => [q.id, q.min + 0.25 * (q.max - q.min)])),
+      ]) {
+        let a, b;
+        try {
+          a = finishGenerator(sync(values));
+        } catch (error) {
+          assert.throws(
+            () => finishGenerator(lazy(values)),
+            (e) => String(e) === String(error),
+            id,
+          );
+          continue;
+        }
+        b = finishGenerator(lazy(values));
+        assert.equal(b.duration, a.duration, id);
+        assert.deepEqual(b.diagnostics, a.diagnostics, id);
+        assert.deepEqual(b.warnings, a.warnings, id);
+        assert.deepEqual(b.eventTimes, a.eventTimes, id);
+        for (const t of [0, a.duration / 2, a.duration]) {
+          assert.deepEqual(b.stateAt(t), a.stateAt(t), id);
+          for (const expr of [
+            ...Object.keys(p.definitions ?? {}),
+            ...p.views.flatMap((v) =>
+              [
+                v.expression,
+                ...(v.curves ?? []).map((c) => c.expression),
+                ...(v.values ?? []).map((c) => c.expression),
+              ].filter((x) => x !== undefined),
+            ),
+          ]) {
+            a.resetBudget();
+            b.resetBudget();
             let x;
-            try{x=a.evaluate(expr,t,.25,.3);}catch(error){assert.throws(()=>b.evaluate(expr,t,.25,.3),e=>String(e)===String(error),id);continue;}
-            assert.equal(b.evaluate(expr,t,.25,.3),x,id+' '+expr);
+            try {
+              x = a.evaluate(expr, t, 0.25, 0.3);
+            } catch (error) {
+              assert.throws(
+                () => b.evaluate(expr, t, 0.25, 0.3),
+                (e) => String(e) === String(error),
+                id,
+              );
+              continue;
+            }
+            assert.equal(b.evaluate(expr, t, 0.25, 0.3), x, id + ' ' + expr);
           }
         }
       }

@@ -163,9 +163,11 @@ export function MorePopover() {
         !(event.target instanceof Node) ||
         (!menu.contains(event.target) && !trigger.contains(event.target)) ||
         !['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)
-      ) return;
-      const items = Array.from(menu.querySelectorAll<HTMLElement>('[role="menuitem"], [role="menuitemcheckbox"]'))
-        .filter((item) => item.getClientRects().length > 0);
+      )
+        return;
+      const items = Array.from(
+        menu.querySelectorAll<HTMLElement>('[role="menuitem"], [role="menuitemcheckbox"]'),
+      ).filter((item) => item.getClientRects().length > 0);
       if (!items.length) return;
       event.preventDefault();
       const current = items.indexOf(document.activeElement as HTMLElement);

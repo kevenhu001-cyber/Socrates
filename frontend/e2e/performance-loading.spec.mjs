@@ -45,10 +45,8 @@ test('download-first UI fonts preload one variable face without duplicate transf
   expect(result.count).toBe(1);
   expect(result.initiator).toBe('link');
   expect(result.preload).toBe(1);
-  /* The platform UI face takes precedence; bundled faces remain local fallbacks. */
-  expect(result.family).toMatch(
-    /^system-ui,.*['"]Noto Sans SC['"].*['"]Geist Sans['"], sans-serif$/,
-  );
+  /* Self-hosted Geist Sans + Noto Sans SC only; never fall back to OS fonts. */
+  expect(result.family).toMatch(/^['"]?Geist Sans['"]?,.*['"]Noto Sans SC['"], sans-serif$/);
   /* Platform CJK faces may satisfy the glyphs entirely; what must never
      happen is a third-party font origin. */
   expect([...new Set(result.cjkFonts)].filter((origin) => origin !== result.appOrigin)).toEqual([]);
@@ -194,7 +192,9 @@ test('production entry keeps the static closure gzip transfer under budget', () 
   expect(metrics.staticJsGzipBytes).toBeLessThan(360_000);
   const testStateModule = report.modules.find((item) => item.id === 'src/app/testState.ts');
   expect(testStateModule, 'test fixture must remain available to automation').toBeDefined();
-  expect(scripts.has(testStateModule.chunk), 'test-only state leaked into production entry').toBe(false);
+  expect(scripts.has(testStateModule.chunk), 'test-only state leaked into production entry').toBe(
+    false,
+  );
   expect(metrics.linkedCssGzipBytes).toBeLessThan(210_000);
   expect(Object.values(metrics).reduce((sum, bytes) => sum + bytes, 0)).toBeLessThan(588_000);
 

@@ -10,11 +10,25 @@ import { integrateAdaptive } from '../numerics/adaptive.js';
 import { integrateVerlet } from '../numerics/verlet.js';
 import { integrateReactionSSA } from '../numerics/ssa.js';
 import { inspectCompilation, createCompiledFactory } from './factory.js';
-const algorithms=Object.freeze({solveFiniteElement,solveSparseSystem,solveNonlinearSystem,solveOptimization,prepareCoupledGrid,prepareImplicitGrid,prepareScientificAnalysis,integrateRK4,integrateAdaptive,integrateVerlet,integrateReactionSSA});
-export function compileDemonstrationRuntime(input){
-  return createCompiledFactory(inspectCompilation(input),algorithms,compileDemonstrationRuntime);
+const algorithms = Object.freeze({
+  solveFiniteElement,
+  solveSparseSystem,
+  solveNonlinearSystem,
+  solveOptimization,
+  prepareCoupledGrid,
+  prepareImplicitGrid,
+  prepareScientificAnalysis,
+  integrateRK4,
+  integrateAdaptive,
+  integrateVerlet,
+  integrateReactionSSA,
+});
+export function compileDemonstrationRuntime(input) {
+  return createCompiledFactory(inspectCompilation(input), algorithms, compileDemonstrationRuntime);
 }
-export function createDemonstrationRuntime(input,values={}){
-  const work=compileDemonstrationRuntime(input)(values);
-  let next=work.next();while(!next.done)next=work.next();return next.value;
+export function createDemonstrationRuntime(input, values = {}) {
+  const work = compileDemonstrationRuntime(input)(values);
+  let next = work.next();
+  while (!next.done) next = work.next();
+  return next.value;
 }

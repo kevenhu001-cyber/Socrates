@@ -255,12 +255,18 @@ async function pollDetachedAttempt(
   controller: AbortController,
 ): Promise<PollOutcome> {
   let snapshot: Snapshot | null = null;
+  let snapshotFailedStatus: number | null = null;
   try {
     snapshot = await getChatTurn(turnId, context.signal);
   } catch (error) {
+    const status = (error as { status?: number } | null)?.status;
+    if (typeof status === 'number' && status >= 400 && status < 500 && status !== 429) {
+      snapshotFailedStatus = status;
+    }
     reportSwallow(error, 'chat/detachedTurnRecovery.pollCheck');
   }
   if (context.signal?.aborted) return { terminal: true, value: null };
+  if (snapshotFailedStatus !== null) return { terminal: true, value: null };
   const snapshotOutcome = snapshotPollOutcome(snapshot, state, context);
   if (snapshotOutcome) return snapshotOutcome;
 
@@ -288,7 +294,7 @@ async function pollDetachedTurn(
   context: DetachedRecoveryContext,
   controller: AbortController,
 ): Promise<RecoveryResult | null> {
-  for (let attempt = 0; attempt < 30 && !state.done && !state.failed; attempt += 1) {
+  for (let attempt = 0; attempt < 120 && !state.done && !state.failed; attempt += 1) {
     if (context.signal && context.signal.aborted) break;
     const outcome = await pollDetachedAttempt(turnId, state, context, controller);
     if (outcome.terminal) return outcome.value;

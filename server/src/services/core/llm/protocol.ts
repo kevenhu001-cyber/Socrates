@@ -100,7 +100,11 @@ export function requestBodyVariants(opts: ChatCompletionRequestOptions, stream: 
   if (Object.keys(cacheFields).length) {
     const withoutCache = { ...withTools };
     for (const key of Object.keys(cacheFields)) delete withoutCache[key];
-    variants.push({ body: withoutCache, reason: 'provider-400-with-cache-options', speedApplied: variants[0].speedApplied });
+    variants.push({
+      body: withoutCache,
+      reason: 'provider-400-with-cache-options',
+      speedApplied: variants[0].speedApplied,
+    });
   }
 
   /* Usage reporting is optional; native tools and explicit Instant semantics
@@ -135,7 +139,11 @@ export function requestBodyVariants(opts: ChatCompletionRequestOptions, stream: 
   // A compatibility endpoint may reject it even when the model registry allows it.
   if ('temperature' in withTools) {
     const { temperature: _temperature, ...withoutTemperature } = withTools;
-    variants.push({ body: withoutTemperature, reason: 'provider-400-with-temperature', speedApplied: variants[0].speedApplied });
+    variants.push({
+      body: withoutTemperature,
+      reason: 'provider-400-with-temperature',
+      speedApplied: variants[0].speedApplied,
+    });
   }
   if (hasTools) {
     const { tools: _tools, tool_choice: _toolChoice, ...withoutTools } = compatibilityBase;

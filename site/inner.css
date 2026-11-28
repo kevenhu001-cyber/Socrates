@@ -7925,7 +7925,7 @@ body.ed-site .ed-timeline-row { grid-template-columns: 1fr; }
   margin: 0;
   background: var(--site-color-paper, #000000);
   color: var(--content-ink);
-  font-family: 'Geist Sans', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-family: 'Geist Sans', 'Noto Sans SC', sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 .content-page *, .content-page *::before, .content-page *::after { box-sizing: border-box; }

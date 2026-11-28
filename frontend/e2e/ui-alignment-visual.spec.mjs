@@ -13,7 +13,8 @@ import {
  */
 const prompt = '分析一下储能系统的优化调度。';
 const introduction = '我先查阅资料，再计算储能系统的运行成本。';
-const answer = '\n\n## 优化目标\n\n在满足约束的前提下，降低运行成本。\n\n```python\ncost = sum(price * power * dt)\n```';
+const answer =
+  '\n\n## 优化目标\n\n在满足约束的前提下，降低运行成本。\n\n```python\ncost = sum(price * power * dt)\n```';
 const tools = [
   {
     id: 'search-a',
@@ -85,12 +86,20 @@ for (const [device, viewport] of Object.entries(WORKBENCH_VIEWPORTS)) {
           input: { task: '检查项目代码' },
         });
         ctl.recordAgentStep({
-          type: 'step', id: 'alignment-agent', runId: 'alignment-run',
-          stepId: 'read', kind: 'read', status: 'done',
+          type: 'step',
+          id: 'alignment-agent',
+          runId: 'alignment-run',
+          stepId: 'read',
+          kind: 'read',
+          status: 'done',
         });
         ctl.recordAgentStep({
-          type: 'step', id: 'alignment-agent', runId: 'alignment-run',
-          stepId: 'test', kind: 'command', status: 'running',
+          type: 'step',
+          id: 'alignment-agent',
+          runId: 'alignment-run',
+          stepId: 'test',
+          kind: 'command',
+          status: 'running',
           command: 'npm run test:unit',
         });
       });
@@ -105,8 +114,11 @@ for (const [device, viewport] of Object.entries(WORKBENCH_VIEWPORTS)) {
       await page.evaluate(() => {
         const ctl = window.__alignmentController;
         ctl.recordToolResult({
-          id: 'alignment-agent', name: 'workspace_agent',
-          ok: true, status: 'completed', output: 'Done.',
+          id: 'alignment-agent',
+          name: 'workspace_agent',
+          ok: true,
+          status: 'completed',
+          output: 'Done.',
         });
         ctl.append('检查完成。');
         ctl.finish();
@@ -143,10 +155,14 @@ for (const [device, viewport] of Object.entries(WORKBENCH_VIEWPORTS)) {
       const capturePage = async (name, panel) => {
         await expect(panel).toBeVisible();
         await expectNoGlobalError(page);
-        await expect.poll(() => panel.evaluate((element) => {
-          const rect = element.getBoundingClientRect();
-          return rect.left >= -1 && rect.right <= innerWidth + 1;
-        })).toBe(true);
+        await expect
+          .poll(() =>
+            panel.evaluate((element) => {
+              const rect = element.getBoundingClientRect();
+              return rect.left >= -1 && rect.right <= innerWidth + 1;
+            }),
+          )
+          .toBe(true);
         expect((await snapshotWorkbenchGeometry(page)).overflow).toBeLessThanOrEqual(1);
         await info.attach(`${device}-${theme}-${name}`, {
           body: await page.screenshot({ animations: 'disabled', caret: 'hide' }),

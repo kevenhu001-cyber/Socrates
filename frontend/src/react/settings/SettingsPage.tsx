@@ -72,7 +72,9 @@ function SettingsPage() {
     window.requestAnimationFrame(() => {
       const nav = document.querySelector<HTMLElement>('#settingsPage .settings-nav');
       if (nav) nav.scrollTop = indexScroll.current;
-      document.querySelector<HTMLElement>(`#settingsPage [data-section="${section}"]`)?.focus({ preventScroll: true });
+      document
+        .querySelector<HTMLElement>(`#settingsPage [data-section="${section}"]`)
+        ?.focus({ preventScroll: true });
     });
   };
 
@@ -135,7 +137,12 @@ function SettingsPage() {
             onQueryChange={changeQuery}
             onSectionChange={selectSection}
           />
-          <div className="settings-body" ref={body} role="region" aria-label={preferences.label('设置内容', 'Settings content')}>
+          <div
+            className="settings-body"
+            ref={body}
+            role="region"
+            aria-label={preferences.label('设置内容', 'Settings content')}
+          >
             <SettingsMobileBack label={preferences.label} onBack={backToIndex} />
             <SettingsPanes
               open={active}

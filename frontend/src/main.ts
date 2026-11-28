@@ -127,7 +127,6 @@ installWidgetRuntime();
 /* Install auth recovery before bootstrap can start API-backed work. */
 installAuthHooks({ on401: handleAuthExpired, isInGraceWindow: isInAuthGraceWindow });
 
-
 function startApplication(): void {
   bootstrapApp({
     syncWebSearchUI,

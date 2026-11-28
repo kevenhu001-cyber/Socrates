@@ -75,9 +75,12 @@ function AgentStep({
   live: boolean;
 }) {
   // A settled run is not evidence that an unfinished individual step succeeded.
-  const status = !live && step.status === 'running'
-    ? state === 'cancelled' ? 'stopped' : 'unknown'
-    : step.status;
+  const status =
+    !live && step.status === 'running'
+      ? state === 'cancelled'
+        ? 'stopped'
+        : 'unknown'
+      : step.status;
   const statusLabel = status === 'done' ? '' : translate(`tool.status.${status}`);
   const meta = [agentStepMeta({ ...step, exitCode: undefined }, translate), statusLabel]
     .filter(Boolean)
@@ -102,7 +105,9 @@ function AgentStep({
       <summary className="agent-step-head">{heading}</summary>
       <div className="agent-step-body">
         <ul className="agent-step-paths">
-          {paths.slice(0, 20).map((path) => <li key={path}>{path}</li>)}
+          {paths.slice(0, 20).map((path) => (
+            <li key={path}>{path}</li>
+          ))}
         </ul>
       </div>
     </details>
@@ -126,12 +131,15 @@ export function ToolRunAgentSteps({ run, live, state, startedAt = 0 }: ToolRunAg
   const finalDuration =
     run.durationMs != null && run.durationMs > 0
       ? run.durationMs
-      : live && startedAt > 0 ? Math.max(0, now - startedAt) : null;
+      : live && startedAt > 0
+        ? Math.max(0, now - startedAt)
+        : null;
   const runState = live ? 'running' : state || 'unknown';
   const statusKey = runState === 'cancelled' ? 'stopped' : runState;
-  const elapsed = finalDuration !== null
-    ? formatElapsed(finalDuration, translate)
-    : translate(`tool.status.${statusKey}`);
+  const elapsed =
+    finalDuration !== null
+      ? formatElapsed(finalDuration, translate)
+      : translate(`tool.status.${statusKey}`);
   const steps = run.steps.slice(0, 200);
 
   return (

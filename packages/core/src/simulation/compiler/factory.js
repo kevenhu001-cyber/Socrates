@@ -3,27 +3,45 @@ import { inspectProgram, cachedAst } from './validate.js';
 import { prepareRuntime } from '../runtime/prepare.js';
 
 export function inspectCompilation(input) {
-  const solver={}, parsed=new Map();
-  const validation = inspectProgram(input,solver,parsed);
+  const solver = {},
+    parsed = new Map();
+  const validation = inspectProgram(input, solver, parsed);
   if (!validation.ok) {
     const error = Error(validation.error);
     if (validation.path) error.path = validation.path;
     throw error;
   }
-  return {program:validation.program,solver,parsed};
+  return { program: validation.program, solver, parsed };
 }
 
-export function createCompiledFactory({program,solver,parsed},algorithms,compileSource){
+export function createCompiledFactory({ program, solver, parsed }, algorithms, compileSource) {
   const prepared = new WeakSet();
   const compile = (expression) => {
-    const ast=cachedAst(parsed,expression);
-    if(!prepared.has(ast)){prepareExpressionTape(ast);prepared.add(ast);}
+    const ast = cachedAst(parsed, expression);
+    if (!prepared.has(ast)) {
+      prepareExpressionTape(ast);
+      prepared.add(ast);
+    }
     return ast;
   };
   const definitions = new Map(Object.entries(program.definitions ?? {}));
   const stateNames = Object.keys(program.dynamics?.initial ?? {});
-  const flags = new Map([['x', 1], ['y', 2], ['t', 4], ...stateNames.map((name) => [name, 4]), ...Object.keys(program.dynamics?.algebraic?.guess ?? {}).map(name=>[name,4])]);
-  if(program.views.some(view=>(view.presentation==='vectors3d'||view.presentation==='isosurface'||view.slicePlane!==undefined))) flags.set('spaceZ',8);
+  const flags = new Map([
+    ['x', 1],
+    ['y', 2],
+    ['t', 4],
+    ...stateNames.map((name) => [name, 4]),
+    ...Object.keys(program.dynamics?.algebraic?.guess ?? {}).map((name) => [name, 4]),
+  ]);
+  if (
+    program.views.some(
+      (view) =>
+        view.presentation === 'vectors3d' ||
+        view.presentation === 'isosurface' ||
+        view.slicePlane !== undefined,
+    )
+  )
+    flags.set('spaceZ', 8);
   const expressionMasks = new Map();
   const definitionMasks = new Map();
   function dependencies(expression) {
@@ -44,8 +62,11 @@ export function createCompiledFactory({program,solver,parsed},algorithms,compile
     if (ast.kind === 'unary') return astMask(ast.arg, locals);
     if (ast.kind === 'binary') return astMask(ast.left, locals) | astMask(ast.right, locals);
     if (ast.kind !== 'call') return 0;
-    if(ast.name==='diff')return astMask(ast.args[1],locals)|astMask(ast.args[2],new Set([...locals,ast.args[0].name]));
-    if (ast.name === 'sum' || ast.name === 'iterate' || ast.name==='integral') {
+    if (ast.name === 'diff')
+      return (
+        astMask(ast.args[1], locals) | astMask(ast.args[2], new Set([...locals, ast.args[0].name]))
+      );
+    if (ast.name === 'sum' || ast.name === 'iterate' || ast.name === 'integral') {
       return (
         astMask(ast.args[1], locals) |
         astMask(ast.args[2], locals) |
@@ -56,7 +77,15 @@ export function createCompiledFactory({program,solver,parsed},algorithms,compile
   }
 
   return (values = {}) =>
-    prepareRuntime(program, definitions, stateNames, compile, dependencies, values, solver, compileSource, algorithms);
+    prepareRuntime(
+      program,
+      definitions,
+      stateNames,
+      compile,
+      dependencies,
+      values,
+      solver,
+      compileSource,
+      algorithms,
+    );
 }
-
-

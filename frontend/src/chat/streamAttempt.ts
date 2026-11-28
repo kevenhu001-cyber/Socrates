@@ -245,7 +245,10 @@ async function resolveRecoveryTurnId(error: ChatApiError | null, context: Stream
     typeof context.opts.clientTurn.id === 'string'
   ) {
     try {
-      const existing = await createChatTurn({ clientTurnId: context.opts.clientTurn.id });
+      const existing = await createChatTurn({
+        clientTurnId: context.opts.clientTurn.id,
+        sessionId: context.opts.sessionId ?? null,
+      });
       if (existing && existing.turn && existing.turn.id) turnId = existing.turn.id;
     } catch (caught) {
       reportSwallow(caught, 'chat/stream.createChatTurn');

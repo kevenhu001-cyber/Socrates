@@ -95,9 +95,7 @@ for (const mode of ['light', 'dark', 'mobile']) {
     await expect(submit).toHaveAttribute('data-slot', 'button');
     await expect(submit).toHaveAttribute('data-variant', 'default');
     expect(
-      await submit.evaluate((element) =>
-        parseFloat(getComputedStyle(element).borderTopLeftRadius),
-      ),
+      await submit.evaluate((element) => parseFloat(getComputedStyle(element).borderTopLeftRadius)),
     ).toBeGreaterThanOrEqual(20);
     if (mode === 'mobile') {
       expect((await submit.boundingBox())?.height).toBeGreaterThanOrEqual(44);

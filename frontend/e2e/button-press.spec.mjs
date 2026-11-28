@@ -337,7 +337,9 @@ test("a popover opened by a pressed trigger is placed from the trigger's resting
 });
 
 for (const reducedMotion of [false, true]) {
-  test(`legacy utility buttons do not move when held (reduced motion: ${reducedMotion})`, async ({ page }) => {
+  test(`legacy utility buttons do not move when held (reduced motion: ${reducedMotion})`, async ({
+    page,
+  }) => {
     await boot(page, { reducedMotion });
     await page.evaluate(() => {
       const variants = ['btn btn-primary', 'btn btn-secondary', 'btn btn-ghost', 'btn-icon'];
@@ -346,7 +348,8 @@ for (const reducedMotion of [false, true]) {
         button.id = 'utilityPress' + index;
         button.className = className;
         button.textContent = 'Probe';
-        button.style.cssText = 'position:fixed;left:40px;top:' + (40 + index * 64) + 'px;z-index:99999';
+        button.style.cssText =
+          'position:fixed;left:40px;top:' + (40 + index * 64) + 'px;z-index:99999';
         document.body.appendChild(button);
       }
     });

@@ -130,7 +130,9 @@ export const Button = defineComponent({
     return (
       <ShadcnButton
         type="button"
-        variant={props.color === 'danger' ? 'destructive' : ACTION_VARIANTS[props.variant ?? 'solid']}
+        variant={
+          props.color === 'danger' ? 'destructive' : ACTION_VARIANTS[props.variant ?? 'solid']
+        }
         size={props.size === 'sm' ? 'sm' : props.size === 'lg' ? 'touch' : 'lg'}
         className={cx('iui-button', props.block && 'iui-block')}
         disabled={!!props.disabled || streaming || !props.action}
@@ -403,18 +405,20 @@ export const SegmentedControl = defineComponent({
           );
           const current = buttons.indexOf(event.target as HTMLButtonElement);
           if (current < 0 || !choices.length) return;
-          const offset = event.key === 'ArrowRight' || event.key === 'ArrowDown'
-            ? 1
-            : event.key === 'ArrowLeft' || event.key === 'ArrowUp'
-              ? -1
-              : 0;
+          const offset =
+            event.key === 'ArrowRight' || event.key === 'ArrowDown'
+              ? 1
+              : event.key === 'ArrowLeft' || event.key === 'ArrowUp'
+                ? -1
+                : 0;
           if (!offset && event.key !== 'Home' && event.key !== 'End') return;
           event.preventDefault();
-          const next = event.key === 'Home'
-            ? 0
-            : event.key === 'End'
-              ? choices.length - 1
-              : (current + offset + choices.length) % choices.length;
+          const next =
+            event.key === 'Home'
+              ? 0
+              : event.key === 'End'
+                ? choices.length - 1
+                : (current + offset + choices.length) % choices.length;
           field.setValue(choices[next].value);
           buttons[next]?.focus();
         }}

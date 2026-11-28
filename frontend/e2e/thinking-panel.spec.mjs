@@ -315,7 +315,8 @@ test('parallel tools keep their order, DOM identity, and open details as later c
   const detailHandle = await detail.elementHandle();
   expect(
     await page.evaluate(
-      (node) => node === document.querySelector('#thoughtsPanel .rn-tool-row[data-tcid="first-slow"]'),
+      (node) =>
+        node === document.querySelector('#thoughtsPanel .rn-tool-row[data-tcid="first-slow"]'),
       handle,
     ),
   ).toBe(true);
@@ -335,7 +336,8 @@ test('parallel tools keep their order, DOM identity, and open details as later c
   await expect(rowButton).toBeFocused();
   expect(
     await page.evaluate(
-      (node) => node === document.querySelector('#thoughtsPanel .rn-tool-row[data-tcid="first-slow"]'),
+      (node) =>
+        node === document.querySelector('#thoughtsPanel .rn-tool-row[data-tcid="first-slow"]'),
       handle,
     ),
   ).toBe(true);
@@ -515,7 +517,10 @@ for (const theme of ['light', 'dark']) {
       await expect(detail.getByTestId('tool-input-toggle')).toHaveCount(0);
       await expect(detail.getByTestId('tool-detail-section-input')).toHaveCount(0);
       await expect(detail.getByTestId('tool-source-title')).toHaveCount(0);
-      await expect(detail.getByTestId('tool-source-host')).toHaveText(['example.test', 'guide.test']);
+      await expect(detail.getByTestId('tool-source-host')).toHaveText([
+        'example.test',
+        'guide.test',
+      ]);
       const icons = detail.getByTestId('tool-source-monogram').locator('img');
       await expect(icons).toHaveCount(2);
       await expect
@@ -544,7 +549,9 @@ for (const theme of ['light', 'dark']) {
   }
 }
 
-test('the live caption shimmers and shows rotating spark while respecting reduced motion', async ({ page }) => {
+test('the live caption shimmers and shows rotating spark while respecting reduced motion', async ({
+  page,
+}) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   const bubble = await startTurn(page);
   const label = bubble.locator(TURN.label);

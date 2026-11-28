@@ -11,7 +11,7 @@ export type IconSource = Pick<AttachmentEntry, 'kind' | 'docKind' | 'mime' | 'na
 const DOC_PATH = interfaceIconInnerHtml('document');
 const OFFICE_BADGE = (color: string, letter: string) =>
   `<rect x="3" y="10" width="10" height="9" rx="2.5" fill="${color}" stroke="none"/>` +
-  `<text x="8" y="17" text-anchor="middle" font-size="7" font-weight="800" font-family="Geist Sans,Arial,sans-serif" fill="#ffffff" stroke="none">${letter}</text>`;
+  `<text x="8" y="17" text-anchor="middle" font-size="7" font-weight="800" font-family="'Geist Sans',sans-serif" fill="#ffffff" stroke="none">${letter}</text>`;
 
 const WORD_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${DOC_PATH}${OFFICE_BADGE('#2563eb', 'W')}</svg>`;
 const EXCEL_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${DOC_PATH}${OFFICE_BADGE('#16a34a', 'X')}</svg>`;

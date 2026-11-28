@@ -595,8 +595,8 @@ html:lang(zh) .ed-app-card-title { font-family: var(--site-serif-cjk, var(--ed-s
   unicode-range: U+0000-2E7F, U+3040-FEFF, U+FFF0-FFFF;
 }
 body.ed-site {
-  --font-serif: 'Geist Sans', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
-  --font-sans: 'Geist Sans', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+  --font-serif: 'Geist Sans', 'Noto Sans SC', sans-serif;
+  --font-sans: 'Geist Sans', 'Noto Sans SC', sans-serif;
   --an-serif: var(--font-serif);
   --an-sans: var(--font-sans);
   --ed-serif: var(--font-serif);

@@ -655,7 +655,7 @@
 /* Archived search-result links retain the current source-link treatment. */
 .wsr-title {
   display: block;
-  font-family: var(--font-sans, system-ui);
+  font-family: var(--font-sans);
   font-size: var(--ui-font-size-xs);
   font-weight: var(--ui-font-weight-semibold);
   color: var(--ui-text-primary);

@@ -115,7 +115,7 @@
 
 /* Math, set in HTML: a stacked fraction with a hairline bar. */
 .ui-math { display: inline-block; font: 400 var(--fs-24)/1.2 var(--site-font); font-style: normal; letter-spacing: 0; white-space: nowrap; }
-.ui-math i { font-style: italic; font-family: 'Times New Roman', Georgia, serif; font-size: 1.12em; }
+.ui-math i { font-style: italic; font-family: var(--font-serif, 'Newsreader', serif); font-size: 1.12em; }
 .ui-frac { display: inline-grid; justify-items: center; margin-left: .3em; vertical-align: middle; }
 .ui-frac > span:first-child { padding: 0 .2em .12em; border-bottom: 1.5px solid currentColor; }
 .ui-frac > span:last-child { padding-top: .12em; }

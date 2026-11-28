@@ -80,16 +80,14 @@ export function subscribeToChatTurn(turnId: string, listener: RuntimeSubscriber)
   };
 }
 
-/** Persist an event in sequence and notify live SSE subscribers. */
-export function publishChatTurnEvent(
+/** Persist one or more events in sequence and notify live SSE subscribers. */
+export function publishChatTurnEvents(
   turnId: string,
-  event: string,
-  data: Record<string, unknown> = {},
-): Promise<ChatTurnEvent> {
-  // Preserve invocation order within one worker, while the parent-row lock
-  // below provides allocation safety across independent processes.
+  items: ReadonlyArray<{ event: string; data?: Record<string, unknown> }>,
+): Promise<ChatTurnEvent[]> {
+  if (!items.length) return Promise.resolve([]);
   const previous = sequenceQueues.get(turnId) || Promise.resolve();
-  const next = previous.then(() => persistChatTurnEvent(turnId, event, data));
+  const next = previous.then(() => persistChatTurnEvents(turnId, items));
   const settled = next
     .then(
       () => undefined,
@@ -102,14 +100,22 @@ export function publishChatTurnEvent(
   return next;
 }
 
-async function persistChatTurnEvent(
+/** Persist an event in sequence and notify live SSE subscribers. */
+export function publishChatTurnEvent(
   turnId: string,
   event: string,
-  data: Record<string, unknown>,
+  data: Record<string, unknown> = {},
 ): Promise<ChatTurnEvent> {
-  const runtimeEvent = await getDb().transaction(async (tx) => {
+  return publishChatTurnEvents(turnId, [{ event, data }]).then((events) => events[0]);
+}
+
+async function persistChatTurnEvents(
+  turnId: string,
+  items: ReadonlyArray<{ event: string; data?: Record<string, unknown> }>,
+): Promise<ChatTurnEvent[]> {
+  const runtimeEvents = await getDb().transaction(async (tx) => {
     // The parent row is the cross-process serialization point. Hold the
-    // lock only for sequence allocation + insert, never during LLM work.
+    // lock only for sequence allocation + batch insert, never during LLM work.
     const [turn] = await tx
       .select({ id: chatTurns.id })
       .from(chatTurns)
@@ -120,14 +126,23 @@ async function persistChatTurnEvent(
       .select({ sequence: max(chatTurnEvents.sequence) })
       .from(chatTurnEvents)
       .where(eq(chatTurnEvents.turnId, turnId));
-    const sequence = Number(last?.sequence || 0) + 1;
-    const payload = boundPayload(asRecord(data));
-    await tx.insert(chatTurnEvents).values({ turnId, sequence, event, payload });
-    const runtimeEvent: ChatTurnEvent = { turnId, sequence, event, data: payload };
-    return runtimeEvent;
+    const baseSequence = Number(last?.sequence || 0);
+    const rows = items.map((item, idx) => ({
+      turnId,
+      sequence: baseSequence + idx + 1,
+      event: item.event,
+      payload: boundPayload(asRecord(item.data ?? {})),
+    }));
+    await tx.insert(chatTurnEvents).values(rows);
+    return rows.map((row) => ({
+      turnId,
+      sequence: row.sequence,
+      event: row.event,
+      data: row.payload,
+    }));
   });
-  publishToSubscribers(runtimeEvent);
-  return runtimeEvent;
+  for (const runtimeEvent of runtimeEvents) publishToSubscribers(runtimeEvent);
+  return runtimeEvents;
 }
 
 export interface CreateChatTurnInput {

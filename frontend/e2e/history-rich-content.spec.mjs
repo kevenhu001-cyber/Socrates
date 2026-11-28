@@ -181,7 +181,9 @@ test('tool calls with textOffset restore as inline rows with the chart in place'
 
   const body = page.locator('#msgList .msg.assistant .msg-body');
   await body.getByTestId('turn-activity-toggle').click();
-  await expect(page.locator('#thoughtsPanel .rn-tool-row[data-tcid="inline-viz-call"]')).toHaveCount(1);
+  await expect(
+    page.locator('#thoughtsPanel .rn-tool-row[data-tcid="inline-viz-call"]'),
+  ).toHaveCount(1);
   await page.keyboard.press('Escape');
   await expect(body.locator('.visualization-card')).toContainText('Restored parabola');
   // The chart must sit in the anchored host right after its row, not at

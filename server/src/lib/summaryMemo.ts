@@ -12,7 +12,10 @@ export function createSummaryMemo(
     peek(key: string): string | undefined {
       const hit = saved.get(key);
       if (!hit) return undefined;
-      if (now() - hit.at >= ttlMs) { saved.delete(key); return undefined; }
+      if (now() - hit.at >= ttlMs) {
+        saved.delete(key);
+        return undefined;
+      }
       return hit.value;
     },
     async get(key: string, produce: () => Promise<string>): Promise<string> {

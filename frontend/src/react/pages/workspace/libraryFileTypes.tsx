@@ -29,7 +29,8 @@ const CATEGORY_RULES: Array<{ type: string; matches: (kind: string, ext: string)
   { type: 'audio', matches: (kind, ext) => kind === 'audio' || AUDIO_EXTENSIONS.includes(ext) },
   {
     type: 'doc',
-    matches: (kind, ext) => DOC_EXTENSIONS.includes(ext) || ext === 'pdf' || ['pdf', 'text', 'docx'].includes(kind),
+    matches: (kind, ext) =>
+      DOC_EXTENSIONS.includes(ext) || ext === 'pdf' || ['pdf', 'text', 'docx'].includes(kind),
   },
 ];
 
@@ -70,7 +71,9 @@ const GLYPH_RULES: Array<{ type: string; matches: (kind: string, ext: string) =>
   {
     type: 'doc',
     matches: (kind, ext) =>
-      ['pdf', 'text', 'docx', 'rtf'].includes(kind) || ext === 'pdf' || DOC_EXTENSIONS.includes(ext),
+      ['pdf', 'text', 'docx', 'rtf'].includes(kind) ||
+      ext === 'pdf' ||
+      DOC_EXTENSIONS.includes(ext),
   },
 ];
 

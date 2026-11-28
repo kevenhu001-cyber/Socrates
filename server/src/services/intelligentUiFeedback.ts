@@ -140,7 +140,10 @@ export function intelligentUiFeedback(
   error: string,
   failure: IntelligentUiFailure,
 ): IntelligentUiFeedback {
-  const lines = [`Fix the UI and call render_intelligent_ui again: ${error}`, 'Use one complete native function argument JSON object with a nodes array. Preserve the real task and data; examples are shapes only.'];
+  const lines = [
+    `Fix the UI and call render_intelligent_ui again: ${error}`,
+    'Use one complete native function argument JSON object with a nodes array. Preserve the real task and data; examples are shapes only.',
+  ];
   const example = intelligentUiExample(failure.componentType || '', failure.componentKind);
   if (example)
     lines.push(

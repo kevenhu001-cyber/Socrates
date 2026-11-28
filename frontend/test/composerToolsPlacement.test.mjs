@@ -9,13 +9,17 @@ test('phone composer menu preserves the reference eight pixel gap above the comp
 
 test('phone composer menu uses room below an anchor near the visible top', () => {
   assert.deepEqual(mobileMenuPlacement(120, 440, 145, 231), {
-    edge: 239, maxHeight: 189, side: 'mobile-below',
+    edge: 239,
+    maxHeight: 189,
+    side: 'mobile-below',
   });
 });
 
 test('an anchor occupying the keyboard-constrained viewport never collapses the menu', () => {
   assert.deepEqual(mobileMenuPlacement(120, 340, 132, 328), {
-    edge: 132, maxHeight: 165, side: 'mobile-overlay',
+    edge: 132,
+    maxHeight: 165,
+    side: 'mobile-overlay',
   });
 });
 

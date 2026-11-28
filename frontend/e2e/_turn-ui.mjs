@@ -68,7 +68,9 @@ export async function openActivity(scope) {
 }
 
 /** All execution logs now share the turn Thoughts sheet/drawer. */
-export async function openToolGroups(scope) { return openActivity(scope); }
+export async function openToolGroups(scope) {
+  return openActivity(scope);
+}
 
 /** Open the call's inline detail inside Thoughts. Returns the detail locator. */
 export async function openToolDetail(page, scope, id) {

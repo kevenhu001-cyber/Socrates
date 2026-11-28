@@ -24,4 +24,3 @@ export function demonstrationDomain(bounds, runtime, time = 0, fallback) {
   }
   return [a, b];
 }
-

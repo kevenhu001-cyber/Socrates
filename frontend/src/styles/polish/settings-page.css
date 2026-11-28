@@ -549,7 +549,7 @@
   color: var(--ui-ink);
 }
 .settings-mono {
-  font-family: var(--font-mono, ui-monospace, monospace);
+  font-family: var(--font-mono);
   font-size: var(--ui-font-size-xxs);
 }
 .settings-danger-zone .settings-section-head h3 {
@@ -1273,8 +1273,15 @@ html[data-main-view='settingsPage'] #settingsPage .settings-choice {
 }
 
 .settings-general-more summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   min-height: var(--ui-control-touch);
-  align-content: center;
   cursor: pointer;
   font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-medium);
+  transition: color var(--ui-duration-fast) ease;
+}
+.settings-general-more summary:hover {
+  color: var(--ui-text-primary);
 }

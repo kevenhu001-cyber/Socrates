@@ -90,6 +90,22 @@ export function upstreamRetryDelayMs(
   return (attempt === 0 ? 800 : 1600) + Math.floor(Math.random() * 400);
 }
 
+export function isTransientSocketReset(err: unknown): boolean {
+  const rec = err as { code?: unknown; cause?: { code?: unknown }; message?: unknown } | null;
+  const code = String(rec?.code ?? rec?.cause?.code ?? '');
+  if (
+    code === 'ECONNRESET' ||
+    code === 'EPIPE' ||
+    code === 'ETIMEDOUT' ||
+    code === 'UND_ERR_SOCKET' ||
+    code === 'UND_ERR_CONNECT_TIMEOUT'
+  ) {
+    return true;
+  }
+  const msg = String(rec?.message || '').toLowerCase();
+  return msg.includes('other side closed') || msg.includes('socket');
+}
+
 export function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     /* Named AbortError so the callers' existing `name === 'AbortError'`

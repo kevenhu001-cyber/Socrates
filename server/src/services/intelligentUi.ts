@@ -1,5 +1,8 @@
 import { LEARNING_KINDS, openUiLearningMisuse } from '@socrates/core/learningUi';
-import { DEMONSTRATION_PROGRAM_SCHEMA, COMPACT_DEMONSTRATION_PROGRAM_SCHEMA } from './demonstrationGuide.js';
+import {
+  DEMONSTRATION_PROGRAM_SCHEMA,
+  COMPACT_DEMONSTRATION_PROGRAM_SCHEMA,
+} from './demonstrationGuide.js';
 import { PHYSICS_MODELS } from '@socrates/core/physicsModelRegistry';
 import { VISUALIZATION_TEMPLATES, validateVisualizationSpec } from './visualization.js';
 import { validateIntelligentUi as validateEnvelope } from '@socrates/core/intelligentUiValidation';
@@ -275,7 +278,9 @@ export const INTELLIGENT_UI_PROVIDER_TOOL = {
               ...INTELLIGENT_UI_TOOL.function.parameters.properties.nodes.items.properties,
               program: {
                 ...COMPACT_DEMONSTRATION_PROGRAM_SCHEMA,
-                description: INTELLIGENT_UI_TOOL.function.parameters.properties.nodes.items.properties.program.description,
+                description:
+                  INTELLIGENT_UI_TOOL.function.parameters.properties.nodes.items.properties.program
+                    .description,
               },
             },
           },

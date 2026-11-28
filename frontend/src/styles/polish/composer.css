@@ -75,7 +75,7 @@
   /* The frame's top slot already owns the inset that lines the row up with
      the editor. A second horizontal padding here pushed the first card 12px
      to the right of the text it belongs to. */
-  padding: 0;
+  padding: 2px 0;
   overflow-x: auto;
   overflow-y: hidden;
   overscroll-behavior-x: contain;

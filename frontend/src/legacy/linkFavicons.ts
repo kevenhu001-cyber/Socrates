@@ -38,7 +38,7 @@ function fallbackFavicon(url: URL | null) {
     '<rect width="64" height="64" rx="14" fill="hsl(' +
     hue +
     ',56%,45%)"/>' +
-    '<text x="32" y="45" font-family="system-ui,sans-serif" font-size="34"' +
+    '<text x="32" y="45" font-family="Geist Sans,sans-serif" font-size="34"' +
     ' font-weight="600" fill="#ffffff" text-anchor="middle">' +
     letter +
     '</text>' +

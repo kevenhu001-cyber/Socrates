@@ -146,7 +146,7 @@ body.sidebar-resizing {
   display: flex;
   align-items: center;
   gap: 7px;
-  height: 32px;
+  height: var(--ui-control-sm);
   padding: 0 10px;
   transition:
     border-color 0.18s var(--ease-out),
@@ -244,7 +244,9 @@ body.sidebar-resizing {
   flex-shrink: 0;
   margin-top: 1px;
 }
-.recent-item:hover .recent-item-actions {
+.recent-item:hover .recent-item-actions,
+.recent-item:focus-within .recent-item-actions,
+.recent-item.actions-open .recent-item-actions {
   opacity: 1;
 }
 .recent-item-tag-btn {
@@ -1597,7 +1599,7 @@ html[data-detail-open='true'][data-detail-layout='docked'] #appShell .main {
      this layer only keeps the surface and the glyph emphasis. */
   #appShell #sidebar .sidebar-search:focus-within {
     border-color: transparent;
-    background: transparent;
+    background: var(--ui-bg-surface);
     color: var(--foreground);
   }
   #appShell #sidebar .sidebar-search svg {

@@ -20,7 +20,7 @@ async function cjkFaceLoads(page) {
   }, CJK_FACE);
 }
 
-test('zh UI localizes live with system-first fonts and bundled fallbacks', async ({ page }) => {
+test('zh UI localizes live with self-hosted Geist and Noto Sans SC fonts', async ({ page }) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
@@ -43,9 +43,10 @@ test('zh UI localizes live with system-first fonts and bundled fallbacks', async
   });
   expect(zhState).not.toBeNull();
   expect(zhState.content).toContain('询问 Socrates');
-  expect(zhState.fontFamily.split(',')[0].replace(/["']/g, '').trim()).toBe('system-ui');
+  expect(zhState.fontFamily.split(',')[0].replace(/["']/g, '').trim()).toBe('Geist Sans');
   expect(zhState.fontFamily).toContain(CJK_FACE);
   expect(zhState.fontFamily).toContain('Geist Sans');
+  expect(zhState.fontFamily).not.toContain('system-ui');
   expect(zhState.fontFamily).not.toContain('MiSans');
   expect(await cjkFaceLoads(page)).toBe(true);
   const brandFaces = await page.evaluate(async () =>
@@ -69,7 +70,7 @@ test('zh UI localizes live with system-first fonts and bundled fallbacks', async
   expect(enFont).toContain('Geist Sans');
 });
 
-test('landing greeting has no leading logo and shares the system-first font stack', async ({
+test('landing greeting has no leading logo and shares the self-hosted font stack', async ({
   page,
 }) => {
   await mockAuthedApp(page);
@@ -92,9 +93,10 @@ test('landing greeting has no leading logo and shares the system-first font stac
     paddingLeft: getComputedStyle(el).paddingLeft,
     beforeContent: getComputedStyle(el, '::before').content,
   }));
-  expect(zhStyle.fontFamily.split(',')[0].replace(/["']/g, '').trim()).toBe('system-ui');
+  expect(zhStyle.fontFamily.split(',')[0].replace(/["']/g, '').trim()).toBe('Geist Sans');
   expect(zhStyle.fontFamily).toContain(CJK_FACE);
   expect(zhStyle.fontFamily).toContain('Geist Sans');
+  expect(zhStyle.fontFamily).not.toContain('system-ui');
   expect(zhStyle.fontFamily).not.toContain('MiSans');
   expect(await cjkFaceLoads(page)).toBe(true);
   expect(zhStyle.paddingLeft).toBe('0px');
@@ -102,5 +104,5 @@ test('landing greeting has no leading logo and shares the system-first font stac
 
   await page.evaluate(() => window.__socratesLegacy.profile.setLang('en'));
   const enFont = await greeting.evaluate((el) => getComputedStyle(el).fontFamily);
-  expect(enFont.split(',')[0].replace(/["']/g, '').trim()).toBe('system-ui');
+  expect(enFont.split(',')[0].replace(/["']/g, '').trim()).toBe('Geist Sans');
 });

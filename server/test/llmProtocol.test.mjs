@@ -312,13 +312,18 @@ test('real server emitter -> frontend error contract never replays exhausted 400
   }
 });
 
-
 test('explicit temperature rejection can recover without stripping tools or reasoning', async () => {
-  const { requestBodyVariants, nextCompatibilityVariant } = await import('../src/services/core/llm/protocol.js');
-  const variants = requestBodyVariants({
-    ...opts, model: 'deepseek-chat', reasoning_effort: 'high',
-    tools: [{ type: 'function', function: { name: 'test', parameters: {} } }],
-  }, true);
+  const { requestBodyVariants, nextCompatibilityVariant } =
+    await import('../src/services/core/llm/protocol.js');
+  const variants = requestBodyVariants(
+    {
+      ...opts,
+      model: 'deepseek-chat',
+      reasoning_effort: 'high',
+      tools: [{ type: 'function', function: { name: 'test', parameters: {} } }],
+    },
+    true,
+  );
   const next = nextCompatibilityVariant(variants, 0, 'temperature is not supported');
   assert.ok(next > 0);
   assert.equal('temperature' in variants[next].body, false);

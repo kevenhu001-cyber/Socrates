@@ -142,12 +142,19 @@ test(
   },
 );
 
- test('soft budget reduces long histories even for large-window models', { skip: !enabled }, async () => {
+test(
+  'soft budget reduces long histories even for large-window models',
+  { skip: !enabled },
+  async () => {
     process.env.CHAT_CONTEXT_SOFT_TOKENS = '24000';
     const messages = oversizedConversation();
     const result = await prepareWithModel('MiniMax-M3', messages);
     assert.equal(result.ok, true);
     assert.ok(result.payload.messages.length < messages.length + 1);
-    assert.match(result.payload.messages.map(m => String(m.content ?? '')).join('\n'), /\[Context summary/);
+    assert.match(
+      result.payload.messages.map((m) => String(m.content ?? '')).join('\n'),
+      /\[Context summary/,
+    );
     assert.match(String(result.payload.messages.at(-1).content), /turn 29/);
- });
+  },
+);

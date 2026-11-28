@@ -129,6 +129,14 @@ html[data-show-grid='false'] .main-bg {
   background-image: none;
 }
 
+html[data-show-grid='true'] #appShell .main-bg {
+  background-image: radial-gradient(
+    color-mix(in srgb, var(--ui-border-default) 24%, transparent) 1px,
+    transparent 1px
+  );
+  background-size: 28px 28px;
+}
+
 @media (max-width: 768px) {
   #appShell .top-bar-left,
   #appShell .top-bar-right {

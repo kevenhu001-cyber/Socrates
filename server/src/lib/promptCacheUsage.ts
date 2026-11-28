@@ -13,9 +13,10 @@ export function normalizePromptCacheUsage(raw: unknown): {
   if (!raw || typeof raw !== 'object') return null;
   const u = raw as Record<string, unknown>;
   const details = u.prompt_tokens_details ?? u.input_tokens_details;
-  const openAiCached = details && typeof details === 'object'
-    ? count((details as Record<string, unknown>).cached_tokens)
-    : null;
+  const openAiCached =
+    details && typeof details === 'object'
+      ? count((details as Record<string, unknown>).cached_tokens)
+      : null;
   const hit = count(u.prompt_cache_hit_tokens);
   const miss = count(u.prompt_cache_miss_tokens);
   const directRead = count(u.cache_read_input_tokens);

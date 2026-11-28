@@ -75,7 +75,10 @@ function getSections(zh: boolean): Array<[string, Array<[string, string[]]>]> {
       label('输入与发送', 'Composing'),
       [
         [label('发送消息（备用）', 'Send (alternative)'), ['⌘', '⏎']],
-        [label('编辑上一条提问', 'Edit last prompt'), ['↑', label('（空输入框）', '(empty input)')]],
+        [
+          label('编辑上一条提问', 'Edit last prompt'),
+          ['↑', label('（空输入框）', '(empty input)')],
+        ],
         [label('换行', 'New line'), ['⇧', '⏎']],
       ],
     ],

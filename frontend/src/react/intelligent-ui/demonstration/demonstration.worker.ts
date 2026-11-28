@@ -13,7 +13,12 @@ import type { ViewPatch, ViewSample, WorkerReply, WorkerRequest } from './demons
 
 type JobRequest = Extract<WorkerRequest, { id: number }>;
 type Job = { request: JobRequest; work?: Generator<void, WorkerReply, void> };
-type FieldSampler = (view:DemonstrationField,runtime:DemonstrationRuntime,time:number,preview:boolean)=>Generator<void,FieldSample,void>;
+type FieldSampler = (
+  view: DemonstrationField,
+  runtime: DemonstrationRuntime,
+  time: number,
+  preview: boolean,
+) => Generator<void, FieldSample, void>;
 type Prepared = Awaited<ReturnType<typeof compileDemonstrationRuntimeAsync>>;
 type State = {
   runtime: DemonstrationRuntime;
@@ -63,9 +68,9 @@ function* sampleView(
   const { runtime } = state;
   switch (view.kind) {
     case 'field': {
-      const sampler=isSpatialField(view)?state.spatial:state.planar;
-      if(!sampler)throw Error('Field sampler not loaded');
-      return {kind:'field',sample:yield* sampler(view,runtime,time,preview)};
+      const sampler = isSpatialField(view) ? state.spatial : state.planar;
+      if (!sampler) throw Error('Field sampler not loaded');
+      return { kind: 'field', sample: yield* sampler(view, runtime, time, preview) };
     }
     case 'plot':
     case 'trajectory': {
@@ -120,11 +125,12 @@ function* ensureCardState(
 ): Generator<void, NonNullable<Card['state']>, void> {
   let state = card.state;
   if (!state || state.revision !== input.revision) {
-    if(!card.prepare)throw Error('Simulation compiler not loaded');
+    if (!card.prepare) throw Error('Simulation compiler not loaded');
     const runtime = yield* card.prepare(input.values);
     state = {
       runtime,
-      planar:card.planar,spatial:card.spatial,
+      planar: card.planar,
+      spatial: card.spatial,
       revision: input.revision,
       staticViews: card.program.views.map(
         (view) => !expressions(view).some((expression) => runtime.dependencies(expression) & 4),
@@ -188,7 +194,13 @@ function* calculate(card: Card, request: JobRequest): Generator<void, WorkerRepl
   return {
     ...reply,
     type: 'frame',
-    frame: { duration, warnings, diagnostics: card.program.diagnostics ? diagnostics : undefined, patches, animated: state.staticViews.includes(false) },
+    frame: {
+      duration,
+      warnings,
+      diagnostics: card.program.diagnostics ? diagnostics : undefined,
+      patches,
+      animated: state.staticViews.includes(false),
+    },
   };
 }
 
@@ -215,7 +227,7 @@ function tick() {
   const [id, job] = next.value;
   pending.delete(id);
   const card = cards.get(id);
-  if (!card || card.job!==job || !job.work) return schedule();
+  if (!card || card.job !== job || !job.work) return schedule();
   const deadline = performance.now() + 8;
   try {
     do {
@@ -262,29 +274,48 @@ self.addEventListener('message', (event: MessageEvent<WorkerRequest>) => {
     return;
   }
   if (request.type === 'frame' || request.type === 'preset') {
-    const job:Job={request};
-    card.job=job;
+    const job: Job = { request };
+    card.job = job;
     pending.delete(id);
-    const enqueue=()=>{
-      if(cards.get(id)!==card||card.job!==job)return;
-      job.work=calculate(card,request);
-      pending.set(id,job);schedule();
+    const enqueue = () => {
+      if (cards.get(id) !== card || card.job !== job) return;
+      job.work = calculate(card, request);
+      pending.set(id, job);
+      schedule();
     };
-    if(request.type==='preset'||card.prepare){enqueue();return;}
+    if (request.type === 'preset' || card.prepare) {
+      enqueue();
+      return;
+    }
     // Wait outside the round-robin generator queue. Cancellation/close
     // invalidate the job immediately; completed imports may be reused.
-    card.loading??=Promise.all([
+    card.loading ??= Promise.all([
       compileDemonstrationRuntimeAsync(card.program),
-      card.program.views.some(v=>v.kind==='field'&&!isSpatialField(v))?import('./sampling/planar').then(m=>m.samplePlanarField):undefined,
-      card.program.views.some(v=>v.kind==='field'&&isSpatialField(v))?import('./geometry/spatial').then(m=>m.sampleSpatialField):undefined,
-    ]).then(([prepare,planar,spatial])=>{
-      card.prepare=prepare;card.planar=planar;card.spatial=spatial;
-    }).finally(()=>{card.loading=undefined;});
-    void card.loading.then(enqueue,error=>{
-      if(cards.get(id)!==card||card.job!==job)return;
-      card.job=undefined;
-      const path=(error as {path?:unknown}|null)?.path;
-      reply({type:'error',card:id,id:request.id,problem:{message:errorMessage(error),path:typeof path==='string'?path:''}});
+      card.program.views.some((v) => v.kind === 'field' && !isSpatialField(v))
+        ? import('./sampling/planar').then((m) => m.samplePlanarField)
+        : undefined,
+      card.program.views.some((v) => v.kind === 'field' && isSpatialField(v))
+        ? import('./geometry/spatial').then((m) => m.sampleSpatialField)
+        : undefined,
+    ])
+      .then(([prepare, planar, spatial]) => {
+        card.prepare = prepare;
+        card.planar = planar;
+        card.spatial = spatial;
+      })
+      .finally(() => {
+        card.loading = undefined;
+      });
+    void card.loading.then(enqueue, (error) => {
+      if (cards.get(id) !== card || card.job !== job) return;
+      card.job = undefined;
+      const path = (error as { path?: unknown } | null)?.path;
+      reply({
+        type: 'error',
+        card: id,
+        id: request.id,
+        problem: { message: errorMessage(error), path: typeof path === 'string' ? path : '' },
+      });
     });
   }
 });

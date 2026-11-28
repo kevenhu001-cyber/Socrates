@@ -83,7 +83,7 @@ function ensureBanner() {
     'border-radius:8px',
     'background:rgba(178,34,34,0.92)',
     'color:#fff',
-    'font:13px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif',
+    'font:13px/1.4 "Geist Sans","Noto Sans SC",sans-serif',
     'box-shadow:0 4px 16px rgba(0,0,0,0.18)',
     'display:flex',
     'align-items:center',

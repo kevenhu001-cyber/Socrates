@@ -454,7 +454,6 @@ test('scheduled recommendation cards have one stylesheet owner', async () => {
   }
 });
 
-
 test('composer attachment visibility is React-owned and retired shape mirrors stay removed', async () => {
   for (const path of [
     'src/legacy/composerShape.ts',

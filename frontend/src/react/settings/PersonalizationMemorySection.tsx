@@ -67,7 +67,10 @@ export function PersonalizationMemorySection({
         await apiFetch('/api/memory/' + localId, { method: 'PATCH', body: { text } });
         return;
       }
-      const result = await apiFetch<{ id?: string }>('/api/memory', { method: 'POST', body: { text } });
+      const result = await apiFetch<{ id?: string }>('/api/memory', {
+        method: 'POST',
+        body: { text },
+      });
       if (result.id && isServerMemoryId(result.id)) {
         const wasStillPresent = replaceMemoryId(localId, result.id);
         refreshMemories();

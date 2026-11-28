@@ -102,7 +102,7 @@ const STUB_PNG_1PX = Buffer.from(
 );
 
 const STUB_SITE_HTML =
-  '<!doctype html>\n<html lang="en"><meta charset="utf-8"><title>Stub site</title><style>body{font-family:system-ui;max-width:640px;margin:12vh auto;padding:0 24px;line-height:1.6}</style><h1>Stub site</h1><p>Canned HTML from the vite local stub — the real generator runs in server/.</p></html>';
+  '<!doctype html>\n<html lang="en"><meta charset="utf-8"><title>Stub site</title><style>body{font-family:"Geist Sans","Noto Sans SC",sans-serif;max-width:640px;margin:12vh auto;padding:0 24px;line-height:1.6}</style><h1>Stub site</h1><p>Canned HTML from the vite local stub — the real generator runs in server/.</p></html>';
 
 /* Probe the real backend once per dev-server boot; the promise is cached
    so every /api/* request pays zero extra latency after the first call. */
@@ -308,12 +308,28 @@ function handleStubbedApi(req, res, next, localPath) {
    .gz files at build end; deploy.sh's `install assets/*` loop copies
    them alongside automatically. Skips already-compressed formats. */
 
-export function createLocalApiStubPlugin({ localAuthBypass = true } = {}) {
+export function createLocalApiStubPlugin({ localAuthBypass = true, forceAuthBypass = false } = {}) {
   return {
     name: 'local-api-stub',
     enforce: 'pre',
     configureServer(server) {
-      let backendUpCache = null;
+      let cachedUp = false;
+      let lastProbeAt = 0;
+      let pendingProbe = null;
+      const isBackendUp = () => {
+        if (cachedUp) return Promise.resolve(true);
+        const now = Date.now();
+        if (pendingProbe) return pendingProbe;
+        if (now - lastProbeAt < 3000) return Promise.resolve(false);
+        pendingProbe = probeBackend().then((up) => {
+          lastProbeAt = Date.now();
+          cachedUp = up;
+          pendingProbe = null;
+          return up;
+        });
+        return pendingProbe;
+      };
+
       server.middlewares.use((req, res, next) => {
         const rawUrl = req.url || '';
         const [pathOnly] = rawUrl.split('?');
@@ -332,23 +348,28 @@ export function createLocalApiStubPlugin({ localAuthBypass = true } = {}) {
           preferences: {},
         };
 
-        if (localPath === '/api/auth/me') {
-          return send(res, 200, { user: LOCAL_USER });
-        }
-        if (
-          localPath === '/api/auth/login' ||
-          localPath === '/api/auth/register' ||
-          localPath === '/api/auth/login-with-code'
-        ) {
-          return send(res, 200, { user: LOCAL_USER });
-        }
-        if (localPath === '/api/auth/logout') {
-          return send(res, 200, { ok: true });
-        }
+        const serveAuthStub = () => {
+          if (localPath === '/api/auth/me') {
+            return send(res, 200, { user: LOCAL_USER });
+          }
+          if (
+            localPath === '/api/auth/login' ||
+            localPath === '/api/auth/register' ||
+            localPath === '/api/auth/login-with-code'
+          ) {
+            return send(res, 200, { user: LOCAL_USER });
+          }
+          if (localPath === '/api/auth/logout') {
+            return send(res, 200, { ok: true });
+          }
+          return false;
+        };
 
-        if (!backendUpCache) backendUpCache = probeBackend();
-        return void backendUpCache.then((up) => {
+        if (forceAuthBypass && serveAuthStub() !== false) return;
+
+        return void isBackendUp().then((up) => {
           if (up) return next();
+          if (serveAuthStub() !== false) return;
           handleStubbedApi(req, res, next, localPath);
         });
       });

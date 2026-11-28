@@ -110,7 +110,6 @@ test('handleBackPress dismisses open overlays and returns true, or false if root
   assert.equal(handleBackPress(), false);
 });
 
-
 test('hybrid chrome follows the resolved theme and ignores unrelated changes', async () => {
   const modes = [];
   const root = document.documentElement;

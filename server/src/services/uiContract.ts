@@ -7,7 +7,12 @@ import { INTELLIGENT_UI_CONTROL_GUIDANCE } from '@socrates/core/intelligentUiCon
 import { LEARNING_UI_GUIDANCE } from '@socrates/core/learningUi';
 import { PHYSICS_MODELS } from '@socrates/core/physicsModelRegistry';
 import { DEMONSTRATION_GUIDANCE } from './demonstrationGuide.js';
-import { DEMONSTRATION_SECTIONS, demonstrationSectionContent, demonstrationSectionIndex, type DemonstrationSection } from './demonstrationSections.js';
+import {
+  DEMONSTRATION_SECTIONS,
+  demonstrationSectionContent,
+  demonstrationSectionIndex,
+  type DemonstrationSection,
+} from './demonstrationSections.js';
 import { OPENUI_TOOL_GUIDANCE } from './openUiPrompt.generated.js';
 import { VISUALIZATION_TEMPLATES, VISUALIZATION_TEMPLATE_CONTRACTS } from './visualization.js';
 
@@ -97,7 +102,8 @@ export function uiContractContent(
       );
   } else if (kind === 'demonstration') {
     const section = args.section;
-    if (section === undefined) content = DEMONSTRATION_GUIDANCE; // Legacy full contract pagination.
+    if (section === undefined)
+      content = DEMONSTRATION_GUIDANCE; // Legacy full contract pagination.
     else if (section === 'index') content = demonstrationSectionIndex();
     else if (typeof section === 'string' && Object.hasOwn(DEMONSTRATION_SECTIONS, section))
       content = demonstrationSectionContent(section as DemonstrationSection);

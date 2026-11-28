@@ -20,7 +20,10 @@ for (const extension of ['js', 'mjs', 'cjs', 'jsx']) {
   test('rejects first-party ' + extension + ' without a mutable baseline', (t) => {
     const name = 'frontend/src/new.' + extension;
     const root = fixture(t, { [name]: 'export {};' });
-    assert.deepEqual(checkRetiredArchitecture(root).map((item) => item.file), [name]);
+    assert.deepEqual(
+      checkRetiredArchitecture(root).map((item) => item.file),
+      [name],
+    );
   });
 }
 

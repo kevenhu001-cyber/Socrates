@@ -1,7 +1,14 @@
 import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
-import { TURN, openActivity, openToolDetail, openToolGroups, toolRow, toolRowButton } from './_turn-ui.mjs';
+import {
+  TURN,
+  openActivity,
+  openToolDetail,
+  openToolGroups,
+  toolRow,
+  toolRowButton,
+} from './_turn-ui.mjs';
 
 /* Every copy assertion below is English — the app ships with zh as its default
    language, and the labels are now derived per-tool with objects ("Searched

@@ -243,7 +243,9 @@ test('rejected Visualization calls get template guidance and a complete example'
   );
   assert.equal(outcome.result.status, 'failed');
   assert.match(outcome.result.correction, /Visualization "bar" contract:/);
-  const example = outcome.result.correction.split('\n').find((line) => line.startsWith('A valid call: '));
+  const example = outcome.result.correction
+    .split('\n')
+    .find((line) => line.startsWith('A valid call: '));
   assert.ok(example, 'correction includes a complete native example');
   const args = JSON.parse(example.slice('A valid call: '.length));
   assert.equal(args.nodes[0].type, 'visualization');

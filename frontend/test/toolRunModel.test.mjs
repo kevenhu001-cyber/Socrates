@@ -1040,8 +1040,8 @@ test('liveToolParts returns unquoted verb and target for Grok-style live caption
     liveToolParts({ name: 'web_fetch', input: { url: 'https://docs.openai.com/index' } }),
     { verb: 'Reading', target: 'openai.com' },
   );
-  assert.deepEqual(
-    liveToolParts({ name: 'Edit', input: { file_path: 'src/app/main.ts' } }),
-    { verb: 'Editing', target: 'main.ts' },
-  );
+  assert.deepEqual(liveToolParts({ name: 'Edit', input: { file_path: 'src/app/main.ts' } }), {
+    verb: 'Editing',
+    target: 'main.ts',
+  });
 });

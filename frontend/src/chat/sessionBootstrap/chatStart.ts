@@ -2,7 +2,8 @@ import { dispatchSession, sessionStore } from '../../store/index.ts';
 import { turnState, type StreamingTurnController } from '../turn/state.ts';
 import { saveState } from '../../session/saveState.ts';
 import { resetSessionTransients } from '../../session/loader.ts';
-import { saveCurrentSession } from '../../session/persistence.ts';
+import { ensureSessionSavedBeforeStream, saveCurrentSession } from '../../session/persistence.ts';
+import { i18n } from '../../ui/legacyI18n.ts';
 import { askChatTurn } from '../turn/controller.ts';
 import { addStreamingMessage } from '../turn/loadStreamingTurn.ts';
 import { isExpectedTurnAbort } from '../turn/ui.ts';
@@ -61,11 +62,13 @@ async function assembleAndSendFirstTurn(
       reportSwallow(error, 'chat/sessionBootstrap.initialSave');
     }
   }
-  // A persistence failure must not discard successfully prepared attachments.
-  const [built] = await Promise.all([
+  // A persistence failure must not discard successfully prepared attachments,
+  // but /api/chat/stream must not fire against an unsaved sessionId (404).
+  const [built, saved] = await Promise.all([
     contentPromise,
-    Promise.resolve(savePromise).catch((error) => {
+    ensureSessionSavedBeforeStream(savePromise).catch((error) => {
       reportSwallow(error, 'chat/sessionBootstrap.initialSave');
+      return { ok: false, error };
     }),
   ]);
 
@@ -75,6 +78,21 @@ async function assembleAndSendFirstTurn(
   turnState.pendingChatContent = chatContent;
   turnState.pendingAttachments = attachments;
   patchFirstTurnAttachments(userClientId, topic, attachments);
+
+  if (!saved.ok && !context.deepResearchOn) {
+    const controller = turnState.pendingFirstTurnController;
+    turnState.pendingFirstTurnController = null;
+    if (controller) {
+      controller.replaceWithError(
+        i18n(
+          'session.saveBeforeStreamFailed',
+          'Could not save this conversation yet. Please retry.',
+        ),
+        () => askChatTurn(topic, chatContent),
+      );
+      return;
+    }
+  }
 
   if (context.deepResearchOn) {
     const { startDeepResearch } = await import('../../agent/researchAgent.ts');

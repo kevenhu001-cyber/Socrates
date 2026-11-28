@@ -354,7 +354,9 @@ export function repairToolArguments(
   if (!candidate) {
     return {
       ok: false,
-      error: isOversizedToolArguments(raw) ? TOOL_ARGUMENT_ERRORS.tooLarge : TOOL_ARGUMENT_ERRORS.parse,
+      error: isOversizedToolArguments(raw)
+        ? TOOL_ARGUMENT_ERRORS.tooLarge
+        : TOOL_ARGUMENT_ERRORS.parse,
       repairs,
     };
   }

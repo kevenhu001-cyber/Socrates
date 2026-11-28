@@ -800,6 +800,7 @@ export const en = {
   'session.noSearchMatch': 'No sessions match {query}.',
   'session.clearSearch': 'Clear search',
   'session.loadListFailed': "Couldn't load sessions. Check your connection and try again.",
+  'session.saveBeforeStreamFailed': 'Could not save this conversation yet. Please retry.',
   'session.retry': 'Retry',
   'session.noFilterMatch': 'No sessions match the {filter} filter.',
   'session.clearFilter': 'Clear filter',
