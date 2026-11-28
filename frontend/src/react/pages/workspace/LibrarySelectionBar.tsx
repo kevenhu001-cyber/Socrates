@@ -1,5 +1,5 @@
 import { Label as ShadcnLabel } from '../../ui/shadcn/label';
-import { Checkbox } from '../../ui/shadcn/checkbox';
+import { Checkbox } from '../../ui/v3';
 import { Button as UiButton } from '../../ui/Button';
 import type { useWorkspaceDispatch } from './workspace.hooks';
 import type { LibraryDisplayItem } from './library.types';

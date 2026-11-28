@@ -1,6 +1,6 @@
 import { Input as ShadcnInput } from '../../ui/shadcn/input';
 import { Label as ShadcnLabel } from '../../ui/shadcn/label';
-import { Checkbox } from '../../ui/shadcn/checkbox';
+import { Checkbox } from '../../ui/v3';
 import { Button as UiButton } from '../../ui/Button';
 import { Download } from 'lucide-react';
 import { Icon } from '../../../legacy/Icon';

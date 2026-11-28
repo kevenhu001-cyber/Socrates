@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { FieldGroup } from '../ui/shadcn/field';
-import { Switch } from '../ui/shadcn/switch';
+import { Switch } from '../ui/v3';
 import { PreferenceSelect } from './PreferenceSelect';
 import { SettingsRow } from '../layout/SettingsRow';
 import { settingsPreferenceActions, useSettingsPreferencesStore } from './settings.store';
