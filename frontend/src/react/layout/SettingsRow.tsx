@@ -14,11 +14,11 @@ export interface SettingsRowProps {
 }
 
 /**
- * SettingsRow — canonical v3 settings row atom (see docs/design/ui-design-standard.md).
+ * SettingsRow — canonical v3 ChatGPT-style settings row atom.
  *
- * Enforces ChatGPT-style hairline row rhythm: 52px minimum height, subtle
- * bottom hairline divider, left-aligned label + optional description, and a
- * single trailing control slot without nested card frames.
+ * Enforces minimalist commercial-app rhythm: 52px minimum height, subtle 1px
+ * hairline bottom divider, crisp 14px medium label + optional muted caption,
+ * and a single right-aligned control without nested card frames.
  */
 export function SettingsRow({
   htmlFor,
@@ -33,29 +33,34 @@ export function SettingsRow({
   return (
     <div
       className={cn(
-        'flex min-h-[52px] items-center justify-between gap-4 border-b border-border py-3 last:border-b-0',
+        'flex min-h-[52px] items-center justify-between gap-6 border-b border-border py-3.5 last:border-b-0',
         className,
       )}
       data-settings-row=""
     >
       <div className="flex min-w-0 items-center gap-3">
-        {leading ? <span className="flex shrink-0 items-center text-muted-foreground">{leading}</span> : null}
+        {leading ? (
+          <span className="flex shrink-0 items-center text-muted-foreground">{leading}</span>
+        ) : null}
         <div className="flex min-w-0 flex-col gap-0.5">
           {htmlFor ? (
             <Label
               id={labelId}
               htmlFor={htmlFor}
-              className={cn('text-sm font-medium text-foreground', labelClassName)}
+              className={cn('text-sm font-medium leading-5 text-foreground', labelClassName)}
             >
               {label}
             </Label>
           ) : (
-            <span id={labelId} className={cn('text-sm font-medium text-foreground', labelClassName)}>
+            <span
+              id={labelId}
+              className={cn('text-sm font-medium leading-5 text-foreground', labelClassName)}
+            >
               {label}
             </span>
           )}
           {description ? (
-            <p className="m-0 text-xs leading-snug text-muted-foreground">{description}</p>
+            <p className="m-0 text-xs leading-relaxed text-muted-foreground">{description}</p>
           ) : null}
         </div>
       </div>
