@@ -8,7 +8,7 @@ import {
 } from 'react';
 import { Button } from '../ui/shadcn/button';
 import { Input } from '../ui/v3';
-import { Label } from '../ui/shadcn/label';
+import { Label } from '../ui/v3';
 import { AuthCard } from '../ui/page/AuthCard';
 import { Icon } from '../../legacy/Icon';
 import {

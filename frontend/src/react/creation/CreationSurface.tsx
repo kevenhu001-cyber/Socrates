@@ -4,7 +4,7 @@ import { Icon } from '../../legacy/Icon';
 import { nativeIslandFrameAttributes } from '../../ui/nativeIslandFrame';
 import { Badge } from '../ui/v3';
 import { Button } from '../ui/shadcn/button';
-import { Field, FieldGroup, FieldLabel } from '../ui/shadcn/field';
+import { Field, FieldGroup, FieldLabel } from '../ui/v3';
 import { Input } from '../ui/v3';
 import { Menu } from '../ui/v3';
 import { NativeSelect, NativeSelectOption } from '../ui/v3';

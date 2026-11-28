@@ -1,5 +1,5 @@
 import { MathText } from '../../rn/useInlineMath';
-import { Label as ShadcnLabel } from '../../ui/shadcn/label';
+import { Label as ShadcnLabel } from '../../ui/v3';
 import { Input as ShadcnInput } from '../../ui/v3';
 import { Textarea as ShadcnTextarea } from '../../ui/v3';
 import { NativeSelect as ShadcnNativeSelect } from '../../ui/v3';
