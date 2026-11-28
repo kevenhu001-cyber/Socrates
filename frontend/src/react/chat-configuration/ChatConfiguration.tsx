@@ -20,7 +20,7 @@ import {
 import { EffortPanel, ModelPickerPanel, SpeedPanel } from './ChatConfigurationPanels';
 import type { ChatConfigurationAnchor } from './types';
 import { hasMobileComposerFocus } from '../../legacy/keyboard/geometry';
-import { restingRect } from '../../legacy/pressFeedback.ts';
+import { restingRect } from '../lib/restingRect';
 
 type View = 'main' | 'effort' | 'speed';
 

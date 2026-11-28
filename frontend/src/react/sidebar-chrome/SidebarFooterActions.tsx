@@ -4,7 +4,7 @@ import { i18n } from '../../ui/legacyI18n.ts';
 import { openSettings } from '../settings/settings.service.ts';
 import { preloadSettingsPage } from '../settings/settings.preload.ts';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { restingRect } from '../../legacy/pressFeedback.ts';
+import { restingRect } from '../lib/restingRect';
 import {
   DISPLAY_PREFS_CHANGE_EVENT,
   DISPLAY_PREFS_TOGGLE_EVENT,

@@ -1,4 +1,4 @@
-import { restingRect } from '../../legacy/pressFeedback.ts';
+import { restingRect } from '../lib/restingRect';
 
 /* 2026-11-26 phone reference: the "+" menu is a floating card that rests just
  * above the question box with 12px side margins, not a full-width bottom
