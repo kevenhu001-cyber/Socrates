@@ -70,8 +70,8 @@ const darkHex: ThemePaletteHex = {
     default: '#2e2e2e',
     strong: '#454545',
   },
-  danger: '#f07775',
-  success: '#80c933',
+  danger: '#f87272',
+  success: '#4ade80',
   muted: '#999999',
   onAccent: '#0a0a0a',
 };

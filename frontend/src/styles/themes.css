@@ -196,8 +196,8 @@ html[data-theme='socrates'][data-mode]:lang(zh) {
      lightest dark rung as well as on the canvas. The old Lobe value
      (rgb(233 83 80)) cleared the near-black page but sat at 4.03:1 on
      the new elevated rung (#292929); this one clears it on every rung
-     (5.3:1 on the control fill). */
-  --ui-danger: rgb(248 113 113);
+     (5.29:1 on the elevated fill, synced with @socrates/theme). */
+  --ui-danger: rgb(248 114 114);
   --ui-success: rgb(74 222 128);
   --ui-thinking-accent: rgb(251 191 36);
   --ui-info: rgb(96 165 250);
