@@ -1,7 +1,7 @@
 import { Checkbox, Input as ShadcnInput, RadioGroup } from '../ui/v3';
 import { Button } from '../ui/shadcn/button';
 import { TrashIcon } from 'lucide-react';
-import { Field, FieldGroup, FieldLabel } from '../ui/shadcn/field';
+import { Field, FieldGroup, FieldLabel } from '../ui/v3';
 import { i18n } from '../../ui/legacyI18n.ts';
 import { ProviderTextField } from './ProviderTextField';
 import { PreferenceSelect } from './PreferenceSelect';

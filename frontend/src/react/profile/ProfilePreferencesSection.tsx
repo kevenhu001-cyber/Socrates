@@ -1,6 +1,6 @@
-import { Label as ShadcnLabel } from '../ui/shadcn/label';
+import { Label as ShadcnLabel } from '../ui/v3';
 import { SegmentedControl, Switch, Textarea as ShadcnTextarea } from '../ui/v3';
-import { Field, FieldLabel } from '../ui/shadcn/field';
+import { Field, FieldLabel } from '../ui/v3';
 import { useCallback, useRef } from 'react';
 import { SectionCard } from '../ui/page/SectionCard';
 import type { ProfileDispatch, ProfileSnapshot } from './types';
