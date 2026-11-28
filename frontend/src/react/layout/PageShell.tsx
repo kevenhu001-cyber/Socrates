@@ -6,12 +6,13 @@ import { PageToolbar } from '../ui/page/PageToolbar';
 
 export interface PageShellProps {
   titleId: string;
-  title: string;
+  title?: string;
   description?: ReactNode;
   eyebrow?: string;
   leading?: ReactNode;
   actions?: ReactNode;
   toolbar?: ReactNode;
+  hideHeader?: boolean;
   maxWidth?: 'reading' | 'wide';
   className?: string;
   children: ReactNode;
@@ -32,6 +33,7 @@ export function PageShell({
   leading,
   actions,
   toolbar,
+  hideHeader = false,
   maxWidth = 'reading',
   className,
   children,
@@ -47,14 +49,16 @@ export function PageShell({
       data-page-shell=""
       data-page-width={maxWidth}
     >
-      <PageHeader
-        titleId={titleId}
-        title={title}
-        description={description}
-        eyebrow={eyebrow}
-        leading={leading}
-        actions={actions}
-      />
+      {!hideHeader && title ? (
+        <PageHeader
+          titleId={titleId}
+          title={title}
+          description={description}
+          eyebrow={eyebrow}
+          leading={leading}
+          actions={actions}
+        />
+      ) : null}
       {toolbar ? <PageToolbar>{toolbar}</PageToolbar> : null}
       <div className="flex min-w-0 flex-col gap-4" data-page-shell-body="">
         {children}
