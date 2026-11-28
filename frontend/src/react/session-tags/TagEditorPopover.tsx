@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { XIcon } from 'lucide-react';
-import { Badge } from '../ui/shadcn/badge';
+import { Badge } from '../ui/v3';
 import { Button } from '../ui/shadcn/button';
 import { Input } from '../ui/shadcn/input';
 

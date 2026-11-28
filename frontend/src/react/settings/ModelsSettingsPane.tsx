@@ -1,4 +1,4 @@
-import { Switch } from '../ui/shadcn/switch';
+import { Switch } from '../ui/v3';
 import { SettingsRow } from '../layout/SettingsRow';
 import { useProviderListState } from './useProviderListState';
 import { useProviderConfigStore } from '../../config/providerConfig.store';

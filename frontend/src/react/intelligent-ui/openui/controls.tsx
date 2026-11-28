@@ -1,7 +1,7 @@
 import { MathText } from '../../rn/useInlineMath';
 import { Label as ShadcnLabel } from '../../ui/shadcn/label';
 import { Input as ShadcnInput } from '../../ui/shadcn/input';
-import { Textarea as ShadcnTextarea } from '../../ui/shadcn/textarea';
+import { Textarea as ShadcnTextarea } from '../../ui/v3';
 import { NativeSelect as ShadcnNativeSelect } from '../../ui/shadcn/native-select';
 import { NativeControl as ShadcnNativeControl } from '../../ui/NativeControl';
 import { Button as UiButton } from '../../ui/Button';

@@ -1,4 +1,4 @@
-import { Input } from '../ui/shadcn/input';
+import { Input } from '../ui/v3';
 import { Field, FieldError, FieldLabel } from '../ui/shadcn/field';
 interface ProviderTextFieldProps {
   id: string;

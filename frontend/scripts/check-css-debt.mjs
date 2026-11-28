@@ -79,7 +79,11 @@ const ORDERED_MANIFESTS = {
  * './motion.css' under polish/buttons.css is polish/motion.css. */
 const NESTED_MANIFESTS = {
   'foundations/fonts.css': ['./fonts-cjk.css'],
-  'foundations/shadcn.css': ['tailwindcss/theme.css', 'tailwindcss/utilities.css'],
+  'foundations/shadcn.css': [
+    'tailwindcss/theme.css',
+    'tailwindcss/utilities.css',
+    '@openai/apps-sdk-ui/css',
+  ],
   'polish/buttons.css': ['./motion.css'],
 };
 

@@ -3,9 +3,9 @@
     "important": 22,
     "hexColor": 31,
     "literalRadius": 0,
-    "stackedId": 23,
-    "literalFontSize": 16,
-    "shadcnVarReads": 450
+    "stackedId": 22,
+    "literalFontSize": 14,
+    "shadcnVarReads": 370
   },
   "generatedBy": "check-css-debt.mjs --update"
 }

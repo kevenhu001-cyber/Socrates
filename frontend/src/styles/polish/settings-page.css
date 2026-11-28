@@ -6,10 +6,10 @@
 
 /* Settings page: shared structural, category and preference rules. */
 
-/* ── Settings page ── */
+/* ── Settings page (ChatGPT v3 matte hairline layout) ── */
 .settings-page .settings-shell {
   display: grid;
-  grid-template-columns: clamp(208px, 27%, 264px) minmax(0, 1fr);
+  grid-template-columns: 204px minmax(0, 1fr);
   min-height: 0;
   flex: 1;
 }
@@ -17,9 +17,9 @@
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 12px;
+  gap: 10px;
   min-height: 0;
-  padding: 24px var(--ui-space-md) 24px 0;
+  padding: 20px var(--ui-space-sm) 20px 0;
   border-right: 1px solid var(--ui-border-subtle);
   overflow: hidden;
   scrollbar-width: thin;
@@ -37,22 +37,37 @@
   align-items: center;
   gap: 10px;
   width: 100%;
-  min-height: 46px;
+  min-height: 38px;
   padding: 6px 10px;
-  border-radius: var(--ui-radius-control);
+  border-radius: var(--ui-radius-row);
   text-align: left;
+  color: var(--ui-text-secondary);
+}
+.settings-page .settings-nav-item:hover {
+  background: var(--ui-bg-hover);
+  color: var(--ui-text-primary);
+}
+.settings-page .settings-nav-item[aria-current='page'],
+.settings-page .settings-nav-item.active {
+  background: var(--ui-bg-selected);
+  color: var(--ui-text-primary);
 }
 .settings-page .settings-category-icon {
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
+  width: 20px;
+  height: 20px;
   flex: none;
-  color: var(--ui-text-primary);
+  color: inherit;
 }
 .settings-page .settings-category-icon svg {
-  width: 17px;
-  height: 17px;
+  width: 16px;
+  height: 16px;
+}
+@media (min-width: 769px) {
+  .settings-page .settings-category-description {
+    display: none;
+  }
 }
 .settings-page .settings-category-copy {
   display: flex;
@@ -121,11 +136,13 @@
   flex-direction: column;
   gap: 20px;
   width: 100%;
-  max-width: 740px;
+  max-width: 680px;
   margin-inline: auto;
 }
 .settings-page .settings-pane > h2 {
   margin: 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--ui-border-subtle);
   color: var(--ui-text-primary);
   font-size: var(--ui-font-size-xl);
   line-height: 28px;
@@ -154,11 +171,10 @@
 .settings-page .settings-section {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 4px;
   margin: 0;
-  padding: var(--ui-space-lg) 0;
+  padding: var(--ui-space-md) 0 0;
   border: 0;
-  border-top: 1px solid var(--ui-border-subtle);
   border-radius: 0;
   background: transparent;
 }
@@ -167,8 +183,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  min-height: 48px;
-  padding-block: 6px;
+  min-height: 52px;
+  padding-block: 10px;
   border-bottom: 1px solid var(--ui-border-subtle);
   color: var(--ui-text-primary);
   font-size: var(--ui-font-size-sm);
@@ -736,8 +752,8 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
     box-sizing: border-box;
     flex: 0 1 auto;
     width: calc(100% - 48px);
-    max-width: 960px;
-    height: min(740px, calc(100% - 48px));
+    max-width: 780px;
+    height: min(660px, calc(100% - 48px));
     min-height: 0;
     margin: auto;
     border: 1px solid var(--ui-border-default);
@@ -748,13 +764,13 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
   }
 
   html[data-main-view='settingsPage'] #settingsPage .settings-shell {
-    grid-template-columns: clamp(200px, 27%, 248px) minmax(0, 1fr);
+    grid-template-columns: 196px minmax(0, 1fr);
     min-height: 0;
     flex: 1;
   }
 
   html[data-main-view='settingsPage'] #settingsPage .account-page-header {
-    height: 64px;
+    height: 56px;
     margin-inline: 0;
     padding: 0 var(--ui-space-lg);
     background: var(--ui-bg-page);
@@ -1231,12 +1247,6 @@ html[data-main-view='settingsPage'] #settingsPage .settings-choice {
     padding-bottom: max(var(--ui-space-xl), env(safe-area-inset-bottom, 0px));
     overscroll-behavior: contain;
   }
-}
-
-.settings-page .settings-general > h2 {
-  border-bottom: 0;
-  padding-bottom: 0;
-  font-size: var(--ui-font-size-xl);
 }
 
 .settings-page .settings-general .settings-choice {

@@ -1,4 +1,4 @@
-import { Input as ShadcnInput } from '../ui/shadcn/input';
+import { Input as ShadcnInput } from '../ui/v3';
 import { PreferenceSelect } from './PreferenceSelect';
 import { Button } from '../ui/shadcn/button';
 import { Field, FieldLabel } from '../ui/shadcn/field';

@@ -1,6 +1,6 @@
 import { Field, FieldGroup, FieldLabel } from '../ui/shadcn/field';
 import { Input as ShadcnInput } from '../ui/shadcn/input';
-import { Checkbox } from '../ui/shadcn/checkbox';
+import { Checkbox } from '../ui/v3';
 import { Button as UiButton } from '../ui/shadcn/button';
 import { t } from '../../i18n/index';
 import { SectionCard } from '../ui/page/SectionCard';

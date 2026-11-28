@@ -6,15 +6,8 @@
  *   Feedback is paint-only: compact controls dim while row-style controls
  *   receive a neutral tint, so repeated clicks feel anchored and predictable.
  *
- * Why the mirrored class:
- *   Native :active can disappear within one frame on a fast touch tap.
- *   legacy/pressFeedback.ts mirrors it to .is-pressed for at least 90ms so the
- *   paint-only acknowledgement remains visible without introducing motion.
- *
- * States:
- *   :active       — native press (mouse, keyboard Space/Enter).
- *   .is-pressed   — minimum-visible paint feedback.
- *   .is-press-release — cleanup window with no geometry or spring animation.
+ * State:
+ *   :active — native CSS press (paint-only, no JS class mirroring per v3 motion contract).
  *
  * Per-control intensity: set `--press-opacity`; compact icon controls use the
  * stronger --ui-press-opacity-sm value. Reduced motion uses the same stable
@@ -59,7 +52,7 @@
     .kb-node,
     .home-quick-action,
     .thinking-status-clickable
-  ):not(:disabled, [aria-disabled='true']):is(:active, .is-pressed),
+  ):not(:disabled, [aria-disabled='true']):active,
 #appShell
   :is(
     [role='menuitem'],
@@ -74,7 +67,7 @@
     .kb-node,
     .home-quick-action,
     .thinking-status-clickable
-  ):not(:disabled, [aria-disabled='true']):is(:active, .is-pressed) {
+  ):not(:disabled, [aria-disabled='true']):active {
   background-color: var(--ui-press-tint);
 }
 
@@ -121,36 +114,14 @@
       .kb-node,
       .home-quick-action,
       .thinking-status-clickable
-    ):is(:active, .is-pressed) {
+    ):active {
     scale: 1;
     opacity: var(--press-opacity, var(--ui-press-opacity));
-  }
-
-  :is(button, [role='button'], [role='tab']):not(
-      :disabled,
-      [aria-disabled='true'],
-      [role='menuitem'],
-      [role='option'],
-      .press-tint,
-      .recent-item,
-      .composer-tools-item,
-      .tool-run-summary,
-      .sidebar-nav-btn,
-      .sidebar-more-item,
-      .user-row,
-      .kb-node,
-      .home-quick-action,
-      .thinking-status-clickable
-    ).is-press-release {
-    scale: 1;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  :is(button, [role='button'], [role='tab']):not(:disabled, [aria-disabled='true']):is(
-      :active,
-      .is-pressed
-    ) {
+  :is(button, [role='button'], [role='tab']):not(:disabled, [aria-disabled='true']):active {
     scale: 1;
     opacity: var(--ui-press-opacity);
   }

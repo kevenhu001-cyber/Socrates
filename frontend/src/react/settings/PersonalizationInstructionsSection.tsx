@@ -1,4 +1,4 @@
-import { Textarea as ShadcnTextarea } from '../ui/shadcn/textarea';
+import { Textarea as ShadcnTextarea } from '../ui/v3';
 import { Field, FieldGroup, FieldLabel } from '../ui/shadcn/field';
 import { useEffect, useRef } from 'react';
 import { buildCustomInstructionsString } from '../../config/customInstructions.ts';

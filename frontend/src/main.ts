@@ -35,7 +35,6 @@ import { installKeyboardShortcuts } from './legacy/keyboardShortcuts.ts';
 import { initSidebarDrag } from './legacy/sidebarResize.ts';
 import { initSidebarChrome } from './legacy/sidebarChrome.ts';
 import { wireScrollPill } from './legacy/scrollPill.ts';
-import { wirePressFeedback } from './legacy/pressFeedback.ts';
 import { loadMemories } from './storage/memoryStore.ts';
 import { initLinkFavicons } from './legacy/linkFavicons.ts';
 import { installLayoutStateMirror } from './legacy/layoutStateMirror.ts';
@@ -56,8 +55,6 @@ initLinkFavicons();
 installLayoutStateMirror();
 
 wireScrollPill();
-
-wirePressFeedback();
 
 initSidebarChrome();
 

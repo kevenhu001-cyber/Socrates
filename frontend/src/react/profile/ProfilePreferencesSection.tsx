@@ -1,7 +1,7 @@
 import { Label as ShadcnLabel } from '../ui/shadcn/label';
-import { Textarea as ShadcnTextarea } from '../ui/shadcn/textarea';
+import { Textarea as ShadcnTextarea } from '../ui/v3';
 import { ToggleGroup, ToggleGroupItem } from '../ui/shadcn/toggle-group';
-import { Switch } from '../ui/shadcn/switch';
+import { Switch } from '../ui/v3';
 import { Field, FieldLabel } from '../ui/shadcn/field';
 import { useCallback, useRef } from 'react';
 import { cn } from 'cn';

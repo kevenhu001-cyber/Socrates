@@ -2,7 +2,7 @@ import { createImmutableBridge, useBridge } from '../../store/index.ts';
 import { getProviderConfigSnapshot } from '../../config/providerConfig.store.ts';
 import { getStoredReasoningEffort, getStoredResponseSpeed } from '../../config/chatPreferences.ts';
 import { hasMobileComposerFocus } from '../../legacy/keyboard/geometry';
-import { restingRect } from '../../legacy/pressFeedback.ts';
+import { restingRect } from '../lib/restingRect';
 import type {
   ChatConfigurationBridge,
   ChatConfigurationSnapshot,

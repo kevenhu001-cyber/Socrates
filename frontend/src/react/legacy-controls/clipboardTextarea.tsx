@@ -1,7 +1,7 @@
 import { createElement, createRef } from 'react';
 import { flushSync } from 'react-dom';
 import { mountOwnedRoot } from '../lib/boot/ownedRoot';
-import { Textarea } from '../ui/shadcn/textarea';
+import { Textarea } from '../ui/v3';
 
 export function copyTextWithShadcnTextarea(value: string): Promise<void> {
   const host = document.createElement('div');
